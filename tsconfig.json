@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "declaration": true,
+        "removeComments": true,
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "resolveJsonModule": true,
+        "target": "esnext",
+        "sourceMap": true,
+        "outDir": "./lib",
+        "baseUrl": "./src",
+        "incremental": true,
+        "types": ["jest", "node"]
+    },
+    "exclude": ["node_modules", "dist"]
+}
