@@ -8,7 +8,7 @@
         "resolveJsonModule": true,
         "target": "esnext",
         "sourceMap": true,
-        "outDir": "./lib",
+        "outDir": "./dist",
         "baseUrl": "./src",
         "incremental": true,
         "types": ["jest", "node"]

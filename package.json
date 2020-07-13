@@ -2,11 +2,12 @@
     "name": "posthog-js-lite",
     "version": "0.0.0",
     "description": "Reimplementation of posthog-js to be as light and modular as possible.",
-    "main": "lindex.js",
+    "main": "dist/src/index.js",
     "scripts": {
         "start": "npm run build",
         "build": "tsc -p .",
-        "test": "jest"
+        "test": "jest",
+        "prepublish": "npm run test && npm run build"
     },
     "author": "",
     "license": "MIT",
@@ -15,7 +16,13 @@
         "@babel/preset-env": "^7.10.4",
         "@babel/preset-typescript": "^7.10.4",
         "@types/jest": "^26.0.3",
+        "husky": ">=4",
+        "lint-staged": ">=10",
         "@types/node": "^14.0.19",
+        "prettier": "^2.0.5",
+        "eslint": "^7.4.0",
+        "eslint-config-prettier": "^6.11.0",
+        "eslint-plugin-prettier": "^3.1.4",
         "babel-jest": "^26.1.0",
         "jest": "^26.1.0",
         "ts-jest": "^26.1.1",
@@ -26,5 +33,13 @@
         "testPathIgnorePatterns": [
             "<rootDir>/lib/"
         ]
+    },
+    "husky": {
+        "hooks": {
+            "pre-commit": "lint-staged"
+        }
+    },
+    "lint-staged": {
+        "*.{ts,js,css,scss}": "prettier --write"
     }
 }

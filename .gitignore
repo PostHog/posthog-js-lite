@@ -1,5 +1,5 @@
 node_modules
 .idea
 .vscode
-lib/
+dist/
 yarn-error.log

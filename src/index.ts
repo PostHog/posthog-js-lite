@@ -89,5 +89,3 @@ export function createInternalPostHogInstance(apiKey: string, options: PostHogOp
 
     return postHogInstance
 }
-
-// const posthog = browserPostHog('api_key', { ... })
