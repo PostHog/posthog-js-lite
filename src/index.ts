@@ -1,6 +1,7 @@
 import { version } from '../package.json'
 import { PostHogOptions, PostHogSession } from './types'
 import { currentTimestamp, generateUuid } from './utils'
+import { getContext } from './utils/context'
 
 const defaultOptions: PostHogOptions = {
     apiHost: 'https://app.posthog.com',
@@ -35,7 +36,7 @@ export function createInternalPostHogInstance(apiKey: string, options: PostHogOp
                 distinct_id: postHogInstance.getDistinctId(),
                 timestamp: currentTimestamp(),
                 properties: {
-                    ...postHogInstance.getContextProperties(),
+                    ...getContext(globalThis), // TODO: debounce this, no need to do every event
                     ...properties,
                 },
             })

@@ -1,15 +1,37 @@
 import { createInternalPostHogInstance } from '../index'
 
+const testWindow = {
+    navigator: {
+        userAgent: 'not me / Mozilla',
+    },
+    document: {
+        referrer: '',
+    },
+    location: {
+        href: 'http://example.com/',
+        host: 'example.com',
+        pathname: '/',
+    },
+    screen: {
+        width: 640,
+        height: 480,
+    },
+}
+
 test('capture makes a window.fetch call', () => {
     expect(true).toBe(true)
 
     const fetchCalled = []
 
-    const postHog = createInternalPostHogInstance('API_KEY_WAS_HERE', {
-        fetch: async (url, options) => {
-            fetchCalled.push({ url, options })
+    const postHog = createInternalPostHogInstance(
+        'API_KEY_WAS_HERE',
+        {
+            fetch: async (url, options) => {
+                fetchCalled.push({ url, options })
+            },
         },
-    })
+        testWindow
+    )
 
     postHog.capture('hi there!')
 
