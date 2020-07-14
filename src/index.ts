@@ -1,6 +1,6 @@
 import { version } from '../package.json'
 import { PostHogOptions, PostHogSession } from './types'
-import { currentISOTime, currentTimestamp, generateUuid } from './utils/utils'
+import { currentISOTime, currentTimestamp, generateUUID } from './utils/utils'
 import { getContext } from './utils/context'
 
 import { LZString } from './utils/lz-string.js'
@@ -8,16 +8,19 @@ import { LZString } from './utils/lz-string.js'
 const defaultOptions: PostHogOptions = {
     apiHost: 'https://app.posthog.com',
     maxQueueLength: 1,
+    optedIn: true,
 }
 
 export function createInternalPostHogInstance(apiKey: string, options: PostHogOptions, globalThis: any) {
     const session = {} as PostHogSession // getDataFromCookiesAndLocalStorage
+    const anonymousId = generateUUID()
 
     let postHogInstance = {
         options: { ...defaultOptions, ...options, apiKey } as Required<PostHogOptions>,
 
         session: {
-            distinctId: generateUuid(),
+            anonymousId: anonymousId,
+            distinctId: anonymousId,
             ...session,
         } as PostHogSession,
 
@@ -32,6 +35,19 @@ export function createInternalPostHogInstance(apiKey: string, options: PostHogOp
             }
         },
 
+        optedIn() {
+            return postHogInstance.options.optedIn
+        },
+
+        optIn() {
+            postHogInstance.options.optedIn = true
+            postHogInstance.flush()
+        },
+
+        optOut() {
+            postHogInstance.options.optedIn = false
+        },
+
         capture(event: string, properties = {}) {
             postHogInstance.enqueue({
                 event,
@@ -44,15 +60,37 @@ export function createInternalPostHogInstance(apiKey: string, options: PostHogOp
             })
         },
 
+        identify(distinctId: string | null, userProperties = {}) {
+            postHogInstance.enqueue({
+                event: '$identify',
+                distinct_id: distinctId || postHogInstance.session.anonymousId,
+                timestamp: currentISOTime(),
+                $set: {
+                    ...userProperties,
+                },
+                properties: {
+                    ...getContext(globalThis),
+                    $anon_distinct_id: postHogInstance.session.anonymousId,
+                },
+            })
+            if (distinctId) {
+                postHogInstance.session.distinctId = distinctId
+            }
+        },
+
         queue: [],
         enqueue(apiRequest) {
             postHogInstance.queue.push(apiRequest)
 
-            if (postHogInstance.queue.length >= postHogInstance.options.maxQueueLength) {
-                let queue = postHogInstance.queue
-                postHogInstance.queue = []
-                postHogInstance.makeRequest(queue)
+            if (postHogInstance.optedIn() && postHogInstance.queue.length >= postHogInstance.options.maxQueueLength) {
+                postHogInstance.flush()
             }
+        },
+
+        flush() {
+            let queue = postHogInstance.queue
+            postHogInstance.queue = []
+            postHogInstance.makeRequest(queue)
         },
 
         makeRequest: async function (events) {
