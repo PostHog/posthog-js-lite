@@ -59,22 +59,22 @@ export function createInternalPostHogInstance(apiKey: string, options: PostHogOp
                 timestamp: currentTimestamp(),
             }
 
-            const url = `${postHogInstance.options.apiHost}/batch/`
+            const url = `${postHogInstance.options.apiHost}/e/?ip=1&_=${currentTimestamp()}&v=${version}`
 
             const fetchOptions = {
-                // TODO: go through this list
-                method: 'POST', // *GET, POST, PUT, DELETE, etc.
-                mode: 'cors', // no-cors, *cors, same-origin
-                cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-                credentials: 'same-origin', // include, *same-origin, omit
+                method: 'POST',
+                mode: 'cors',
+                credentials: 'omit',
+                // credentials: 'same-origin',
                 headers: {
                     'Content-Type': 'application/json',
-                    // 'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                redirect: 'follow', // manual, *follow, error
-                referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-                body: JSON.stringify(requestData), // body data type must match "Content-Type" header
+                // redirect: 'follow',
+                // referrerPolicy: 'no-referrer-when-downgrade',
+                body: JSON.stringify(requestData),
             }
+
+            // debugger
 
             try {
                 const rawResponse = await postHogInstance.options.fetch(url, fetchOptions)

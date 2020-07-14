@@ -9,8 +9,8 @@ export function browserPostHog(apiKey: string, options: PostHogOptions = {}) {
         apiKey,
         {
             ...options,
-            fetch: window.fetch,
-            plugins: [...options.plugins, autoCapturePlugin()],
+            fetch: window.fetch.bind(window),
+            plugins: [...(options.plugins || []), autoCapturePlugin()],
         },
         window
     )

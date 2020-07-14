@@ -3,5 +3,5 @@ export function generateUuid() {
 }
 
 export function currentTimestamp() {
-    return new Date().getTime() / 1000
+    return new Date().getTime()
 }
