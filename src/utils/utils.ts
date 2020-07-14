@@ -5,3 +5,7 @@ export function generateUuid() {
 export function currentTimestamp() {
     return new Date().getTime()
 }
+
+export function currentISOTime() {
+    return new Date().toISOString()
+}

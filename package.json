@@ -31,7 +31,7 @@
     },
     "jest": {
         "testPathIgnorePatterns": [
-            "<rootDir>/lib/"
+            "<rootDir>/dist/"
         ]
     },
     "husky": {

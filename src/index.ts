@@ -1,7 +1,9 @@
 import { version } from '../package.json'
 import { PostHogOptions, PostHogSession } from './types'
-import { currentTimestamp, generateUuid } from './utils'
+import { currentISOTime, currentTimestamp, generateUuid } from './utils/utils'
 import { getContext } from './utils/context'
+
+import { LZString } from './utils/lz-string.js'
 
 const defaultOptions: PostHogOptions = {
     apiHost: 'https://app.posthog.com',
@@ -34,7 +36,7 @@ export function createInternalPostHogInstance(apiKey: string, options: PostHogOp
             postHogInstance.enqueue({
                 event,
                 distinct_id: postHogInstance.getDistinctId(),
-                timestamp: currentTimestamp(),
+                timestamp: currentISOTime(),
                 properties: {
                     ...getContext(globalThis), // TODO: debounce this, no need to do every event
                     ...properties,
@@ -57,32 +59,28 @@ export function createInternalPostHogInstance(apiKey: string, options: PostHogOp
             const requestData = {
                 api_key: postHogInstance.options.apiKey,
                 batch: events,
-                timestamp: currentTimestamp(),
+                sent_at: currentISOTime(),
             }
 
             const url = `${postHogInstance.options.apiHost}/e/?ip=1&_=${currentTimestamp()}&v=${version}`
 
+            const payload = JSON.stringify(requestData)
+            const compressedPayload = LZString.compressToBase64(payload)
+
             const fetchOptions = {
                 method: 'POST',
-                mode: 'cors',
+                mode: 'no-cors',
                 credentials: 'omit',
-                // credentials: 'same-origin',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                // redirect: 'follow',
-                // referrerPolicy: 'no-referrer-when-downgrade',
-                body: JSON.stringify(requestData),
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `data=${encodeURIComponent(compressedPayload)}&compression=lz64`,
             }
-
-            // debugger
 
             try {
                 const rawResponse = await postHogInstance.options.fetch(url, fetchOptions)
-                const response = await rawResponse.json()
+                const body = await rawResponse.text()
                 console.log('response sent!')
             } catch (error) {
-                // TODO: retry if fails
+                // TODO: retry if fails?
                 throw error
             }
         },

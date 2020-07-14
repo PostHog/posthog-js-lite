@@ -1,5 +1,5 @@
 import { version } from '../../package.json'
-import { currentTimestamp } from '../utils'
+import { currentTimestamp } from './utils'
 
 export function getContext(window) {
     const userAgent = window.navigator.userAgent
@@ -105,7 +105,7 @@ function browserVersion(userAgent, vendor, opera) {
 }
 
 function os(window) {
-    var a = window.userAgent
+    var a = window.navigator.userAgent
     if (/Windows/i.test(a)) {
         if (/Phone/.test(a) || /WPDesktop/.test(a)) {
             return 'Windows Phone'
