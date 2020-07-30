@@ -1,18 +1,18 @@
 import { version } from '../../package.json'
 import { currentTimestamp } from './utils'
 
-export function getContext(window) {
+export function getContext(window: Window) {
     const userAgent = window.navigator.userAgent
     const context = {
         $os: os(window),
-        $browser: browser(userAgent, navigator.vendor, window.opera),
+        $browser: browser(userAgent, navigator.vendor, !!(window as any).opera),
         $referrer: window.document.referrer,
         $referring_domain: referringDomain(window.document.referrer),
         $device: device(userAgent),
         $current_url: window.location.href,
         $host: window.location.host,
         $pathname: window.location.pathname,
-        $browser_version: browserVersion(userAgent, window.navigator.vendor, window.opera),
+        $browser_version: browserVersion(userAgent, window.navigator.vendor, !!(window as any).opera),
         $screen_height: window.screen.height,
         $screen_width: window.screen.width,
         $screen_dpr: window.devicePixelRatio,
@@ -24,11 +24,11 @@ export function getContext(window) {
     return context // TODO: strip empty props?
 }
 
-function includes(haystack, needle) {
+function includes(haystack: string, needle: string) {
     return haystack.indexOf(needle) >= 0
 }
 
-function browser(userAgent, vendor, opera) {
+function browser(userAgent: string, vendor: string, opera: boolean): string {
     vendor = vendor || '' // vendor is undefined for at least IE9
     if (opera || includes(userAgent, ' OPR/')) {
         if (includes(userAgent, 'Mini')) {
@@ -74,8 +74,8 @@ function browser(userAgent, vendor, opera) {
     }
 }
 
-function browserVersion(userAgent, vendor, opera) {
-    const regex = {
+function browserVersion(userAgent: string, vendor: string, opera: boolean) {
+    const regexList = {
         'Internet Explorer Mobile': /rv:(\d+(\.\d+)?)/,
         'Microsoft Edge': /Edge?\/(\d+(\.\d+)?)/,
         Chrome: /Chrome\/(\d+(\.\d+)?)/,
@@ -92,7 +92,10 @@ function browserVersion(userAgent, vendor, opera) {
         'Samsung Internet': /SamsungBrowser\/(\d+(\.\d+)?)/,
         'Internet Explorer': /(rv:|MSIE )(\d+(\.\d+)?)/,
         Mozilla: /rv:(\d+(\.\d+)?)/,
-    }[browser(userAgent, vendor, opera)]
+    }
+
+    const browserString = browser(userAgent, vendor, opera) as keyof typeof regexList
+    const regex: RegExp = regexList[browserString] || undefined
 
     if (regex === undefined) {
         return null
@@ -104,7 +107,7 @@ function browserVersion(userAgent, vendor, opera) {
     return parseFloat(matches[matches.length - 2])
 }
 
-function os(window) {
+function os(window: Window) {
     var a = window.navigator.userAgent
     if (/Windows/i.test(a)) {
         if (/Phone/.test(a) || /WPDesktop/.test(a)) {
@@ -128,7 +131,7 @@ function os(window) {
     }
 }
 
-function device(userAgent) {
+function device(userAgent: string) {
     if (/Windows Phone/i.test(userAgent) || /WPDesktop/.test(userAgent)) {
         return 'Windows Phone'
     } else if (/iPad/.test(userAgent)) {
@@ -146,7 +149,7 @@ function device(userAgent) {
     }
 }
 
-function referringDomain(referrer) {
+function referringDomain(referrer: string) {
     var split = referrer.split('/')
     if (split.length >= 3) {
         return split[2]

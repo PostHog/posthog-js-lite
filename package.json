@@ -4,12 +4,11 @@
     "description": "Reimplementation of posthog-js to be as light and modular as possible.",
     "main": "dist/src/index.js",
     "scripts": {
-        "start": "npm run build",
         "build": "tsc -p .",
         "test": "jest",
-        "prepublish": "npm run test && npm run build"
+        "prepublish": "yarn test && yarn build"
     },
-    "author": "",
+    "author": "PostHog",
     "license": "MIT",
     "devDependencies": {
         "@babel/core": "^7.10.4",
