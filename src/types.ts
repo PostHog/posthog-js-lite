@@ -12,3 +12,11 @@ export type PostHogSession = {
     distinctId: string
     anonymousId: string
 }
+
+export type PostHogApiRequest = {
+    event: string
+    distinct_id: string
+    timestamp: string
+    properties?: Record<string, unknown>
+    $set?: Record<string, unknown>
+}

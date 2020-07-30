@@ -1,5 +1,5 @@
 import { version } from '../package.json'
-import { PostHogOptions, PostHogSession } from './types'
+import { PostHogApiRequest, PostHogOptions, PostHogSession } from './types'
 import { currentISOTime, currentTimestamp, generateUUID } from './utils/utils'
 import { getContext } from './utils/context'
 
@@ -12,7 +12,7 @@ const defaultOptions: PostHogOptions = {
 }
 
 export function createInternalPostHogInstance(apiKey: string, options: PostHogOptions, globalThis: any) {
-    const session = {} as PostHogSession // getDataFromCookiesAndLocalStorage
+    const session = {} as Partial<PostHogSession> // getDataFromCookiesAndLocalStorage
     const anonymousId = generateUUID()
 
     let postHogInstance = {
@@ -78,8 +78,8 @@ export function createInternalPostHogInstance(apiKey: string, options: PostHogOp
             }
         },
 
-        queue: [],
-        enqueue(apiRequest) {
+        queue: [] as PostHogApiRequest[],
+        enqueue(apiRequest: PostHogApiRequest) {
             postHogInstance.queue.push(apiRequest)
 
             if (postHogInstance.optedIn() && postHogInstance.queue.length >= postHogInstance.options.maxQueueLength) {
@@ -93,7 +93,7 @@ export function createInternalPostHogInstance(apiKey: string, options: PostHogOp
             postHogInstance.makeRequest(queue)
         },
 
-        makeRequest: async function (events) {
+        makeRequest: async function (events: PostHogApiRequest[]) {
             const requestData = {
                 api_key: postHogInstance.options.apiKey,
                 batch: events,

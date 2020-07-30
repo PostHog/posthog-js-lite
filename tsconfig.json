@@ -12,7 +12,8 @@
         "outDir": "./dist",
         "baseUrl": "./src",
         "incremental": true,
-        "types": ["jest", "node"]
+        "types": ["jest", "node"],
+        "strict": true
     },
     "exclude": ["node_modules", "dist"]
 }
