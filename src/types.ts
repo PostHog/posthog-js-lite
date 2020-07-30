@@ -13,7 +13,7 @@ export type PostHogSession = {
     anonymousId: string
 }
 
-export type PostHogApiRequest = {
+export type PostHogAPIRequest = {
     event: string
     distinct_id: string
     timestamp: string
