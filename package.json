@@ -1,6 +1,6 @@
 {
     "name": "posthog-js-lite",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "description": "Reimplementation of posthog-js to be as light and modular as possible.",
     "main": "dist/src/index.js",
     "scripts": {
