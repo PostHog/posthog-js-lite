@@ -116,7 +116,6 @@ export function createInternalPostHogInstance(apiKey: string, options: PostHogOp
             try {
                 const rawResponse = await postHogInstance.options.fetch(url, fetchOptions)
                 const body = await rawResponse.text()
-                console.log('response sent!')
             } catch (error) {
                 // TODO: retry if fails?
                 throw error
