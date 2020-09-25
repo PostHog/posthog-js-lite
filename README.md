@@ -1,4 +1,10 @@
-WIP! Reimplementation of posthog-js to be as light and modular as possible.
+[![NPM Version](https://img.shields.io/npm/v/posthog-js-lite.svg)](https://www.npmjs.com/package/posthog-js-lite)
+[![minified](https://badgen.net/bundlephobia/min/posthog-js-lite)](https://bundlephobia.com/result?p=posthog-js-lite)
+[![minified + gzipped](https://badgen.net/bundlephobia/minzip/posthog-js-lite)](https://bundlephobia.com/result?p=posthog-js-lite)
+
+**This library is still a work in progress!**
+
+Reimplementation of posthog-js to be as light and modular as possible.
 
 Goals:
 - simple api
