@@ -7,7 +7,7 @@
         "experimentalDecorators": true,
         "resolveJsonModule": true,
         "allowJs": true,
-        "target": "esnext",
+        "target": "es6",
         "sourceMap": true,
         "outDir": "./dist",
         "baseUrl": "./src",
