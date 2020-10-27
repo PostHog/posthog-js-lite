@@ -2,25 +2,30 @@ import { version } from '../../package.json'
 import { currentTimestamp } from './utils'
 
 export function getContext(window: Window) {
-    const userAgent = window.navigator.userAgent
-    const context = {
-        $os: os(window),
-        $browser: browser(userAgent, navigator.vendor, !!(window as any).opera),
-        $referrer: window.document.referrer,
-        $referring_domain: referringDomain(window.document.referrer),
-        $device: device(userAgent),
-        $current_url: window.location.href,
-        $host: window.location.host,
-        $pathname: window.location.pathname,
-        $browser_version: browserVersion(userAgent, window.navigator.vendor, !!(window as any).opera),
-        $screen_height: window.screen.height,
-        $screen_width: window.screen.width,
-        $screen_dpr: window.devicePixelRatio,
+    const context = {}
+    if (window.navigator) {
+        const userAgent = window.navigator.userAgent
+        Object.assign(context, {
+            $os: os(window),
+            $browser: browser(userAgent, window.navigator.vendor, !!(window as any).opera),
+            $referrer: window.document.referrer,
+            $referring_domain: referringDomain(window.document.referrer),
+            $device: device(userAgent),
+            $current_url: window.location.href,
+            $host: window.location.host,
+            $pathname: window.location.pathname,
+            $browser_version: browserVersion(userAgent, window.navigator.vendor, !!(window as any).opera),
+            $screen_height: window.screen.height,
+            $screen_width: window.screen.width,
+            $screen_dpr: window.devicePixelRatio,
+        })
+    }
+    Object.assign(context, {
         $lib: 'js',
         $lib_version: version,
         $insert_id: Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10),
         $time: currentTimestamp() / 1000, // epoch time in seconds
-    }
+    })
     return context // TODO: strip empty props?
 }
 

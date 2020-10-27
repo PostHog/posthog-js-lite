@@ -13,7 +13,7 @@ const defaultOptions: PostHogOptions = {
 
 export function createInternalPostHogInstance(apiKey: string, options: PostHogOptions, globalThis: any) {
     const session = {} as Partial<PostHogSession> // getDataFromCookiesAndLocalStorage
-    const anonymousId = generateUUID()
+    const anonymousId = generateUUID(globalThis)
 
     let postHogInstance = {
         options: { ...defaultOptions, ...options, apiKey } as Required<PostHogOptions>,
