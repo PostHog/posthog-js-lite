@@ -23,3 +23,7 @@ Supports already:
 Browser support:
 - This library ES6 compatible browsers (everything except IE). If you need to support IE, 
   feel free to transpile the source to ES5 after including it in your bundle. 
+
+## Questions?
+
+### [Join our Slack community.](https://join.slack.com/t/posthogusers/shared_invite/enQtOTY0MzU5NjAwMDY3LTc2MWQ0OTZlNjhkODk3ZDI3NDVjMDE1YjgxY2I4ZjI4MzJhZmVmNjJkN2NmMGJmMzc2N2U3Yjc3ZjI5NGFlZDQ)
