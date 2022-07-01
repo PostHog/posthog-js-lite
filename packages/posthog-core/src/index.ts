@@ -34,9 +34,9 @@ export abstract class PostHogCore {
 
   // Abstract methods to be overridden by implementations
   abstract fetch(url: string, options: PostHogFetchOptions): Promise<PostHogCoreFetchResponse>
-
   abstract getLibraryId(): string
   abstract getLibraryVersion(): string
+  abstract getAnonymousId(): Promise<string>
   abstract getDistinctId(): Promise<string>
   abstract onSetDistinctId(newDistinctId: string): Promise<string>
   abstract getCustomUserAgent(): string | void
@@ -88,15 +88,9 @@ export abstract class PostHogCore {
     this.enabled = false
   }
 
-  /**
-   * Send an identify `message`.
-   *
-   * @param {Object} message
-   * @param {Function} [callback] (optional)
-   * @return {PostHog}
-   */
+  async identify(distinctId?: string, properties?: any, callback?: () => void) {
+    distinctId = distinctId || (await this.getDistinctId())
 
-  async identify(distinctId: string, properties?: any, callback?: () => void) {
     const event = {
       distinctId: distinctId,
       properties: properties,
@@ -109,6 +103,7 @@ export abstract class PostHogCore {
       event: '$identify',
       properties: {
         ...this.getCommonEventProperties(),
+        $anon_distinct_id: await this.getAnonymousId(),
       },
     }
 
@@ -117,14 +112,6 @@ export abstract class PostHogCore {
     this.enqueue('identify', payload, callback)
     return this
   }
-
-  /**
-   * Send a capture `message`.
-   *
-   * @param {Object} message
-   * @param {Function} [callback] (optional)
-   * @return {PostHog}
-   */
 
   async capture(event: string, properties?: any, callback?: () => void) {
     const distinctId = await this.getDistinctId()
@@ -153,14 +140,6 @@ export abstract class PostHogCore {
     return this
   }
 
-  /**
-   * Send an alias `message`.
-   *
-   * @param {Object} message
-   * @param {Function} [callback] (optional)
-   * @return {PostHog}
-   */
-
   async alias(alias: string, callback?: () => void) {
     const distinctId = await this.getDistinctId()
 
@@ -183,14 +162,6 @@ export abstract class PostHogCore {
     return this
   }
 
-  /**
-   * @description Sets a groups properties, which allows asking questions like "Who are the most active companies"
-   * using my product in PostHog.
-   *
-   * @param groupType Type of group (ex: 'company'). Limited to 5 per project
-   * @param groupKey Unique identifier for that type of group (ex: 'id:5')
-   * @param properties OPTIONAL | which can be a object with any information you'd like to add
-   */
   async groupIdentify(group: { groupType: string; groupKey: string }, properties?: any, callback?: () => void) {
     this.validate('groupIdentify', group)
 
@@ -250,7 +221,7 @@ export abstract class PostHogCore {
       type: type,
       library: this.getLibraryId(),
       library_version: this.getLibraryVersion(),
-      timestamp: _message.timestamp ? _message.timestamp : new Date(),
+      timestamp: _message.timestamp ? _message.timestamp : currentISOTime(),
     }
 
     if (message.distinctId) {
@@ -276,17 +247,7 @@ export abstract class PostHogCore {
       this._timer = setTimeout(() => this.flush(), this.flushInterval)
     }
   }
-
-  /**
-   * Flush the current queue
-   *
-   * @param {Function} [callback] (optional)
-   * @return {PostHog}
-   */
-
   flush(callback?: (err?: any, data?: any) => void) {
-    console.log('flushing!', this._queue, this.enabled)
-
     callback = callback || noop
 
     if (!this.enabled) {
