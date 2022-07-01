@@ -6,6 +6,12 @@
     "author": "PostHog",
     "private": true,
     "license": "MIT",
+    "scripts": {
+        "build": "tsc -p .",
+        "test": "jest",
+        "prepublish": "yarn test && yarn build"
+    },
+
     "devDependencies": {
         "@babel/core": "^7.10.4",
         "@babel/preset-env": "^7.10.4",

@@ -1,35 +1,43 @@
-import {version} from '../package.json';
-import { PostHogCore, PosthogCoreOptions } from '../../posthog-core/src';
-import { PostHogCoreFetchRequest, PostHogCoreFetchResponse } from '../../posthog-core/src/types';
+import { PostHogFetchOptions } from 'packages/posthog-core/src/types'
+import { PostHogCore, PostHogCoreFetchRequest, PostHogCoreFetchResponse, PosthogCoreOptions } from 'posthog-core'
+import { version } from '../package.json'
 
 export interface PostHogNodejsOptions extends PosthogCoreOptions {}
 
 export class PostHogNodejs extends PostHogCore {
-  private _cachedDistinctId?: string;
+  private _cachedDistinctId?: string
 
   constructor(apiKey: string, options: PostHogNodejsOptions) {
-    super(apiKey, options);
+    super(apiKey, options)
   }
 
-  fetch(req: PostHogCoreFetchRequest): Promise<PostHogCoreFetchResponse> {
-    throw Error('not implemten');
+  fetch(url: string, options: PostHogFetchOptions): Promise<PostHogCoreFetchResponse> {
+    throw Error('not implemented')
+  }
+
+  setImmediate(fn: () => void): void {
+    return process.nextTick(fn)
   }
 
   getLibraryId(): string {
-    return 'posthog-node';
+    return 'posthog-node'
   }
   getLibraryVersion(): string {
-    return version;
+    return version
   }
   getCustomUserAgent(): string {
-    return `posthog-node/${version}`;
+    return `posthog-node/${version}`
   }
 
   async getDistinctId(): Promise<string> {
-    return '';
+    return ''
   }
 
   async onSetDistinctId(_: string): Promise<string> {
-    return _;
+    return _
+  }
+
+  shutdown() {
+    this.flush()
   }
 }

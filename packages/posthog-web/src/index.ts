@@ -2,6 +2,7 @@ import { PostHogCore, PostHogCoreFetchRequest, PostHogCoreFetchResponse, Posthog
 import { version } from '../package.json'
 import { generateUUID } from 'posthog-core/src/utils'
 import { getContext } from './context'
+import { PostHogFetchOptions } from 'packages/posthog-core/src/types'
 
 export interface PostHogWebOptions extends PosthogCoreOptions {
   autocapture?: boolean
@@ -12,17 +13,11 @@ const KEY_DISTINCT_ID = '@posthog:distinct_id'
 export class PostHogWeb extends PostHogCore {
   private _cachedDistinctId?: string
 
-  fetch(req: PostHogCoreFetchRequest): Promise<PostHogCoreFetchResponse> {
-    return window
-      .fetch(req.url, {
-        method: req.method,
-        headers: req.headers,
-        body: JSON.stringify(req.data),
-      })
-      .then(async (res) => ({
-        status: res.status,
-        data: await res.json(),
-      }))
+  fetch(url: string, options: PostHogFetchOptions): Promise<any> {
+    return window.fetch(url, options)
+  }
+  setImmediate(fn: () => void): void {
+    window.setTimeout(fn, 1)
   }
   getLibraryId(): string {
     return 'posthog-web'

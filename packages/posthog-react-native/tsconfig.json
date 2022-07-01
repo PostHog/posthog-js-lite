@@ -1,11 +1,15 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "target": "es6",
-    "module": "commonjs",
+    "allowJs": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "jsx": "react-native",
+    "lib": ["es2017"],
     "moduleResolution": "node",
-    "rootDir": ".",
-    "outDir": "dist",
-    "declaration": true
+    "noEmit": true,
+    "strict": true,
+    "target": "esnext"
   }
 }

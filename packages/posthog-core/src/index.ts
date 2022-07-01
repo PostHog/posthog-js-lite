@@ -1,76 +1,75 @@
-import {PostHogCoreFetchRequest, PostHogCoreFetchResponse} from './types';
-import {assert, removeTrailingSlash, retriable} from './utils';
-import {eventValidation} from './validation';
+import { PostHogCoreFetchRequest, PostHogCoreFetchResponse, PostHogFetchOptions } from './types'
+import { assert, currentISOTime, currentTimestamp, removeTrailingSlash, retriable } from './utils'
+import { eventValidation } from './validation'
+import { LZString } from './lz-string'
 
-const setImmediate = global.setImmediate || process.nextTick.bind(process);
-const noop = () => {};
+const noop = () => {}
 
-const FIVE_MINUTES = 5 * 60 * 1000;
+const FIVE_MINUTES = 5 * 60 * 1000
 
 export interface PosthogCoreOptions {
-  host?: string;
-  timeout?: number;
-  flushAt?: number;
-  flushInterval?: number;
-  personalApiKey?: string;
-  enable?: boolean;
+  host?: string
+  timeout?: number
+  flushAt?: number
+  flushInterval?: number
+  personalApiKey?: string
+  enable?: boolean
+  captureMode?: 'json' | 'form'
 }
 
 export abstract class PostHogCore {
   // options
-  private apiKey: string;
-  private personalApiKey?: string;
-  private host: string;
-  private timeout?: number;
-  private flushAt: number;
-  private flushInterval: number;
+  private apiKey: string
+  private personalApiKey?: string
+  private host: string
+  private timeout?: number
+  private flushAt: number
+  private flushInterval: number
+  private captureMode: 'form' | 'json'
 
   // internal
-  private _queue: any[];
-  private _flushed = false;
-  private _timer?: any;
+  private _queue: any[]
+  private _flushed = false
+  private _timer?: any
 
   // Abstract methods to be overridden by implementations
-  abstract fetch(
-    req: PostHogCoreFetchRequest,
-  ): Promise<PostHogCoreFetchResponse>;
+  abstract fetch(url: string, options: PostHogFetchOptions): Promise<PostHogCoreFetchResponse>
 
-  abstract getLibraryId(): string;
-  abstract getLibraryVersion(): string;
-  abstract getDistinctId(): Promise<string>;
-  abstract onSetDistinctId(newDistinctId: string): Promise<string>;
+  abstract getLibraryId(): string
+  abstract getLibraryVersion(): string
+  abstract getDistinctId(): Promise<string>
+  abstract onSetDistinctId(newDistinctId: string): Promise<string>
+  abstract getCustomUserAgent(): string | void
+  abstract setImmediate(fn: () => void): void
 
-  abstract getCustomUserAgent(): string | void;
-
-  public enabled = true;
+  public enabled = true
 
   constructor(apiKey: string, options: PosthogCoreOptions = {}) {
-    assert(apiKey, "You must pass your PostHog project's api key.");
+    assert(apiKey, "You must pass your PostHog project's api key.")
 
-    this._queue = [];
-    this.apiKey = apiKey;
-    this.personalApiKey = options.personalApiKey;
-    this.host = removeTrailingSlash(options.host || 'https://app.posthog.com');
-    this.timeout = options.timeout;
-    this.flushAt = options.flushAt ? Math.max(options.flushAt, 1) : 20;
-    this.flushInterval = options.flushInterval ?? 10000;
+    this._queue = []
+    this.apiKey = apiKey
+    this.personalApiKey = options.personalApiKey
+    this.host = removeTrailingSlash(options.host || 'https://app.posthog.com')
+    this.timeout = options.timeout
+    this.flushAt = options.flushAt ? Math.max(options.flushAt, 1) : 20
+    this.flushInterval = options.flushInterval ?? 10000
+    this.captureMode = options.captureMode || 'form'
   }
 
-  private async fetchWithRetry(
-    req: PostHogCoreFetchRequest,
-  ): Promise<PostHogCoreFetchResponse> {
-    return retriable(() => this.fetch(req));
+  private async fetchWithRetry(url: string, options: PostHogFetchOptions): Promise<any> {
+    return retriable(() => this.fetch(url, options))
   }
 
   private validate(type: string, message: any) {
     try {
-      eventValidation(type, message);
-    } catch (e: any) {
-      if (e.message === 'Your message must be < 32 kB.') {
-        console.log('Your message must be < 32 kB.', JSON.stringify(message));
-        return;
+      eventValidation(type, message)
+    } catch (e) {
+      if ((e as any).message === 'Your message must be < 32 kB.') {
+        console.log('Your message must be < 32 kB.', JSON.stringify(message))
+        return
       }
-      throw e;
+      throw e
     }
   }
 
@@ -78,15 +77,15 @@ export abstract class PostHogCore {
     return {
       $lib: this.getLibraryId(),
       $lib_version: this.getLibraryVersion(),
-    };
+    }
   }
 
   enable() {
-    this.enabled = true;
+    this.enabled = true
   }
 
   disable() {
-    this.enabled = false;
+    this.enabled = false
   }
 
   /**
@@ -101,8 +100,8 @@ export abstract class PostHogCore {
     const event = {
       distinctId: distinctId,
       properties: properties,
-    };
-    this.validate('identify', event);
+    }
+    this.validate('identify', event)
 
     const payload = {
       distinct_id: distinctId,
@@ -111,12 +110,12 @@ export abstract class PostHogCore {
       properties: {
         ...this.getCommonEventProperties(),
       },
-    };
+    }
 
-    this.onSetDistinctId(distinctId);
+    this.onSetDistinctId(distinctId)
 
-    this.enqueue('identify', payload, callback);
-    return this;
+    this.enqueue('identify', payload, callback)
+    return this
   }
 
   /**
@@ -128,17 +127,17 @@ export abstract class PostHogCore {
    */
 
   async capture(event: string, properties?: any, callback?: () => void) {
-    const distinctId = await this.getDistinctId();
+    const distinctId = await this.getDistinctId()
 
     this.validate('capture', {
       event,
       distinctId,
       properties,
-    });
+    })
 
-    if ('groups' in properties) {
-      properties.$groups = properties.groups;
-      delete properties.groups;
+    if (properties && properties['groups']) {
+      properties.$groups = properties.groups
+      delete properties.groups
     }
 
     const payload = {
@@ -148,10 +147,10 @@ export abstract class PostHogCore {
         ...properties,
         ...this.getCommonEventProperties(),
       },
-    };
+    }
 
-    this.enqueue('capture', payload, callback);
-    return this;
+    this.enqueue('capture', payload, callback)
+    return this
   }
 
   /**
@@ -163,12 +162,12 @@ export abstract class PostHogCore {
    */
 
   async alias(alias: string, callback?: () => void) {
-    const distinctId = await this.getDistinctId();
+    const distinctId = await this.getDistinctId()
 
     this.validate('alias', {
       distinctId,
       alias,
-    });
+    })
 
     const payload = {
       distinct_id: distinctId,
@@ -178,10 +177,10 @@ export abstract class PostHogCore {
         alias: alias,
         ...this.getCommonEventProperties(),
       },
-    };
+    }
 
-    this.enqueue('alias', payload, callback);
-    return this;
+    this.enqueue('alias', payload, callback)
+    return this
   }
 
   /**
@@ -192,12 +191,8 @@ export abstract class PostHogCore {
    * @param groupKey Unique identifier for that type of group (ex: 'id:5')
    * @param properties OPTIONAL | which can be a object with any information you'd like to add
    */
-  async groupIdentify(
-    group: {groupType: string; groupKey: string},
-    properties?: any,
-    callback?: () => void,
-  ) {
-    this.validate('groupIdentify', group);
+  async groupIdentify(group: { groupType: string; groupKey: string }, properties?: any, callback?: () => void) {
+    this.validate('groupIdentify', group)
 
     const payload = {
       event: '$groupidentify',
@@ -207,10 +202,10 @@ export abstract class PostHogCore {
         $group_key: group.groupKey,
         $group_set: properties || {},
       },
-    };
+    }
 
-    this.enqueue('capture', payload, callback);
-    return this;
+    this.enqueue('capture', payload, callback)
+    return this
   }
 
   // async isFeatureEnabled(key: string, defaultResult = false, groups = {}) {
@@ -244,11 +239,10 @@ export abstract class PostHogCore {
    */
 
   enqueue(type: string, _message: any, callback?: () => void) {
-    console.log('queueing', type, _message);
-    callback = callback || noop;
+    callback = callback || noop
 
     if (!this.enabled) {
-      return setImmediate(callback);
+      return this.setImmediate(callback)
     }
 
     const message = {
@@ -257,29 +251,29 @@ export abstract class PostHogCore {
       library: this.getLibraryId(),
       library_version: this.getLibraryVersion(),
       timestamp: _message.timestamp ? _message.timestamp : new Date(),
-    };
-
-    if (message.distinctId) {
-      message.distinct_id = message.distinctId;
-      delete message.distinctId;
     }
 
-    this._queue.push({message, callback});
+    if (message.distinctId) {
+      message.distinct_id = message.distinctId
+      delete message.distinctId
+    }
+
+    this._queue.push({ message, callback })
 
     // Flush first event no matter what
     if (!this._flushed) {
-      this._flushed = true;
-      this.flush();
-      return;
+      this._flushed = true
+      this.flush()
+      return
     }
 
     // Flush queued events if we meet the flushAt length
     if (this._queue.length >= this.flushAt) {
-      this.flush();
+      this.flush()
     }
 
     if (this.flushInterval && !this._timer) {
-      this._timer = setTimeout(() => this.flush(), this.flushInterval);
+      this._timer = setTimeout(() => this.flush(), this.flushInterval)
     }
   }
 
@@ -291,76 +285,80 @@ export abstract class PostHogCore {
    */
 
   flush(callback?: (err?: any, data?: any) => void) {
-    console.log('flushing!', this._queue, this.enabled);
+    console.log('flushing!', this._queue, this.enabled)
 
-    callback = callback || noop;
+    callback = callback || noop
 
     if (!this.enabled) {
-      return setImmediate(callback);
+      return this.setImmediate(callback)
     }
 
     if (this._timer) {
-      clearTimeout(this._timer);
-      this._timer = null;
+      clearTimeout(this._timer)
+      this._timer = null
     }
 
     if (!this._queue.length) {
-      return setImmediate(callback);
+      return this.setImmediate(callback)
     }
 
-    const items = this._queue.splice(0, this.flushAt);
-    const callbacks = items.map(item => item.callback);
-    const messages = items.map(item => item.message);
+    const items = this._queue.splice(0, this.flushAt)
+    const callbacks = items.map((item) => item.callback)
+    const messages = items.map((item) => item.message)
 
     const data = {
       api_key: this.apiKey,
       batch: messages,
-    };
+      sent_at: currentISOTime(),
+    }
 
     const done = (err?: any) => {
-      callbacks.forEach(cb => cb(err));
-      callback?.(err, data);
-    };
+      callbacks.forEach((cb) => cb(err))
+      callback?.(err, data)
+    }
 
     // Don't set the user agent if we're not on a browser. The latest spec allows
     // the User-Agent header (see https://fetch.spec.whatwg.org/#terminology-headers
     // and https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/setRequestHeader),
     // but browsers such as Chrome and Safari have not caught up.
-    const customUserAgent = this.getCustomUserAgent();
-    const headers: {[key: string]: string} = {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    };
+    const customUserAgent = this.getCustomUserAgent()
+    const headers: { [key: string]: string } = {}
     if (customUserAgent) {
-      headers['user-agent'] = customUserAgent;
+      headers['user-agent'] = customUserAgent
     }
 
-    const req: PostHogCoreFetchRequest = {
-      method: 'POST',
-      url: `${this.host}/batch/`,
-      data,
-      headers,
-      timeout: this.timeout,
-    };
+    const payload = JSON.stringify(data)
 
-    this.fetchWithRetry(req)
+    const url =
+      this.captureMode === 'form'
+        ? `${this.host}/e/?ip=1&_=${currentTimestamp()}&v=${this.getLibraryVersion()}`
+        : `${this.host}/batch/`
+
+    const fetchOptions: PostHogFetchOptions =
+      this.captureMode === 'form'
+        ? {
+            method: 'POST',
+            mode: 'no-cors',
+            credentials: 'omit',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `data=${encodeURIComponent(LZString.compressToBase64(payload))}&compression=lz64`,
+          }
+        : {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: payload,
+          }
+
+    this.fetchWithRetry(url, fetchOptions)
       .then(() => done())
-      .catch(err => {
-        console.log(err);
+      .catch((err) => {
         if (err.response) {
-          const error = new Error(err.response.statusText);
-          return done(error);
+          const error = new Error(err.response.statusText)
+          return done(error)
         }
 
-        done(err);
-      });
-  }
-
-  shutdown() {
-    // if (this.personalApiKey) {
-    //   this.featureFlagsPoller.stopPoller();
-    // }
-    this.flush();
+        done(err)
+      })
   }
 
   // _isErrorRetriable(error) {
@@ -388,5 +386,4 @@ export abstract class PostHogCore {
   // }
 }
 
-
-export { PostHogCoreFetchRequest, PostHogCoreFetchResponse} from './types'
+export { PostHogCoreFetchRequest, PostHogCoreFetchResponse } from './types'

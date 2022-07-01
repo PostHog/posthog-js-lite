@@ -1,12 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import * as Application from 'expo-application';
-import * as Device from 'expo-device';
-import {AppState, Dimensions} from 'react-native';
+import * as Application from 'expo-application'
+import * as Device from 'expo-device'
+import { AppState, Dimensions } from 'react-native'
 
-import {PostHogCore, PostHogCoreFetchRequest, PostHogCoreFetchResponse, PosthogCoreOptions} from 'posthog-core';
-import {version} from '../package.json';
-import { generateUUID } from 'posthog-core/src/utils';
-
+import { PostHogCore, PostHogCoreFetchRequest, PostHogCoreFetchResponse, PosthogCoreOptions } from 'posthog-core'
+import { version } from '../package.json'
+import { generateUUID } from 'posthog-core/src/utils'
+import { PostHogFetchOptions } from 'packages/posthog-core/src/types'
 
 export interface PostHogReactNativeOptions extends PosthogCoreOptions {
   /**
@@ -15,43 +15,40 @@ export interface PostHogReactNativeOptions extends PosthogCoreOptions {
    *
    * Disabled by default.
    */
-  captureApplicationLifecycleEvents?: boolean;
+  captureApplicationLifecycleEvents?: boolean
 }
 
-const KEY_DISTINCT_ID = '@posthog:distinct_id';
+const KEY_DISTINCT_ID = '@posthog:distinct_id'
 
 export class PostHogReactNative extends PostHogCore {
-  private _cachedDistinctId?: string;
+  private _cachedDistinctId?: string
 
   constructor(apiKey: string, options?: PostHogReactNativeOptions) {
-    super(apiKey, options);
+    super(apiKey, options)
 
-    AppState.addEventListener('change', state => {
+    AppState.addEventListener('change', (state) => {
       this.flush((err, data) => {
-        console.error(err);
-        console.log(data);
-      });
-    });
+        console.error(err)
+        console.log(data)
+      })
+    })
   }
 
-  fetch(req: PostHogCoreFetchRequest): Promise<PostHogCoreFetchResponse> {
-    return fetch(req.url, {
-      method: req.method,
-      headers: req.headers,
-      body: JSON.stringify(req.data),
-    }).then(async res => ({
-      status: res.status,
-      data: await res.json(),
-    }));
+  fetch(url: string, options: PostHogFetchOptions): Promise<any> {
+    return fetch(url, options)
   }
+  setImmediate(fn: () => void): void {
+    setImmediate(fn)
+  }
+
   getLibraryId(): string {
-    return 'posthog-react-native';
+    return 'posthog-react-native'
   }
   getLibraryVersion(): string {
-    return version;
+    return version
   }
   getCustomUserAgent(): void {
-    return;
+    return
   }
 
   getCommonEventProperties(): any {
@@ -74,27 +71,27 @@ export class PostHogReactNative extends PostHogCore {
       $screen_height: Dimensions.get('screen').height,
       $screen_width: Dimensions.get('screen').width,
       //     "$timezone": "Europe/Berlin"
-    };
+    }
   }
 
   screen(name: string, properties?: any) {
     this.capture('$screen', {
       ...properties,
       $screen_name: name,
-    });
+    })
   }
 
   async getDistinctId(): Promise<string> {
-    if (this._cachedDistinctId) return this._cachedDistinctId;
-    const existingDistinctId = await AsyncStorage.getItem(KEY_DISTINCT_ID);
+    if (this._cachedDistinctId) return this._cachedDistinctId
+    const existingDistinctId = await AsyncStorage.getItem(KEY_DISTINCT_ID)
     return existingDistinctId || (await this.onSetDistinctId(generateUUID()))
   }
 
   async onSetDistinctId(newDistinctId: string): Promise<string> {
-    this._cachedDistinctId = newDistinctId;
+    this._cachedDistinctId = newDistinctId
 
-    AsyncStorage.setItem(KEY_DISTINCT_ID, newDistinctId);
+    AsyncStorage.setItem(KEY_DISTINCT_ID, newDistinctId)
 
-    return newDistinctId;
+    return newDistinctId
   }
 }
