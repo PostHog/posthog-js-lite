@@ -12,18 +12,8 @@
         "outDir": "./dist",
         "baseUrl": "./src",
         "incremental": true,
-        "types": ["jest"],
+        "types": ["jest", "node"],
         "strict": true
     },
-    "exclude": [
-        "packages/**/tests/**",
-        "packages/**/dist/**",
-        "node_modules"
-    ],
-    "references": [
-        {
-            
-            "path": "./packages/posthog-core/*"
-        }
-    ]
+    "exclude": ["node_modules", "dist"]
 }

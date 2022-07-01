@@ -1,0 +1,9 @@
+
+{
+  "name": "posthog-node",
+  "version": "2.0.0-alpha",
+
+  "dependencies": {
+    "posthog-core": "2.0.0-alpha"
+  }
+}

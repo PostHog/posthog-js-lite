@@ -2,9 +2,12 @@
     "name": "posthog-js-lite",
     "version": "0.0.5",
     "description": "Reimplementation of posthog-js to be as light and modular as possible.",
-    "workspaces": ["packages/posthog-core", "packages/posthog-node", "packages/posthog-react-native", "packages/posthog-web"],
+    "scripts": {
+        "build": "tsc -p .",
+        "test": "jest",
+        "prepublish": "yarn test && yarn build"
+    },
     "author": "PostHog",
-    "private": true,
     "license": "MIT",
     "devDependencies": {
         "@babel/core": "^7.10.4",
