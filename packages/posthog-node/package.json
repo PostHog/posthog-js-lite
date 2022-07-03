@@ -1,10 +1,35 @@
 {
   "name": "posthog-node",
   "version": "2.0.0-alpha",
+  "description": "PostHog Node.js integration",
+  "repository": "PostHog/posthog-node",
+  "engines": {
+    "node": ">=10"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "PostHog",
+    "email": "hey@posthog.com",
+    "url": "https://posthog.com"
+  },
+  "scripts": {
+    "build": "rm -rf ./dist & tsc -p ."
+  },
   "dependencies": {
-    "posthog-core": "2.0.0-alpha"
+    "posthog-core": "2.0.0-alpha",
+    "node-fetch": "^3.2.6"
   },
   "devDependencies": {
-    "@types/node": "^18.0.0"
+    "@types/node": "^18.0.0",
+    "commander": "^9.3.0"
+  },
+  "keywords": [
+    "posthog",
+    "stats",
+    "analysis",
+    "funnels"
+  ],
+  "bin": {
+    "posthog": "cli.js"
   }
 }

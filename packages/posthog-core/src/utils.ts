@@ -5,7 +5,7 @@ export function assert(truthyValue: any, message: string): void {
 }
 
 export function removeTrailingSlash(url: string) {
-  return url[url.length - 1] === '/' ? url.substring(0, url.length - 1) : url
+  return url?.replace(/\/+$/, '')
 }
 
 export async function retriable<T>(

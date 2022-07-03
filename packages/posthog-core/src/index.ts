@@ -1,4 +1,4 @@
-import { PostHogFetchOptions, PostHogFetchResponse } from './types'
+import { PostHogFetchOptions, PostHogFetchResponse, PostHogQueueItem } from './types'
 import { assert, currentISOTime, currentTimestamp, removeTrailingSlash, retriable } from './utils'
 import { eventValidation } from './validation'
 import { LZString } from './lz-string'
@@ -28,7 +28,7 @@ export abstract class PostHogCore {
   private captureMode: 'form' | 'json'
 
   // internal
-  private _queue: any[]
+  private _queue: PostHogQueueItem[]
   private _flushed = false
   private _timer?: any
 
@@ -209,10 +209,8 @@ export abstract class PostHogCore {
    */
 
   enqueue(type: string, _message: any, callback?: () => void) {
-    callback = callback || noop
-
     if (!this.enabled) {
-      return this.setImmediate(callback)
+      return callback && this.setImmediate(callback)
     }
 
     const message = {
@@ -230,12 +228,13 @@ export abstract class PostHogCore {
 
     this._queue.push({ message, callback })
 
-    // Flush first event no matter what
-    if (!this._flushed) {
-      this._flushed = true
-      this.flush()
-      return
-    }
+    // NOTE: This was from the node-lib, does any other lib do this?
+    // // Flush first event no matter what
+    // if (!this._flushed) {
+    //   this._flushed = true
+    //   this.flush()
+    //   return
+    // }
 
     // Flush queued events if we meet the flushAt length
     if (this._queue.length >= this.flushAt) {
@@ -247,10 +246,8 @@ export abstract class PostHogCore {
     }
   }
   flush(callback?: (err?: any, data?: any) => void) {
-    callback = callback || noop
-
     if (!this.enabled) {
-      return this.setImmediate(callback)
+      return callback && this.setImmediate(callback)
     }
 
     if (this._timer) {
@@ -259,7 +256,7 @@ export abstract class PostHogCore {
     }
 
     if (!this._queue.length) {
-      return this.setImmediate(callback)
+      return callback && this.setImmediate(callback)
     }
 
     const items = this._queue.splice(0, this.flushAt)
@@ -273,7 +270,7 @@ export abstract class PostHogCore {
     }
 
     const done = (err?: any) => {
-      callbacks.forEach((cb) => cb(err))
+      callbacks.forEach((cb) => cb?.(err))
       callback?.(err, data)
     }
 

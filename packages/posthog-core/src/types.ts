@@ -10,3 +10,8 @@ export type PostHogFetchResponse = {
   status: number
   text: () => Promise<string>
 }
+
+export type PostHogQueueItem = {
+  message: any
+  callback?: (err: any) => void
+}
