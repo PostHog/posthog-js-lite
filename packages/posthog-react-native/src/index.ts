@@ -3,10 +3,9 @@ import * as Application from 'expo-application'
 import * as Device from 'expo-device'
 import { AppState, Dimensions } from 'react-native'
 
-import { PostHogCore, PostHogCoreFetchRequest, PostHogCoreFetchResponse, PosthogCoreOptions } from 'posthog-core'
+import { PostHogCore, PosthogCoreOptions, PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core'
 import { version } from '../package.json'
 import { generateUUID } from 'posthog-core/src/utils'
-import { PostHogFetchOptions } from 'packages/posthog-core/src/types'
 
 export interface PostHogReactNativeOptions extends PosthogCoreOptions {
   /**
@@ -34,7 +33,7 @@ export class PostHogReactNative extends PostHogCore {
     })
   }
 
-  fetch(url: string, options: PostHogFetchOptions): Promise<any> {
+  fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
     return fetch(url, options)
   }
   setImmediate(fn: () => void): void {

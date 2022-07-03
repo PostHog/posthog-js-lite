@@ -1,5 +1,4 @@
-import { PostHogFetchOptions } from 'packages/posthog-core/src/types'
-import { PostHogCore, PostHogCoreFetchRequest, PostHogCoreFetchResponse, PosthogCoreOptions } from 'posthog-core'
+import { PostHogCore, PosthogCoreOptions, PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core'
 import { version } from '../package.json'
 
 export interface PostHogNodejsOptions extends PosthogCoreOptions {}
@@ -11,7 +10,7 @@ export class PostHogNodejs extends PostHogCore {
     super(apiKey, options)
   }
 
-  fetch(url: string, options: PostHogFetchOptions): Promise<PostHogCoreFetchResponse> {
+  fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
     throw Error('not implemented')
   }
 

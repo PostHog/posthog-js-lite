@@ -1,8 +1,8 @@
-import { PostHogCore, PostHogCoreFetchRequest, PostHogCoreFetchResponse, PosthogCoreOptions } from 'posthog-core'
+import { PostHogCore, PosthogCoreOptions } from 'posthog-core'
 import { version } from '../package.json'
 import { generateUUID } from 'posthog-core/src/utils'
 import { getContext } from './context'
-import { PostHogFetchOptions } from 'packages/posthog-core/src/types'
+import { PostHogFetchOptions, PostHogFetchResponse } from 'packages/posthog-core/src/types'
 
 export interface PostHogWebOptions extends PosthogCoreOptions {
   autocapture?: boolean
@@ -13,7 +13,7 @@ const KEY_DISTINCT_ID = '@posthog:distinct_id'
 export class PostHogWeb extends PostHogCore {
   private _cachedDistinctId?: string
 
-  fetch(url: string, options: PostHogFetchOptions): Promise<any> {
+  fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
     return window.fetch(url, options)
   }
   setImmediate(fn: () => void): void {

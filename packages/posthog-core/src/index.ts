@@ -1,4 +1,4 @@
-import { PostHogCoreFetchRequest, PostHogCoreFetchResponse, PostHogFetchOptions } from './types'
+import { PostHogFetchOptions, PostHogFetchResponse } from './types'
 import { assert, currentISOTime, currentTimestamp, removeTrailingSlash, retriable } from './utils'
 import { eventValidation } from './validation'
 import { LZString } from './lz-string'
@@ -33,10 +33,9 @@ export abstract class PostHogCore {
   private _timer?: any
 
   // Abstract methods to be overridden by implementations
-  abstract fetch(url: string, options: PostHogFetchOptions): Promise<PostHogCoreFetchResponse>
+  abstract fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse>
   abstract getLibraryId(): string
   abstract getLibraryVersion(): string
-  abstract getAnonymousId(): Promise<string>
   abstract getDistinctId(): Promise<string>
   abstract onSetDistinctId(newDistinctId: string): Promise<string>
   abstract getCustomUserAgent(): string | void
@@ -103,7 +102,7 @@ export abstract class PostHogCore {
       event: '$identify',
       properties: {
         ...this.getCommonEventProperties(),
-        $anon_distinct_id: await this.getAnonymousId(),
+        $anon_distinct_id: await this.getDistinctId(),
       },
     }
 
@@ -347,4 +346,4 @@ export abstract class PostHogCore {
   // }
 }
 
-export { PostHogCoreFetchRequest, PostHogCoreFetchResponse } from './types'
+export { PostHogFetchOptions, PostHogFetchResponse } from './types'
