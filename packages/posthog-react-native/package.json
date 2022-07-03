@@ -8,6 +8,17 @@
     "expo-device": "^4.2.0",
     "posthog-core": "2.0.0-alpha",
     "react": "^18.2.0",
-    "react-native": "^0.69.1"
+    "react-native": "^0.69.1",
+    "@react-navigation/native": "^5.0.10"
+  },
+  "peerDependencies": {
+    "@react-navigation/native": "^5.0.10",
+    "expo-application": "^4.1.0",
+    "expo-device": "^4.2.0"
+  },
+  "peerDependenciesMeta": {
+    "@react-navigation/native": {
+      "optional": true
+    }
   }
 }
