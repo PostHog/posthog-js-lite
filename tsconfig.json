@@ -16,6 +16,19 @@
     "types": ["jest"],
     "strict": true
   },
-  "exclude": ["packages/**/tests/**", "packages/**/dist/**", "node_modules", "dist"],
-  "references": [{ "path": "./packages/posthog-core" }]
+  "exclude": ["**/dist/**", "node_modules", "dist"],
+  "references": [
+    {
+      "path": "./posthog-core"
+    },
+    {
+      "path": "./posthog-node"
+    },
+    {
+      "path": "./posthog-react-native"
+    },
+    {
+      "path": "./posthog-web"
+    }
+  ]
 }

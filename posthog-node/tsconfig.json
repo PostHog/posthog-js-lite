@@ -1,6 +1,7 @@
 {
-  "extends": "../../tsconfig.json",
+  "extends": "../tsconfig.json",
   "compilerOptions": {
+    "composite": true,
     "target": "es5",
     "module": "commonjs",
     "moduleResolution": "node",
