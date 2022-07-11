@@ -246,6 +246,7 @@ export abstract class PostHogCore {
       this._timer = setTimeout(() => this.flush(), this.flushInterval)
     }
   }
+
   flush(callback?: (err?: any, data?: any) => void) {
     if (!this.enabled) {
       return callback && this.setImmediate(callback)

@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react'
-import type { PostHogReactNative } from '..'
+import { useEffect } from 'react'
 import OptionalImports from '../optional-imports'
+import type { PostHogReactNative } from '../posthog'
 
 const ReactNativeNavigation = OptionalImports.OptionalReactNativeNavigation
 
@@ -11,8 +11,6 @@ export interface PostHogNavigationTrackerOptions {
 }
 
 export function useNavigationTracker(client: PostHogReactNative, options?: PostHogNavigationTrackerOptions) {
-  const routeRef = useRef('')
-
   if (!ReactNativeNavigation) {
     // TODO: Support all of the possible navigators
     throw new Error('Navigation tracking requires @react-native navigation')
@@ -28,7 +26,6 @@ export function useNavigationTracker(client: PostHogReactNative, options?: PostH
       return
     }
 
-    const previousRouteName = routeRef.current
     let { name, params, state } = currentRoute
 
     if (state?.routes?.length) {
@@ -39,12 +36,9 @@ export function useNavigationTracker(client: PostHogReactNative, options?: PostH
 
     let currentRouteName = options?.routeToName?.(name, params) || name || 'Unknown'
 
-    if (currentRouteName && previousRouteName !== currentRouteName) {
+    if (currentRouteName) {
       const properties = options?.routeToProperties?.(currentRouteName, params)
       client.screen(currentRouteName, properties)
     }
-
-    // Save the current route name for later comparison
-    routeRef.current = currentRouteName
   }, [routes])
 }

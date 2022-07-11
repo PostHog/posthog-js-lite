@@ -19,14 +19,16 @@ import TabTwoScreen from '../screens/TabTwoScreen'
 import { RootStackParamList, RootTabParamList, RootTabScreenProps } from '../types'
 import LinkingConfiguration from './LinkingConfiguration'
 
-import { useNavigationTracker, useLifecycleTracker } from 'posthog-react-native'
+import { useNavigationTracker, useLifecycleTracker, PostHogProvider } from 'posthog-react-native'
 import posthog from '../posthog'
 
 export default function Navigation({ colorScheme }: { colorScheme: ColorSchemeName }) {
   return (
-    <NavigationContainer linking={LinkingConfiguration} theme={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <RootNavigator />
-    </NavigationContainer>
+    <PostHogProvider client={posthog} autocapture>
+      <NavigationContainer linking={LinkingConfiguration} theme={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <RootNavigator />
+      </NavigationContainer>
+    </PostHogProvider>
   )
 }
 
