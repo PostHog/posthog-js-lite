@@ -19,17 +19,17 @@ export function useNavigationTracker(client: PostHogReactNative, options?: PostH
   }
 
   const routes = ReactNativeNavigation.useNavigationState((state) => state?.routes)
+  const navigation = ReactNativeNavigation.useNavigation()
 
   useEffect(() => {
-    console.log('ROUTES', routes)
-    if (!routes) {
+    // NOTE: This method is not typed correctly but is available and takes care of parsing the router state correctly
+    const currentRoute = (navigation as any).getCurrentRoute()
+    if (!currentRoute) {
       return
     }
 
-    // TODO: Validate this is the right approach to determining screen name
     const previousRouteName = routeRef.current
-    const latestRoute = routes[routes.length - 1]
-    let { name, params, state } = latestRoute
+    let { name, params, state } = currentRoute
 
     if (state?.routes?.length) {
       const route = state.routes[state.routes.length - 1]
