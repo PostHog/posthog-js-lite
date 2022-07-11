@@ -15,7 +15,7 @@ export default function ModalScreen() {
 
       <Button
         title={'Next screen'}
-        posthog-label="next-page-button"
+        ph-label="next-page-button"
         onPress={() =>
           (navigation as any).push('ModalNextPage', {
             id: Math.random(),

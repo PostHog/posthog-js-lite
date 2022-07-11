@@ -23,7 +23,7 @@ export default function EditScreenInfo({ path }: { path: string }) {
     <View>
       <View style={styles.getStartedContainer}>
         <Text style={styles.getStartedText} lightColor="rgba(0,0,0,0.8)" darkColor="rgba(255,255,255,0.8)">
-          Open up the code for this screen:
+          You are looking at:
         </Text>
 
         <View
@@ -34,8 +34,22 @@ export default function EditScreenInfo({ path }: { path: string }) {
           <Text>{path}</Text>
         </View>
 
-        <Text style={styles.getStartedText} lightColor="rgba(0,0,0,0.8)" darkColor="rgba(255,255,255,0.8)">
-          Change any of the text, save the file, and your app will automatically update.
+        <Text
+          ph-no-capture
+          style={styles.getStartedText}
+          lightColor="rgba(0,0,0,0.8)"
+          darkColor="rgba(255,255,255,0.8)"
+        >
+          I have the property "ph-no-capture" which means touching me will not be picked up by autocapture
+        </Text>
+
+        <Text
+          ph-label="special-text"
+          style={styles.getStartedText}
+          lightColor="rgba(0,0,0,0.8)"
+          darkColor="rgba(255,255,255,0.8)"
+        >
+          I have the property "ph-label" which means touching me will be autocaptured with a specific label
         </Text>
       </View>
 

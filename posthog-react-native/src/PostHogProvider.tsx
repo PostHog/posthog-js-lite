@@ -11,8 +11,10 @@ export interface PostHogProviderProps {
 }
 
 const DEFAULT_MAX_COMPONENT_TREE_SIZE = 20
-const PROP_KEY = 'posthog-label'
-const _isNameIgnored = (_: string) => {
+const PROP_KEY = 'ph-label'
+const NO_CAPTURE_KEY = 'ph-no-capture'
+
+const _isNameIgnored = (name: string) => {
   return false
 }
 
@@ -79,6 +81,11 @@ const doAutocapture = (e: any, posthog: PostHogReactNative) => {
       })
     }
 
+    if (props?.[NO_CAPTURE_KEY]) {
+      // Immediately ignore events if a no capture is in the chain
+      return
+    }
+
     // Check the label first
     if (label && !_isNameIgnored(label)) {
       if (!activeLabel) {
@@ -108,10 +115,7 @@ const doAutocapture = (e: any, posthog: PostHogReactNative) => {
     currentInst = currentInst.return
   }
 
-  const finalLabel = activeLabel ?? activeDisplayName
-
   if (elements.length) {
-    console.log(finalLabel, elements)
     posthog.capture('$autocapture', {
       $event_type: 'touch',
       $elements: elements,
