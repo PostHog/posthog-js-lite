@@ -1,8 +1,11 @@
 import { PostHogCore, PosthogCoreOptions } from 'posthog-core'
-import { version } from '../package.json'
+// import { version } from '../package.json'
 import { generateUUID } from 'posthog-core/src/utils'
 import { getContext } from './context'
 import { PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src/types'
+
+// TODO: Get this from package.json
+const version = '2.0.0-alpha'
 
 export interface PostHogWebOptions extends PosthogCoreOptions {
   autocapture?: boolean

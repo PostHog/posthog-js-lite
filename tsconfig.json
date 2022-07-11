@@ -5,7 +5,7 @@
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "resolveJsonModule": true,
+    "resolveJsonModule": false,
     "allowJs": true,
     "target": "es6",
     "sourceMap": true,
@@ -16,19 +16,10 @@
     "types": ["jest"],
     "strict": true
   },
-  "exclude": ["**/dist/**", "node_modules", "dist"],
+  "exclude": ["**/dist/**", "node_modules", "dist", "**/*.spec.*"],
   "references": [
     {
       "path": "./posthog-core"
-    },
-    {
-      "path": "./posthog-node"
-    },
-    {
-      "path": "./posthog-react-native"
-    },
-    {
-      "path": "./posthog-web"
     }
   ]
 }

@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react'
-import { useNavigationState } from '@react-navigation/native'
 import type { PostHogReactNative } from '..'
+import OptionalImports from '../optional-imports'
+
+const ReactNativeNavigation = OptionalImports.OptionalReactNativeNavigation
 
 export interface PostHogNavigationTrackerOptions {
   ignoreScreens?: string[]
@@ -10,21 +12,39 @@ export interface PostHogNavigationTrackerOptions {
 
 export function useNavigationTracker(client: PostHogReactNative, options?: PostHogNavigationTrackerOptions) {
   const routeRef = useRef('')
-  const routes = useNavigationState((state) => state.routes)
+
+  if (!ReactNativeNavigation) {
+    // TODO: Support all of the possible navigators
+    throw new Error('Navigation tracking requires @react-native navigation')
+  }
+
+  const routes = ReactNativeNavigation.useNavigationState((state) => state?.routes)
 
   useEffect(() => {
+    console.log('ROUTES', routes)
+    if (!routes) {
+      return
+    }
+
     // TODO: Validate this is the right approach to determining screen name
     const previousRouteName = routeRef.current
-    const currentRoute = routes[routes.length - 1]
+    const latestRoute = routes[routes.length - 1]
+    let { name, params, state } = latestRoute
 
-    let currentRouteName =
-      options?.routeToName?.(currentRoute?.name, currentRoute?.params) || currentRoute?.name || 'Unknown'
+    if (state?.routes?.length) {
+      const route = state.routes[state.routes.length - 1]
+      name = route.name
+      params = route.params
+    }
+
+    let currentRouteName = options?.routeToName?.(name, params) || name || 'Unknown'
 
     if (currentRouteName && previousRouteName !== currentRouteName) {
-      client.screen(currentRouteName)
+      const properties = options?.routeToProperties?.(currentRouteName, params)
+      client.screen(currentRouteName, properties)
     }
 
     // Save the current route name for later comparison
     routeRef.current = currentRouteName
-  }, [useNavigationState])
+  }, [routes])
 }

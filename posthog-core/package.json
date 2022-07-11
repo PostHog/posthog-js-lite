@@ -1,6 +1,10 @@
-
 {
   "name": "posthog-core",
   "version": "2.0.0-alpha",
-  "main": "src/index.ts"
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "rm -rf ./dist & tsc -p . && mv ./dist/src/ ./dist-out && rm -rf ./dist && mv ./dist-out ./dist",
+    "prepublish": "yarn build"
+  }
 }

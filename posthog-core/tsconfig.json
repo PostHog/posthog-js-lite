@@ -2,6 +2,8 @@
   "extends": "../tsconfig.json",
   "compilerOptions": {
     "composite": true,
-    "target": "es6"
+    "target": "es6",
+    "outDir": "./dist/",
+    "rootDir": "."
   }
 }

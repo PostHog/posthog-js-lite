@@ -1,7 +1,10 @@
 import { LZString } from 'posthog-core/src/lz-string'
 import { PostHogWeb } from 'posthog-web/src/posthog-web'
-import { version } from 'posthog-web/package.json'
-import { wait } from './test/test-utils'
+// import { version } from 'posthog-web/package.json'
+import { wait } from './test-utils'
+
+// TODO: Get this from package.json
+const version = '2.0.0-alpha'
 
 const waitForPromises = async () => {
   await new Promise(((globalThis as any).process as any).nextTick)

@@ -12,6 +12,8 @@
     "email": "hey@posthog.com",
     "url": "https://posthog.com"
   },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "rm -rf ./dist & tsc -p ."
   },

@@ -1,5 +1,6 @@
 import { PostHogFetchOptions, PostHogFetchResponse, PostHogQueueItem } from './types'
 import { assert, currentISOTime, currentTimestamp, removeTrailingSlash, retriable } from './utils'
+export * as utils from './utils'
 import { eventValidation } from './validation'
 import { LZString } from './lz-string'
 
@@ -343,4 +344,4 @@ export abstract class PostHogCore {
   // }
 }
 
-export { PostHogFetchOptions, PostHogFetchResponse } from './types'
+export type { PostHogFetchOptions, PostHogFetchResponse } from './types'
