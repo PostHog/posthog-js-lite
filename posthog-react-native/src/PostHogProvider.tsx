@@ -135,32 +135,20 @@ export const PostHogProvider = ({ children, client, options, apiKey, autocapture
   const posthog = posthogRef.current
 
   const onTouch = (type: 'start' | 'move' | 'end', e: GestureResponderEvent) => {
-    if (!autocapture || !posthogRef.current) {
+    if (!autocapture || !posthog) {
       return
     }
 
-    const targetInst = (e as any)._targetInst
-
-    console.log(targetInst)
-
     if (type === 'end') {
-      doAutocapture(e, posthogRef.current)
+      doAutocapture(e, posthog)
     }
-
-    // PosthogRecorderShared.trackSessionEvent({
-    //   type: `touch-${type}`,
-    //   content: {
-    //     x: e.nativeEvent.pageX,
-    //     y: e.nativeEvent.pageY,
-    //   },
-    // })
   }
 
   return (
     <View
       style={{ flex: 1 }}
-      onTouchStart={(e) => onTouch('start', e)}
-      onTouchMove={(e) => onTouch('move', e)}
+      // onTouchStart={(e) => onTouch('start', e)}
+      // onTouchMove={(e) => onTouch('move', e)}
       onTouchEndCapture={(e) => onTouch('end', e)}
     >
       <PostHogContext.Provider value={{ client: posthogRef.current }}>{children}</PostHogContext.Provider>
