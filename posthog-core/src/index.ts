@@ -1,4 +1,4 @@
-import { PostHogFetchOptions, PostHogFetchResponse, PostHogQueueItem } from './types'
+import { PostHogFetchOptions, PostHogFetchResponse, PostHogQueueItem, PostHogAutocaptureElement } from './types'
 import { assert, currentISOTime, currentTimestamp, removeTrailingSlash, retriable } from './utils'
 export * as utils from './utils'
 import { eventValidation } from './validation'
@@ -159,6 +159,24 @@ export abstract class PostHogCore {
     }
 
     this.enqueue('alias', payload, callback)
+    return this
+  }
+
+  async autocapture(eventType: string, elements: PostHogAutocaptureElement[], properties?: any, callback?: () => void) {
+    const distinctId = await this.getDistinctId()
+
+    const payload = {
+      distinct_id: distinctId,
+      event: '$autocapture',
+      properties: {
+        ...properties,
+        ...this.getCommonEventProperties(),
+        $event_type: eventType,
+        $elements: elements,
+      },
+    }
+
+    this.enqueue('autocapture', payload, callback)
     return this
   }
 
@@ -345,4 +363,4 @@ export abstract class PostHogCore {
   // }
 }
 
-export type { PostHogFetchOptions, PostHogFetchResponse } from './types'
+export * from './types'

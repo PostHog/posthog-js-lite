@@ -1,29 +1,29 @@
-import {assert} from './utils';
+import { assert } from './utils'
 
 // PostHog messages can be a maximum of 32 kB.
-const MAX_SIZE = 32 << 10;
+const MAX_SIZE = 32 << 10
 
-const typeOf = (x: any) => typeof x;
+const typeOf = (x: any) => typeof x
 /**
  * Validate an event.
  */
 
 export function eventValidation(type: string, event: any) {
-  validateGenericEvent(event);
-  assert(type, 'You must pass an event type.');
+  validateGenericEvent(event)
+  assert(type, 'You must pass an event type.')
   switch (type) {
     case 'capture':
-      return validateCaptureEvent(event);
+      return validateCaptureEvent(event)
     case 'identify':
-      return validateIdentifyEvent(event);
+      return validateIdentifyEvent(event)
     case 'alias':
-      return validateAliasEvent(event);
+      return validateAliasEvent(event)
     case 'groupIdentify':
-      return validateGroupIdentifyEvent(event);
+      return validateGroupIdentifyEvent(event)
     case 'isFeatureEnabled':
-      return validateIsFeatureEnabled(event);
+      return validateIsFeatureEnabled(event)
     default:
-      assert(0, `Invalid event type: ${type}`);
+      assert(0, `Invalid event type: ${type}`)
   }
 }
 
@@ -32,8 +32,8 @@ export function eventValidation(type: string, event: any) {
  */
 
 function validateCaptureEvent(event: any) {
-  assert(event.distinctId, 'You must pass a "distinctId".');
-  assert(event.event, 'You must pass an "event".');
+  assert(event.distinctId, 'You must pass a "distinctId".')
+  assert(event.event, 'You must pass an "event".')
 }
 
 /**
@@ -41,7 +41,7 @@ function validateCaptureEvent(event: any) {
  */
 
 function validateIdentifyEvent(event: any) {
-  assert(event.distinctId, 'You must pass a "distinctId".');
+  assert(event.distinctId, 'You must pass a "distinctId".')
 }
 
 /**
@@ -49,8 +49,8 @@ function validateIdentifyEvent(event: any) {
  */
 
 function validateAliasEvent(event: any) {
-  assert(event.distinctId, 'You must pass a "distinctId".');
-  assert(event.alias, 'You must pass a "alias".');
+  assert(event.distinctId, 'You must pass a "distinctId".')
+  assert(event.alias, 'You must pass a "alias".')
 }
 
 /**
@@ -58,8 +58,8 @@ function validateAliasEvent(event: any) {
  */
 
 function validateGroupIdentifyEvent(event: any) {
-  assert(event.groupType, 'You must pass a "groupType".');
-  assert(event.groupKey, 'You must pass a "groupKey".');
+  assert(event.groupType, 'You must pass a "groupType".')
+  assert(event.groupKey, 'You must pass a "groupKey".')
 }
 
 /**
@@ -67,17 +67,11 @@ function validateGroupIdentifyEvent(event: any) {
  */
 
 function validateIsFeatureEnabled(event: any) {
-  assert(event.key, 'You must pass a "key".');
-  assert(event.distinctId, 'You must pass a "distinctId".');
-  assert(
-    typeOf(event.defaultResult) === 'boolean',
-    '"defaultResult" must be a boolean.',
-  );
+  assert(event.key, 'You must pass a "key".')
+  assert(event.distinctId, 'You must pass a "distinctId".')
+  assert(typeOf(event.defaultResult) === 'boolean', '"defaultResult" must be a boolean.')
   if (event.groups) {
-    assert(
-      typeOf(event.groups) === 'object',
-      'You must pass an object for "groups".',
-    );
+    assert(typeOf(event.groups) === 'object', 'You must pass an object for "groups".')
   }
 }
 
@@ -85,32 +79,32 @@ function validateIsFeatureEnabled(event: any) {
  * Validation rules.
  */
 
-const genericValidationRules: {[key: string]: string} = {
+const genericValidationRules: { [key: string]: string } = {
   event: 'string',
   properties: 'object',
   alias: 'string',
   timestamp: 'date',
   distinctId: 'string',
   type: 'string',
-};
+}
 
 /**
  * Validate an event object.
  */
 
 export function validateGenericEvent(event: any) {
-  assert(typeOf(event) === 'object', 'You must pass a message object.: any');
-  const jsonString = JSON.stringify(event);
+  assert(typeOf(event) === 'object', 'You must pass a message object.: any')
+  const jsonString = JSON.stringify(event)
   // Strings are variable byte encoded, so json.length is not sufficient.
-  assert(jsonString.length < MAX_SIZE, 'Your message must be < 32 kB.');
+  assert(jsonString.length < MAX_SIZE, 'Your message must be < 32 kB.')
 
   // TODO: Check this out...
   for (let key in genericValidationRules) {
-    const val = event[key];
-    if (!val) continue;
-    const expectedType = genericValidationRules[key];
-    const a = expectedType === 'object' ? 'an' : 'a';
-    const message = `${key} must be ${a}  ${expectedType}.`;
-    assert(typeOf(val) === expectedType, message);
+    const val = event[key]
+    if (!val) continue
+    const expectedType = genericValidationRules[key]
+    const a = expectedType === 'object' ? 'an' : 'a'
+    const message = `${key} must be ${a}  ${expectedType}.`
+    assert(typeOf(val) === expectedType, message)
   }
 }

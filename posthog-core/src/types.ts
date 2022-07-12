@@ -15,3 +15,17 @@ export type PostHogQueueItem = {
   message: any
   callback?: (err: any) => void
 }
+
+export type PostHogAutocaptureElement = {
+  text?: string
+  tag_name: string
+  attr_class: string[]
+  href?: string
+  attr_id?: string
+  nth_child: number
+  nth_of_type: number
+  attributes: {
+    [key: string]: any
+  }
+  order: number
+}

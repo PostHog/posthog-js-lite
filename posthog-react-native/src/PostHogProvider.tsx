@@ -1,6 +1,7 @@
 import React, { useRef } from 'react'
 import { GestureResponderEvent, View } from 'react-native'
 import { PostHogReactNative, PostHogReactNativeOptions } from './posthog'
+import { PostHogAutocaptureElement } from 'posthog-core'
 
 export interface PostHogProviderProps {
   children: React.ReactNode
@@ -29,25 +30,11 @@ interface Element {
   return?: Element
 }
 
-interface AutocaptureElement {
-  text?: string
-  tag_name: string
-  attr_class: string[]
-  href?: string
-  attr_id?: string
-  nth_child: number
-  nth_of_type: number
-  attributes: {
-    [key: string]: any
-  }
-  order: number
-}
-
 const doAutocapture = (e: any, posthog: PostHogReactNative) => {
   if (!e._targetInst) {
     return
   }
-  const elements: AutocaptureElement[] = []
+  const elements: PostHogAutocaptureElement[] = []
 
   let currentInst: Element | undefined = e._targetInst
   let activeLabel: string | undefined
@@ -59,7 +46,7 @@ const doAutocapture = (e: any, posthog: PostHogReactNative) => {
     // maxComponentTreeSize will always be defined as we have a defaultProps. But ts needs a check so this is here.
     componentTreeNames.length < DEFAULT_MAX_COMPONENT_TREE_SIZE
   ) {
-    const el: AutocaptureElement = {
+    const el: PostHogAutocaptureElement = {
       tag_name: '',
       attr_class: [],
       nth_child: 0,
@@ -116,9 +103,7 @@ const doAutocapture = (e: any, posthog: PostHogReactNative) => {
   }
 
   if (elements.length) {
-    posthog.capture('$autocapture', {
-      $event_type: 'touch',
-      $elements: elements,
+    posthog.autocapture('touch', elements, {
       $touch_x: e.nativeEvent.pageX,
       $touch_y: e.nativeEvent.pageY,
     })
