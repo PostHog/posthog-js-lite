@@ -1,4 +1,4 @@
-import { currentTimestamp } from 'posthog-core/src/utils'
+import { utils } from 'posthog-core'
 // import { version } from '../package.json'
 
 // TODO: Get this from package.json
@@ -27,7 +27,7 @@ export function getContext(window: Window) {
     $lib: 'js',
     $lib_version: version,
     $insert_id: Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10),
-    $time: currentTimestamp() / 1000, // epoch time in seconds
+    $time: utils.currentTimestamp() / 1000, // epoch time in seconds
   })
   return context // TODO: strip empty props?
 }
