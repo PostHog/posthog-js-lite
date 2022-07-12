@@ -1,8 +1,7 @@
 import { PostHogCore, PosthogCoreOptions } from 'posthog-core'
 // import { version } from '../package.json'
-import { generateUUID } from 'posthog-core/src/utils'
 import { getContext } from './context'
-import { PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src/types'
+import { utils, PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core'
 
 // TODO: Get this from package.json
 const version = '2.0.0-alpha'
@@ -42,7 +41,7 @@ export class PostHogWeb extends PostHogCore {
   async getDistinctId(): Promise<string> {
     if (!this._cachedDistinctId) {
       // TODO: Check and set local storage
-      this._cachedDistinctId = localStorage.getItem(KEY_DISTINCT_ID) || generateUUID(globalThis)
+      this._cachedDistinctId = localStorage.getItem(KEY_DISTINCT_ID) || utils.generateUUID(globalThis)
     }
 
     return this._cachedDistinctId

@@ -8,22 +8,21 @@
     "prepublish": "yarn build"
   },
   "dependencies": {
+    "expo-file-system": "^13.0.0",
+    "expo-application": "^4.0.0",
+    "expo-device": "^4.0.0",
     "posthog-core": "2.0.0-alpha"
   },
   "devDependencies": {
     "@react-native-async-storage/async-storage": "^1.17.7",
+    "@react-navigation/native": "^5.0.10",
     "@types/react-native": "^0.69.1",
-    "expo-application": "^4.1.0",
-    "expo-device": "^4.2.0",
     "react": "^18.2.0",
-    "react-native": "^0.69.1",
-    "@react-navigation/native": "^5.0.10"
+    "react-native": "^0.69.1"
   },
   "peerDependencies": {
     "@react-native-async-storage/async-storage": "^1.17.7",
-    "@react-navigation/native": "^5.0.10",
-    "expo-application": "^4.1.0",
-    "expo-device": "^4.2.0"
+    "@react-navigation/native": "^5.0.10"
   },
   "peerDependenciesMeta": {
     "@react-navigation/native": {
