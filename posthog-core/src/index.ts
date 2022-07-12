@@ -1,4 +1,10 @@
-import { PostHogFetchOptions, PostHogFetchResponse, PostHogQueueItem, PostHogAutocaptureElement } from './types'
+import {
+  PostHogFetchOptions,
+  PostHogFetchResponse,
+  PostHogQueueItem,
+  PostHogAutocaptureElement,
+  PostHogDecideResponse,
+} from './types'
 import { assert, currentISOTime, currentTimestamp, removeTrailingSlash, retriable } from './utils'
 export * as utils from './utils'
 import { eventValidation } from './validation'
@@ -16,6 +22,7 @@ export interface PosthogCoreOptions {
   personalApiKey?: string
   enable?: boolean
   captureMode?: 'json' | 'form'
+  sendFeatureFlagEvent?: boolean
 }
 
 export abstract class PostHogCore {
@@ -27,11 +34,14 @@ export abstract class PostHogCore {
   private flushAt: number
   private flushInterval: number
   private captureMode: 'form' | 'json'
+  private sendFeatureFlagEvent: boolean
+  private flagCallReported: { [key: string]: boolean } = {}
 
   // internal
   private _queue: PostHogQueueItem[]
   private _flushed = false
   private _timer?: any
+  private _lastDecideResponse?: Promise<PostHogDecideResponse>
 
   // Abstract methods to be overridden by implementations
   abstract fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse>
@@ -55,6 +65,7 @@ export abstract class PostHogCore {
     this.flushAt = options.flushAt ? Math.max(options.flushAt, 1) : 20
     this.flushInterval = options.flushInterval ?? 10000
     this.captureMode = options.captureMode || 'form'
+    this.sendFeatureFlagEvent = options.sendFeatureFlagEvent ?? true
   }
 
   private async fetchWithRetry(url: string, options: PostHogFetchOptions): Promise<any> {
@@ -197,25 +208,49 @@ export abstract class PostHogCore {
     return this
   }
 
-  // async isFeatureEnabled(key: string, defaultResult = false, groups = {}) {
-  //   const distinctId = await this.getDistinctId();
-  //   this.validate('isFeatureEnabled', {key, distinctId, defaultResult, groups});
-  //   assert(
-  //     this.personalApiKey,
-  //     'You have to specify the option personalApiKey to use feature flags.',
-  //   );
+  private async decide(): Promise<PostHogDecideResponse> {
+    if (this._lastDecideResponse) {
+      return this._lastDecideResponse
+    }
+    return this._decide()
+  }
 
-  //   return await this.featureFlagsPoller.isFeatureEnabled(
-  //     key,
-  //     distinctId,
-  //     defaultResult,
-  //     groups,
-  //   );
-  // }
+  private async _decide(): Promise<PostHogDecideResponse> {
+    const url = `${this.host}/decide/?v=2`
 
-  // async reloadFeatureFlags() {
-  //   await this.featureFlagsPoller.loadFeatureFlags(true);
-  // }
+    const distinctId = await this.getDistinctId()
+    const groups = {} // TODO
+
+    const fetchOptions: PostHogFetchOptions = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ groups, distinct_id: distinctId }),
+    }
+
+    this._lastDecideResponse = this.fetchWithRetry(url, fetchOptions).then((r) => r.json())
+    return this._lastDecideResponse
+  }
+
+  async isFeatureEnabled(key: string, defaultResult: boolean = false, groups = {}) {
+    const flag = await this.getFeatureFlag(key, defaultResult, groups)
+    return !!flag
+  }
+
+  async getFeatureFlag(key: string, defaultResult: string | boolean = false, groups = {}) {
+    const { featureFlags } = await this.decide()
+
+    if (this.sendFeatureFlagEvent && !this.flagCallReported[key]) {
+      this.flagCallReported[key] = true
+      this.capture('$feature_flag_called', { $feature_flag: key, $feature_flag_response: featureFlags[key] })
+    }
+    return featureFlags[key] ?? defaultResult
+  }
+
+  async reloadFeatureFlags() {
+    await this.decide()
+  }
+
+  // TODO: Add listener to feature flags and polling if listeners exist
 
   /**
    * Add a `message` of type `type` to the queue and

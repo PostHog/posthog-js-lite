@@ -29,3 +29,14 @@ export type PostHogAutocaptureElement = {
   }
   order: number
 }
+
+export type PostHogDecideResponse = {
+  config: { enable_collect_everything: boolean }
+  editorParams: { toolbarVersion: string; jsURL: string }
+  isAuthenticated: true
+  supportedCompression: string[]
+  featureFlags: {
+    [key: string]: string | boolean
+  }
+  sessionRecording: boolean
+}
