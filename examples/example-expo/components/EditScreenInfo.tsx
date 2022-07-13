@@ -35,6 +35,7 @@ export default function EditScreenInfo({ path }: { path: string }) {
         </View>
 
         <Text
+          testID="example-ph-no-capture"
           ph-no-capture
           style={styles.getStartedText}
           lightColor="rgba(0,0,0,0.8)"
@@ -44,6 +45,7 @@ export default function EditScreenInfo({ path }: { path: string }) {
         </Text>
 
         <Text
+          testID="example-ph-label"
           ph-label="special-text"
           style={styles.getStartedText}
           lightColor="rgba(0,0,0,0.8)"

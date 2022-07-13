@@ -31,10 +31,7 @@ export class PostHogReactNative extends PostHogCore {
     super(apiKey, options)
 
     AppState.addEventListener('change', (state) => {
-      this.flush((err, data) => {
-        console.error(err)
-        console.log(data)
-      })
+      this.flush()
     })
   }
 

@@ -399,3 +399,4 @@ export abstract class PostHogCore {
 }
 
 export * from './types'
+export { LZString }
