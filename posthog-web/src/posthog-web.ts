@@ -1,7 +1,14 @@
-import { PostHogCore, PosthogCoreOptions } from 'posthog-core'
+import {
+  PostHogCore,
+  PosthogCoreOptions,
+  PostHogStorage,
+  utils,
+  PostHogFetchOptions,
+  PostHogFetchResponse,
+} from 'posthog-core'
 // import { version } from '../package.json'
 import { getContext } from './context'
-import { utils, PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core'
+import { localStore, cookieStore, sessionStorage } from './storage'
 
 // TODO: Get this from package.json
 const version = '2.0.0-alpha'
@@ -14,6 +21,10 @@ const KEY_DISTINCT_ID = '@posthog:distinct_id'
 
 export class PostHogWeb extends PostHogCore {
   private _cachedDistinctId?: string
+
+  storage(): PostHogStorage {
+    return localStore || sessionStorage || cookieStore
+  }
 
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
     return window.fetch(url, options)
@@ -38,18 +49,18 @@ export class PostHogWeb extends PostHogCore {
     }
   }
 
-  async getDistinctId(): Promise<string> {
+  getDistinctId(): string {
     if (!this._cachedDistinctId) {
       // TODO: Check and set local storage
-      this._cachedDistinctId = localStorage.getItem(KEY_DISTINCT_ID) || utils.generateUUID(globalThis)
+      this._cachedDistinctId = this.storage().getItem(KEY_DISTINCT_ID) || utils.generateUUID(globalThis)
     }
 
     return this._cachedDistinctId
   }
 
-  async onSetDistinctId(newDistinctId: string): Promise<string> {
+  onSetDistinctId(newDistinctId: string): string {
     this._cachedDistinctId = newDistinctId
-    localStorage.setItem(KEY_DISTINCT_ID, newDistinctId)
+    this.storage().setItem(KEY_DISTINCT_ID, newDistinctId)
     return newDistinctId
   }
 

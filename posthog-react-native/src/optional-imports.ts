@@ -1,51 +1,33 @@
-import type AsyncStorage from '@react-native-async-storage/async-storage'
 import type ReactNativeNavigation from '@react-navigation/native'
-import type * as ExpoApplication from 'expo-application'
-import type * as ExpoDevice from 'expo-device'
+import type * as ExpoLocalization from 'expo-localization'
+import type * as ExpoNetwork from 'expo-network'
 
-let OptionalAsyncStorage: typeof AsyncStorage | undefined = undefined
-let OptionalReactNativeNavigation: typeof ReactNativeNavigation | undefined = undefined
-let OptionalExpoApplication: typeof ExpoApplication | undefined = undefined
-let OptionalExpoDevice: typeof ExpoDevice | undefined = undefined
+let _OptionalReactNativeNavigation: typeof ReactNativeNavigation | undefined = undefined
+let _OptionalExpoLocalization: typeof ExpoLocalization | undefined = undefined
+let _OptionalExpoNetwork: typeof ExpoNetwork | undefined = undefined
 
 const warn = (name: string) => {
   console.warn(`PostHog: Missing ${name} optional dependency. Some functions may not work as expected...`)
 }
 
 try {
-  try {
-    OptionalAsyncStorage = require('@react-native-async-storage/async-storage').default
-  } catch (e) {
-    OptionalAsyncStorage = require('react-native').AsyncStorage
-    if (!OptionalAsyncStorage) {
-      throw new Error('Missing')
-    }
-  }
-} catch (e) {
-  warn('@react-native-async-storage/async-storage')
-}
-
-try {
-  OptionalReactNativeNavigation = require('@react-navigation/native')
+  _OptionalReactNativeNavigation = require('@react-navigation/native')
 } catch (e) {
   warn('@react-navigation/native')
 }
 
 try {
-  OptionalExpoApplication = require('expo-application')
+  _OptionalExpoLocalization = require('expo-localization')
 } catch (e) {
-  warn('expo-application')
+  warn('expo-localization')
 }
 
 try {
-  OptionalExpoDevice = require('expo-device')
+  _OptionalExpoNetwork = require('expo-network')
 } catch (e) {
-  warn('expo-device')
+  warn('expo-network')
 }
 
-export default {
-  OptionalAsyncStorage,
-  OptionalReactNativeNavigation,
-  OptionalExpoApplication,
-  OptionalExpoDevice,
-}
+export const OptionalReactNativeNavigation = _OptionalReactNativeNavigation
+export const OptionalExpoLocalization = _OptionalExpoLocalization
+export const OptionalExpoNetwork = _OptionalExpoNetwork

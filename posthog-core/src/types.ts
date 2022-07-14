@@ -1,3 +1,11 @@
+export type PostHogStorage = {
+  getItem: (key: string) => string | null | undefined
+  setItem: (key: string, value: string) => void
+  removeItem: (key: string) => void
+  clear: () => void
+  getAllKeys: () => readonly string[]
+}
+
 export type PostHogFetchOptions = {
   method: 'GET' | 'POST' | 'PUT' | 'PATCH'
   mode?: 'no-cors'

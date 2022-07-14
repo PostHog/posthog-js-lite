@@ -21,6 +21,7 @@ import LinkingConfiguration from './LinkingConfiguration'
 
 import { useNavigationTracker, useLifecycleTracker, PostHogProvider } from 'posthog-react-native'
 import posthog from '../posthog'
+import PostHogDebugScreen from '../screens/PostHogDebugScreen'
 
 export default function Navigation({ colorScheme }: { colorScheme: ColorSchemeName }) {
   return (
@@ -104,6 +105,15 @@ function BottomTabNavigator() {
         component={TabTwoScreen}
         options={{
           title: 'Tab Two',
+          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
+        }}
+      />
+
+      <BottomTab.Screen
+        name="PostHogDebug"
+        component={PostHogDebugScreen}
+        options={{
+          title: 'PostHog Debug',
           tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
         }}
       />

@@ -1,8 +1,6 @@
 import { useEffect } from 'react'
-import OptionalImports from '../optional-imports'
+import { OptionalReactNativeNavigation } from '../optional-imports'
 import type { PostHogReactNative } from '../posthog'
-
-const ReactNativeNavigation = OptionalImports.OptionalReactNativeNavigation
 
 export interface PostHogNavigationTrackerOptions {
   ignoreScreens?: string[]
@@ -11,13 +9,13 @@ export interface PostHogNavigationTrackerOptions {
 }
 
 export function useNavigationTracker(client: PostHogReactNative, options?: PostHogNavigationTrackerOptions) {
-  if (!ReactNativeNavigation) {
+  if (!OptionalReactNativeNavigation) {
     // TODO: Support all of the possible navigators
     throw new Error('Navigation tracking requires @react-native navigation')
   }
 
-  const routes = ReactNativeNavigation.useNavigationState((state) => state?.routes)
-  const navigation = ReactNativeNavigation.useNavigation()
+  const routes = OptionalReactNativeNavigation.useNavigationState((state) => state?.routes)
+  const navigation = OptionalReactNativeNavigation.useNavigation()
 
   useEffect(() => {
     // NOTE: This method is not typed correctly but is available and takes care of parsing the router state correctly

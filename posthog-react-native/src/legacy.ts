@@ -3,7 +3,7 @@ import * as ExpoApplication from 'expo-application'
 import { Platform } from 'react-native'
 
 // TODO: Find a way of reliably testing this
-export const getLegacyValues = async () => {
+export const getLegacyValues = async (): Promise<{ distinctId?: string; anonymousId?: string } | undefined> => {
   // NOTE: The old react-native lib stored data in files on the filesystem.
   // This function takes care of pulling the legacy IDs to ensure we are using them if already present
   if (Platform.OS === 'ios') {

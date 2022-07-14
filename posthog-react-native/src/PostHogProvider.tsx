@@ -55,8 +55,6 @@ const doAutocapture = (e: any, posthog: PostHogReactNative) => {
       order: 0,
     }
 
-    console.log(currentInst)
-
     const props = currentInst.memoizedProps
     const label = typeof props?.[PROP_KEY] !== 'undefined' ? `${props[PROP_KEY]}` : undefined
 
