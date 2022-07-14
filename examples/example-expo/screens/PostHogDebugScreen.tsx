@@ -80,7 +80,6 @@ const styles = StyleSheet.create({
   },
 
   list: {
-    padding: 20,
     borderTopWidth: 1,
     borderTopColor: 'rgba(0,0,0,.1)',
   },
@@ -89,8 +88,9 @@ const styles = StyleSheet.create({
     // flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,.1)',
-    paddingVertical: 5,
+    paddingVertical: 10,
     // alignItems: 'center',
+    padding: 20,
   },
 
   itemEvent: {
