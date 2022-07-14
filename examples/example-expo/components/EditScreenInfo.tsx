@@ -1,9 +1,8 @@
-import * as WebBrowser from 'expo-web-browser'
-import { StyleSheet, TouchableOpacity } from 'react-native'
+import { useFeatureFlags } from 'posthog-react-native'
+import React from 'react'
+import { ScrollView, StyleSheet, TouchableOpacity, View, Text } from 'react-native'
 
-import Colors from '../constants/Colors'
 import posthog from '../posthog'
-import { Text, View } from './Themed'
 
 export default function EditScreenInfo({ path }: { path: string }) {
   const trackRandomEvent = () => {
@@ -19,53 +18,43 @@ export default function EditScreenInfo({ path }: { path: string }) {
     })
   }
 
+  const flags = useFeatureFlags()
+
   return (
     <View>
       <View style={styles.getStartedContainer}>
-        <Text style={styles.getStartedText} lightColor="rgba(0,0,0,0.8)" darkColor="rgba(255,255,255,0.8)">
-          You are looking at:
-        </Text>
+        <Text style={styles.getStartedText}>Feature Flags:</Text>
 
-        <View
-          style={[styles.codeHighlightContainer, styles.homeScreenFilename]}
-          darkColor="rgba(255,255,255,0.05)"
-          lightColor="rgba(0,0,0,0.05)"
-        >
-          <Text>{path}</Text>
-        </View>
+        {flags ? (
+          <ScrollView style={[styles.featueFlags]}>
+            <View>
+              {Object.keys(flags).map((key) => (
+                <Text key={key}>
+                  {key}: {JSON.stringify(flags[key])}
+                </Text>
+              ))}
+            </View>
+          </ScrollView>
+        ) : (
+          <Text>Loading feature flags...</Text>
+        )}
 
-        <Text
-          testID="example-ph-no-capture"
-          ph-no-capture
-          style={styles.getStartedText}
-          lightColor="rgba(0,0,0,0.8)"
-          darkColor="rgba(255,255,255,0.8)"
-        >
+        <Text testID="example-ph-no-capture" ph-no-capture style={styles.getStartedText}>
           I have the property "ph-no-capture" which means touching me will not be picked up by autocapture
         </Text>
 
-        <Text
-          testID="example-ph-label"
-          ph-label="special-text"
-          style={styles.getStartedText}
-          lightColor="rgba(0,0,0,0.8)"
-          darkColor="rgba(255,255,255,0.8)"
-        >
+        <Text testID="example-ph-label" ph-label="special-text" style={styles.getStartedText}>
           I have the property "ph-label" which means touching me will be autocaptured with a specific label
         </Text>
       </View>
 
       <View style={styles.helpContainer}>
         <TouchableOpacity onPress={() => trackRandomEvent()} style={styles.helpLink}>
-          <Text style={styles.helpLinkText} lightColor={Colors.light.tint}>
-            Tap here to track a random event!
-          </Text>
+          <Text style={styles.helpLinkText}>Tap here to track a random event!</Text>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => identifyUser()} style={styles.helpLink}>
-          <Text style={styles.helpLinkText} lightColor={Colors.light.tint}>
-            Simulate login and identify!
-          </Text>
+          <Text style={styles.helpLinkText}>Simulate login and identify!</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -80,9 +69,11 @@ const styles = StyleSheet.create({
   homeScreenFilename: {
     marginVertical: 7,
   },
-  codeHighlightContainer: {
+  featueFlags: {
     borderRadius: 3,
     paddingHorizontal: 4,
+    height: 100,
+    flexGrow: 0,
   },
   getStartedText: {
     fontSize: 17,

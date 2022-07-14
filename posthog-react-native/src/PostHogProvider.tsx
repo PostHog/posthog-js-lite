@@ -1,5 +1,5 @@
-import React, { useRef } from 'react'
-import { GestureResponderEvent, View } from 'react-native'
+import React, { useCallback, useRef } from 'react'
+import { GestureResponderEvent, StyleProp, View, ViewStyle } from 'react-native'
 import { PostHogReactNative, PostHogReactNativeOptions } from './posthog'
 import { PostHogAutocaptureElement } from 'posthog-core'
 
@@ -9,6 +9,7 @@ export interface PostHogProviderProps {
   apiKey?: string
   client?: PostHogReactNative
   autocapture?: boolean
+  style?: StyleProp<ViewStyle>
 }
 
 const DEFAULT_MAX_COMPONENT_TREE_SIZE = 20
@@ -108,7 +109,7 @@ const doAutocapture = (e: any, posthog: PostHogReactNative) => {
   }
 }
 
-export const PostHogProvider = ({ children, client, options, apiKey, autocapture }: PostHogProviderProps) => {
+export const PostHogProvider = ({ children, client, options, apiKey, autocapture, style }: PostHogProviderProps) => {
   const posthogRef = useRef<PostHogReactNative>()
 
   if (!posthogRef.current) {
@@ -117,23 +118,21 @@ export const PostHogProvider = ({ children, client, options, apiKey, autocapture
 
   const posthog = posthogRef.current
 
-  const onTouch = (type: 'start' | 'move' | 'end', e: GestureResponderEvent) => {
-    if (!autocapture || !posthog) {
-      return
-    }
+  const onTouch = useCallback(
+    (type: 'start' | 'move' | 'end', e: GestureResponderEvent) => {
+      if (!autocapture || !posthog) {
+        return
+      }
 
-    if (type === 'end') {
-      doAutocapture(e, posthog)
-    }
-  }
+      if (type === 'end') {
+        doAutocapture(e, posthog)
+      }
+    },
+    [posthog, autocapture]
+  )
 
   return (
-    <View
-      style={{ flex: 1 }}
-      // onTouchStart={(e) => onTouch('start', e)}
-      // onTouchMove={(e) => onTouch('move', e)}
-      onTouchEndCapture={(e) => onTouch('end', e)}
-    >
+    <View style={style || { flex: 1 }} onTouchEndCapture={(e) => onTouch('end', e)}>
       <PostHogContext.Provider value={{ client: posthogRef.current }}>{children}</PostHogContext.Provider>
     </View>
   )

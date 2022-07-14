@@ -10,18 +10,13 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import * as React from 'react'
 import { ColorSchemeName, Pressable } from 'react-native'
 
-import Colors from '../constants/Colors'
-import useColorScheme from '../hooks/useColorScheme'
-import ModalScreen from '../screens/ModalScreen'
-import NotFoundScreen from '../screens/NotFoundScreen'
-import TabOneScreen from '../screens/TabOneScreen'
-import TabTwoScreen from '../screens/TabTwoScreen'
 import { RootStackParamList, RootTabParamList, RootTabScreenProps } from '../types'
 import LinkingConfiguration from './LinkingConfiguration'
 
 import { useNavigationTracker, useLifecycleTracker, PostHogProvider } from 'posthog-react-native'
 import posthog from '../posthog'
-import PostHogDebugScreen from '../screens/PostHogDebugScreen'
+import PostHogDebugScreen, { usePosthogDebugEvents } from '../screens/PostHogDebugScreen'
+import PosthogDemoScreen from '../screens/PosthogDemoScreen'
 
 export default function Navigation({ colorScheme }: { colorScheme: ColorSchemeName }) {
   return (
@@ -51,14 +46,16 @@ function RootNavigator() {
     },
   })
   useLifecycleTracker()
+
+  // NOTE: This is a debugging hook just for this example
+  usePosthogDebugEvents()
   return (
     <Stack.Navigator>
       <Stack.Screen name="Root" component={BottomTabNavigator} options={{ headerShown: false }} />
-      <Stack.Screen name="NotFound" component={NotFoundScreen} options={{ title: 'Oops!' }} />
       <Stack.Group screenOptions={{ presentation: 'modal' }}>
         <Stack.Group>
-          <Stack.Screen name="Modal" component={ModalScreen} />
-          <Stack.Screen name="ModalNextPage" component={ModalScreen} />
+          <Stack.Screen name="Modal" component={PosthogDemoScreen} />
+          <Stack.Screen name="ModalNextPage" component={PosthogDemoScreen} />
         </Stack.Group>
       </Stack.Group>
     </Stack.Navigator>
@@ -72,18 +69,11 @@ function RootNavigator() {
 const BottomTab = createBottomTabNavigator<RootTabParamList>()
 
 function BottomTabNavigator() {
-  const colorScheme = useColorScheme()
-
   return (
-    <BottomTab.Navigator
-      initialRouteName="TabOne"
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme].tint,
-      }}
-    >
+    <BottomTab.Navigator initialRouteName="TabOne">
       <BottomTab.Screen
         name="TabOne"
-        component={TabOneScreen}
+        component={PosthogDemoScreen}
         options={({ navigation }: RootTabScreenProps<'TabOne'>) => ({
           title: 'Tab One',
           tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
@@ -95,14 +85,14 @@ function BottomTabNavigator() {
                 opacity: pressed ? 0.5 : 1,
               })}
             >
-              <FontAwesome name="info-circle" size={25} color={Colors[colorScheme].text} style={{ marginRight: 15 }} />
+              <FontAwesome name="info-circle" size={25} style={{ marginRight: 15 }} />
             </Pressable>
           ),
         })}
       />
       <BottomTab.Screen
         name="TabTwo"
-        component={TabTwoScreen}
+        component={PosthogDemoScreen}
         options={{
           title: 'Tab Two',
           tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,

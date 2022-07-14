@@ -27,8 +27,12 @@ export abstract class PostHogCore {
   private _events: SimpleEventEmitter
   private _queue: PostHogQueueItem[]
   private _flushed = false
-  private _timer?: any
-  private _lastDecideResponse?: Promise<PostHogDecideResponse>
+  private _flushTimer?: any
+
+  private _decideResponsePromise?: Promise<PostHogDecideResponse>
+  private _decideResponse?: PostHogDecideResponse
+  private _decideTimer?: any
+  private _decidePollInterval = 10000
 
   // Abstract methods to be overridden by implementations
   abstract storage(): PostHogStorage
@@ -185,14 +189,14 @@ export abstract class PostHogCore {
   }
 
   // PRAGMA: Feature flags
-  private async decide(): Promise<PostHogDecideResponse> {
-    if (this._lastDecideResponse) {
-      return this._lastDecideResponse
+  private decideAsync(): Promise<PostHogDecideResponse> {
+    if (this._decideResponsePromise) {
+      return this._decideResponsePromise
     }
-    return this._decide()
+    return this._decideAsync()
   }
 
-  private async _decide(): Promise<PostHogDecideResponse> {
+  private async _decideAsync(): Promise<PostHogDecideResponse> {
     const url = `${this.host}/decide/?v=2`
 
     const distinctId = this.getDistinctId()
@@ -201,35 +205,63 @@ export abstract class PostHogCore {
     const fetchOptions: PostHogFetchOptions = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ groups, distinct_id: distinctId }),
+      body: JSON.stringify({ groups, distinct_id: distinctId, token: this.apiKey }),
     }
 
-    this._lastDecideResponse = this.fetchWithRetry(url, fetchOptions).then((r) => r.json())
-    return this._lastDecideResponse
+    this._decideResponsePromise = this.fetchWithRetry(url, fetchOptions)
+      .then((r) => r.json())
+      .then((res) => {
+        this._decideResponse = res
+        this._events.emit('featureflags', res.featureFlags)
+        return res
+      })
+    return this._decideResponsePromise
   }
 
-  async isFeatureEnabled(key: string, defaultResult: boolean = false, groups = {}) {
-    const flag = await this.getFeatureFlag(key, defaultResult, groups)
-    return !!flag
-  }
+  getFeatureFlag(key: string, defaultResult: string | boolean = false, groups = {}): boolean | string | undefined {
+    const featureFlags = this._decideResponse?.featureFlags
 
-  async getFeatureFlag(key: string, defaultResult: string | boolean = false, groups = {}) {
-    const { featureFlags } = await this.decide()
+    if (!featureFlags) {
+      // If we haven't loaded flags yet we respond undefined to indicate this
+      return undefined
+    }
 
     if (this.sendFeatureFlagEvent && !this.flagCallReported[key]) {
       this.flagCallReported[key] = true
-      this.capture('$feature_flag_called', { $feature_flag: key, $feature_flag_response: featureFlags[key] })
+      this.capture('$feature_flag_called', {
+        $feature_flag: key,
+        $feature_flag_response: featureFlags[key],
+      })
     }
+
+    // If we have flags we either return the value (true or string) or the defaultResult
     return featureFlags[key] ?? defaultResult
   }
 
-  async getFeatureFlags() {
-    const { featureFlags } = await this.decide()
-    return featureFlags
+  getFeatureFlags() {
+    return this._decideResponse?.featureFlags
   }
 
-  async reloadFeatureFlags() {
-    await this.decide()
+  isFeatureEnabled(key: string, defaultResult: boolean = false, groups = {}) {
+    const flag = this.getFeatureFlag(key, defaultResult, groups)
+    return !!flag
+  }
+
+  async reloadFeatureFlagsAsync() {
+    clearTimeout(this._decideTimer)
+    this._decideTimer = setTimeout(() => this.reloadFeatureFlagsAsync(), this._decidePollInterval)
+    this._decideResponsePromise = undefined
+    return (await this.decideAsync()).featureFlags
+  }
+
+  // When listening to feature flags polling is active
+  onFeatureFlags(cb: (flags: PostHogDecideResponse['featureFlags']) => void) {
+    if (!this._decideTimer) void this.reloadFeatureFlagsAsync()
+
+    return this.on('featureflags', async () => {
+      const flags = this.getFeatureFlags()
+      if (flags) cb(flags)
+    })
   }
 
   // TODO: Add listener to feature flags and polling if listeners exist
@@ -268,8 +300,8 @@ export abstract class PostHogCore {
       this.flush()
     }
 
-    if (this.flushInterval && !this._timer) {
-      this._timer = setTimeout(() => this.flush(), this.flushInterval)
+    if (this.flushInterval && !this._flushTimer) {
+      this._flushTimer = setTimeout(() => this.flush(), this.flushInterval)
     }
   }
 
@@ -278,9 +310,9 @@ export abstract class PostHogCore {
       return callback && this.setImmediate(callback)
     }
 
-    if (this._timer) {
-      clearTimeout(this._timer)
-      this._timer = null
+    if (this._flushTimer) {
+      clearTimeout(this._flushTimer)
+      this._flushTimer = null
     }
 
     if (!this._queue.length) {

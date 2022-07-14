@@ -1,16 +1,12 @@
-import { locale } from 'expo-localization'
 import { usePostHog } from 'posthog-react-native'
 import React, { useEffect, useState } from 'react'
-import { Alert, FlatList, StyleSheet, TouchableHighlight, TouchableOpacity } from 'react-native'
-
-import { Text, View } from '../components/Themed'
+import { Alert, FlatList, StyleSheet, TouchableOpacity, View, Text } from 'react-native'
 
 // NOTE: This would obviously need to be something like Redux in production
-const GLOBAL_EVENTS: { event: string; payload: any }[] = []
+export const GLOBAL_EVENTS: { event: string; payload: any }[] = []
 
-export default function PostHogDebugScreen() {
+export const usePosthogDebugEvents = () => {
   const posthog = usePostHog()
-
   const [localEvents, setLocalEvents] = useState(GLOBAL_EVENTS)
 
   useEffect(() => {
@@ -29,6 +25,7 @@ export default function PostHogDebugScreen() {
       posthog.on('identify', (e) => onEvent('identify', e)),
       posthog.on('screen', (e) => onEvent('screen', e)),
       posthog.on('autocapture', (e) => onEvent('autocapture', e)),
+      posthog.on('featureflags', (e) => onEvent('featureflags', e)),
     ]
 
     return () => {
@@ -36,6 +33,11 @@ export default function PostHogDebugScreen() {
     }
   }, [posthog])
 
+  return localEvents
+}
+
+export default function PostHogDebugScreen() {
+  const localEvents = usePosthogDebugEvents()
   return (
     <View style={styles.container}>
       <View style={styles.header}>
