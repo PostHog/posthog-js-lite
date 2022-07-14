@@ -40,7 +40,7 @@ export default function Navigation({ colorScheme }: { colorScheme: ColorSchemeNa
 const Stack = createNativeStackNavigator<RootStackParamList>()
 
 function RootNavigator() {
-  useNavigationTracker(posthog, {
+  useNavigationTracker({
     routeToProperties(name, params) {
       // Here we could filter the params for only ones we want to tracj
       return params
@@ -50,7 +50,7 @@ function RootNavigator() {
       return name
     },
   })
-  useLifecycleTracker(posthog)
+  useLifecycleTracker()
   return (
     <Stack.Navigator>
       <Stack.Screen name="Root" component={BottomTabNavigator} options={{ headerShown: false }} />

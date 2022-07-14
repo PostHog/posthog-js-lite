@@ -5,6 +5,7 @@ import {
   PostHogAutocaptureElement,
   PostHogDecideResponse,
   PostHogStorage,
+  PosthogCoreOptions,
 } from './types'
 import { assert, currentISOTime, currentTimestamp, removeTrailingSlash, retriable } from './utils'
 export * as utils from './utils'
@@ -12,27 +13,10 @@ import { eventValidation } from './validation'
 import { LZString } from './lz-string'
 import { SimpleEventEmitter } from './eventemitter'
 
-const noop = () => {}
-
-const FIVE_MINUTES = 5 * 60 * 1000
-
-export interface PosthogCoreOptions {
-  host?: string
-  timeout?: number
-  flushAt?: number
-  flushInterval?: number
-  personalApiKey?: string
-  enable?: boolean
-  captureMode?: 'json' | 'form'
-  sendFeatureFlagEvent?: boolean
-}
-
 export abstract class PostHogCore {
   // options
   private apiKey: string
-  private personalApiKey?: string
   private host: string
-  private timeout?: number
   private flushAt: number
   private flushInterval: number
   private captureMode: 'form' | 'json'
@@ -63,9 +47,7 @@ export abstract class PostHogCore {
 
     this._queue = []
     this.apiKey = apiKey
-    this.personalApiKey = options.personalApiKey
     this.host = removeTrailingSlash(options.host || 'https://app.posthog.com')
-    this.timeout = options.timeout
     this.flushAt = options.flushAt ? Math.max(options.flushAt, 1) : 20
     this.flushInterval = options.flushInterval ?? 10000
     this.captureMode = options.captureMode || 'form'
@@ -202,7 +184,7 @@ export abstract class PostHogCore {
     return this
   }
 
-  // PRAGMA: Featur flags
+  // PRAGMA: Feature flags
   private async decide(): Promise<PostHogDecideResponse> {
     if (this._lastDecideResponse) {
       return this._lastDecideResponse
@@ -239,6 +221,11 @@ export abstract class PostHogCore {
       this.capture('$feature_flag_called', { $feature_flag: key, $feature_flag_response: featureFlags[key] })
     }
     return featureFlags[key] ?? defaultResult
+  }
+
+  async getFeatureFlags() {
+    const { featureFlags } = await this.decide()
+    return featureFlags
   }
 
   async reloadFeatureFlags() {

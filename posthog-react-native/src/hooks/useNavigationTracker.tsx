@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { OptionalReactNativeNavigation } from '../optional-imports'
 import type { PostHogReactNative } from '../posthog'
+import { usePostHog } from '../PostHogProvider'
 
 export interface PostHogNavigationTrackerOptions {
   ignoreScreens?: string[]
@@ -8,7 +9,12 @@ export interface PostHogNavigationTrackerOptions {
   routeToProperties?: (name: string, params: any) => string
 }
 
-export function useNavigationTracker(client: PostHogReactNative, options?: PostHogNavigationTrackerOptions) {
+export function useNavigationTracker(options?: PostHogNavigationTrackerOptions, client?: PostHogReactNative) {
+  const contextClient = usePostHog()
+  const posthog = client || contextClient
+
+  if (!posthog) return
+
   if (!OptionalReactNativeNavigation) {
     // TODO: Support all of the possible navigators
     throw new Error('Navigation tracking requires @react-native navigation')
@@ -36,7 +42,7 @@ export function useNavigationTracker(client: PostHogReactNative, options?: PostH
 
     if (currentRouteName) {
       const properties = options?.routeToProperties?.(currentRouteName, params)
-      client.screen(currentRouteName, properties)
+      posthog.screen(currentRouteName, properties)
     }
   }, [routes])
 }

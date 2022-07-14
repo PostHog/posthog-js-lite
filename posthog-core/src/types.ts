@@ -1,3 +1,14 @@
+export type PosthogCoreOptions = {
+  host?: string
+  timeout?: number
+  flushAt?: number
+  flushInterval?: number
+  personalApiKey?: string
+  enable?: boolean
+  captureMode?: 'json' | 'form'
+  sendFeatureFlagEvent?: boolean
+}
+
 export type PostHogStorage = {
   getItem: (key: string) => string | null | undefined
   setItem: (key: string, value: string) => void
