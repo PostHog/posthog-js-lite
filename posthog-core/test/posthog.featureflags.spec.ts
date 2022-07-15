@@ -1,4 +1,5 @@
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
+import { parseBody } from './test-utils/test-utils'
 
 describe('PostHog Core', () => {
   let posthog: PostHogCoreTestClient
@@ -105,6 +106,29 @@ describe('PostHog Core', () => {
         posthog.group('my-group', 'is-great')
         expect(mocks.fetch).toHaveBeenCalledTimes(2)
         expect(JSON.parse(mocks.fetch.mock.calls[1][1].body)).toMatchObject({ groups: { 'my-group': 'is-great' } })
+      })
+
+      it('should capture $feature_flag_called when called', () => {
+        expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
+        expect(mocks.fetch).toHaveBeenCalledTimes(2)
+
+        expect(parseBody(mocks.fetch.mock.calls[1])).toMatchObject({
+          batch: [
+            {
+              event: '$feature_flag_called',
+              distinct_id: posthog.getDistinctId(),
+              properties: {
+                $feature_flag: 'feature-1',
+                $feature_flag_response: true,
+              },
+              type: 'capture',
+            },
+          ],
+        })
+
+        // Only tracked once
+        expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
+        expect(mocks.fetch).toHaveBeenCalledTimes(2)
       })
     })
   })
