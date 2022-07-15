@@ -11,8 +11,6 @@ export function useFeatureFlags(client?: PostHogReactNative) {
     posthog?.getFeatureFlags()
   )
 
-  console.log(posthog, featureFlags)
-
   if (!posthog) return featureFlags
 
   useEffect(() => {
