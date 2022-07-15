@@ -1,7 +1,5 @@
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
 
-const TEST_API_KEY = 'TEST_API_KEY'
-
 describe('PostHog Core', () => {
   let posthog: PostHogCoreTestClient
   let mocks: PostHogCoreTestClientMocks
@@ -16,7 +14,7 @@ describe('PostHog Core', () => {
   }
 
   beforeEach(() => {
-    ;[posthog, mocks] = createTestClient(TEST_API_KEY, { flushAt: 1 }, (_mocks) => {
+    ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1 }, (_mocks) => {
       _mocks.fetch.mockImplementation((url, options) => {
         if (url.includes('/decide/')) {
           return Promise.resolve({

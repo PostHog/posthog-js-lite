@@ -1,13 +1,11 @@
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
 
-const TEST_API_KEY = 'TEST_API_KEY'
-
 describe('PostHog Core', () => {
   let posthog: PostHogCoreTestClient
   let mocks: PostHogCoreTestClientMocks
 
   beforeEach(() => {
-    ;[posthog, mocks] = createTestClient(TEST_API_KEY, {})
+    ;[posthog, mocks] = createTestClient('TEST_API_KEY', {})
   })
 
   describe('init', () => {
@@ -55,7 +53,7 @@ describe('PostHog Core', () => {
     })
 
     it('should remove trailing slashes from `host`', () => {
-      ;[posthog, mocks] = createTestClient(TEST_API_KEY, { host: 'http://my-posthog.com///' })
+      ;[posthog, mocks] = createTestClient('TEST_API_KEY', { host: 'http://my-posthog.com///' })
 
       expect((posthog as any).host).toEqual('http://my-posthog.com')
     })

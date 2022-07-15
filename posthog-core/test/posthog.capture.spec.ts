@@ -1,11 +1,6 @@
 import { parseBody } from './test-utils/test-utils'
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
 
-// TODO: Get this from package.json
-const version = '2.0.0-alpha'
-
-const TEST_API_KEY = 'TEST_API_KEY'
-
 describe('PostHog Core', () => {
   let posthog: PostHogCoreTestClient
   let mocks: PostHogCoreTestClientMocks
@@ -13,7 +8,7 @@ describe('PostHog Core', () => {
   jest.useFakeTimers()
 
   beforeEach(() => {
-    ;[posthog, mocks] = createTestClient(TEST_API_KEY, { flushAt: 1 })
+    ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1 })
   })
 
   describe('capture', () => {
@@ -29,7 +24,7 @@ describe('PostHog Core', () => {
       const body = parseBody(mocks.fetch.mock.calls[0])
 
       expect(body).toEqual({
-        api_key: TEST_API_KEY,
+        api_key: 'TEST_API_KEY',
         batch: [
           {
             event: 'custom-event',

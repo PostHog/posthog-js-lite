@@ -1,15 +1,11 @@
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
 
-// TODO: Get this from package.json
-const version = '2.0.0-alpha'
-const TEST_API_KEY = 'TEST_API_KEY'
-
 describe('PostHog Core', () => {
   let posthog: PostHogCoreTestClient
   let mocks: PostHogCoreTestClientMocks
 
   beforeEach(() => {
-    ;[posthog, mocks] = createTestClient(TEST_API_KEY, {})
+    ;[posthog, mocks] = createTestClient('TEST_API_KEY', {})
     jest.setSystemTime(new Date('2022-01-01'))
   })
 
@@ -25,7 +21,7 @@ describe('PostHog Core', () => {
       expect(item).toMatchObject({
         message: {
           library: 'posthog-core-tests',
-          library_version: version,
+          library_version: '2.0.0-alpha',
           type: 'capture',
           properties: {
             foo: 'bar',

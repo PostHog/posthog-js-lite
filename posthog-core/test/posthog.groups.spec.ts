@@ -1,8 +1,6 @@
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
 import { parseBody } from './test-utils/test-utils'
 
-const TEST_API_KEY = 'TEST_API_KEY'
-
 describe('PostHog Core', () => {
   let posthog: PostHogCoreTestClient
   let mocks: PostHogCoreTestClientMocks
@@ -11,7 +9,7 @@ describe('PostHog Core', () => {
   jest.setSystemTime(new Date('2022-01-01'))
 
   beforeEach(() => {
-    ;[posthog, mocks] = createTestClient(TEST_API_KEY, { flushAt: 1 })
+    ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1 })
   })
 
   describe('groups', () => {
@@ -71,7 +69,7 @@ describe('PostHog Core', () => {
       posthog.groupIdentify('posthog', 'team-1', { analytics: true })
 
       expect(parseBody(mocks.fetch.mock.calls[0])).toEqual({
-        api_key: TEST_API_KEY,
+        api_key: 'TEST_API_KEY',
         batch: [
           {
             event: '$groupidentify',
