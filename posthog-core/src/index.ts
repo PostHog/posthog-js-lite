@@ -24,10 +24,9 @@ export abstract class PostHogCore {
   private flagCallReported: { [key: string]: boolean } = {}
 
   // internal
-  private _events: SimpleEventEmitter
-  private _queue: PostHogQueueItem[]
+  private _events = new SimpleEventEmitter()
+  private _queue: PostHogQueueItem[] = []
   private _flushTimer?: any
-
   private _decideResponsePromise?: Promise<PostHogDecideResponse>
   private _decideResponse?: PostHogDecideResponse
   private _decideTimer?: any
@@ -46,20 +45,18 @@ export abstract class PostHogCore {
 
   public enabled = true
 
-  constructor(apiKey: string, options: PosthogCoreOptions = {}) {
+  constructor(apiKey: string, options?: PosthogCoreOptions) {
     assert(apiKey, "You must pass your PostHog project's api key.")
 
-    this._queue = []
     this.apiKey = apiKey
-    this.host = removeTrailingSlash(options.host || 'https://app.posthog.com')
-    this.flushAt = options.flushAt ? Math.max(options.flushAt, 1) : 20
-    this.flushInterval = options.flushInterval ?? 10000
-    this.captureMode = options.captureMode || 'form'
-    this.sendFeatureFlagEvent = options.sendFeatureFlagEvent ?? true
-    this._events = new SimpleEventEmitter()
+    this.host = removeTrailingSlash(options?.host || 'https://app.posthog.com')
+    this.flushAt = options?.flushAt ? Math.max(options?.flushAt, 1) : 20
+    this.flushInterval = options?.flushInterval ?? 10000
+    this.captureMode = options?.captureMode || 'form'
+    this.sendFeatureFlagEvent = options?.sendFeatureFlagEvent ?? true
 
     // NOTE: It is important we don't initiate anything in the constructor as some async IO may still be underway on the parent
-    if (options.preloadFeatureFlags !== false) {
+    if (options?.preloadFeatureFlags !== false) {
       this.setImmediate(() => {
         void this.reloadFeatureFlagsAsync()
       })
@@ -85,11 +82,7 @@ export abstract class PostHogCore {
     this._props = val
   }
 
-  private _props:
-    | {
-        [key: string]: any
-      }
-    | undefined
+  private _props: { [key: string]: any } | undefined
 
   enable() {
     this.enabled = true
@@ -101,14 +94,6 @@ export abstract class PostHogCore {
 
   on(event: string, cb: (e: any) => void) {
     return this._events.on(event, cb)
-  }
-
-  register(properties: { [key: string]: any }) {
-    this.props = {
-      ...this.props,
-      ...properties,
-    }
-    this.setPersistedProperty(PostHogPersistedProperty.Props, JSON.stringify(this.props))
   }
 
   private buildPayload(payload: { event: string; properties?: PostHogEventProperties; distinct_id?: string }) {
@@ -132,7 +117,17 @@ export abstract class PostHogCore {
     return distinctId
   }
 
-  // PRAGMA - tracking methods
+  register(properties: { [key: string]: any }) {
+    this.props = {
+      ...this.props,
+      ...properties,
+    }
+    this.setPersistedProperty(PostHogPersistedProperty.Props, JSON.stringify(this.props))
+  }
+
+  /***
+   *** TRACKING
+   ***/
   identify(distinctId?: string, properties?: PostHogEventProperties, callback?: () => void) {
     distinctId = distinctId || this.getDistinctId()
 
@@ -209,6 +204,10 @@ export abstract class PostHogCore {
     return this
   }
 
+  /***
+   *** GROUPS
+   ***/
+
   groups(groups: { [type: string]: string }) {
     // Get persisted groups
     const existingGroups = this.props.$groups || {}
@@ -252,7 +251,9 @@ export abstract class PostHogCore {
     return this
   }
 
-  // PRAGMA: Feature flags
+  /***
+   *** FEATUE FLAGS
+   ***/
   private decideAsync(): Promise<PostHogDecideResponse> {
     if (this._decideResponsePromise) {
       return this._decideResponsePromise
@@ -328,17 +329,9 @@ export abstract class PostHogCore {
     })
   }
 
-  // TODO: Add listener to feature flags and polling if listeners exist
-  /**
-   * Add a `message` of type `type` to the queue and
-   * check whether it should be flushed.
-   *
-   * @param {String} type
-   * @param {Object} payload
-   * @param {Function} [callback] (optional)
-   * @api private
-   */
-
+  /***
+   *** QUEUEING AND FLUSHING
+   ***/
   enqueue(type: string, _message: any, callback?: () => void) {
     if (!this.enabled) {
       return callback && this.setImmediate(callback)
