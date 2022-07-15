@@ -9,7 +9,6 @@ import {
 } from './types'
 import { assert, currentISOTime, currentTimestamp, removeTrailingSlash, retriable } from './utils'
 export * as utils from './utils'
-import { eventValidation } from './validation'
 import { LZString } from './lz-string'
 import { SimpleEventEmitter } from './eventemitter'
 
@@ -26,13 +25,16 @@ export abstract class PostHogCore {
   // internal
   private _events: SimpleEventEmitter
   private _queue: PostHogQueueItem[]
-  private _flushed = false
   private _flushTimer?: any
 
   private _decideResponsePromise?: Promise<PostHogDecideResponse>
   private _decideResponse?: PostHogDecideResponse
   private _decideTimer?: any
   private _decidePollInterval = 10000
+
+  private _props: {
+    [key: string]: any
+  }
 
   // Abstract methods to be overridden by implementations
   abstract storage(): PostHogStorage
@@ -43,6 +45,10 @@ export abstract class PostHogCore {
   abstract onSetDistinctId(newDistinctId: string): string
   abstract getCustomUserAgent(): string | void
   abstract setImmediate(fn: () => void): void
+
+  // This is our abstracted storage. Each implementation should handle its own
+  abstract getPersistedProperty(key: string): string
+  abstract setPersistedProperty(key: string, value: string): void
 
   public enabled = true
 
@@ -57,6 +63,7 @@ export abstract class PostHogCore {
     this.captureMode = options.captureMode || 'form'
     this.sendFeatureFlagEvent = options.sendFeatureFlagEvent ?? true
     this._events = new SimpleEventEmitter()
+    this._props = JSON.parse(this.getPersistedProperty('props') || '{}')
   }
 
   protected getCommonEventProperties(): any {
@@ -78,55 +85,66 @@ export abstract class PostHogCore {
     return this._events.on(event, cb)
   }
 
+  register(properties: { [key: string]: any }) {
+    this._props = {
+      ...this._props,
+      ...properties,
+    }
+    this.setPersistedProperty('props', JSON.stringify(this._props))
+  }
+
+  private buildPayload(payload: { event: string; properties?: any; distinct_id?: string }) {
+    return {
+      distinct_id: payload.distinct_id || this.getDistinctId(),
+      event: '$create_alias',
+      properties: {
+        ...this._props, // Persisted properties first
+        ...(payload.properties || {}), // Followed by user specified properties
+        ...this.getCommonEventProperties(), // Followed by common PH props
+      },
+    }
+  }
+
   // PRAGMA - tracking methods
   identify(distinctId?: string, properties?: any, callback?: () => void) {
     distinctId = distinctId || this.getDistinctId()
 
-    const event = {
-      distinctId: distinctId,
-      properties: properties,
+    if (properties.$groups) {
+      this.groups(properties.$groups)
     }
-    this.validate('identify', event)
 
     const payload = {
-      distinct_id: distinctId,
-      $set: properties || {},
-      event: '$identify',
-      properties: {
-        ...this.getCommonEventProperties(),
-        $anon_distinct_id: this.getDistinctId(),
-      },
+      ...this.buildPayload({
+        distinct_id: distinctId,
+        event: '$identify',
+        properties: {
+          ...(properties || {}),
+          $anon_distinct_id: this.getDistinctId(),
+        },
+      }),
+      $set: properties,
     }
 
-    this.onSetDistinctId(distinctId)
+    if (distinctId !== this.getDistinctId()) {
+      this.onSetDistinctId(distinctId)
+    }
 
     this.enqueue('identify', payload, callback)
     return this
   }
 
   capture(event: string, properties?: any, callback?: () => void) {
-    const distinctId = this.getDistinctId()
-
-    this.validate('capture', {
-      event,
-      distinctId,
-      properties,
-    })
-
+    // NOTE: Legacy nodejs implementation uses groups
     if (properties && properties['groups']) {
       properties.$groups = properties.groups
       delete properties.groups
     }
 
-    const payload = {
-      distinct_id: distinctId,
-      event,
-      properties: {
-        ...properties,
-        ...this.getCommonEventProperties(),
-      },
+    if (properties.$groups) {
+      this.groups(properties.$groups)
     }
 
+    const payload = this.buildPayload({ event, properties })
     this.enqueue('capture', payload, callback)
     return this
   }
@@ -134,53 +152,66 @@ export abstract class PostHogCore {
   alias(alias: string, callback?: () => void) {
     const distinctId = this.getDistinctId()
 
-    this.validate('alias', {
-      distinctId,
-      alias,
-    })
-
-    const payload = {
-      distinct_id: distinctId,
+    const payload = this.buildPayload({
       event: '$create_alias',
       properties: {
         distinct_id: distinctId,
-        alias: alias,
-        ...this.getCommonEventProperties(),
+        alias,
       },
-    }
+    })
 
     this.enqueue('alias', payload, callback)
     return this
   }
 
   autocapture(eventType: string, elements: PostHogAutocaptureElement[], properties?: any, callback?: () => void) {
-    const distinctId = this.getDistinctId()
-
-    const payload = {
-      distinct_id: distinctId,
+    const payload = this.buildPayload({
       event: '$autocapture',
       properties: {
-        ...properties,
-        ...this.getCommonEventProperties(),
         $event_type: eventType,
         $elements: elements,
       },
-    }
+    })
 
     this.enqueue('autocapture', payload, callback)
     return this
   }
 
-  groupIdentify(group: { groupType: string; groupKey: string }, properties?: any, callback?: () => void) {
-    this.validate('groupIdentify', group)
+  groups(groups: { [type: string]: string }) {
+    // Get persisted groups
+    const existingGroups = this._props.$groups || {}
 
+    // NOTE: Should we do the same for groups listed in identify / capture?
+    this.register({
+      $groups: {
+        ...existingGroups,
+        ...groups,
+      },
+    })
+
+    if (Object.keys(groups).find((type) => existingGroups[type] !== groups[type])) {
+      void this.reloadFeatureFlagsAsync()
+    }
+  }
+
+  group(groupType: string, groupKey: string, groupProperties?: any) {
+    this.groups({
+      [groupType]: groupKey,
+    })
+
+    if (groupProperties) {
+      this.groupIdentify(groupType, groupKey, groupProperties)
+    }
+  }
+
+  groupIdentify(groupType: string, groupKey: string, groupProperties?: any, callback?: () => void) {
     const payload = {
       event: '$groupidentify',
-      distinctId: `$${group.groupType}_${group.groupKey}`,
+      distinctId: `$${groupType}_${groupKey}`,
       properties: {
-        $group_type: group.groupType,
-        $group_key: group.groupKey,
-        $group_set: properties || {},
+        $group_type: groupType,
+        $group_key: groupKey,
+        $group_set: groupProperties || {},
       },
     }
 
@@ -218,7 +249,7 @@ export abstract class PostHogCore {
     return this._decideResponsePromise
   }
 
-  getFeatureFlag(key: string, defaultResult: string | boolean = false, groups = {}): boolean | string | undefined {
+  getFeatureFlag(key: string, defaultResult: string | boolean = false): boolean | string | undefined {
     const featureFlags = this._decideResponse?.featureFlags
 
     if (!featureFlags) {
@@ -242,8 +273,8 @@ export abstract class PostHogCore {
     return this._decideResponse?.featureFlags
   }
 
-  isFeatureEnabled(key: string, defaultResult: boolean = false, groups = {}) {
-    const flag = this.getFeatureFlag(key, defaultResult, groups)
+  isFeatureEnabled(key: string, defaultResult: boolean = false) {
+    const flag = this.getFeatureFlag(key, defaultResult)
     return !!flag
   }
 
@@ -381,18 +412,6 @@ export abstract class PostHogCore {
 
   private async fetchWithRetry(url: string, options: PostHogFetchOptions): Promise<any> {
     return retriable(() => this.fetch(url, options))
-  }
-
-  private validate(type: string, message: any) {
-    try {
-      eventValidation(type, message)
-    } catch (e) {
-      if ((e as any).message === 'Your message must be < 32 kB.') {
-        console.log('Your message must be < 32 kB.', JSON.stringify(message))
-        return
-      }
-      throw e
-    }
   }
 }
 

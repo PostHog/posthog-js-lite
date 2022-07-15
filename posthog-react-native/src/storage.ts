@@ -1,6 +1,8 @@
 import type AsyncStorage from '@react-native-async-storage/async-storage'
 import { PostHogStorage } from 'posthog-core'
 
+// NOTE: Should we use AsyncStorage? We are at risk of using the same store as the
+// rest of the app which could get wiped by the user
 let _AsyncStorage: typeof AsyncStorage
 
 try {
