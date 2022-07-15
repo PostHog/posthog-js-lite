@@ -69,3 +69,12 @@ export function currentISOTime(): string {
 export function isUndefined(obj: any) {
   return obj === void 0
 }
+
+export function safeSetTimeout(fn: () => void, timeout: number) {
+  // NOTE: we use this so rarely that it is totally fine to do `safeSetTimeout(fn, 0)``
+  // rather than setImmediate.
+  const t = setTimeout(fn, timeout) as any
+  // We unref if available to prevent Node.js hanging on exit
+  t?.unref()
+  return t
+}

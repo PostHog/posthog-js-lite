@@ -55,9 +55,6 @@ export class PostHogReactNative extends PostHogCore {
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
     return fetch(url, options)
   }
-  setImmediate(fn: () => void): void {
-    setImmediate(fn)
-  }
 
   getLibraryId(): string {
     return 'posthog-react-native'

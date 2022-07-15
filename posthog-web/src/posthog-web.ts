@@ -54,9 +54,6 @@ export class PostHogWeb extends PostHogCore {
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
     return window.fetch(url, options)
   }
-  setImmediate(fn: () => void): void {
-    window.setTimeout(fn, 1)
-  }
   getLibraryId(): string {
     return 'posthog-web'
   }

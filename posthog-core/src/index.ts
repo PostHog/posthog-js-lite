@@ -8,7 +8,15 @@ import {
   PostHogEventProperties,
   PostHogPersistedProperty,
 } from './types'
-import { assert, currentISOTime, currentTimestamp, generateUUID, removeTrailingSlash, retriable } from './utils'
+import {
+  assert,
+  currentISOTime,
+  currentTimestamp,
+  generateUUID,
+  removeTrailingSlash,
+  retriable,
+  safeSetTimeout,
+} from './utils'
 export * as utils from './utils'
 import { LZString } from './lz-string'
 import { SimpleEventEmitter } from './eventemitter'
@@ -37,7 +45,6 @@ export abstract class PostHogCore {
   abstract getLibraryId(): string
   abstract getLibraryVersion(): string
   abstract getCustomUserAgent(): string | void
-  abstract setImmediate(fn: () => void): void
 
   // This is our abstracted storage. Each implementation should handle its own
   abstract getPersistedProperty(key: PostHogPersistedProperty): string | undefined
@@ -57,9 +64,9 @@ export abstract class PostHogCore {
 
     // NOTE: It is important we don't initiate anything in the constructor as some async IO may still be underway on the parent
     if (options?.preloadFeatureFlags !== false) {
-      this.setImmediate(() => {
+      setTimeout(() => {
         void this.reloadFeatureFlagsAsync()
-      })
+      }, 1)
     }
   }
 
@@ -334,7 +341,7 @@ export abstract class PostHogCore {
    ***/
   enqueue(type: string, _message: any, callback?: () => void) {
     if (!this.enabled) {
-      return callback && this.setImmediate(callback)
+      return callback && safeSetTimeout(callback, 0)
     }
     const message = {
       ..._message,
@@ -370,7 +377,7 @@ export abstract class PostHogCore {
 
   flush(callback?: (err?: any, data?: any) => void) {
     if (!this.enabled) {
-      return callback && this.setImmediate(callback)
+      return callback && safeSetTimeout(callback, 0)
     }
 
     if (this._flushTimer) {
@@ -379,7 +386,7 @@ export abstract class PostHogCore {
     }
 
     if (!this._queue.length) {
-      return callback && this.setImmediate(callback)
+      return callback && safeSetTimeout(callback, 0)
     }
 
     const items = this._queue.splice(0, this.flushAt)
@@ -446,6 +453,16 @@ export abstract class PostHogCore {
     // TODO: Enable retries
     return this.fetch(url, options)
     return retriable(() => this.fetch(url, options))
+  }
+
+  async shutdownAsync() {
+    clearTimeout(this._decideTimer)
+    clearTimeout(this._flushTimer)
+    await this.flushAsync()
+  }
+
+  shutdown() {
+    void this.shutdownAsync()
   }
 }
 

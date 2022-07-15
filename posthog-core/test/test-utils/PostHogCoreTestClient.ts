@@ -35,9 +35,6 @@ export class PostHogCoreTestClient extends PostHogCore {
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
     return this.mocks.fetch(url, options)
   }
-  setImmediate(fn: () => void): void {
-    setTimeout(fn, 1)
-  }
   getLibraryId() {
     return 'posthog-core-tests'
   }

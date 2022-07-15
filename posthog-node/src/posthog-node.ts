@@ -30,10 +30,6 @@ export class PostHogNodejs extends PostHogCore {
     throw Error('not implemented')
   }
 
-  setImmediate(fn: () => void): void {
-    return process.nextTick(fn)
-  }
-
   getLibraryId(): string {
     return 'posthog-node'
   }
@@ -43,10 +39,17 @@ export class PostHogNodejs extends PostHogCore {
   getCustomUserAgent(): string {
     return `posthog-node/${version}`
   }
+}
 
-  // Custom methods
+// The actual exported Nodejs API.
+export default class PostHogNodejsGlobal {
+  constructor(private apiKey: string, private options: PostHogNodejsOptions) {}
 
-  shutdown() {
-    this.flush()
+  user(distinctId: string): PostHogNodejs {
+    const client = new PostHogNodejs(this.apiKey, this.options)
+    client.setPersistedProperty(PostHogPersistedProperty.DistinctId, distinctId)
+    return client
   }
+
+  // TODO: Implement previous global API, doing some sort of clever linking to the underlying "user" prop
 }
