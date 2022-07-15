@@ -7,6 +7,7 @@ export type PosthogCoreOptions = {
   enable?: boolean
   captureMode?: 'json' | 'form'
   sendFeatureFlagEvent?: boolean
+  preloadFeatureFlags?: boolean
 }
 
 export type PostHogStorage = {
@@ -15,6 +16,11 @@ export type PostHogStorage = {
   removeItem: (key: string) => void
   clear: () => void
   getAllKeys: () => readonly string[]
+}
+
+export enum PostHogPersistedProperty {
+  DistinctId = 'distinct_id',
+  Props = 'props',
 }
 
 export type PostHogFetchOptions = {
@@ -33,6 +39,10 @@ export type PostHogFetchResponse = {
 export type PostHogQueueItem = {
   message: any
   callback?: (err: any) => void
+}
+
+export type PostHogEventProperties = {
+  [key: string]: any
 }
 
 export type PostHogAutocaptureElement = {

@@ -62,18 +62,18 @@ export const cookieStore: PostHogStorage = {
 const createStorageLike = (store: any): PostHogStorage => {
   return {
     getItem(key) {
-      return window.localStorage.getItem(key)
+      return store.getItem(key)
     },
 
     setItem(key, value) {
-      window.localStorage.setItem(key, JSON.stringify(value))
+      store.setItem(key, JSON.stringify(value))
     },
 
     removeItem(key) {
-      window.localStorage.removeItem(key)
+      store.removeItem(key)
     },
     clear() {
-      window.localStorage.clear()
+      store.clear()
     },
     getAllKeys() {
       const keys = []

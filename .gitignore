@@ -6,3 +6,4 @@ yarn-error.log
 *.tsbuildinfo
 .yalc
 yalc.lock
+coverage/

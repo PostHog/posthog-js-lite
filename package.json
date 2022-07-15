@@ -13,7 +13,7 @@
   "license": "MIT",
   "scripts": {
     "build": "yarn core:build && yarn node:build && yarn rn:build",
-    "test": "jest",
+    "test": "jest --config jest.config.js",
     "prepublish": "yarn test && yarn build",
     "core:build": "yarn workspace posthog-core build",
     "node:build": "yarn workspace posthog-node build",
@@ -21,22 +21,20 @@
     "rn:build": "yarn workspace posthog-react-native build"
   },
   "devDependencies": {
-    "@babel/core": "^7.10.4",
-    "@babel/preset-env": "^7.10.4",
-    "@babel/preset-typescript": "^7.10.4",
-    "@types/jest": "^26.0.3",
-    "husky": ">=4",
-    "lint-staged": ">=10",
-    "@types/node": "^14.0.19",
-    "prettier": "^2.0.5",
-    "eslint": "^7.4.0",
-    "eslint-config-prettier": "^6.11.0",
-    "eslint-plugin-prettier": "^3.1.4",
-    "babel-jest": "^26.1.0",
-    "jest": "^26.1.0",
-    "ts-jest": "^26.1.1",
-    "ts-node": "^8.10.2",
-    "typescript": "^3.9.6"
+    "@babel/core": "^7.18.6",
+    "@babel/preset-env": "^7.18.6",
+    "@babel/preset-typescript": "^7.18.6",
+    "@types/jest": "^28.1.5",
+    "babel-jest": "^28.1.3",
+    "eslint": "^8.19.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "husky": "^8.0.1",
+    "jest": "^28.1.3",
+    "prettier": "^2.7.1",
+    "ts-jest": "^28.0.6",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.7.4"
   },
   "jest": {
     "testPathIgnorePatterns": [

@@ -4,10 +4,11 @@ import {
   PostHogQueueItem,
   PostHogAutocaptureElement,
   PostHogDecideResponse,
-  PostHogStorage,
   PosthogCoreOptions,
+  PostHogEventProperties,
+  PostHogPersistedProperty,
 } from './types'
-import { assert, currentISOTime, currentTimestamp, removeTrailingSlash, retriable } from './utils'
+import { assert, currentISOTime, currentTimestamp, generateUUID, removeTrailingSlash, retriable } from './utils'
 export * as utils from './utils'
 import { LZString } from './lz-string'
 import { SimpleEventEmitter } from './eventemitter'
@@ -32,23 +33,16 @@ export abstract class PostHogCore {
   private _decideTimer?: any
   private _decidePollInterval = 10000
 
-  private _props: {
-    [key: string]: any
-  }
-
   // Abstract methods to be overridden by implementations
-  abstract storage(): PostHogStorage
   abstract fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse>
   abstract getLibraryId(): string
   abstract getLibraryVersion(): string
-  abstract getDistinctId(): string
-  abstract onSetDistinctId(newDistinctId: string): string
   abstract getCustomUserAgent(): string | void
   abstract setImmediate(fn: () => void): void
 
   // This is our abstracted storage. Each implementation should handle its own
-  abstract getPersistedProperty(key: string): string
-  abstract setPersistedProperty(key: string, value: string): void
+  abstract getPersistedProperty(key: PostHogPersistedProperty): string | undefined
+  abstract setPersistedProperty(key: PostHogPersistedProperty, value: string): void
 
   public enabled = true
 
@@ -63,7 +57,13 @@ export abstract class PostHogCore {
     this.captureMode = options.captureMode || 'form'
     this.sendFeatureFlagEvent = options.sendFeatureFlagEvent ?? true
     this._events = new SimpleEventEmitter()
-    this._props = JSON.parse(this.getPersistedProperty('props') || '{}')
+
+    // NOTE: It is important we don't initiate anything in the constructor as some async IO may still be underway on the parent
+    if (options.preloadFeatureFlags !== false) {
+      this.setImmediate(() => {
+        void this.reloadFeatureFlagsAsync()
+      })
+    }
   }
 
   protected getCommonEventProperties(): any {
@@ -72,6 +72,24 @@ export abstract class PostHogCore {
       $lib_version: this.getLibraryVersion(),
     }
   }
+
+  // NOTE: Props are lazy loaded from localstorage hence the complex getter setter logic
+  private get props() {
+    if (!this._props) {
+      this._props = JSON.parse(this.getPersistedProperty(PostHogPersistedProperty.Props) || '{}')
+    }
+    return this._props || {}
+  }
+
+  private set props(val: { [key: string]: any }) {
+    this._props = val
+  }
+
+  private _props:
+    | {
+        [key: string]: any
+      }
+    | undefined
 
   enable() {
     this.enabled = true
@@ -86,30 +104,39 @@ export abstract class PostHogCore {
   }
 
   register(properties: { [key: string]: any }) {
-    this._props = {
-      ...this._props,
+    this.props = {
+      ...this.props,
       ...properties,
     }
-    this.setPersistedProperty('props', JSON.stringify(this._props))
+    this.setPersistedProperty(PostHogPersistedProperty.Props, JSON.stringify(this.props))
   }
 
-  private buildPayload(payload: { event: string; properties?: any; distinct_id?: string }) {
+  private buildPayload(payload: { event: string; properties?: PostHogEventProperties; distinct_id?: string }) {
     return {
       distinct_id: payload.distinct_id || this.getDistinctId(),
-      event: '$create_alias',
+      event: payload.event,
       properties: {
-        ...this._props, // Persisted properties first
+        ...this.props, // Persisted properties first
         ...(payload.properties || {}), // Followed by user specified properties
         ...this.getCommonEventProperties(), // Followed by common PH props
       },
     }
   }
 
+  getDistinctId(): string {
+    let distinctId = this.getPersistedProperty(PostHogPersistedProperty.DistinctId)
+    if (!distinctId) {
+      distinctId = generateUUID(globalThis)
+      this.setPersistedProperty(PostHogPersistedProperty.DistinctId, distinctId)
+    }
+    return distinctId
+  }
+
   // PRAGMA - tracking methods
-  identify(distinctId?: string, properties?: any, callback?: () => void) {
+  identify(distinctId?: string, properties?: PostHogEventProperties, callback?: () => void) {
     distinctId = distinctId || this.getDistinctId()
 
-    if (properties.$groups) {
+    if (properties?.$groups) {
       this.groups(properties.$groups)
     }
 
@@ -126,21 +153,21 @@ export abstract class PostHogCore {
     }
 
     if (distinctId !== this.getDistinctId()) {
-      this.onSetDistinctId(distinctId)
+      this.setPersistedProperty(PostHogPersistedProperty.DistinctId, distinctId)
     }
 
     this.enqueue('identify', payload, callback)
     return this
   }
 
-  capture(event: string, properties?: any, callback?: () => void) {
+  capture(event: string, properties?: { [key: string]: any }, callback?: () => void) {
     // NOTE: Legacy nodejs implementation uses groups
     if (properties && properties['groups']) {
       properties.$groups = properties.groups
       delete properties.groups
     }
 
-    if (properties.$groups) {
+    if (properties?.$groups) {
       this.groups(properties.$groups)
     }
 
@@ -164,7 +191,12 @@ export abstract class PostHogCore {
     return this
   }
 
-  autocapture(eventType: string, elements: PostHogAutocaptureElement[], properties?: any, callback?: () => void) {
+  autocapture(
+    eventType: string,
+    elements: PostHogAutocaptureElement[],
+    properties?: PostHogEventProperties,
+    callback?: () => void
+  ) {
     const payload = this.buildPayload({
       event: '$autocapture',
       properties: {
@@ -179,7 +211,7 @@ export abstract class PostHogCore {
 
   groups(groups: { [type: string]: string }) {
     // Get persisted groups
-    const existingGroups = this._props.$groups || {}
+    const existingGroups = this.props.$groups || {}
 
     // NOTE: Should we do the same for groups listed in identify / capture?
     this.register({
@@ -189,12 +221,12 @@ export abstract class PostHogCore {
       },
     })
 
-    if (Object.keys(groups).find((type) => existingGroups[type] !== groups[type])) {
+    if (Object.keys(groups).find((type) => existingGroups[type] !== groups[type]) && this._decideResponsePromise) {
       void this.reloadFeatureFlagsAsync()
     }
   }
 
-  group(groupType: string, groupKey: string, groupProperties?: any) {
+  group(groupType: string, groupKey: string, groupProperties?: PostHogEventProperties) {
     this.groups({
       [groupType]: groupKey,
     })
@@ -204,7 +236,7 @@ export abstract class PostHogCore {
     }
   }
 
-  groupIdentify(groupType: string, groupKey: string, groupProperties?: any, callback?: () => void) {
+  groupIdentify(groupType: string, groupKey: string, groupProperties?: PostHogEventProperties, callback?: () => void) {
     const payload = {
       event: '$groupidentify',
       distinctId: `$${groupType}_${groupKey}`,
@@ -212,6 +244,7 @@ export abstract class PostHogCore {
         $group_type: groupType,
         $group_key: groupKey,
         $group_set: groupProperties || {},
+        ...this.getCommonEventProperties(),
       },
     }
 
@@ -231,7 +264,7 @@ export abstract class PostHogCore {
     const url = `${this.host}/decide/?v=2`
 
     const distinctId = this.getDistinctId()
-    const groups = {} // TODO
+    const groups = this.props.$groups || {}
 
     const fetchOptions: PostHogFetchOptions = {
       method: 'POST',
@@ -240,7 +273,7 @@ export abstract class PostHogCore {
     }
 
     this._decideResponsePromise = this.fetchWithRetry(url, fetchOptions)
-      .then((r) => r.json())
+      .then((r) => r.json() as PostHogDecideResponse)
       .then((res) => {
         this._decideResponse = res
         this._events.emit('featureflags', res.featureFlags)
@@ -274,7 +307,7 @@ export abstract class PostHogCore {
   }
 
   isFeatureEnabled(key: string, defaultResult: boolean = false) {
-    const flag = this.getFeatureFlag(key, defaultResult)
+    const flag = this.getFeatureFlag(key, defaultResult) ?? defaultResult
     return !!flag
   }
 
@@ -334,6 +367,12 @@ export abstract class PostHogCore {
     if (this.flushInterval && !this._flushTimer) {
       this._flushTimer = setTimeout(() => this.flush(), this.flushInterval)
     }
+  }
+
+  flushAsync(): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.flush((err, data) => (err ? reject(err) : resolve(data)))
+    })
   }
 
   flush(callback?: (err?: any, data?: any) => void) {
@@ -411,6 +450,8 @@ export abstract class PostHogCore {
   }
 
   private async fetchWithRetry(url: string, options: PostHogFetchOptions): Promise<any> {
+    // TODO: Enable retries
+    return this.fetch(url, options)
     return retriable(() => this.fetch(url, options))
   }
 }

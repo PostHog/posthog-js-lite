@@ -18,13 +18,18 @@ export async function retriable<T>(
 
   for (let i = 0; i < retryCount; i++) {
     try {
+      console.log('CALLING FETCH')
       const res = await fn()
+      console.log('CALLING FETCH DONE', res)
       return res
     } catch (e) {
+      console.log('ERRORED FETCH')
       if (!shouldRetry(e)) {
         throw e
       }
     }
+
+    console.log('RETRY WAITING...')
 
     await new Promise((r) => setTimeout(r, retryDelay))
   }

@@ -18,8 +18,8 @@
     "build": "rm -rf ./dist & tsc -p ."
   },
   "dependencies": {
-    "posthog-core": "2.0.0-alpha",
-    "node-fetch": "^3.2.6"
+    "node-fetch": "^3.2.6",
+    "posthog-core": "2.0.0-alpha"
   },
   "devDependencies": {
     "@types/node": "^18.0.0",

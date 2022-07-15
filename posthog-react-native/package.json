@@ -8,9 +8,9 @@
     "prepublish": "yarn build"
   },
   "dependencies": {
-    "expo-file-system": "^13.0.0",
     "expo-application": "^4.0.0",
     "expo-device": "^4.0.0",
+    "expo-file-system": "^13.0.0",
     "posthog-core": "2.0.0-alpha"
   },
   "devDependencies": {

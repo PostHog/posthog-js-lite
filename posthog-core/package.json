@@ -5,6 +5,21 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "rm -rf ./dist & tsc -p . && mv ./dist/src/ ./dist-out && rm -rf ./dist && mv ./dist-out ./dist",
-    "prepublish": "yarn build"
+    "prepublish": "yarn build",
+    "test": "jest"
+  },
+  "jest": {
+    "transform": {
+      "^.+\\.ts?$": "ts-jest"
+    },
+    "moduleFileExtensions": [
+      "ts",
+      "js",
+      "json",
+      "node"
+    ],
+    "collectCoverage": true,
+    "clearMocks": true,
+    "coverageDirectory": "coverage"
   }
 }
