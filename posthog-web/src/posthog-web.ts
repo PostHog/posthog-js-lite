@@ -23,11 +23,11 @@ export class PostHogWeb extends PostHogCore {
   private _storageCache: any
   private _storageKey: string
 
-  constructor(apiKey: string, options: PostHogWebOptions) {
+  constructor(apiKey: string, options?: PostHogWebOptions) {
     super(apiKey, options)
 
     // posthog-js stores options in one object on
-    this._storageKey = options.persistence_name ? `ph_${options.persistence_name}` : `ph_${apiKey}_posthog`
+    this._storageKey = options?.persistence_name ? `ph_${options.persistence_name}` : `ph_${apiKey}_posthog`
   }
 
   getPersistedProperty(key: PostHogPersistedProperty): string | undefined {
