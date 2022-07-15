@@ -14,7 +14,6 @@
   "scripts": {
     "build": "yarn core:build && yarn node:build && yarn rn:build",
     "test": "jest --config jest.config.js",
-    "prepublish": "yarn test && yarn build",
     "core:build": "yarn workspace posthog-core build",
     "node:build": "yarn workspace posthog-node build",
     "web:build": "yarn workspace posthog-web build",
