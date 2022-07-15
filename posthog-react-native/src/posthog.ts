@@ -7,12 +7,11 @@ import {
   PosthogCoreOptions,
   PostHogFetchOptions,
   PostHogFetchResponse,
-  PostHogStorage,
-  utils,
+  PostHogPersistedProperty,
 } from 'posthog-core'
 import { getLegacyValues } from './legacy'
 import { SemiAsyncStorage, preloadSemiAsyncStorage } from './storage'
-import { OptionalExpoLocalization, OptionalExpoNetwork } from './optional-imports'
+import { OptionalExpoLocalization } from './optional-imports'
 // import { version } from '../package.json'
 
 // TODO: Get this from package.json
@@ -20,7 +19,7 @@ const version = '2.0.0-alpha'
 
 export interface PostHogReactNativeOptions extends PosthogCoreOptions {}
 
-const KEY_DISTINCT_ID = '@posthog:distinct_id'
+const STORAGE_PREFIX = '@posthog:'
 
 export class PostHogReactNative extends PostHogCore {
   constructor(apiKey: string, options?: PostHogReactNativeOptions) {
@@ -34,21 +33,23 @@ export class PostHogReactNative extends PostHogCore {
     preloadSemiAsyncStorage()
 
     // It is possible that the old library was used so we try to get the legacy distinctID
-    let existingDistinctId = this.storage().getItem(KEY_DISTINCT_ID)
     preloadSemiAsyncStorage().then(() => {
-      getLegacyValues().then((legacyValues) => {
-        if (!existingDistinctId) {
+      const key = `${STORAGE_PREFIX}${PostHogPersistedProperty.DistinctId}`
+      if (!SemiAsyncStorage.getItem(key)) {
+        getLegacyValues().then((legacyValues) => {
           if (legacyValues?.distinctId) {
-            this.storage().setItem(KEY_DISTINCT_ID, legacyValues.distinctId)
-            existingDistinctId = legacyValues.distinctId
+            SemiAsyncStorage.setItem(key, legacyValues.distinctId)
           }
-        }
-      })
+        })
+      }
     })
   }
 
-  storage(): PostHogStorage {
-    return SemiAsyncStorage
+  getPersistedProperty(key: PostHogPersistedProperty): string | undefined {
+    return SemiAsyncStorage.getItem(`${STORAGE_PREFIX}${key}`) || undefined
+  }
+  setPersistedProperty(key: PostHogPersistedProperty, value: string): void {
+    return SemiAsyncStorage.setItem(`${STORAGE_PREFIX}${key}`, value)
   }
 
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
@@ -91,20 +92,11 @@ export class PostHogReactNative extends PostHogCore {
     }
   }
 
+  // Custom methods
   screen(name: string, properties?: any) {
     this.capture('$screen', {
       ...properties,
       $screen_name: name,
     })
-  }
-
-  getDistinctId(): string {
-    const existingDistinctId = this.storage().getItem(KEY_DISTINCT_ID)
-    return existingDistinctId || this.onSetDistinctId(utils.generateUUID())
-  }
-
-  onSetDistinctId(newDistinctId: string): string {
-    this.storage().setItem(KEY_DISTINCT_ID, newDistinctId)
-    return newDistinctId
   }
 }
