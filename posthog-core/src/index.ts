@@ -157,7 +157,7 @@ export abstract class PostHogCore {
         event: '$identify',
         properties: {
           ...(properties || {}),
-          $anon_distinct_id: this.getDistinctId(),
+          $anon_distinct_id: this.getDistinctId(), // TODO: Should this be the previous distinct id or the original anon id??
         },
       }),
       $set: properties,
