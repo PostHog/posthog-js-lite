@@ -15,8 +15,8 @@ export interface PostHogNodejsOptions extends PosthogCoreOptions {}
 const SHARED_PERSISTENCE_PROPERTIES = [PostHogPersistedProperty.Queue]
 
 export class PostHogNodejs extends PostHogCore {
-  _sharedStorage: { [key: string]: any | undefined } = {}
-  _memoryStorage: { [key: string]: any | undefined } = {}
+  private _sharedStorage: { [key: string]: any | undefined } = {}
+  private _memoryStorage: { [key: string]: any | undefined } = {}
 
   constructor(apiKey: string, options: PostHogNodejsOptions, globalStorage: { [key: string]: any | undefined }) {
     super(apiKey, options)
@@ -48,8 +48,8 @@ export class PostHogNodejs extends PostHogCore {
 }
 
 // The actual exported Nodejs API.
-export default class PostHogNodejsGlobal {
-  _sharedStorage: { [key: string]: any | undefined } = {}
+export class PostHogNodejsGlobal {
+  private _sharedStorage: { [key: string]: any | undefined } = {}
 
   constructor(private apiKey: string, private options: PostHogNodejsOptions) {}
 
