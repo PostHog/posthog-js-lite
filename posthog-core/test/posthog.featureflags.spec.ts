@@ -1,3 +1,4 @@
+import { PostHogPersistedProperty } from '../src'
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
 import { parseBody } from './test-utils/test-utils'
 
@@ -52,6 +53,11 @@ describe('PostHog Core', () => {
     it('isFeatureEnabled should return undefined if not loaded', () => {
       expect(posthog.isFeatureEnabled('my-flag')).toEqual(false)
       expect(posthog.isFeatureEnabled('my-flag', true)).toEqual(true)
+    })
+
+    it('should load persisted feature flags', () => {
+      posthog.setPersistedProperty(PostHogPersistedProperty.FeatueFlags, JSON.stringify(mockFeatureFlags))
+      expect(posthog.getFeatureFlags()).toEqual(mockFeatureFlags)
     })
 
     describe('when loaded', () => {
@@ -129,6 +135,12 @@ describe('PostHog Core', () => {
         // Only tracked once
         expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
         expect(mocks.fetch).toHaveBeenCalledTimes(2)
+      })
+
+      it('should persist feature flags', () => {
+        expect(posthog.getPersistedProperty(PostHogPersistedProperty.FeatueFlags)).toEqual(
+          JSON.stringify(mockFeatureFlags)
+        )
       })
     })
   })

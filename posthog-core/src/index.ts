@@ -285,6 +285,11 @@ export abstract class PostHogCore {
       .then((r) => r.json() as PostHogDecideResponse)
       .then((res) => {
         this._decideResponse = res
+
+        if (res.featureFlags) {
+          this.setPersistedProperty(PostHogPersistedProperty.FeatueFlags, JSON.stringify(res.featureFlags))
+        }
+
         this._events.emit('featureflags', res.featureFlags)
         return res
       })
@@ -292,7 +297,7 @@ export abstract class PostHogCore {
   }
 
   getFeatureFlag(key: string, defaultResult: string | boolean = false): boolean | string | undefined {
-    const featureFlags = this._decideResponse?.featureFlags
+    const featureFlags = this.getFeatureFlags()
 
     if (!featureFlags) {
       // If we haven't loaded flags yet we respond undefined to indicate this
@@ -312,7 +317,9 @@ export abstract class PostHogCore {
   }
 
   getFeatureFlags() {
-    return this._decideResponse?.featureFlags
+    const persistedFlags = this.getPersistedProperty(PostHogPersistedProperty.FeatueFlags)
+
+    return persistedFlags ? (JSON.parse(persistedFlags) as PostHogDecideResponse['featureFlags']) : undefined
   }
 
   isFeatureEnabled(key: string, defaultResult: boolean = false) {
