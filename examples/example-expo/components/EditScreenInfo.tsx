@@ -26,7 +26,7 @@ export default function EditScreenInfo({ path }: { path: string }) {
         <Text style={styles.getStartedText}>Feature Flags:</Text>
 
         {flags ? (
-          <ScrollView style={[styles.featueFlags]}>
+          <ScrollView style={[styles.featureFlags]}>
             <View>
               {Object.keys(flags).map((key) => (
                 <Text key={key}>
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
   homeScreenFilename: {
     marginVertical: 7,
   },
-  featueFlags: {
+  featureFlags: {
     borderRadius: 3,
     paddingHorizontal: 4,
     height: 100,

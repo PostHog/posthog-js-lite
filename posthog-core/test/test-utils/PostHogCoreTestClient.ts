@@ -13,8 +13,8 @@ const version = '2.0.0-alpha'
 export interface PostHogCoreTestClientMocks {
   fetch: jest.Mock<Promise<PostHogFetchResponse>, [string, PostHogFetchOptions]>
   storage: {
-    getItem: jest.Mock<string | undefined, string[]>
-    setItem: jest.Mock<void, string[]>
+    getItem: jest.Mock<string | undefined, [string]>
+    setItem: jest.Mock<void, [string, string | null]>
   }
 }
 
@@ -28,7 +28,7 @@ export class PostHogCoreTestClient extends PostHogCore {
   getPersistedProperty(key: string) {
     return this.mocks.storage.getItem(key)
   }
-  setPersistedProperty(key: string, value: string): void {
+  setPersistedProperty(key: string, value: string | null): void {
     return this.mocks.storage.setItem(key, value)
   }
 
@@ -55,9 +55,9 @@ export const createTestClient = (
   const mocks = {
     fetch: jest.fn<Promise<PostHogFetchResponse>, [string, PostHogFetchOptions]>(),
     storage: {
-      getItem: jest.fn<string | undefined, string[]>((key) => storageCache[key]),
-      setItem: jest.fn<void, [string, string]>((key, val) => {
-        storageCache[key] = val
+      getItem: jest.fn<string | undefined, [string]>((key) => storageCache[key]),
+      setItem: jest.fn<void, [string, string | null]>((key, val) => {
+        storageCache[key] = val == null ? undefined : val
       }),
     },
   }

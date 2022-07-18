@@ -22,7 +22,8 @@ export type PostHogStorage = {
 export enum PostHogPersistedProperty {
   DistinctId = 'distinct_id',
   Props = 'props',
-  FeatueFlags = 'feature_flags',
+  FeatureFlags = 'feature_flags',
+  OverrideFeatureFlags = 'override_feature_flags',
 }
 
 export type PostHogFetchOptions = {

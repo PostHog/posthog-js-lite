@@ -38,13 +38,18 @@ export class PostHogWeb extends PostHogCore {
     return this._storageCache[key]
   }
 
-  setPersistedProperty(key: PostHogPersistedProperty, value: string): void {
+  setPersistedProperty(key: PostHogPersistedProperty, value: string | null): void {
     if (!this._storageCache) {
       this._storageCache = JSON.parse(this._storage.getItem(this._storageKey) || '{}')
     }
 
-    this._storageCache[key] = value
-    this._storage.setItem(this._storageKey, JSON.stringify(this._storageCache))
+    if (value === null) {
+      delete this._storageCache[key]
+      this._storage.removeItem(this._storageKey)
+    } else {
+      this._storageCache[key] = value
+      this._storage.setItem(this._storageKey, JSON.stringify(this._storageCache))
+    }
   }
 
   storage(): PostHogStorage {

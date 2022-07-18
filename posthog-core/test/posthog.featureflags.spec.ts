@@ -56,7 +56,7 @@ describe('PostHog Core', () => {
     })
 
     it('should load persisted feature flags', () => {
-      posthog.setPersistedProperty(PostHogPersistedProperty.FeatueFlags, JSON.stringify(mockFeatureFlags))
+      posthog.setPersistedProperty(PostHogPersistedProperty.FeatureFlags, JSON.stringify(mockFeatureFlags))
       expect(posthog.getFeatureFlags()).toEqual(mockFeatureFlags)
     })
 
@@ -138,7 +138,7 @@ describe('PostHog Core', () => {
       })
 
       it('should persist feature flags', () => {
-        expect(posthog.getPersistedProperty(PostHogPersistedProperty.FeatueFlags)).toEqual(
+        expect(posthog.getPersistedProperty(PostHogPersistedProperty.FeatureFlags)).toEqual(
           JSON.stringify(mockFeatureFlags)
         )
       })
@@ -162,6 +162,17 @@ describe('PostHog Core', () => {
               type: 'capture',
             },
           ],
+        })
+      })
+
+      it('should override flags', () => {
+        posthog.overrideFeatureFlag({
+          'feature-2': false,
+          'feature-variant': 'control',
+        })
+        expect(posthog.getFeatureFlags()).toEqual({
+          'feature-1': true,
+          'feature-variant': 'control',
         })
       })
     })

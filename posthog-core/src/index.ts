@@ -48,7 +48,7 @@ export abstract class PostHogCore {
 
   // This is our abstracted storage. Each implementation should handle its own
   abstract getPersistedProperty(key: PostHogPersistedProperty): string | undefined
-  abstract setPersistedProperty(key: PostHogPersistedProperty, value: string): void
+  abstract setPersistedProperty(key: PostHogPersistedProperty, value: string | null): void
 
   public enabled = true
 
@@ -72,12 +72,12 @@ export abstract class PostHogCore {
   }
 
   protected getCommonEventProperties(): any {
-    const featueFlags = this.getFeatureFlags()
+    const featureFlags = this.getFeatureFlags()
     return {
       $lib: this.getLibraryId(),
       $lib_version: this.getLibraryVersion(),
-      $active_feature_flags: featueFlags ? Object.keys(featueFlags) : undefined,
-      $enabled_feature_flags: featueFlags,
+      $active_feature_flags: featureFlags ? Object.keys(featureFlags) : undefined,
+      $enabled_feature_flags: featureFlags,
     }
   }
 
@@ -263,7 +263,7 @@ export abstract class PostHogCore {
   }
 
   /***
-   *** FEATUE FLAGS
+   *** FEATURE FLAGS
    ***/
   private decideAsync(): Promise<PostHogDecideResponse> {
     if (this._decideResponsePromise) {
@@ -290,7 +290,7 @@ export abstract class PostHogCore {
         this._decideResponse = res
 
         if (res.featureFlags) {
-          this.setPersistedProperty(PostHogPersistedProperty.FeatueFlags, JSON.stringify(res.featureFlags))
+          this.setPersistedProperty(PostHogPersistedProperty.FeatureFlags, JSON.stringify(res.featureFlags))
         }
 
         this._events.emit('featureflags', res.featureFlags)
@@ -320,9 +320,29 @@ export abstract class PostHogCore {
   }
 
   getFeatureFlags() {
-    const persistedFlags = this.getPersistedProperty(PostHogPersistedProperty.FeatueFlags)
+    const persistedFlagsString = this.getPersistedProperty(PostHogPersistedProperty.FeatureFlags)
+    const overriddenFlagsString = this.getPersistedProperty(PostHogPersistedProperty.OverrideFeatureFlags)
 
-    return persistedFlags ? (JSON.parse(persistedFlags) as PostHogDecideResponse['featureFlags']) : undefined
+    let flags = persistedFlagsString
+      ? (JSON.parse(persistedFlagsString) as PostHogDecideResponse['featureFlags'])
+      : undefined
+
+    if (!overriddenFlagsString) {
+      return flags
+    }
+
+    const overriddenFlags = JSON.parse(overriddenFlagsString) as PostHogDecideResponse['featureFlags']
+    flags = flags || {}
+
+    for (let key in overriddenFlags) {
+      if (!overriddenFlags[key]) {
+        delete flags[key]
+      } else {
+        flags[key] = overriddenFlags[key]
+      }
+    }
+
+    return flags
   }
 
   isFeatureEnabled(key: string, defaultResult: boolean = false) {
@@ -345,6 +365,13 @@ export abstract class PostHogCore {
       const flags = this.getFeatureFlags()
       if (flags) cb(flags)
     })
+  }
+
+  overrideFeatureFlag(flags: PostHogDecideResponse['featureFlags'] | null) {
+    if (flags === null) {
+      return this.setPersistedProperty(PostHogPersistedProperty.OverrideFeatureFlags, null)
+    }
+    return this.setPersistedProperty(PostHogPersistedProperty.OverrideFeatureFlags, JSON.stringify(flags))
   }
 
   /***

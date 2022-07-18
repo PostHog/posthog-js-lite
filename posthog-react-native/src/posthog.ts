@@ -48,8 +48,10 @@ export class PostHogReactNative extends PostHogCore {
   getPersistedProperty(key: PostHogPersistedProperty): string | undefined {
     return SemiAsyncStorage.getItem(`${STORAGE_PREFIX}${key}`) || undefined
   }
-  setPersistedProperty(key: PostHogPersistedProperty, value: string): void {
-    return SemiAsyncStorage.setItem(`${STORAGE_PREFIX}${key}`, value)
+  setPersistedProperty(key: PostHogPersistedProperty, value: string | null): void {
+    return value !== null
+      ? SemiAsyncStorage.setItem(`${STORAGE_PREFIX}${key}`, value)
+      : SemiAsyncStorage.removeItem(`${STORAGE_PREFIX}${key}`)
   }
 
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {

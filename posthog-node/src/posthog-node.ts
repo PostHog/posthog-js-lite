@@ -22,8 +22,8 @@ export class PostHogNodejs extends PostHogCore {
   getPersistedProperty(key: PostHogPersistedProperty): string | undefined {
     return this._memoryStorage[key]
   }
-  setPersistedProperty(key: PostHogPersistedProperty, value: string): void {
-    this._memoryStorage[key] = value
+  setPersistedProperty(key: PostHogPersistedProperty, value: string | null): void {
+    this._memoryStorage[key] = value !== null ? value : undefined
   }
 
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
