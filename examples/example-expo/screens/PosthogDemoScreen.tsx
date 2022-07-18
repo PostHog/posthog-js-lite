@@ -25,6 +25,14 @@ export default function PosthogDemoScreen(props: any) {
 
   const flags = useFeatureFlags()
 
+  const apiHome = () => {
+    fetch('http://localhost:8010/')
+  }
+
+  const apiUserAction = () => {
+    fetch(`http://localhost:8010/users/${posthog?.getDistinctId()}/action?foo=bar`)
+  }
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.containerContent}>
       <Text testID={`title-${title}`} style={styles.heading}>
@@ -70,6 +78,20 @@ export default function PosthogDemoScreen(props: any) {
           >
             <Text style={styles.buttonText}>Open Modal</Text>
           </TouchableOpacity>
+        </View>
+
+        <View style={styles.section}>
+          <TouchableOpacity onPress={() => apiHome()} style={styles.button}>
+            <Text style={styles.buttonText}>Call API /</Text>
+          </TouchableOpacity>
+
+          <View style={styles.separator} />
+
+          <TouchableOpacity onPress={() => apiUserAction()} style={styles.button}>
+            <Text style={styles.buttonText}>Call API /user/action</Text>
+          </TouchableOpacity>
+
+          <View style={styles.separator} />
         </View>
 
         <Text style={styles.heading}>Feature Flags</Text>

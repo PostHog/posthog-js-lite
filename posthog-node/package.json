@@ -16,7 +16,7 @@
   "module": "lib/index.esm.js",
   "types": "lib/index.d.ts",
   "dependencies": {
-    "node-fetch": "^3.2.6"
+    "axios": "^0.27.2"
   },
   "devDependencies": {
     "@types/node": "^18.0.0",

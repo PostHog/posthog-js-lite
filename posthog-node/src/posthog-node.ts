@@ -5,10 +5,8 @@ import {
   PostHogFetchResponse,
   PostHogPersistedProperty,
 } from 'posthog-core'
-// import { version } from '../package.json'
-
-// TODO: Get this from package.json
-const version = '2.0.0-alpha'
+import { version } from '../package.json'
+import axios from 'axios'
 
 export interface PostHogNodejsOptions extends PosthogCoreOptions {}
 
@@ -33,7 +31,25 @@ export class PostHogNodejs extends PostHogCore {
   }
 
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
-    throw Error('not implemented')
+    return axios
+      .request({
+        url: url,
+        method: options.method,
+        headers: options.headers,
+        data: options.body,
+      })
+      .then((res) => {
+        console.log(res)
+        return {
+          status: res.status,
+          text: () => Promise.resolve(res.data),
+          json: () => Promise.resolve(res.data),
+        }
+      })
+      .catch((e) => {
+        console.error(e)
+        throw e
+      })
   }
 
   getLibraryId(): string {

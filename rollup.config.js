@@ -1,6 +1,7 @@
 import babel from '@rollup/plugin-babel'
 import commonjs from '@rollup/plugin-commonjs'
 import resolve from '@rollup/plugin-node-resolve'
+import json from '@rollup/plugin-json'
 import typescript from 'rollup-plugin-typescript2'
 import dts from 'rollup-plugin-dts'
 
@@ -39,6 +40,7 @@ const configs = ['posthog-react-native', 'posthog-node', 'posthog-web'].reduce((
         resolve({ extensions }),
         // Allow bundling cjs modules. Rollup doesn`t understand cjs
         commonjs(),
+        json(),
         // Compile TypeScript/JavaScript files
         typescript({
           include: [`*.(t|j)s+(|x)`, `**/*.(t|j)s+(|x)`],
@@ -58,7 +60,7 @@ const configs = ['posthog-react-native', 'posthog-node', 'posthog-web'].reduce((
       ],
     },
     {
-      input: `./${x}/./lib/${x}/index.d.ts`,
+      input: `./${x}/lib/${x}/index.d.ts`,
       output: [{ file: `./${x}/lib/index.d.ts`, format: 'es' }],
       plugins: [dts()],
     },

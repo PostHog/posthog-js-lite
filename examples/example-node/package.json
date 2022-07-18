@@ -5,12 +5,14 @@
   "license": "MIT",
   "scripts": {
     "preinstall": "yarn build:posthog",
+    "prestart": "yarn build:posthog",
     "start": "ts-node server.ts",
     "build:posthog": "yarn build:posthog:publish && yarn build:posthog:link",
     "build:posthog:publish": "cd ../../ && yarn build && cd posthog-node && yalc publish",
     "build:posthog:link": "yalc add posthog-node"
   },
   "dependencies": {
+    "axios": "^0.27.2",
     "express": "^4.18.1",
     "posthog-node": "file:.yalc/posthog-node"
   },

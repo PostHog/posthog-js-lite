@@ -6,12 +6,9 @@ import {
   PostHogFetchResponse,
   PostHogPersistedProperty,
 } from 'posthog-core'
-// import { version } from '../package.json'
 import { getContext } from './context'
 import { localStore, cookieStore, sessionStorage } from './storage'
-
-// TODO: Get this from package.json
-const version = '2.0.0-alpha'
+import { version } from '../package.json'
 
 export interface PostHogWebOptions extends PosthogCoreOptions {
   autocapture?: boolean

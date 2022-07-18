@@ -5,16 +5,18 @@ const app = express()
 
 const posthog = new PostHogNodejsGlobal('phc_FzKQvNvps9ZUTxF5KJR9jIKdGb4bq4HNBa9SRyAHi0C', {
   host: 'http://localhost:8000',
+  flushAt: 1,
+  preloadFeatureFlags: false,
 })
 
 app.get('/', (req, res) => {
-  posthog.user('EXAMPLE_APP_GLOBAL').capture('home page loaded')
+  ;(posthog.user('EXAMPLE_APP_GLOBAL') as any).capture('home page loaded')
   res.send({ hello: 'world' })
 })
 
 app.get('/user/:userId/action', (req, res) => {
+  ;(posthog.user(req.params.userId) as any).capture('user did action', req.params)
   res.send({ status: 'ok' })
-  posthog.user(req.params.userId).capture('user did action', req.params)
 })
 
 app.listen(8010, () => {

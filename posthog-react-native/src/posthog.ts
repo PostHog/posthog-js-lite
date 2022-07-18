@@ -8,15 +8,11 @@ import {
   PostHogFetchOptions,
   PostHogFetchResponse,
   PostHogPersistedProperty,
-  PostHogQueueItem,
 } from 'posthog-core'
 import { getLegacyValues } from './legacy'
 import { SemiAsyncStorage, preloadSemiAsyncStorage } from './storage'
 import { OptionalExpoLocalization } from './optional-imports'
-// import { version } from '../package.json'
-
-// TODO: Get this from package.json
-const version = '2.0.0-alpha'
+import { version } from '../package.json'
 
 export interface PostHogReactNativeOptions extends PosthogCoreOptions {}
 
