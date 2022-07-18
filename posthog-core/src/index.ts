@@ -72,9 +72,12 @@ export abstract class PostHogCore {
   }
 
   protected getCommonEventProperties(): any {
+    const featueFlags = this.getFeatureFlags()
     return {
       $lib: this.getLibraryId(),
       $lib_version: this.getLibraryVersion(),
+      $active_feature_flags: featueFlags ? Object.keys(featueFlags) : undefined,
+      $enabled_feature_flags: featueFlags,
     }
   }
 

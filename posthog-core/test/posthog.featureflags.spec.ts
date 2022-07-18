@@ -142,6 +142,28 @@ describe('PostHog Core', () => {
           JSON.stringify(mockFeatureFlags)
         )
       })
+
+      it('should include feature flags in subsequent captures', () => {
+        posthog.capture('test-event', { foo: 'bar' })
+
+        expect(parseBody(mocks.fetch.mock.calls[1])).toMatchObject({
+          batch: [
+            {
+              event: 'test-event',
+              distinct_id: posthog.getDistinctId(),
+              properties: {
+                $active_feature_flags: ['feature-1', 'feature-2', 'feature-variant'],
+                $enabled_feature_flags: {
+                  'feature-1': true,
+                  'feature-2': true,
+                  'feature-variant': 'variant',
+                },
+              },
+              type: 'capture',
+            },
+          ],
+        })
+      })
     })
   })
 })
