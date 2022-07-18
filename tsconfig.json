@@ -1,25 +1,26 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "isolatedModules": true,
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "resolveJsonModule": true,
     "allowJs": true,
     "target": "es6",
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
     "rootDir": "./",
+    "noEmit": true,
     "incremental": true,
-    "types": ["jest"],
-    "strict": true
+    "strict": true,
+    "paths": {
+      "posthog-core": ["./posthog-core/src"]
+    },
+    "lib": ["es2017"]
   },
-  "exclude": ["**/dist/**", "node_modules", "dist", "**/*.spec.*"],
-  "references": [
-    {
-      "path": "./posthog-core"
-    }
-  ]
+  "exclude": ["**/dist/**", "node_modules", "dist", "**/*.spec.*"]
 }

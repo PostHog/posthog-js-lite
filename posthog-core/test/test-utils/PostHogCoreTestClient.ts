@@ -1,11 +1,4 @@
-import {
-  PostHogCore,
-  utils,
-  PostHogFetchOptions,
-  PostHogFetchResponse,
-  PosthogCoreOptions,
-  PostHogEventProperties,
-} from '../../src'
+import { PostHogCore, PosthogCoreOptions, PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core'
 
 // TODO: Get this from package.json
 const version = '2.0.0-alpha'
@@ -31,7 +24,6 @@ export class PostHogCoreTestClient extends PostHogCore {
   setPersistedProperty<T>(key: string, value: T | null): void {
     return this.mocks.storage.setItem(key, value)
   }
-
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
     return this.mocks.fetch(url, options)
   }

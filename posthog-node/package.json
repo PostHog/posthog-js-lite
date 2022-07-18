@@ -12,14 +12,14 @@
     "email": "hey@posthog.com",
     "url": "https://posthog.com"
   },
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "lib/index.cjs.js",
+  "module": "lib/index.esm.js",
+  "types": "lib/index.d.ts",
   "scripts": {
     "build": "rm -rf ./dist & tsc -p ."
   },
   "dependencies": {
-    "node-fetch": "^3.2.6",
-    "posthog-core": "2.0.0-alpha"
+    "node-fetch": "^3.2.6"
   },
   "devDependencies": {
     "@types/node": "^18.0.0",

@@ -1,14 +1,7 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    "esModuleInterop": true,
-    "isolatedModules": true,
     "jsx": "react-native",
-    "lib": ["es2017"],
-    "moduleResolution": "node",
-    "strict": true,
-    "target": "esnext",
-    "outDir": "./dist",
-    "rootDir": "."
+    "lib": ["es2017"]
   }
 }
