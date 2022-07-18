@@ -8,6 +8,7 @@ export type PosthogCoreOptions = {
   captureMode?: 'json' | 'form'
   sendFeatureFlagEvent?: boolean
   preloadFeatureFlags?: boolean
+  decidePollInterval?: number
 }
 
 export type PostHogStorage = {

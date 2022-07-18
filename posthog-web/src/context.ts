@@ -5,10 +5,11 @@ import { utils } from 'posthog-core'
 const version = '2.0.0-alpha'
 
 export function getContext(window: Window) {
-  const context = {}
+  let context = {}
   if (window.navigator) {
     const userAgent = window.navigator.userAgent
-    Object.assign(context, {
+    context = {
+      ...context,
       $os: os(window),
       $browser: browser(userAgent, window.navigator.vendor, !!(window as any).opera),
       $referrer: window.document.referrer,
@@ -21,14 +22,15 @@ export function getContext(window: Window) {
       $screen_height: window.screen.height,
       $screen_width: window.screen.width,
       $screen_dpr: window.devicePixelRatio,
-    })
+    }
   }
-  Object.assign(context, {
+  context = {
+    ...context,
     $lib: 'js',
     $lib_version: version,
     $insert_id: Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10),
     $time: utils.currentTimestamp() / 1000, // epoch time in seconds
-  })
+  }
   return context // TODO: strip empty props?
 }
 

@@ -4,7 +4,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "rm -rf ./dist & tsc -p .",
+    "build": "rm -rf ./dist & tsc -p . && mv ./dist/src/ ./dist-out && rm -rf ./dist && mv ./dist-out ./dist",
     "prepublish": "yarn build"
   },
   "dependencies": {

@@ -38,7 +38,7 @@ export abstract class PostHogCore {
   private _decideResponsePromise?: Promise<PostHogDecideResponse>
   private _decideResponse?: PostHogDecideResponse
   private _decideTimer?: any
-  private _decidePollInterval = 10000
+  private _decidePollInterval: number
 
   // Abstract methods to be overridden by implementations
   abstract fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse>
@@ -61,6 +61,7 @@ export abstract class PostHogCore {
     this.flushInterval = options?.flushInterval ?? 10000
     this.captureMode = options?.captureMode || 'form'
     this.sendFeatureFlagEvent = options?.sendFeatureFlagEvent ?? true
+    this._decidePollInterval = Math.max(0, options?.decidePollInterval ?? 30000)
 
     // NOTE: It is important we don't initiate anything in the constructor as some async IO may still be underway on the parent
     if (options?.preloadFeatureFlags !== false) {
