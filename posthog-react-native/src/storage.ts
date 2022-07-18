@@ -1,5 +1,4 @@
 import type AsyncStorage from '@react-native-async-storage/async-storage'
-import { PostHogStorage } from 'posthog-core'
 
 // NOTE: Should we use AsyncStorage? We are at risk of using the same store as the
 // rest of the app which could get wiped by the user
@@ -22,13 +21,13 @@ try {
 
 // NOTE: The core prefers a synchronous storage so we mimic this by pre-loading all keys
 const _memoryCache: { [key: string]: string } = {}
-export const SemiAsyncStorage: PostHogStorage = {
-  getItem: function (key: string): string | null | undefined {
+export const SemiAsyncStorage = {
+  getItem: function (key: string): any | null | undefined {
     return _memoryCache[key]
   },
-  setItem: function (key: string, value: string): void {
+  setItem: function (key: string, value: any): void {
     _memoryCache[key] = value
-    void _AsyncStorage.setItem(key, value)
+    void _AsyncStorage.setItem(key, JSON.stringify(value))
   },
   removeItem: function (key: string): void {
     delete _memoryCache[key]
@@ -56,7 +55,7 @@ export const preloadSemiAsyncStorage = (): Promise<void> => {
     .then(_AsyncStorage.multiGet)
     .then((res) => {
       res.forEach(([key, value]) => {
-        if (value !== null) _memoryCache[key] = value
+        if (value !== null) _memoryCache[key] = JSON.parse(value)
       })
     })
 

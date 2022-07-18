@@ -17,12 +17,9 @@ describe('PostHog Core', () => {
       const groups = { posthog: 'team-1', other: 'key-2' }
       posthog.groups(groups)
 
-      expect(mocks.storage.setItem).toHaveBeenCalledWith(
-        'props',
-        JSON.stringify({
-          $groups: groups,
-        })
-      )
+      expect(mocks.storage.setItem).toHaveBeenCalledWith('props', {
+        $groups: groups,
+      })
     })
   })
 
@@ -33,15 +30,12 @@ describe('PostHog Core', () => {
       posthog.group('other', 'foo')
       posthog.group('posthog', 'team-2')
 
-      expect(mocks.storage.setItem).toHaveBeenCalledWith(
-        'props',
-        JSON.stringify({
-          $groups: {
-            posthog: 'team-2',
-            other: 'foo',
-          },
-        })
-      )
+      expect(mocks.storage.setItem).toHaveBeenCalledWith('props', {
+        $groups: {
+          posthog: 'team-2',
+          other: 'foo',
+        },
+      })
     })
 
     it('should call groupIdentify if including props', () => {

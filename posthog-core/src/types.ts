@@ -24,6 +24,7 @@ export enum PostHogPersistedProperty {
   Props = 'props',
   FeatureFlags = 'feature_flags',
   OverrideFeatureFlags = 'override_feature_flags',
+  Queue = 'queue',
 }
 
 export type PostHogFetchOptions = {

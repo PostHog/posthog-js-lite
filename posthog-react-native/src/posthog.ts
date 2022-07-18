@@ -8,6 +8,7 @@ import {
   PostHogFetchOptions,
   PostHogFetchResponse,
   PostHogPersistedProperty,
+  PostHogQueueItem,
 } from 'posthog-core'
 import { getLegacyValues } from './legacy'
 import { SemiAsyncStorage, preloadSemiAsyncStorage } from './storage'
@@ -45,10 +46,10 @@ export class PostHogReactNative extends PostHogCore {
     })
   }
 
-  getPersistedProperty(key: PostHogPersistedProperty): string | undefined {
+  getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined {
     return SemiAsyncStorage.getItem(`${STORAGE_PREFIX}${key}`) || undefined
   }
-  setPersistedProperty(key: PostHogPersistedProperty, value: string | null): void {
+  setPersistedProperty<T>(key: PostHogPersistedProperty, value: T | null): void {
     return value !== null
       ? SemiAsyncStorage.setItem(`${STORAGE_PREFIX}${key}`, value)
       : SemiAsyncStorage.removeItem(`${STORAGE_PREFIX}${key}`)

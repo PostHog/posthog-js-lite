@@ -19,10 +19,6 @@ describe('PostHog Core', () => {
       )
     })
 
-    it('should create an empty queue', () => {
-      expect((posthog as any)._queue).toEqual([])
-    })
-
     it('should initialise default options', () => {
       expect(posthog as any).toMatchObject({
         apiKey: 'TEST_API_KEY',

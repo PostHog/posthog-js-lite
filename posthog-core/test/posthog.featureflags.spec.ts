@@ -56,7 +56,7 @@ describe('PostHog Core', () => {
     })
 
     it('should load persisted feature flags', () => {
-      posthog.setPersistedProperty(PostHogPersistedProperty.FeatureFlags, JSON.stringify(mockFeatureFlags))
+      posthog.setPersistedProperty(PostHogPersistedProperty.FeatureFlags, mockFeatureFlags)
       expect(posthog.getFeatureFlags()).toEqual(mockFeatureFlags)
     })
 
@@ -138,9 +138,7 @@ describe('PostHog Core', () => {
       })
 
       it('should persist feature flags', () => {
-        expect(posthog.getPersistedProperty(PostHogPersistedProperty.FeatureFlags)).toEqual(
-          JSON.stringify(mockFeatureFlags)
-        )
+        expect(posthog.getPersistedProperty(PostHogPersistedProperty.FeatureFlags)).toEqual(mockFeatureFlags)
       })
 
       it('should include feature flags in subsequent captures', () => {

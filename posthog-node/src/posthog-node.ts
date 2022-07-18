@@ -13,16 +13,16 @@ const version = '2.0.0-alpha'
 export interface PostHogNodejsOptions extends PosthogCoreOptions {}
 
 export class PostHogNodejs extends PostHogCore {
-  _memoryStorage: { [key: string]: string | undefined } = {}
+  _memoryStorage: { [key: string]: any | undefined } = {}
 
   constructor(apiKey: string, options: PostHogNodejsOptions) {
     super(apiKey, options)
   }
 
-  getPersistedProperty(key: PostHogPersistedProperty): string | undefined {
+  getPersistedProperty(key: PostHogPersistedProperty): any | undefined {
     return this._memoryStorage[key]
   }
-  setPersistedProperty(key: PostHogPersistedProperty, value: string | null): void {
+  setPersistedProperty(key: PostHogPersistedProperty, value: any | null): void {
     this._memoryStorage[key] = value !== null ? value : undefined
   }
 

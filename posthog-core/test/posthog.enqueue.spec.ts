@@ -1,3 +1,4 @@
+import { PostHogPersistedProperty } from '../src'
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
 
 describe('PostHog Core', () => {
@@ -15,8 +16,9 @@ describe('PostHog Core', () => {
         foo: 'bar',
       })
 
-      expect((posthog as any)._queue).toHaveLength(1)
-      const item = (posthog as any)._queue.pop()
+      expect(posthog.getPersistedProperty(PostHogPersistedProperty.Queue)).toHaveLength(1)
+
+      const item = posthog.getPersistedProperty<any[]>(PostHogPersistedProperty.Queue)?.pop()
 
       expect(item).toMatchObject({
         message: {

@@ -20,10 +20,8 @@ describe('PostHog Core', () => {
       })
 
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.DistinctId)).toEqual(distinctId)
-      expect(posthog.getPersistedProperty(PostHogPersistedProperty.OverrideFeatureFlags)).toEqual(
-        JSON.stringify({ foo: 'bar' })
-      )
-      expect(posthog.getPersistedProperty(PostHogPersistedProperty.Props)).toEqual(JSON.stringify({ prop: 1 }))
+      expect(posthog.getPersistedProperty(PostHogPersistedProperty.OverrideFeatureFlags)).toEqual({ foo: 'bar' })
+      expect(posthog.getPersistedProperty(PostHogPersistedProperty.Props)).toEqual({ prop: 1 })
 
       posthog.reset()
 

@@ -67,10 +67,9 @@ describe('PostHog Core', () => {
 
     it('should use existing distinctId from storage', () => {
       mocks.storage.setItem(PostHogPersistedProperty.DistinctId, 'my-old-value')
-      mocks.storage.setItem.mockReset()
-
+      mocks.storage.setItem.mockClear()
       posthog.identify('id-1', { foo: 'bar' })
-      expect(mocks.storage.setItem).toHaveBeenCalledTimes(1)
+      // One call exists for the queueing, one for persisting distinct id
       expect(mocks.storage.setItem).toHaveBeenCalledWith('distinct_id', 'id-1')
       expect(mocks.fetch).toHaveBeenCalledTimes(1)
       expect(parseBody(mocks.fetch.mock.calls[0])).toMatchObject({
@@ -87,9 +86,10 @@ describe('PostHog Core', () => {
 
     it('should not update stored properties if distinct_id the same', () => {
       mocks.storage.setItem(PostHogPersistedProperty.DistinctId, 'id-1')
-      mocks.storage.setItem.mockReset()
+      mocks.storage.setItem.mockClear()
       posthog.identify('id-1', { foo: 'bar' })
-      expect(mocks.storage.setItem).toHaveBeenCalledTimes(0)
+      // One call exists for the queueing
+      expect(mocks.storage.setItem).toHaveBeenCalledTimes(1)
     })
   })
 })

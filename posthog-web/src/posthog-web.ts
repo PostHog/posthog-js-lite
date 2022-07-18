@@ -30,17 +30,17 @@ export class PostHogWeb extends PostHogCore {
     this._storageKey = options?.persistence_name ? `ph_${options.persistence_name}` : `ph_${apiKey}_posthog`
   }
 
-  getPersistedProperty(key: PostHogPersistedProperty): string | undefined {
+  getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined {
     if (!this._storageCache) {
-      this._storageCache = JSON.parse(this._storage.getItem(this._storageKey) || '{}')
+      this._storageCache = JSON.parse(this._storage.getItem(this._storageKey) || '{}') || {}
     }
 
     return this._storageCache[key]
   }
 
-  setPersistedProperty(key: PostHogPersistedProperty, value: string | null): void {
+  setPersistedProperty<T>(key: PostHogPersistedProperty, value: T | null): void {
     if (!this._storageCache) {
-      this._storageCache = JSON.parse(this._storage.getItem(this._storageKey) || '{}')
+      this._storageCache = JSON.parse(this._storage.getItem(this._storageKey) || '{}') || {}
     }
 
     if (value === null) {

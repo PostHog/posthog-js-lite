@@ -33,10 +33,8 @@ export abstract class PostHogCore {
 
   // internal
   private _events = new SimpleEventEmitter()
-  private _queue: PostHogQueueItem[] = []
   private _flushTimer?: any
   private _decideResponsePromise?: Promise<PostHogDecideResponse>
-  private _decideResponse?: PostHogDecideResponse
   private _decideTimer?: any
   private _decidePollInterval: number
 
@@ -47,8 +45,8 @@ export abstract class PostHogCore {
   abstract getCustomUserAgent(): string | void
 
   // This is our abstracted storage. Each implementation should handle its own
-  abstract getPersistedProperty(key: PostHogPersistedProperty): string | undefined
-  abstract setPersistedProperty(key: PostHogPersistedProperty, value: string | null): void
+  abstract getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined
+  abstract setPersistedProperty<T>(key: PostHogPersistedProperty, value: T | null): void
 
   public enabled = true
 
@@ -84,7 +82,7 @@ export abstract class PostHogCore {
   // NOTE: Props are lazy loaded from localstorage hence the complex getter setter logic
   private get props() {
     if (!this._props) {
-      this._props = JSON.parse(this.getPersistedProperty(PostHogPersistedProperty.Props) || '{}')
+      this._props = this.getPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.Props)
     }
     return this._props || {}
   }
@@ -127,7 +125,7 @@ export abstract class PostHogCore {
   }
 
   getDistinctId(): string {
-    let distinctId = this.getPersistedProperty(PostHogPersistedProperty.DistinctId)
+    let distinctId = this.getPersistedProperty<string>(PostHogPersistedProperty.DistinctId)
     if (!distinctId) {
       distinctId = generateUUID(globalThis)
       this.setPersistedProperty(PostHogPersistedProperty.DistinctId, distinctId)
@@ -140,13 +138,13 @@ export abstract class PostHogCore {
       ...this.props,
       ...properties,
     }
-    this.setPersistedProperty(PostHogPersistedProperty.Props, JSON.stringify(this.props))
+    this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.Props, this.props)
   }
 
   /***
    *** TRACKING
    ***/
-  identify(distinctId?: string, properties?: PostHogEventProperties, callback?: () => void) {
+  identify(distinctId?: string, properties?: PostHogEventProperties) {
     distinctId = distinctId || this.getDistinctId()
 
     if (properties?.$groups) {
@@ -169,11 +167,11 @@ export abstract class PostHogCore {
       this.setPersistedProperty(PostHogPersistedProperty.DistinctId, distinctId)
     }
 
-    this.enqueue('identify', payload, callback)
+    this.enqueue('identify', payload)
     return this
   }
 
-  capture(event: string, properties?: { [key: string]: any }, callback?: () => void) {
+  capture(event: string, properties?: { [key: string]: any }) {
     // NOTE: Legacy nodejs implementation uses groups
     if (properties && properties['groups']) {
       properties.$groups = properties.groups
@@ -185,11 +183,11 @@ export abstract class PostHogCore {
     }
 
     const payload = this.buildPayload({ event, properties })
-    this.enqueue('capture', payload, callback)
+    this.enqueue('capture', payload)
     return this
   }
 
-  alias(alias: string, callback?: () => void) {
+  alias(alias: string) {
     const distinctId = this.getDistinctId()
 
     const payload = this.buildPayload({
@@ -200,25 +198,21 @@ export abstract class PostHogCore {
       },
     })
 
-    this.enqueue('alias', payload, callback)
+    this.enqueue('alias', payload)
     return this
   }
 
-  autocapture(
-    eventType: string,
-    elements: PostHogAutocaptureElement[],
-    properties?: PostHogEventProperties,
-    callback?: () => void
-  ) {
+  autocapture(eventType: string, elements: PostHogAutocaptureElement[], properties: PostHogEventProperties = {}) {
     const payload = this.buildPayload({
       event: '$autocapture',
       properties: {
+        ...properties,
         $event_type: eventType,
         $elements: elements,
       },
     })
 
-    this.enqueue('autocapture', payload, callback)
+    this.enqueue('autocapture', payload)
     return this
   }
 
@@ -253,7 +247,7 @@ export abstract class PostHogCore {
     }
   }
 
-  groupIdentify(groupType: string, groupKey: string, groupProperties?: PostHogEventProperties, callback?: () => void) {
+  groupIdentify(groupType: string, groupKey: string, groupProperties?: PostHogEventProperties) {
     const payload = {
       event: '$groupidentify',
       distinctId: `$${groupType}_${groupKey}`,
@@ -265,7 +259,7 @@ export abstract class PostHogCore {
       },
     }
 
-    this.enqueue('capture', payload, callback)
+    this.enqueue('capture', payload)
     return this
   }
 
@@ -294,10 +288,11 @@ export abstract class PostHogCore {
     this._decideResponsePromise = this.fetchWithRetry(url, fetchOptions)
       .then((r) => r.json() as PostHogDecideResponse)
       .then((res) => {
-        this._decideResponse = res
-
         if (res.featureFlags) {
-          this.setPersistedProperty(PostHogPersistedProperty.FeatureFlags, JSON.stringify(res.featureFlags))
+          this.setPersistedProperty<PostHogDecideResponse['featureFlags']>(
+            PostHogPersistedProperty.FeatureFlags,
+            res.featureFlags
+          )
         }
 
         this._events.emit('featureflags', res.featureFlags)
@@ -327,18 +322,15 @@ export abstract class PostHogCore {
   }
 
   getFeatureFlags() {
-    const persistedFlagsString = this.getPersistedProperty(PostHogPersistedProperty.FeatureFlags)
-    const overriddenFlagsString = this.getPersistedProperty(PostHogPersistedProperty.OverrideFeatureFlags)
+    let flags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(PostHogPersistedProperty.FeatureFlags)
+    const overriddenFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
+      PostHogPersistedProperty.OverrideFeatureFlags
+    )
 
-    let flags = persistedFlagsString
-      ? (JSON.parse(persistedFlagsString) as PostHogDecideResponse['featureFlags'])
-      : undefined
-
-    if (!overriddenFlagsString) {
+    if (!overriddenFlags) {
       return flags
     }
 
-    const overriddenFlags = JSON.parse(overriddenFlagsString) as PostHogDecideResponse['featureFlags']
     flags = flags || {}
 
     for (let key in overriddenFlags) {
@@ -378,15 +370,15 @@ export abstract class PostHogCore {
     if (flags === null) {
       return this.setPersistedProperty(PostHogPersistedProperty.OverrideFeatureFlags, null)
     }
-    return this.setPersistedProperty(PostHogPersistedProperty.OverrideFeatureFlags, JSON.stringify(flags))
+    return this.setPersistedProperty(PostHogPersistedProperty.OverrideFeatureFlags, flags)
   }
 
   /***
    *** QUEUEING AND FLUSHING
    ***/
-  enqueue(type: string, _message: any, callback?: () => void) {
+  enqueue(type: string, _message: any) {
     if (!this.enabled) {
-      return callback && safeSetTimeout(callback, 0)
+      return
     }
     const message = {
       ..._message,
@@ -401,11 +393,14 @@ export abstract class PostHogCore {
       delete message.distinctId
     }
 
-    this._queue.push({ message, callback })
+    const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
+    queue.push({ message })
+    this.setPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue, queue)
+
     this._events.emit(type, message)
 
     // Flush queued events if we meet the flushAt length
-    if (this._queue.length >= this.flushAt) {
+    if (queue.length >= this.flushAt) {
       this.flush()
     }
 
@@ -430,12 +425,15 @@ export abstract class PostHogCore {
       this._flushTimer = null
     }
 
-    if (!this._queue.length) {
+    const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
+
+    if (!queue.length) {
       return callback && safeSetTimeout(callback, 0)
     }
 
-    const items = this._queue.splice(0, this.flushAt)
-    const callbacks = items.map((item) => item.callback)
+    const items = queue.splice(0, this.flushAt)
+    this.setPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue, queue)
+
     const messages = items.map((item) => item.message)
 
     const data = {
@@ -445,7 +443,6 @@ export abstract class PostHogCore {
     }
 
     const done = (err?: any) => {
-      callbacks.forEach((cb) => cb?.(err))
       callback?.(err, data)
       this._events.emit('flush', messages)
     }
