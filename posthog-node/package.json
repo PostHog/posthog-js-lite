@@ -15,9 +15,6 @@
   "main": "lib/index.cjs.js",
   "module": "lib/index.esm.js",
   "types": "lib/index.d.ts",
-  "scripts": {
-    "build": "rm -rf ./dist & tsc -p ."
-  },
   "dependencies": {
     "node-fetch": "^3.2.6"
   },

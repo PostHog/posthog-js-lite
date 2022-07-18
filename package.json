@@ -12,12 +12,8 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "build": "yarn core:build && yarn node:build && yarn rn:build && yarn web:build",
+    "build": "pnpm compile",
     "test": "jest --config jest.config.js",
-    "core:build": "yarn workspace posthog-core build",
-    "node:build": "yarn workspace posthog-node build",
-    "web:build": "yarn workspace posthog-web build",
-    "rn:build": "yarn workspace posthog-react-native build",
     "compile": "rollup -c"
   },
   "devDependencies": {

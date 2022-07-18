@@ -72,19 +72,22 @@ export default function PosthogDemoScreen(props: any) {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.heading}>Feature Flags:</Text>
+        <Text style={styles.heading}>Feature Flags</Text>
 
-        {flags ? (
-          <View>
-            {Object.keys(flags).map((key) => (
-              <Text key={key}>
-                {key}: {JSON.stringify(flags[key])}
-              </Text>
-            ))}
-          </View>
-        ) : (
-          <Text>Loading feature flags...</Text>
-        )}
+        <View style={styles.section}>
+          {flags ? (
+            <>
+              {Object.keys(flags).map((key) => (
+                <View key={key} style={styles.flag}>
+                  <Text style={styles.bold}>{key}:</Text>
+                  <Text>{JSON.stringify(flags[key])}</Text>
+                </View>
+              ))}
+            </>
+          ) : (
+            <Text>Loading feature flags...</Text>
+          )}
+        </View>
       </View>
     </ScrollView>
   )
@@ -128,5 +131,14 @@ const styles = StyleSheet.create({
   buttonText: {
     fontWeight: 'bold',
     color: '#FFF',
+  },
+
+  bold: {
+    fontWeight: 'bold',
+  },
+
+  flag: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
 })

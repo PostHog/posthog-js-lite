@@ -4,9 +4,6 @@
   "main": "lib/index.cjs.js",
   "module": "lib/index.esm.js",
   "types": "lib/index.d.ts",
-  "scripts": {
-    "build": "rm -rf ./dist & tsc -p . && mv ./dist/src/ ./dist-out && rm -rf ./dist && mv ./dist-out ./dist"
-  },
   "dependencies": {
     "expo-application": "^4.0.0",
     "expo-device": "^4.0.0",

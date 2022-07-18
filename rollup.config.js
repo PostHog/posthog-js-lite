@@ -24,10 +24,12 @@ const configs = ['posthog-react-native', 'posthog-node', 'posthog-web'].reduce((
       output: [
         {
           file: `./${x}/` + localPkg.main,
+          sourcemap: true,
           format: `cjs`,
         },
         {
           file: `./${x}/` + localPkg.module,
+          sourcemap: true,
           format: `es`,
         },
       ],
@@ -41,6 +43,7 @@ const configs = ['posthog-react-native', 'posthog-node', 'posthog-web'].reduce((
         typescript({
           include: [`*.(t|j)s+(|x)`, `**/*.(t|j)s+(|x)`],
           tsconfig: `./${x}/tsconfig.json`,
+          sourceMap: true,
         }),
         babel({
           extensions,

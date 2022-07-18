@@ -4,7 +4,7 @@ node_modules
 dist/
 yarn-error.log
 *.tsbuildinfo
-.yalc
-yalc.lock
 coverage/
 lib/
+.yalc
+yalc.lock

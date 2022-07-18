@@ -1,0 +1,4 @@
+packages:
+  - 'posthog-node'  
+  - 'posthog-react-native'
+  - 'posthog-web'
