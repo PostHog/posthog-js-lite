@@ -107,6 +107,13 @@ export abstract class PostHogCore {
     return this._events.on(event, cb)
   }
 
+  reset() {
+    for (let key in PostHogPersistedProperty) {
+      this.setPersistedProperty((PostHogPersistedProperty as any)[key], null)
+    }
+    this.setPersistedProperty(PostHogPersistedProperty.DistinctId, generateUUID(globalThis))
+  }
+
   private buildPayload(payload: { event: string; properties?: PostHogEventProperties; distinct_id?: string }) {
     return {
       distinct_id: payload.distinct_id || this.getDistinctId(),
