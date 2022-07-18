@@ -88,8 +88,7 @@ describe('PostHog Core', () => {
       mocks.storage.setItem(PostHogPersistedProperty.DistinctId, 'id-1')
       mocks.storage.setItem.mockClear()
       posthog.identify('id-1', { foo: 'bar' })
-      // One call exists for the queueing
-      expect(mocks.storage.setItem).toHaveBeenCalledTimes(1)
+      expect(mocks.storage.setItem).not.toHaveBeenCalledWith('distinct_id', 'id-1')
     })
   })
 })
