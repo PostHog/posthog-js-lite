@@ -9,8 +9,7 @@ describe('PosthogWeb', () => {
   jest.useFakeTimers()
 
   beforeEach(() => {
-    // setupDom()
-    global.window.fetch = fetch = jest.fn(() =>
+    (global as any).window.fetch = fetch = jest.fn(() =>
       Promise.resolve({
         status: 200,
         json: () => Promise.resolve({ status: 'ok' }),
