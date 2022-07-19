@@ -1,13 +1,15 @@
+/**
+ * @jest-environment jsdom
+ */
 
 import { PostHog } from '..'
-import { setupDom } from "./test-utils"
 
 describe('PosthogWeb', () => {
   let fetch: jest.Mock
   jest.useFakeTimers()
 
   beforeEach(() => {
-    setupDom()
+    // setupDom()
     global.window.fetch = fetch = jest.fn(() =>
       Promise.resolve({
         status: 200,
@@ -18,12 +20,12 @@ describe('PosthogWeb', () => {
 
   describe('init', () => {
     it('should initialise', () => {
-      const postHog = new PostHog("TEST_API_KEY", {
-        flushAt: 1
+      const postHog = new PostHog('TEST_API_KEY', {
+        flushAt: 1,
       })
       expect(postHog.optedOut).toEqual(false)
 
-      postHog.capture("test")
+      postHog.capture('test')
 
       expect(fetch).toHaveBeenCalledTimes(1)
     })
