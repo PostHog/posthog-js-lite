@@ -4,28 +4,31 @@
   "main": "lib/index.cjs.js",
   "module": "lib/index.esm.js",
   "types": "lib/index.d.ts",
-  "dependencies": {
-    "expo-application": "^4.0.0",
-    "expo-device": "^4.0.0",
-    "expo-file-system": "^13.0.0"
-  },
+  "dependencies": {},
   "devDependencies": {
-    "@react-native-async-storage/async-storage": "^1.17.7",
     "@react-navigation/native": "^5.0.10",
     "@types/react-native": "^0.69.1",
     "expo-localization": "~11.0.0",
     "expo-network": "^4.2.0",
+    "expo-application": "^4.0.0",
+    "expo-device": "^4.0.0",
+    "expo-file-system": "^13.0.0",
     "react": "^18.2.0",
     "react-native": "^0.69.1"
   },
   "peerDependencies": {
-    "@react-native-async-storage/async-storage": "^1.17.7",
     "@react-navigation/native": "^5.0.10",
     "expo-localization": "~11.0.0",
     "expo-network": "^4.0.0"
   },
   "peerDependenciesMeta": {
     "@react-navigation/native": {
+      "optional": true
+    },
+    "expo-localization": {
+      "optional": true
+    },
+    "expo-network": {
       "optional": true
     }
   }

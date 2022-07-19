@@ -16,7 +16,6 @@ export function useNavigationTracker(options?: PostHogNavigationTrackerOptions, 
   if (!posthog) return
 
   if (!OptionalReactNativeNavigation) {
-    // TODO: Support all of the possible navigators
     throw new Error('Navigation tracking requires @react-native navigation')
   }
 

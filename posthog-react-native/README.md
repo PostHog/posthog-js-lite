@@ -1,8 +1,8 @@
-# PostHog Node.js
+# PostHog React Native
 
 Please see the main [PostHog docs](https://www.posthog.com/docs).
 
-Specifically, the [Node.js integration](https://posthog.com/docs/integrate/server/node) details.
+Specifically, the [React Native integration](https://www.posthog.com/docs/integrations/react-native-integration) details.
 
 ## Questions?
 
