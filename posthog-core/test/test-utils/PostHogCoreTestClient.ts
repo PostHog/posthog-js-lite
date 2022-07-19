@@ -1,4 +1,4 @@
-import { PostHogCore, PosthogCoreOptions, PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core'
+import { PostHogCore, PosthogCoreOptions, PostHogFetchOptions, PostHogFetchResponse } from '../../src'
 
 // TODO: Get this from package.json
 const version = '2.0.0-alpha'

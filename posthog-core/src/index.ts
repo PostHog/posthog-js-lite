@@ -1,4 +1,5 @@
 import {
+  PosthogClient,
   PostHogFetchOptions,
   PostHogFetchResponse,
   PostHogQueueItem,
@@ -21,7 +22,7 @@ export * as utils from './utils'
 import { LZString } from './lz-string'
 import { SimpleEventEmitter } from './eventemitter'
 
-export abstract class PostHogCore {
+export abstract class PostHogCore implements PosthogClient {
   // options
   private apiKey: string
   private host: string
@@ -32,11 +33,11 @@ export abstract class PostHogCore {
   private flagCallReported: { [key: string]: boolean } = {}
 
   // internal
-  private _events = new SimpleEventEmitter()
-  private _flushTimer?: any
-  private _decideResponsePromise?: Promise<PostHogDecideResponse>
-  private _decideTimer?: any
-  private _decidePollInterval: number
+  protected _events = new SimpleEventEmitter()
+  protected _flushTimer?: any
+  protected _decideResponsePromise?: Promise<PostHogDecideResponse>
+  protected _decideTimer?: any
+  protected _decidePollInterval: number
 
   // Abstract methods to be overridden by implementations
   abstract fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse>
@@ -235,6 +236,8 @@ export abstract class PostHogCore {
     if (Object.keys(groups).find((type) => existingGroups[type] !== groups[type]) && this._decideResponsePromise) {
       void this.reloadFeatureFlagsAsync()
     }
+
+    return this
   }
 
   group(groupType: string, groupKey: string, groupProperties?: PostHogEventProperties) {
@@ -245,6 +248,8 @@ export abstract class PostHogCore {
     if (groupProperties) {
       this.groupIdentify(groupType, groupKey, groupProperties)
     }
+
+    return this
   }
 
   groupIdentify(groupType: string, groupKey: string, groupProperties?: PostHogEventProperties) {

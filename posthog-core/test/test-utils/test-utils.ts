@@ -1,4 +1,4 @@
-import { LZString } from 'posthog-core/src/lz-string'
+import { LZString } from 'posthog-core'
 
 export const wait = async (t: number) => {
   await new Promise((r) => setTimeout(r, t))

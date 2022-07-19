@@ -1,22 +1,22 @@
 {
   "compilerOptions": {
     "module": "ESNext",
+    "moduleResolution": "node",
+    "isolatedModules": true,
     "esModuleInterop": true,
     "declaration": true,
-    "removeComments": true,
+    "removeComments": false,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "resolveJsonModule": true,
-    "allowJs": true,
     "target": "es6",
     "sourceMap": true,
-    "noEmit": true,
+    "noEmit": false,
     "incremental": true,
     "strict": true,
-    "paths": {
-      "posthog-core": ["./posthog-core/src"]
-    },
-    "lib": ["es2017"]
+    "baseUrl": "./", // this must be specified if "paths" is specified.
+    "rootDir": "./",
+    "lib": ["esnext"]
   },
   "exclude": ["**/dist/**", "node_modules", "dist", "**/*.spec.*"]
 }

@@ -1,3 +1,53 @@
+export interface PosthogClient {
+  fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse>
+  getLibraryId(): string
+  getLibraryVersion(): string
+  getCustomUserAgent(): string | void
+
+  // This is our abstracted storage. Each implementation should handle its own
+  getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined
+  setPersistedProperty<T>(key: PostHogPersistedProperty, value: T | null): void
+
+  enabled: boolean
+  enable(): void
+  disable(): void
+  on(event: string, cb: (e: any) => void): () => void
+  reset(): void
+  getDistinctId(): string
+  register(properties: { [key: string]: any }): void
+
+  identify(distinctId?: string, properties?: PostHogEventProperties): this
+  capture(event: string, properties?: { [key: string]: any }): this
+  alias(alias: string): this
+  autocapture(eventType: string, elements: PostHogAutocaptureElement[], properties?: PostHogEventProperties): this
+  groups(groups: { [type: string]: string }): this
+  group(groupType: string, groupKey: string, groupProperties?: PostHogEventProperties): this
+  groupIdentify(groupType: string, groupKey: string, groupProperties?: PostHogEventProperties): this
+
+  /***
+   *** FEATURE FLAGS
+   ***/
+
+  getFeatureFlag(key: string, defaultResult?: string | boolean): boolean | string | undefined
+  getFeatureFlags(): PostHogDecideResponse['featureFlags'] | undefined
+
+  isFeatureEnabled(key: string, defaultResult?: boolean): boolean
+
+  reloadFeatureFlagsAsync(): Promise<PostHogDecideResponse['featureFlags']>
+
+  onFeatureFlags(cb: (flags: PostHogDecideResponse['featureFlags']) => void): () => void
+  overrideFeatureFlag(flags: PostHogDecideResponse['featureFlags'] | null): void
+
+  enqueue(type: string, _message: any): void
+
+  flushAsync(): Promise<any>
+
+  flush(callback?: (err?: any, data?: any) => void): void
+
+  shutdownAsync(): Promise<void>
+  shutdown(): void
+}
+
 export type PosthogCoreOptions = {
   host?: string
   timeout?: number
