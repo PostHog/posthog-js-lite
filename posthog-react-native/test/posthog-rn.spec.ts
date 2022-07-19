@@ -1,4 +1,4 @@
-import PostHog from '../'
+import PostHog from '..'
 
 describe('PostHog Core', () => {
   let posthog: PostHog
@@ -11,7 +11,7 @@ describe('PostHog Core', () => {
 
   describe('legacy methods', () => {
     it('should capture an event', async () => {
-      posthog.user('user-id').capture('what')
+      posthog.capture('what')
     })  
   })
 })

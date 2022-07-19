@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import type { PostHogReactNative } from '../posthog'
+import type { PostHog } from '../posthog-rn'
 import { usePostHog } from '../PostHogProvider'
 import { PostHogDecideResponse } from 'posthog-core'
 
-export function useFeatureFlags(client?: PostHogReactNative) {
+export function useFeatureFlags(client?: PostHog) {
   const contextClient = usePostHog()
   const posthog = client || contextClient
 

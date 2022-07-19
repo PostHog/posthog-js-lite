@@ -9,15 +9,15 @@ import {
   utils,
 } from 'posthog-core'
 
-export interface PostHogNodejsOptions extends PosthogCoreOptions {}
+export interface PostHogOptions extends PosthogCoreOptions {}
 
 const SHARED_PERSISTENCE_PROPERTIES = [PostHogPersistedProperty.Queue]
 
-export class PostHogNodejs extends PostHogCore {
+export class PostHog extends PostHogCore {
   private _sharedStorage: { [key: string]: any | undefined } = {}
   private _memoryStorage: { [key: string]: any | undefined } = {}
 
-  constructor(globalStorage: { [key: string]: any | undefined }, apiKey: string, options: PostHogNodejsOptions = {}) {
+  constructor(globalStorage: { [key: string]: any | undefined }, apiKey: string, options: PostHogOptions = {}) {
     options.captureMode = options?.captureMode || 'json'
     options.preloadFeatureFlags = false // Don't preload as this makes no sense without a distinctId
 
@@ -64,16 +64,16 @@ export class PostHogNodejs extends PostHogCore {
 }
 
 // The actual exported Nodejs API.
-export class PostHogNodejsGlobal {
+export class PostHogGlobal {
   private _sharedStorage: { [key: string]: any | undefined } = {}
-  private _sharedClient: PostHogNodejs
+  private _sharedClient: PostHog
 
-  constructor(private apiKey: string, private options?: PostHogNodejsOptions) {
-    this._sharedClient = new PostHogNodejs(this._sharedStorage, apiKey, options)
+  constructor(private apiKey: string, private options?: PostHogOptions) {
+    this._sharedClient = new PostHog(this._sharedStorage, apiKey, options)
   }
 
-  user(distinctId: string): PostHogNodejs {
-    const client = new PostHogNodejs(this._sharedStorage, this.apiKey, {
+  user(distinctId: string): PostHog {
+    const client = new PostHog(this._sharedStorage, this.apiKey, {
       ...this.options,
       flushInterval: 0,
     })

@@ -14,6 +14,7 @@
   "scripts": {
     "build": "yarn compile",
     "test": "jest --config jest.config.js",
+    "test:core": "cd posthog-core && jest --config ../jest.config.js test/",
     "compile": "rollup -c"
   },
   "devDependencies": {
@@ -43,12 +44,6 @@
     "ts-node": "^10.9.1",
     "tslib": "^2.4.0",
     "typescript": "^4.7.4"
-  },
-  "jest": {
-    "testPathIgnorePatterns": [
-      "<rootDir>/dist/",
-      "/node_modules/"
-    ]
   },
   "husky": {
     "hooks": {

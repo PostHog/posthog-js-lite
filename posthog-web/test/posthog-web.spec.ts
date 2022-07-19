@@ -1,17 +1,14 @@
-/**
- * @jest-environment jsdom
- */ 
 
 import { PostHog } from '..'
-
-const TEST_API_KEY = 'TEST_API_KEY'
+import { setupDom } from "./test-utils"
 
 describe('PosthogWeb', () => {
   let fetch: jest.Mock
   jest.useFakeTimers()
 
   beforeEach(() => {
-    (global as any).window.fetch = fetch = jest.fn(() =>
+    setupDom()
+    global.window.fetch = fetch = jest.fn(() =>
       Promise.resolve({
         status: 200,
         json: () => Promise.resolve({ status: 'ok' }),
@@ -21,7 +18,7 @@ describe('PosthogWeb', () => {
 
   describe('init', () => {
     it('should initialise', () => {
-      const postHog = new PostHog(TEST_API_KEY, {
+      const postHog = new PostHog("TEST_API_KEY", {
         flushAt: 1
       })
       expect(postHog.optedOut).toEqual(false)

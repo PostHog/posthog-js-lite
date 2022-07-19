@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { OptionalReactNativeNavigation } from '../optional-imports'
-import type { PostHogReactNative } from '../posthog'
+import type { PostHog } from '../posthog-rn'
 import { usePostHog } from '../PostHogProvider'
 
 export interface PostHogNavigationTrackerOptions {
@@ -9,7 +9,7 @@ export interface PostHogNavigationTrackerOptions {
   routeToProperties?: (name: string, params: any) => string
 }
 
-export function useNavigationTracker(options?: PostHogNavigationTrackerOptions, client?: PostHogReactNative) {
+export function useNavigationTracker(options?: PostHogNavigationTrackerOptions, client?: PostHog) {
   const contextClient = usePostHog()
   const posthog = client || contextClient
 

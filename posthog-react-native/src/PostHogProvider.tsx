@@ -1,13 +1,13 @@
 import React, { useCallback, useRef } from 'react'
 import { GestureResponderEvent, StyleProp, View, ViewStyle } from 'react-native'
-import { PostHogReactNative, PostHogReactNativeOptions } from './posthog'
+import { PostHog, PostHogOptions } from './posthog-rn'
 import { PostHogAutocaptureElement } from 'posthog-core'
 
 export interface PostHogProviderProps {
   children: React.ReactNode
-  options?: PostHogReactNativeOptions
+  options?: PostHogOptions
   apiKey?: string
-  client?: PostHogReactNative
+  client?: PostHog
   autocapture?: boolean
   style?: StyleProp<ViewStyle>
 }
@@ -20,7 +20,7 @@ const _isNameIgnored = (name: string) => {
   return false
 }
 
-export const PostHogContext = React.createContext<{ client?: PostHogReactNative }>({ client: undefined })
+export const PostHogContext = React.createContext<{ client?: PostHog }>({ client: undefined })
 
 interface Element {
   elementType?: {
@@ -31,7 +31,7 @@ interface Element {
   return?: Element
 }
 
-const doAutocapture = (e: any, posthog: PostHogReactNative) => {
+const doAutocapture = (e: any, posthog: PostHog) => {
   if (!e._targetInst) {
     return
   }
@@ -110,10 +110,10 @@ const doAutocapture = (e: any, posthog: PostHogReactNative) => {
 }
 
 export const PostHogProvider = ({ children, client, options, apiKey, autocapture, style }: PostHogProviderProps) => {
-  const posthogRef = useRef<PostHogReactNative>()
+  const posthogRef = useRef<PostHog>()
 
   if (!posthogRef.current) {
-    posthogRef.current = client ? client : apiKey ? new PostHogReactNative(apiKey, options) : undefined
+    posthogRef.current = client ? client : apiKey ? new PostHog(apiKey, options) : undefined
   }
 
   const posthog = posthogRef.current
@@ -138,7 +138,7 @@ export const PostHogProvider = ({ children, client, options, apiKey, autocapture
   )
 }
 
-export const usePostHog = (): PostHogReactNative | undefined => {
+export const usePostHog = (): PostHog | undefined => {
   const { client } = React.useContext(PostHogContext)
   return client
 }

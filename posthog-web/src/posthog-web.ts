@@ -9,17 +9,17 @@ import { getContext } from './context'
 import { localStore, cookieStore, sessionStorage } from './storage'
 import { version } from '../package.json'
 
-export interface PostHogWebOptions extends PosthogCoreOptions {
+export interface PostHogOptions extends PosthogCoreOptions {
   autocapture?: boolean
   persistence_name?: string
 }
 
-export class PostHogWeb extends PostHogCore {
+export class PostHog extends PostHogCore {
   private _storage = localStore || sessionStorage || cookieStore
   private _storageCache: any
   private _storageKey: string
 
-  constructor(apiKey: string, options?: PostHogWebOptions) {
+  constructor(apiKey: string, options?: PostHogOptions) {
     super(apiKey, options)
 
     // posthog-js stores options in one object on
@@ -67,18 +67,5 @@ export class PostHogWeb extends PostHogCore {
       ...super.getCommonEventProperties(),
       ...getContext(window),
     }
-  }
-
-  // CUSTOM
-  optedIn() {
-    return this.enabled
-  }
-
-  optIn() {
-    this.enable()
-  }
-
-  optOut() {
-    this.disable()
   }
 }

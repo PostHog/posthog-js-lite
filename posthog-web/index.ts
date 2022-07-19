@@ -1,4 +1,5 @@
-import { PostHogWeb, PostHogWebOptions } from './src/posthog-web'
+import { PostHog } from './src/posthog-web'
 
-export const PostHog = PostHogWeb
-export type PostHogOptions = PostHogWebOptions
+export default PostHog
+
+export * from './src/posthog-web'

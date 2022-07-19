@@ -1,8 +1,8 @@
-import { PostHogReactNative, PostHogReactNativeOptions } from './src/posthog'
+import { PostHog } from './src/posthog-rn'
 
-export const PostHog = PostHogReactNative
-export type PostHogOptions = PostHogReactNativeOptions
+export default PostHog
 
+export * from './src/posthog-rn'
 export * from './src/hooks/useLifecycleTracker'
 export * from './src/hooks/useNavigationTracker'
 export * from './src/hooks/useFeatureFlags'

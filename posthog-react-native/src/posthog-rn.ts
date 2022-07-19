@@ -8,18 +8,18 @@ import {
   PostHogFetchOptions,
   PostHogFetchResponse,
   PostHogPersistedProperty,
-} from '../../posthog-core'
+} from '../../posthog-core/src'
 import { getLegacyValues } from './legacy'
 import { SemiAsyncStorage, preloadSemiAsyncStorage } from './storage'
 import { OptionalExpoLocalization } from './optional-imports'
 import { version } from '../package.json'
 
-export interface PostHogReactNativeOptions extends PosthogCoreOptions {}
+export interface PostHogOptions extends PosthogCoreOptions {}
 
 const STORAGE_PREFIX = '@posthog:'
 
-export class PostHogReactNative extends PostHogCore {
-  constructor(apiKey: string, options?: PostHogReactNativeOptions) {
+export class PostHog extends PostHogCore {
+  constructor(apiKey: string, options?: PostHogOptions) {
     super(apiKey, options)
 
     AppState.addEventListener('change', (state) => {

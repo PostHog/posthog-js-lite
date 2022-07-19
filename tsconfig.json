@@ -17,7 +17,9 @@
     "baseUrl": "./", // this must be specified if "paths" is specified.
     "rootDir": "./",
     "lib": ["ES2015"],
-    "types": ["node", "jest"]
+    "types": ["node", "jest"],
+    "jsx": "react",
+
   },
   "exclude": ["**/dist/**", "node_modules", "dist", "**/*.spec.*"]
 }

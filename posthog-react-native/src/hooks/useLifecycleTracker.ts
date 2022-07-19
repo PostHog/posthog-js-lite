@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react'
 import { AppState } from 'react-native'
-import type { PostHogReactNative } from '../posthog'
+import type { PostHog } from '../posthog-rn'
 import { usePostHog } from '../PostHogProvider'
 
-export function useLifecycleTracker(client?: PostHogReactNative) {
+export function useLifecycleTracker(client?: PostHog) {
   const openTrackedRef = useRef(false)
   const contextClient = usePostHog()
   const posthog = client || contextClient
