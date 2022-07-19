@@ -6,7 +6,7 @@ export const wait = async (t: number) => {
 
 export const waitForPromises = async () => {
   jest.useRealTimers()
-  await new Promise((resolve) => (setInterval(resolve, 1) as any))
+  await new Promise((resolve) => (setTimeout(resolve, 1) as any))
   jest.useFakeTimers()
 }
 
