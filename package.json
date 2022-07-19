@@ -13,8 +13,9 @@
   "license": "MIT",
   "scripts": {
     "build": "yarn compile",
-    "test": "jest --config jest.config.js",
-    "test:core": "cd posthog-core && jest --config ../jest.config.js test/",
+    "test": "jest posthog-core posthog-node posthog-web",
+    "test:all": "jest posthog-core posthog-node posthog-web && yarn test:rn",
+    "test:rn": "cd posthog-react-native && yarn test",
     "compile": "rollup -c"
   },
   "devDependencies": {

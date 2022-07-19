@@ -1,15 +1,17 @@
 module.exports = {
+  preset: 'react-native',
   roots: ['<rootDir>'],
   testEnvironment: 'node',
   transform: {
     '^.+\\.ts?$': 'ts-jest',
   },
-  moduleFileExtensions: ['ts', 'js', 'json', 'node'],
+  moduleFileExtensions: ['ts', 'js', 'json', 'node', "tsx"],
   collectCoverage: true,
   clearMocks: true,
   coverageDirectory: 'coverage',
   testPathIgnorePatterns: ['node_modules', 'examples'],
   fakeTimers: { enableGlobally: true },
-  transformIgnorePatterns: ['<rootDir>/node_modules/'],
+  transformIgnorePatterns: [],
+
   testPathIgnorePatterns: ['<rootDir>/lib/', '/node_modules/'],
 }

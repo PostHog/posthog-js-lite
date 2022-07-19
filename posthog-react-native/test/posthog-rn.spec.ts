@@ -10,8 +10,11 @@ describe('PostHog Core', () => {
   })
 
   describe('legacy methods', () => {
-    it('should capture an event', async () => {
+    it('should capture an event', () => {
+      console.log('HEY')
       posthog.capture('what')
+      expect(1).toEqual(2)
+      console.log("HEY2")
     })  
   })
 })

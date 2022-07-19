@@ -19,3 +19,4 @@ jobs:
 
       - run: yarn install
       - run: yarn test
+      - run: yarn test:rn

@@ -9,17 +9,20 @@
     "test": "jest -c jest.config.js"
   },
   "devDependencies": {
+    "@react-native-async-storage/async-storage": "^1.17.7",
     "@react-navigation/native": "^5.0.10",
     "@types/react-native": "^0.69.1",
-    "expo-localization": "~11.0.0",
-    "expo-network": "^4.2.0",
+    "expo": "^45.0.6",
     "expo-application": "^4.0.0",
     "expo-device": "^4.0.0",
     "expo-file-system": "^13.0.0",
+    "expo-localization": "~11.0.0",
+    "expo-network": "^4.2.0",
     "react": "^18.2.0",
     "react-native": "^0.69.1"
   },
   "peerDependencies": {
+    "@react-native-async-storage/async-storage": "^1.0.0",
     "@react-navigation/native": "^5.0.10",
     "expo-localization": "~11.0.0",
     "expo-network": "^4.0.0"
