@@ -4,7 +4,7 @@ import {
   PostHogFetchOptions,
   PostHogFetchResponse,
   PostHogPersistedProperty,
-} from '../../posthog-core'
+} from '../../posthog-core/src'
 import { getContext } from './context'
 import { localStore, cookieStore, sessionStorage } from './storage'
 import { version } from '../package.json'

@@ -4470,7 +4470,7 @@ expect@^28.1.1:
     jest-message-util "^28.1.1"
     jest-util "^28.1.1"
 
-expo-application@^4.0.0, expo-application@~4.1.0:
+expo-application@~4.1.0:
   version "4.1.0"
   resolved "https://registry.yarnpkg.com/expo-application/-/expo-application-4.1.0.tgz#e0214ff7cf73db5a5e97e609ffbab3cc98288030"
   integrity sha512-Z2kctgVMpYZB1Iwaxd+XcMBq7h8EEY50GGrwxXsb1OHHQKN+WEVGBWxjvtPkAroqCdujLaB5HBay46gvUHRDQg==
@@ -4539,7 +4539,7 @@ expo-dev-menu@1.0.0:
     expo-dev-menu-interface "0.7.0"
     semver "^7.3.5"
 
-expo-device@^4.0.0, expo-device@^4.2.0:
+expo-device@^4.2.0:
   version "4.2.0"
   resolved "https://registry.yarnpkg.com/expo-device/-/expo-device-4.2.0.tgz#e6a883b6f74d78091d00e3c010f5ee59cdee79e0"
   integrity sha512-BBeTxMK2GjPRAMib47p4p2h+xEO61NehZ1Pllsbs051BOH3YeUq1+K6w54kLkJnWz+3U28qygZdCrusLwffxog==
@@ -4550,14 +4550,6 @@ expo-error-recovery@~3.1.0:
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/expo-error-recovery/-/expo-error-recovery-3.1.0.tgz#c841772e11ed55180e30ebf809580ab051b70535"
   integrity sha512-qUxCW7kPB6AVX5h3ZPVnxw4LLZWsRwAPBtRDlh1UDN7GWZ+CQN1SNk0w0BPotjNtSlXEZSFDqKqtoDDAUYjNmg==
-
-expo-file-system@^13.0.0:
-  version "13.2.1"
-  resolved "https://registry.yarnpkg.com/expo-file-system/-/expo-file-system-13.2.1.tgz#b95c90ff16ad6d908948941262aedb011eac4c06"
-  integrity sha512-nEj4k2fRStRDEUm/PRJ7rOZi7Bx0wKKF4ys4zolJJi4EV2SZwZLU4DSZ/ExewJvDjnMLqOlZOPnsr306jx1kBw==
-  dependencies:
-    "@expo/config-plugins" "^4.0.14"
-    uuid "^3.4.0"
 
 expo-file-system@~14.0.0:
   version "14.0.0"
@@ -8600,10 +8592,6 @@ posix-character-classes@^0.1.0:
 
 "posthog-react-native@file:.yalc/posthog-react-native":
   version "2.0.0-alpha"
-  dependencies:
-    expo-application "^4.0.0"
-    expo-device "^4.0.0"
-    expo-file-system "^13.0.0"
 
 prepend-http@^2.0.0:
   version "2.0.0"

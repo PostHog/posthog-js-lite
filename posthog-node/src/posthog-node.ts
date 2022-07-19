@@ -7,7 +7,7 @@ import {
   PostHogFetchResponse,
   PostHogPersistedProperty,
   utils,
-} from 'posthog-core'
+} from '../../posthog-core/src'
 
 export interface PostHogOptions extends PosthogCoreOptions {}
 

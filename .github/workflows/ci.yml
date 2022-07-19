@@ -1,4 +1,4 @@
-name: Unit Tests
+name: CI
 
 on:
   - pull_request
@@ -18,5 +18,6 @@ jobs:
           node-version: 14
 
       - run: yarn install
+      - run: yarn compile
       - run: yarn test
       - run: yarn test:rn
