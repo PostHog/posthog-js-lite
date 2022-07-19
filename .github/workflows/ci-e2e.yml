@@ -1,0 +1,43 @@
+name: CI - E2E
+
+on:
+  - pull_request
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 15
+
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_11.2.app
+
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions/setup-node@v1
+
+    - name: Install Global Dependencies
+      run: yarn install
+
+    - run: cd examples/example-expo
+    - run: ./e2e/tools/downloadApp.sh
+
+    - name: Install Dependencies
+      run: yarn install
+
+    - name: Rebuild detox
+      run: yarn detox clean-framework-cache && yarn detox build-framework-cache
+
+    - name: Cache Pods
+      uses: actions/cache@v1
+      id: podcache
+      with:
+        path: ios/Pods
+        key: pods-${{ hashFiles('**/Podfile.lock') }}
+
+    - name: Update Pods
+      run: |
+        gem update cocoapods xcodeproj
+        cd ios && pod install && cd ..
+    - run: brew tap wix/brew
+    - run: brew install applesimutils
+    - run: yarn test

@@ -27,7 +27,7 @@ describe('Example', () => {
   })
 
   it('should track $screen', async () => {
-    await waitFor(element(by.id('title')))
+    await waitFor(element(by.id('title-TabOne')))
       .toBeVisible()
       .withTimeout(5000)
 
@@ -67,18 +67,16 @@ describe('Example', () => {
   })
 
   it('should automatically track $screen on navigation', async () => {
-    await waitFor(element(by.id('title')))
+    await waitFor(element(by.id('title-TabOne')))
       .toBeVisible()
       .withTimeout(5000)
 
     httpMock.mockReset()
 
     await element(by.id('modal-button')).tap()
-    await waitFor(element(by.id('modal-title')))
+    await waitFor(element(by.id('title-Modal')))
       .toHaveLabel('Modal')
       .withTimeout(5000)
-
-    const attrs = await element(by.id('modal-title')).getAttributes()
 
     jestExpect(httpMock).toHaveBeenCalledWith(
       objectContaining({
@@ -98,7 +96,7 @@ describe('Example', () => {
   })
 
   it('should autocapture taps', async () => {
-    await waitFor(element(by.id('title')))
+    await waitFor(element(by.id('title-TabOne')))
       .toBeVisible()
       .withTimeout(5000)
 
@@ -132,7 +130,7 @@ describe('Example', () => {
   })
 
   it('should ignore autocapture for ph-no-capture', async () => {
-    await waitFor(element(by.id('title')))
+    await waitFor(element(by.id('title-TabOne')))
       .toBeVisible()
       .withTimeout(5000)
 
