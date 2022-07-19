@@ -1,4 +1,4 @@
-import { LZString } from 'posthog-core'
+import { LZString } from '../../src/lz-string'
 
 export const wait = async (t: number) => {
   await new Promise((r) => setTimeout(r, t))
@@ -6,7 +6,7 @@ export const wait = async (t: number) => {
 
 export const waitForPromises = async () => {
   jest.useRealTimers()
-  await new Promise((resolve) => (setInterval(resolve, 1) as any)?.unref())
+  await new Promise((resolve) => (setInterval(resolve, 1) as any))
   jest.useFakeTimers()
 }
 

@@ -11,7 +11,7 @@ const extensions = ['.js', '.jsx', '.ts', '.tsx']
 
 let globalExternal = Object.keys(pkg.dependencies || {}).concat(Object.keys(pkg.peerDependencies || {}))
 
-const configs = ['posthog-react-native', 'posthog-node', 'posthog-web'].reduce((acc, x) => {
+const configs = ['posthog-node', 'posthog-react-native', 'posthog-web'].reduce((acc, x) => {
   const localPkg = require(`./${x}/package.json`)
   let external = [...globalExternal]
     .concat(Object.keys(localPkg.dependencies || {}))

@@ -1,4 +1,12 @@
-import { PostHogStorage } from 'posthog-core'
+
+export type PostHogStorage = {
+  getItem: (key: string) => string | null | undefined
+  setItem: (key: string, value: string) => void
+  removeItem: (key: string) => void
+  clear: () => void
+  getAllKeys: () => readonly string[]
+}
+
 
 // Methods partially borrowed from quirksmode.org/js/cookies.html
 export const cookieStore: PostHogStorage = {

@@ -16,7 +16,8 @@
     "strict": true,
     "baseUrl": "./", // this must be specified if "paths" is specified.
     "rootDir": "./",
-    "lib": ["esnext"]
+    "lib": ["ES2015"],
+    "types": ["node", "jest"]
   },
   "exclude": ["**/dist/**", "node_modules", "dist", "**/*.spec.*"]
 }

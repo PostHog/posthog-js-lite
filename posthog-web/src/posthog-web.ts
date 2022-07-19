@@ -1,11 +1,10 @@
 import {
   PostHogCore,
   PosthogCoreOptions,
-  PostHogStorage,
   PostHogFetchOptions,
   PostHogFetchResponse,
   PostHogPersistedProperty,
-} from 'posthog-core'
+} from '../../posthog-core'
 import { getContext } from './context'
 import { localStore, cookieStore, sessionStorage } from './storage'
 import { version } from '../package.json'
@@ -49,9 +48,6 @@ export class PostHogWeb extends PostHogCore {
     }
   }
 
-  storage(): PostHogStorage {
-    return localStore || sessionStorage || cookieStore
-  }
 
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
     return window.fetch(url, options)

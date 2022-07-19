@@ -1,5 +1,4 @@
 import {
-  PosthogClient,
   PostHogFetchOptions,
   PostHogFetchResponse,
   PostHogQueueItem,
@@ -22,7 +21,7 @@ export * as utils from './utils'
 import { LZString } from './lz-string'
 import { SimpleEventEmitter } from './eventemitter'
 
-export abstract class PostHogCore implements PosthogClient {
+export abstract class PostHogCore {
   // options
   private apiKey: string
   private host: string
@@ -64,7 +63,7 @@ export abstract class PostHogCore implements PosthogClient {
 
     // NOTE: It is important we don't initiate anything in the constructor as some async IO may still be underway on the parent
     if (options?.preloadFeatureFlags !== false) {
-      setTimeout(() => {
+      safeSetTimeout(() => {
         void this.reloadFeatureFlagsAsync()
       }, 1)
     }
@@ -356,7 +355,7 @@ export abstract class PostHogCore implements PosthogClient {
 
   async reloadFeatureFlagsAsync() {
     clearTimeout(this._decideTimer)
-    this._decideTimer = setTimeout(() => this.reloadFeatureFlagsAsync(), this._decidePollInterval)
+    this._decideTimer = safeSetTimeout(() => this.reloadFeatureFlagsAsync(), this._decidePollInterval)
     this._decideResponsePromise = undefined
     return (await this.decideAsync()).featureFlags
   }
@@ -410,7 +409,7 @@ export abstract class PostHogCore implements PosthogClient {
     }
 
     if (this.flushInterval && !this._flushTimer) {
-      this._flushTimer = setTimeout(() => this.flush(), this.flushInterval)
+      this._flushTimer = safeSetTimeout(() => this.flush(), this.flushInterval)
     }
   }
 

@@ -8,7 +8,7 @@ import {
   PostHogFetchOptions,
   PostHogFetchResponse,
   PostHogPersistedProperty,
-} from 'posthog-core'
+} from '../../posthog-core'
 import { getLegacyValues } from './legacy'
 import { SemiAsyncStorage, preloadSemiAsyncStorage } from './storage'
 import { OptionalExpoLocalization } from './optional-imports'

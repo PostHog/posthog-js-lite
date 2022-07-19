@@ -1,7 +1,6 @@
 import { version } from '../package.json'
 import undici from 'undici'
 import {
-  PosthogClient,
   PostHogCore,
   PosthogCoreOptions,
   PostHogFetchOptions,

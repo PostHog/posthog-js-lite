@@ -12,6 +12,5 @@ jobs:
         with:
           node-version: 14
 
-      - run: npm i -g pnpm
-      - run: pnpm install
-      - run: pnpm test
+      - run: yarn install
+      - run: yarn test

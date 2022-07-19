@@ -75,6 +75,6 @@ export function safeSetTimeout(fn: () => void, timeout: number) {
   // rather than setImmediate.
   const t = setTimeout(fn, timeout) as any
   // We unref if available to prevent Node.js hanging on exit
-  t?.unref()
+  t?.unref && t?.unref()
   return t
 }

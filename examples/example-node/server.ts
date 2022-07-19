@@ -9,12 +9,12 @@ const posthog = new PostHogNodejsGlobal('phc_FzKQvNvps9ZUTxF5KJR9jIKdGb4bq4HNBa9
 })
 
 app.get('/', (req, res) => {
-  ;(posthog.user('EXAMPLE_APP_GLOBAL') as any).capture('home page loaded')
+  posthog.user('EXAMPLE_APP_GLOBAL').capture('home page loaded')
   res.send({ hello: 'world' })
 })
 
 app.get('/user/:userId/action', (req, res) => {
-  ;(posthog.user(req.params.userId) as any).capture('user did action', req.params)
+  posthog.user(req.params.userId).capture('user did action', req.params)
   res.send({ status: 'ok' })
 })
 
