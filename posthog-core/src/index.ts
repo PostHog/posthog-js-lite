@@ -48,7 +48,7 @@ export abstract class PostHogCore {
   abstract getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined
   abstract setPersistedProperty<T>(key: PostHogPersistedProperty, value: T | null): void
 
-  public enabled = true
+  private _optoutOverride: boolean | undefined
 
   constructor(apiKey: string, options?: PosthogCoreOptions) {
     assert(apiKey, "You must pass your PostHog project's api key.")
@@ -60,6 +60,8 @@ export abstract class PostHogCore {
     this.captureMode = options?.captureMode || 'form'
     this.sendFeatureFlagEvent = options?.sendFeatureFlagEvent ?? true
     this._decidePollInterval = Math.max(0, options?.decidePollInterval ?? 30000)
+    // If enable is explicitly set to false we override the optout
+    this._optoutOverride = options?.enable === false
 
     // NOTE: It is important we don't initiate anything in the constructor as some async IO may still be underway on the parent
     if (options?.preloadFeatureFlags !== false) {
@@ -93,12 +95,16 @@ export abstract class PostHogCore {
 
   private _props: { [key: string]: any } | undefined
 
-  enable() {
-    this.enabled = true
+  public get optedOut() {
+    return this.getPersistedProperty(PostHogPersistedProperty.OptedOut) ?? this._optoutOverride ?? false
   }
 
-  disable() {
-    this.enabled = false
+  optIn() {
+    this.setPersistedProperty(PostHogPersistedProperty.OptedOut, false)
+  }
+
+  optOut() {
+    this.setPersistedProperty(PostHogPersistedProperty.OptedOut, true)
   }
 
   on(event: string, cb: (e: any) => void) {
@@ -381,7 +387,7 @@ export abstract class PostHogCore {
    *** QUEUEING AND FLUSHING
    ***/
   enqueue(type: string, _message: any) {
-    if (!this.enabled) {
+    if (this.optedOut) {
       return
     }
     const message = {
@@ -420,7 +426,7 @@ export abstract class PostHogCore {
   }
 
   flush(callback?: (err?: any, data?: any) => void) {
-    if (!this.enabled) {
+    if (this.optedOut) {
       return callback && safeSetTimeout(callback, 0)
     }
 

@@ -24,7 +24,7 @@ describe('PosthogWeb', () => {
       const postHog = new PostHog(TEST_API_KEY, {
         flushAt: 1
       })
-      expect(postHog.enabled).toEqual(true)
+      expect(postHog.optedOut).toEqual(false)
 
       postHog.capture("test")
 

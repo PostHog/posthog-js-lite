@@ -10,7 +10,7 @@ describe('PostHog Core', () => {
 
   describe('init', () => {
     it('should initialise', () => {
-      expect(posthog.enabled).toEqual(true)
+      expect(posthog.optedOut).toEqual(false)
     })
 
     it('should throw if missing api key', () => {

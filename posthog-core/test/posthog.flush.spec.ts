@@ -56,7 +56,7 @@ describe('PostHog Core', () => {
       expect(mocks.fetch).toHaveBeenCalledTimes(0)
       posthog.capture('test-event-2')
       expect(mocks.fetch).toHaveBeenCalledTimes(1)
-      posthog.disable()
+      posthog.optOut()
       posthog.capture('test-event-3')
       posthog.capture('test-event-4')
       expect(mocks.fetch).toHaveBeenCalledTimes(1)

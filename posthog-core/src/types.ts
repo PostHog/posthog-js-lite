@@ -20,6 +20,7 @@ export enum PostHogPersistedProperty {
   FeatureFlags = 'feature_flags',
   OverrideFeatureFlags = 'override_feature_flags',
   Queue = 'queue',
+  OptedOut = 'opted_out',
 }
 
 export type PostHogFetchOptions = {
