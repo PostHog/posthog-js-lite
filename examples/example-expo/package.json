@@ -12,7 +12,7 @@
     "eject": "expo eject",
     "test": "detox test",
     "build:posthog": "yarn build:posthog:publish && yarn build:posthog:link",
-    "build:posthog:publish": "cd ../../ && yarn build && cd posthog-react-native && yalc publish",
+    "build:posthog:publish": "cd ../../posthog-react-native && yalc publish",
     "build:posthog:link": "yalc add posthog-react-native"
   },
   "dependencies": {

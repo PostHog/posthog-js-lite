@@ -9,7 +9,7 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "resolveJsonModule": true,
-    "target": "es6",
+    "target": "es5",
     "sourceMap": true,
     "noEmit": false,
     "incremental": true,
@@ -18,8 +18,7 @@
     "rootDir": "./",
     "lib": ["ES2015"],
     "types": ["node", "jest"],
-    "jsx": "react",
-
+    "jsx": "react"
   },
   "exclude": ["**/dist/**", "node_modules", "dist", "**/*.spec.*"]
 }

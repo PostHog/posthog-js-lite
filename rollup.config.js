@@ -26,6 +26,7 @@ const configs = ['posthog-node', 'posthog-react-native', 'posthog-web'].reduce((
         {
           file: `./${x}/` + localPkg.main,
           sourcemap: true,
+          exports: 'named',
           format: `cjs`,
         },
         {
@@ -49,7 +50,7 @@ const configs = ['posthog-node', 'posthog-react-native', 'posthog-web'].reduce((
         }),
         babel({
           extensions,
-          babelHelpers: `bundled`,
+          babelHelpers: 'bundled',
           include: [`${x}/src/**/*`],
           presets: [
             ['@babel/preset-env', { targets: { node: 'current' } }],

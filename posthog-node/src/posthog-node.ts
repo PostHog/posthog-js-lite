@@ -74,7 +74,7 @@ export class PostHogGlobal {
 
   user(distinctId: string): PostHog {
     const client = new PostHog(this._sharedStorage, this.apiKey, {
-      ...this.options,
+      ...(this.options || {}),
       flushInterval: 0,
     })
     client.setPersistedProperty(PostHogPersistedProperty.DistinctId, distinctId)
