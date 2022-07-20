@@ -1,21 +1,23 @@
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
+import { wait, waitForPromises } from './test-utils/test-utils'
 
 describe('PostHog Core', () => {
   let posthog: PostHogCoreTestClient
   let mocks: PostHogCoreTestClientMocks
 
-  jest.useFakeTimers()
-
-  beforeEach(() => {
-    ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 5 })
-  })
-
   describe('flush', () => {
+    beforeEach(() => {
+      jest.useFakeTimers()
+      ;[posthog, mocks] = createTestClient('TEST_API_KEY', {
+        flushAt: 5,
+        fetchRetryCount: 3,
+        fetchRetryDelay: 100,
+        preloadFeatureFlags: false,
+      })
+    })
     it("doesn't fail when queue is empty", async () => {
-      const flushing = posthog.flushAsync()
-      jest.runOnlyPendingTimers()
-
-      await expect(flushing).resolves.toEqual(undefined)
+      jest.useRealTimers()
+      await expect(posthog.flushAsync()).resolves.toEqual(undefined)
     })
 
     it('flush messsages once called', async () => {
@@ -23,31 +25,25 @@ describe('PostHog Core', () => {
       posthog.capture('test-event-2')
       posthog.capture('test-event-3')
       expect(mocks.fetch).not.toHaveBeenCalled()
-      await posthog.flushAsync()
+      await expect(posthog.flushAsync()).resolves.toMatchObject([
+        { event: 'test-event-1' },
+        { event: 'test-event-2' },
+        { event: 'test-event-3' },
+      ])
       expect(mocks.fetch).toHaveBeenCalled()
     })
 
-    it('responds with an error', async () => {
+    it('responds with an error after retries', async () => {
       posthog.capture('test-event-1')
-      mocks.fetch.mockRejectedValueOnce('Network error')
+      mocks.fetch.mockRejectedValue('Network error')
 
-      const flushing = posthog.flushAsync()
-      expect(mocks.fetch).toHaveBeenCalledTimes(1)
-      await expect(flushing).rejects.toEqual('Network error')
+      const time = Date.now()
+      jest.useRealTimers()
+      await expect(posthog.flushAsync()).rejects.toEqual('Network error')
+      expect(mocks.fetch).toHaveBeenCalledTimes(4)
+      expect(Date.now() - time).toBeGreaterThan(300)
+      expect(Date.now() - time).toBeLessThan(500)
     })
-
-    // it('flush - time out if configured', async () => {
-    //   const client = createClient({ timeout: 500 })
-    //   const callback = spy()
-
-    //   client.queue = [
-    //     {
-    //       message: 'timeout',
-    //       callback,
-    //     },
-    //   ]
-    //   await t.throwsAsync(() => client.flush(), { message: 'timeout of 500ms exceeded' })
-    // })
 
     it('skips when client is disabled', async () => {
       ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 2 })

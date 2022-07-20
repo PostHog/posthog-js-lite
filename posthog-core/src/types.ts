@@ -1,5 +1,3 @@
-
-
 export type PosthogCoreOptions = {
   host?: string
   timeout?: number
@@ -11,8 +9,9 @@ export type PosthogCoreOptions = {
   sendFeatureFlagEvent?: boolean
   preloadFeatureFlags?: boolean
   decidePollInterval?: number
+  fetchRetryCount?: number
+  fetchRetryDelay?: number
 }
-
 
 export enum PostHogPersistedProperty {
   DistinctId = 'distinct_id',

@@ -8,33 +8,31 @@ export function removeTrailingSlash(url: string) {
   return url?.replace(/\/+$/, '')
 }
 
-export async function retriable<T>(
-  fn: () => Promise<T>,
-  props: { retryCount?: number; retryDelay?: number } = {}
-): Promise<T> {
-  const { retryCount = 3, retryDelay = 1000 } = props
+export interface RetriableOptions {
+  retryCount?: number
+  retryDelay?: number
+  retryCheck?: (err: any) => true
+}
 
-  const shouldRetry = (err: any) => true
+export async function retriable<T>(fn: () => Promise<T>, props: RetriableOptions = {}): Promise<T> {
+  const { retryCount = 3, retryDelay = 1000, retryCheck = () => true } = props
+  let lastError = null
 
-  for (let i = 0; i < retryCount; i++) {
+  for (let i = 0; i < retryCount + 1; i++) {
     try {
-      console.log('CALLING FETCH')
       const res = await fn()
-      console.log('CALLING FETCH DONE', res)
       return res
     } catch (e) {
-      console.log('ERRORED FETCH')
-      if (!shouldRetry(e)) {
+      lastError = e
+      if (!retryCheck(e)) {
         throw e
       }
     }
 
-    console.log('RETRY WAITING...')
-
     await new Promise((r) => setTimeout(r, retryDelay))
   }
 
-  throw new Error('Retry failed')
+  throw lastError
 }
 
 // https://stackoverflow.com/a/8809472

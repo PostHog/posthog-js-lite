@@ -15,6 +15,7 @@ import {
   generateUUID,
   removeTrailingSlash,
   retriable,
+  RetriableOptions,
   safeSetTimeout,
 } from './utils'
 export * as utils from './utils'
@@ -37,6 +38,7 @@ export abstract class PostHogCore {
   protected _decideResponsePromise?: Promise<PostHogDecideResponse>
   protected _decideTimer?: any
   protected _decidePollInterval: number
+  protected _retryOptions: RetriableOptions
 
   // Abstract methods to be overridden by implementations
   abstract fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse>
@@ -62,6 +64,10 @@ export abstract class PostHogCore {
     this._decidePollInterval = Math.max(0, options?.decidePollInterval ?? 30000)
     // If enable is explicitly set to false we override the optout
     this._optoutOverride = options?.enable === false
+    this._retryOptions = {
+      retryCount: options?.fetchRetryCount ?? 3,
+      retryDelay: options?.fetchRetryDelay ?? 3000,
+    }
 
     // NOTE: It is important we don't initiate anything in the constructor as some async IO may still be underway on the parent
     if (options?.preloadFeatureFlags !== false) {
@@ -453,7 +459,7 @@ export abstract class PostHogCore {
     }
 
     const done = (err?: any) => {
-      callback?.(err, data)
+      callback?.(err, messages)
       this._events.emit('flush', messages)
     }
 
@@ -501,10 +507,12 @@ export abstract class PostHogCore {
       })
   }
 
-  private async fetchWithRetry(url: string, options: PostHogFetchOptions): Promise<any> {
-    // TODO: Enable retries
-    return this.fetch(url, options)
-    return retriable(() => this.fetch(url, options))
+  private async fetchWithRetry(
+    url: string,
+    options: PostHogFetchOptions,
+    retryOptions?: RetriableOptions
+  ): Promise<any> {
+    return retriable(() => this.fetch(url, options), retryOptions || this._retryOptions)
   }
 
   async shutdownAsync() {

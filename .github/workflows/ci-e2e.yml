@@ -23,7 +23,9 @@ jobs:
 
     - name: Install Dependencies
       working-directory: examples/example-expo
-      run: yarn install
+      run: |
+        yarn global add yalc 
+        yarn install
 
     - name: Rebuild detox
       working-directory: examples/example-expo
