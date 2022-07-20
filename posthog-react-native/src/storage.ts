@@ -2,20 +2,22 @@ import * as FileSystem from 'expo-file-system'
 
 const POSTHOG_STORAGE_KEY = '.posthog-rn.json'
 const POSTHOG_STORAGE_VERSION = 'v1'
-const uri = FileSystem.documentDirectory + POSTHOG_STORAGE_KEY
 
 type PostHogStorageContents = { [key: string]: any }
 
 const loadStorageAsync = async (): Promise<PostHogStorageContents> => {
+  const uri = FileSystem.documentDirectory + POSTHOG_STORAGE_KEY
   // If we change POSTHOG_STORAGE_VERSION then we should migrate the persisted data here
   try {
-    return JSON.parse(await FileSystem.readAsStringAsync(uri)).content
+    const stringContent = await FileSystem.readAsStringAsync(uri)
+    return JSON.parse(stringContent).content
   } catch (e) {
     return {}
   }
 }
 
 const persitStorageAsync = async (content: PostHogStorageContents) => {
+  const uri = FileSystem.documentDirectory + POSTHOG_STORAGE_KEY
   const data = {
     version: POSTHOG_STORAGE_VERSION,
     content,

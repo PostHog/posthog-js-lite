@@ -1,12 +1,13 @@
 {
-  "name": "posthog-react-native",
+  "name": "@ben-posthog/posthog-react-native",
   "version": "2.0.0-alpha",
   "main": "lib/index.cjs.js",
   "module": "lib/index.esm.js",
   "types": "lib/index.d.ts",
   "dependencies": {},
   "scripts": {
-    "test": "jest -c jest.config.js"
+    "test": "jest -c jest.config.js",
+    "prepublish": "cd .. && yarn build"
   },
   "devDependencies": {
     "@react-navigation/native": "^5.0.10",

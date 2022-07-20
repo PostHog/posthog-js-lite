@@ -5,9 +5,13 @@ on:
     branches:
       - main
       - master
+      - feat/multi-domain-support
 
 jobs:
   check-package-version:
+    strategy:
+      matrix:
+        package: [posthog-react-native, posthog-node, posthog-web]
     name: Check package version and detect an update
     runs-on: ubuntu-latest
     outputs:
@@ -21,21 +25,22 @@ jobs:
       - name: Check package version and detect an update
         id: check-package-version
         uses: PostHog/check-package-version@v2
+        with:
+          path: ${{ matrix.package }}
 
   release:
     name: Publish release if new version
     runs-on: ubuntu-latest
     needs: check-package-version
-    if: needs.check-package-version.outputs.is-new-version == 'true'
+    strategy:
+      matrix: ${{fromJson(needs.check-package-version.outputs)}}
+    if: matrix.is-new-version == 'true'
     env:
-      COMMITTED_VERSION: ${{ needs.check-package-version.outputs.committed-version }}
-      PUBLISHED_VERSION: ${{ needs.check-package-version.outputs.published-version }}
+      COMMITTED_VERSION: ${{ matrix.committed-version }}
+      PUBLISHED_VERSION: ${{ matrix.published-version }}
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.POSTHOG_BOT_GITHUB_TOKEN }}
 
       - name: Set up Node 14
         uses: actions/setup-node@v2
@@ -46,10 +51,13 @@ jobs:
       - name: Install dependencies
         run: yarn --frozen-lockfile
 
+      - name: Build
+        run: yarn build
+
       - name: Publish the package in the npm registry
         run: npm publish --access public
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN_NOT }}
 
       - name: Create GitHub release
         uses: actions/create-release@v1

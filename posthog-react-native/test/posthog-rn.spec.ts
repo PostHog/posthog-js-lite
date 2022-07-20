@@ -1,6 +1,6 @@
 import PostHog from '..'
 
-describe('PostHog Core', () => {
+describe('PostHog React Native', () => {
   let posthog: PostHog
 
   jest.useFakeTimers()
@@ -11,10 +11,8 @@ describe('PostHog Core', () => {
 
   describe('legacy methods', () => {
     it('should capture an event', () => {
-      console.log('HEY')
       posthog.capture('what')
       expect(1).toEqual(2)
-      console.log("HEY2")
-    })  
+    })
   })
 })

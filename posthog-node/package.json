@@ -1,5 +1,5 @@
 {
-  "name": "posthog-node",
+  "name": "@ben-posthog/posthog-node",
   "version": "2.0.0-alpha",
   "description": "PostHog Node.js integration",
   "repository": "PostHog/posthog-node",
