@@ -1,19 +1,5 @@
 {
   "name": "posthog-core",
   "version": "2.0.0-alpha",
-  "main": "src/index.ts",
-  "jest": {
-    "transform": {
-      "^.+\\.ts?$": "ts-jest"
-    },
-    "moduleFileExtensions": [
-      "ts",
-      "js",
-      "json",
-      "node"
-    ],
-    "collectCoverage": true,
-    "clearMocks": true,
-    "coverageDirectory": "coverage"
-  }
+  "main": "src/index.ts"
 }
