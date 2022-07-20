@@ -1,43 +1,50 @@
-import type AsyncStorage from '@react-native-async-storage/async-storage'
+import * as FileSystem from 'expo-file-system'
 
-// NOTE: Should we use AsyncStorage? We are at risk of using the same store as the
-// rest of the app which could get wiped by the user
-let _AsyncStorage: typeof AsyncStorage
+const POSTHOG_STORAGE_KEY = '.posthog-rn.json'
+const POSTHOG_STORAGE_VERSION = 'v1'
+const uri = FileSystem.documentDirectory + POSTHOG_STORAGE_KEY
 
-try {
+type PostHogStorageContents = { [key: string]: any }
+
+const loadStorageAsync = async (): Promise<PostHogStorageContents> => {
+  // If we change POSTHOG_STORAGE_VERSION then we should migrate the persisted data here
   try {
-    _AsyncStorage = require('@react-native-async-storage/async-storage').default
+    return JSON.parse(await FileSystem.readAsStringAsync(uri)).content
   } catch (e) {
-    _AsyncStorage = require('react-native').AsyncStorage
-    if (!_AsyncStorage) {
-      throw new Error('Missing')
-    }
+    return {}
   }
-} catch (e) {
-  throw new Error(
-    'PostHog is missing a required dependency of AsyncStorage. To fix this run `npm i -s @react-native-async-storage/async-storage`'
-  )
+}
+
+const persitStorageAsync = async (content: PostHogStorageContents) => {
+  const data = {
+    version: POSTHOG_STORAGE_VERSION,
+    content,
+  }
+
+  await FileSystem.writeAsStringAsync(uri, JSON.stringify(data)).catch((e) => {
+    console.error('PostHog failed to persist data to storage', e)
+  })
 }
 
 // NOTE: The core prefers a synchronous storage so we mimic this by pre-loading all keys
-const _memoryCache: { [key: string]: string } = {}
+const _memoryCache: PostHogStorageContents = {}
 export const SemiAsyncStorage = {
   getItem: function (key: string): any | null | undefined {
     return _memoryCache[key]
   },
   setItem: function (key: string, value: any): void {
     _memoryCache[key] = value
-    void _AsyncStorage.setItem(key, JSON.stringify(value))
+    void persitStorageAsync(_memoryCache)
   },
   removeItem: function (key: string): void {
     delete _memoryCache[key]
-    void _AsyncStorage.removeItem(key)
+    void persitStorageAsync(_memoryCache)
   },
   clear: function (): void {
     for (let key in _memoryCache) {
       delete _memoryCache[key]
     }
-    void _AsyncStorage.clear()
+    void persitStorageAsync(_memoryCache)
   },
   getAllKeys: function (): readonly string[] {
     return Object.keys(_memoryCache)
@@ -50,14 +57,11 @@ export const preloadSemiAsyncStorage = (): Promise<void> => {
   if (_preloadSemiAsyncStoragePromise) {
     return _preloadSemiAsyncStoragePromise
   }
-  _preloadSemiAsyncStoragePromise = _AsyncStorage
-    .getAllKeys()
-    .then(_AsyncStorage.multiGet)
-    .then((res) => {
-      res.forEach(([key, value]) => {
-        if (value !== null) _memoryCache[key] = JSON.parse(value)
-      })
-    })
+  _preloadSemiAsyncStoragePromise = loadStorageAsync().then((res) => {
+    for (let key in res) {
+      _memoryCache[key] = res[key]
+    }
+  })
 
   return _preloadSemiAsyncStoragePromise
 }

@@ -16,8 +16,6 @@ import { version } from '../package.json'
 
 export interface PostHogOptions extends PosthogCoreOptions {}
 
-const STORAGE_PREFIX = '@posthog:'
-
 export class PostHog extends PostHogCore {
   constructor(apiKey: string, options?: PostHogOptions) {
     super(apiKey, options)
@@ -27,15 +25,14 @@ export class PostHog extends PostHogCore {
     })
 
     // Ensure the async storage has been preloaded (this call is cached)
-    preloadSemiAsyncStorage()
+    void preloadSemiAsyncStorage()
 
     // It is possible that the old library was used so we try to get the legacy distinctID
-    preloadSemiAsyncStorage().then(() => {
-      const key = `${STORAGE_PREFIX}${PostHogPersistedProperty.DistinctId}`
-      if (!SemiAsyncStorage.getItem(key)) {
+    void preloadSemiAsyncStorage().then(() => {
+      if (!SemiAsyncStorage.getItem(PostHogPersistedProperty.DistinctId)) {
         getLegacyValues().then((legacyValues) => {
           if (legacyValues?.distinctId) {
-            SemiAsyncStorage.setItem(key, legacyValues.distinctId)
+            SemiAsyncStorage.setItem(PostHogPersistedProperty.DistinctId, legacyValues.distinctId)
           }
         })
       }
@@ -43,12 +40,10 @@ export class PostHog extends PostHogCore {
   }
 
   getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined {
-    return SemiAsyncStorage.getItem(`${STORAGE_PREFIX}${key}`) || undefined
+    return SemiAsyncStorage.getItem(key) || undefined
   }
   setPersistedProperty<T>(key: PostHogPersistedProperty, value: T | null): void {
-    return value !== null
-      ? SemiAsyncStorage.setItem(`${STORAGE_PREFIX}${key}`, value)
-      : SemiAsyncStorage.removeItem(`${STORAGE_PREFIX}${key}`)
+    return value !== null ? SemiAsyncStorage.setItem(key, value) : SemiAsyncStorage.removeItem(key)
   }
 
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {

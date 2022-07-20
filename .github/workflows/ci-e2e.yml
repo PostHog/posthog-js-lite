@@ -28,11 +28,9 @@ jobs:
           yarn global add detox-cli
           yarn install
 
-      # - name: Rebuild detox
-      #   working-directory: examples/example-expo
-      #   run: yarn detox clean-framework-cache && yarn detox build-framework-cache
-
       - run: brew tap wix/brew
       - run: brew install applesimutils
+      - working-directory: examples/example-expo
+        run: yarn ios
       - working-directory: examples/example-expo
         run: yarn test
