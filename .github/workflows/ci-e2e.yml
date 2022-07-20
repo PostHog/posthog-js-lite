@@ -8,9 +8,6 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 15
 
-    env:
-      DEVELOPER_DIR: /Applications/Xcode_11.2.app
-
     steps:
     - uses: actions/checkout@v1
     - uses: actions/setup-node@v1
@@ -21,7 +18,7 @@ jobs:
       run: yarn install
 
     - run: cd examples/example-expo
-    - run: ./e2e/tools/downloadApp.sh
+    - run: ls -al && ./e2e/tools/downloadApp.sh
 
     - name: Install Dependencies
       run: yarn install
