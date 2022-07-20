@@ -2,7 +2,6 @@ name: CI - E2E
 
 on:
   - pull_request
-  
 
 jobs:
   build:
@@ -10,40 +9,30 @@ jobs:
     timeout-minutes: 15
 
     steps:
-    - uses: actions/checkout@v1
-    - uses: actions/setup-node@v1
-      with:
-        node-version: 16
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 16
 
-    - name: Install Global Dependencies
-      run: yarn install
+      - name: Install Global Dependencies
+        run: yarn install
 
-    - working-directory: examples/example-expo
-      run: ls -al && ./e2e/tools/downloadApp.sh
+      - working-directory: examples/example-expo
+        run: ls -al && ./e2e/tools/downloadApp.sh
 
-    - name: Install Dependencies
-      working-directory: examples/example-expo
-      run: |
-        yarn global add yalc 
-        yarn install
+      - name: Install Dependencies
+        working-directory: examples/example-expo
+        run: |
+          yarn global add yalc 
+          yarn global add expo-cli
+          yarn global add detox-cli
+          yarn install
 
-    - name: Rebuild detox
-      working-directory: examples/example-expo
-      run: yarn detox clean-framework-cache && yarn detox build-framework-cache
+      # - name: Rebuild detox
+      #   working-directory: examples/example-expo
+      #   run: yarn detox clean-framework-cache && yarn detox build-framework-cache
 
-    - name: Cache Pods
-      uses: actions/cache@v1
-      id: podcache
-      with:
-        path: examples/example-expo/ios/Pods
-        key: pods-${{ hashFiles('**/Podfile.lock') }}
-
-    - name: Update Pods
-      working-directory: examples/example-expo
-      run: |
-        gem update cocoapods xcodeproj
-        cd ios && pod install && cd ..
-    - run: brew tap wix/brew
-    - run: brew install applesimutils
-    - working-directory: examples/example-expo
-      run: yarn test
+      - run: brew tap wix/brew
+      - run: brew install applesimutils
+      - working-directory: examples/example-expo
+        run: yarn test

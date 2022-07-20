@@ -1,6 +1,5 @@
-
-
 ## Running Detox tests
+
 Ensure you have all necessary deps installed
 
 ```
