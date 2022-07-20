@@ -62,6 +62,7 @@ export class PostHog extends PostHogCore {
     return version
   }
   getCustomUserAgent(): void {
+    // TODO
     return
   }
 

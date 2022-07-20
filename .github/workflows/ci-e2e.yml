@@ -2,6 +2,7 @@ name: CI - E2E
 
 on:
   - pull_request
+  
 
 jobs:
   build:
@@ -17,26 +18,30 @@ jobs:
     - name: Install Global Dependencies
       run: yarn install
 
-    - run: cd examples/example-expo
-    - run: ls -al && ./e2e/tools/downloadApp.sh
+    - working-directory: examples/example-expo
+      run: ls -al && ./e2e/tools/downloadApp.sh
 
     - name: Install Dependencies
+      working-directory: examples/example-expo
       run: yarn install
 
     - name: Rebuild detox
+      working-directory: examples/example-expo
       run: yarn detox clean-framework-cache && yarn detox build-framework-cache
 
     - name: Cache Pods
       uses: actions/cache@v1
       id: podcache
       with:
-        path: ios/Pods
+        path: examples/example-expo/ios/Pods
         key: pods-${{ hashFiles('**/Podfile.lock') }}
 
     - name: Update Pods
+      working-directory: examples/example-expo
       run: |
         gem update cocoapods xcodeproj
         cd ios && pod install && cd ..
     - run: brew tap wix/brew
     - run: brew install applesimutils
-    - run: yarn test
+    - working-directory: examples/example-expo
+      run: yarn test
