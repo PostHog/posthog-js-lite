@@ -13,14 +13,20 @@ import { ColorSchemeName, Pressable } from 'react-native'
 import { RootStackParamList, RootTabParamList, RootTabScreenProps } from '../types'
 import LinkingConfiguration from './LinkingConfiguration'
 
-import { useNavigationTracker, useLifecycleTracker, PostHogProvider } from 'posthog-react-native'
-import posthog from '../posthog'
+import { useNavigationTracker, useLifecycleTracker, PostHogProvider } from '@ben-posthog/posthog-react-native'
 import PostHogDebugScreen, { usePosthogDebugEvents } from '../screens/PostHogDebugScreen'
 import PosthogDemoScreen from '../screens/PosthogDemoScreen'
 
 export default function Navigation({ colorScheme }: { colorScheme: ColorSchemeName }) {
   return (
-    <PostHogProvider client={posthog} autocapture>
+    <PostHogProvider
+      apiKey="phc_FzKQvNvps9ZUTxF5KJR9jIKdGb4bq4HNBa9SRyAHi0C"
+      options={{
+        host: 'http://localhost:8000',
+        flushAt: 1,
+      }}
+      autocapture
+    >
       <NavigationContainer linking={LinkingConfiguration} theme={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <RootNavigator />
       </NavigationContainer>

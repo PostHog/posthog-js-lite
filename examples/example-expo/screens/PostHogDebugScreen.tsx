@@ -1,4 +1,4 @@
-import { usePostHog } from 'posthog-react-native'
+import { usePostHog } from '@ben-posthog/posthog-react-native'
 import React, { useEffect, useState } from 'react'
 import { Alert, FlatList, StyleSheet, TouchableOpacity, View, Text } from 'react-native'
 
@@ -26,6 +26,7 @@ export const usePosthogDebugEvents = () => {
       posthog.on('screen', (e) => onEvent('screen', e)),
       posthog.on('autocapture', (e) => onEvent('autocapture', e)),
       posthog.on('featureflags', (e) => onEvent('featureflags', e)),
+      posthog.on('flush', (e) => onEvent('flush', e)),
     ]
 
     return () => {

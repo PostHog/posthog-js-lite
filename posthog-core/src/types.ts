@@ -45,18 +45,15 @@ export type PostHogEventProperties = {
 }
 
 export type PostHogAutocaptureElement = {
-  text?: string
+  $el_text?: string
   tag_name: string
-  attr_class: string[]
   href?: string
-  attr_id?: string
   nth_child: number
   nth_of_type: number
-  attributes: {
-    [key: string]: any
-  }
   order: number
-}
+} & {
+  [key: string]: any
+} // Any key prefixed with `attr__` can be added
 
 export type PostHogDecideResponse = {
   config: { enable_collect_everything: boolean }

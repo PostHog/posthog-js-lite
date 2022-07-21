@@ -1,8 +1,7 @@
 import { useNavigation } from '@react-navigation/native'
-import { StatusBar } from 'expo-status-bar'
-import { useFeatureFlags, usePostHog } from 'posthog-react-native'
+import { useFeatureFlags, usePostHog } from '@ben-posthog/posthog-react-native'
 import React from 'react'
-import { Button, Platform, StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native'
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native'
 
 export default function PosthogDemoScreen(props: any) {
   const navigation = useNavigation()

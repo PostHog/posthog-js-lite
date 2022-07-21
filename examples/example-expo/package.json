@@ -12,10 +12,11 @@
     "eject": "expo eject",
     "test": "detox test",
     "build:posthog": "yarn build:posthog:publish && yarn build:posthog:link",
-    "build:posthog:publish": "cd ../../posthog-react-native && yalc publish",
-    "build:posthog:link": "yalc add posthog-react-native"
+    "build:posthog:publish": "cd ../../posthog-react-native && yalc publish --replace",
+    "build:posthog:link": "yalc add @ben-posthog/posthog-react-native"
   },
   "dependencies": {
+    "@ben-posthog/posthog-react-native": "file:.yalc/@ben-posthog/posthog-react-native",
     "@expo/vector-icons": "^13.0.0",
     "@react-navigation/bottom-tabs": "^6.0.5",
     "@react-navigation/native": "^6.0.2",
@@ -33,7 +34,6 @@
     "expo-status-bar": "~1.3.0",
     "expo-system-ui": "~1.2.0",
     "expo-web-browser": "~10.2.0",
-    "posthog-react-native": "file:.yalc/posthog-react-native",
     "react": "17.0.2",
     "react-dom": "17.0.2",
     "react-native": "0.68.2",
