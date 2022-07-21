@@ -25,7 +25,8 @@ export default function Navigation({ colorScheme }: { colorScheme: ColorSchemeNa
         apiKey="phc_FzKQvNvps9ZUTxF5KJR9jIKdGb4bq4HNBa9SRyAHi0C"
         options={{
           host: 'http://localhost:8000',
-          flushAt: 1,
+          flushAt: 10,
+          flushInterval: 1000, // This is far to low for production but helpful for local testing
         }}
         autocapture
       >

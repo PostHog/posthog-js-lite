@@ -8,7 +8,23 @@ const wait = (t: number) => new Promise((r) => setTimeout(r, t))
 // Weird typescript issue
 const toMatchSnapshot = (e: any) => (jestExpect(e) as any).toMatchSnapshot()
 
-describe('Example', () => {
+const commonProperties = {
+  $app_build: '1',
+  $app_name: 'Expo Go',
+  $app_namespace: 'host.exp.Exponent',
+  $app_version: '2.24.3',
+  $device_manufacturer: 'Apple',
+  $device_name: 'iPhone 12 Pro',
+  $lib: 'posthog-react-native',
+  $lib_version: jestExpect.any(String),
+  $locale: jestExpect.any(String),
+  $os_name: 'iOS',
+  $os_version: '15.5',
+  $screen_height: 844,
+  $screen_width: 390,
+  $timezone: jestExpect.any(String),
+}
+describe('PostHog React Native E2E', () => {
   let server: any
   let httpMock: jest.Mock<MockRequest, any>
 
@@ -31,52 +47,58 @@ describe('Example', () => {
       .toBeVisible()
       .withTimeout(5000)
 
-    await wait(500)
+    await wait(1500)
 
-    jestExpect(httpMock).toHaveBeenCalledWith(
-      objectContaining({
-        method: 'POST',
-        path: '/e/',
-        body: objectContaining({
-          api_key: jestExpect.any(String),
-          batch: [
-            {
-              distinct_id: jestExpect.any(String),
-              event: '$screen',
-              library: 'posthog-react-native',
-              library_version: jestExpect.any(String),
-              properties: {
-                $app_build: '1',
-                $app_name: 'Expo Go',
-                $app_namespace: 'host.exp.Exponent',
-                $app_version: '2.24.3',
-                $lib: 'posthog-react-native',
-                $lib_version: jestExpect.any(String),
-                $screen_height: 844,
-                $screen_name: 'TabOne',
-                $screen_width: 390,
-              },
-              timestamp: jestExpect.any(String),
-              type: 'capture',
+    const calls = httpMock.mock.calls
+    const eventCall = calls.find((x) => x[0].path === '/e/')
+
+    jestExpect(eventCall[0]).toMatchObject({
+      body: {
+        api_key: 'phc_FzKQvNvps9ZUTxF5KJR9jIKdGb4bq4HNBa9SRyAHi0C',
+        batch: arrayContaining([
+          objectContaining({
+            distinct_id: jestExpect.any(String),
+            event: 'Application Opened',
+            library: 'posthog-react-native',
+            properties: {
+              ...commonProperties,
             },
-          ],
-          sent_at: jestExpect.any(String),
-        }),
-      })
-    )
+            timestamp: jestExpect.any(String),
+            type: 'capture',
+          }),
+          objectContaining({
+            distinct_id: jestExpect.any(String),
+            event: '$screen',
+            library: 'posthog-react-native',
+            properties: {
+              ...commonProperties,
+              $screen_name: 'TabOne',
+            },
+            timestamp: jestExpect.any(String),
+            type: 'capture',
+          }),
+        ]),
+        sent_at: jestExpect.any(String),
+      },
+      method: 'POST',
+      path: '/e/',
+    })
   })
 
-  it('should automatically track $screen on navigation', async () => {
+  it.only('should automatically track $screen on navigation', async () => {
     await waitFor(element(by.id('title-TabOne')))
       .toBeVisible()
       .withTimeout(5000)
 
+    await wait(1500)
     httpMock.mockReset()
 
     await element(by.id('modal-button')).tap()
     await waitFor(element(by.id('title-Modal')))
       .toHaveLabel('Modal')
       .withTimeout(5000)
+
+    await wait(1500)
 
     jestExpect(httpMock).toHaveBeenCalledWith(
       objectContaining({
