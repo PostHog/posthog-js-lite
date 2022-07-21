@@ -44,14 +44,14 @@ describe('Example', () => {
               distinct_id: jestExpect.any(String),
               event: '$screen',
               library: 'posthog-react-native',
-              library_version: '2.0.0-alpha',
+              library_version: jestExpect.any(String),
               properties: {
                 $app_build: '1',
                 $app_name: 'Expo Go',
                 $app_namespace: 'host.exp.Exponent',
                 $app_version: '2.24.3',
                 $lib: 'posthog-react-native',
-                $lib_version: '2.0.0-alpha',
+                $lib_version: jestExpect.any(String),
                 $screen_height: 844,
                 $screen_name: 'TabOne',
                 $screen_width: 390,
@@ -112,11 +112,16 @@ describe('Example', () => {
       body: objectContaining({
         batch: arrayContaining([
           objectContaining({
+            event: 'Application Opened',
+            properties: objectContaining({
+              $lib: 'posthog-react-native',
+            }),
+          }),
+          objectContaining({
             event: '$autocapture',
             properties: objectContaining({
               $event_type: 'touch',
               $lib: 'posthog-react-native',
-              $lib_version: '2.0.0-alpha',
               $screen_height: 844,
               $screen_width: 390,
               $touch_x: 195,

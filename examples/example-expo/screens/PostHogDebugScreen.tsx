@@ -12,7 +12,7 @@ export const usePosthogDebugEvents = () => {
   useEffect(() => {
     if (!posthog) return
     const onEvent = (event: string, payload: any) => {
-      console.log('On event', event, payload)
+      // console.log('On event', event, payload)
       GLOBAL_EVENTS.push({
         event,
         payload,

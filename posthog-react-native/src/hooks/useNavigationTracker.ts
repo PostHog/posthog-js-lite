@@ -25,7 +25,7 @@ function _useNavigationTracker(options?: PostHogNavigationTrackerOptions, client
   const routes = OptionalReactNativeNavigation.useNavigationState((state) => state?.routes)
   const navigation = OptionalReactNativeNavigation.useNavigation()
 
-  useEffect(() => {
+  const trackRoute = () => {
     if (!posthog) return
     // NOTE: This method is not typed correctly but is available and takes care of parsing the router state correctly
     const currentRoute = (navigation as any).getCurrentRoute()
@@ -47,6 +47,16 @@ function _useNavigationTracker(options?: PostHogNavigationTrackerOptions, client
       const properties = options?.routeToProperties?.(currentRouteName, params)
       posthog.screen(currentRouteName, properties)
     }
+  }
+
+  useEffect(() => {
+    // NOTE: The navigation stacks may not be fully rendered initially. This means the first route can be missed (it doesn't update useNavigationState)
+    // If missing we simply wait a tick and call it again.
+    if (!routes) {
+      setTimeout(trackRoute, 1)
+      return
+    }
+    trackRoute()
   }, [routes])
 }
 
