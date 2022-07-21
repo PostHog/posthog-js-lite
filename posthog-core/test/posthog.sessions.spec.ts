@@ -31,7 +31,6 @@ describe('PostHog Core', () => {
 
     it('should generate new sessionId if expired', () => {
       jest.setSystemTime(new Date('2022-01-01T12:00:00'))
-      expect(Date.now()).toEqual(1641034800000)
       posthog.capture('test')
       const sessionId = posthog.getPersistedProperty(PostHogPersistedProperty.SessionId)
 
