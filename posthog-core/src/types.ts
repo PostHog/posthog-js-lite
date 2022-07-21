@@ -11,6 +11,7 @@ export type PosthogCoreOptions = {
   decidePollInterval?: number
   fetchRetryCount?: number
   fetchRetryDelay?: number
+  sessionExpirationTimeSeconds?: number
 }
 
 export enum PostHogPersistedProperty {
@@ -20,6 +21,8 @@ export enum PostHogPersistedProperty {
   OverrideFeatureFlags = 'override_feature_flags',
   Queue = 'queue',
   OptedOut = 'opted_out',
+  SessionId = 'session_id',
+  SessionLastTimestamp = 'session_timestamp',
 }
 
 export type PostHogFetchOptions = {

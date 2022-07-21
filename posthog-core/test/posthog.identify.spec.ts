@@ -34,6 +34,7 @@ describe('PostHog Core', () => {
               $lib_version: '2.0.0-alpha',
               foo: 'bar',
               $anon_distinct_id: expect.any(String),
+              $session_id: expect.any(String),
             },
             timestamp: '2022-01-01T00:00:00.000Z',
             type: 'identify',

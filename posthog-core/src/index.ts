@@ -39,6 +39,7 @@ export abstract class PostHogCore {
   protected _decideTimer?: any
   protected _decidePollInterval: number
   protected _retryOptions: RetriableOptions
+  protected _sessionExpirationTimeSeconds: number
 
   // Abstract methods to be overridden by implementations
   abstract fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse>
@@ -68,6 +69,7 @@ export abstract class PostHogCore {
       retryCount: options?.fetchRetryCount ?? 3,
       retryDelay: options?.fetchRetryDelay ?? 3000,
     }
+    this._sessionExpirationTimeSeconds = options?.sessionExpirationTimeSeconds ?? 1800 // 30 minutes
 
     // NOTE: It is important we don't initiate anything in the constructor as some async IO may still be underway on the parent
     if (options?.preloadFeatureFlags !== false) {
@@ -132,8 +134,21 @@ export abstract class PostHogCore {
         ...this.props, // Persisted properties first
         ...(payload.properties || {}), // Followed by user specified properties
         ...this.getCommonEventProperties(), // Followed by common PH props
+        $session_id: this.getSessionId(),
       },
     }
+  }
+
+  getSessionId(): string {
+    let sessionId = this.getPersistedProperty<string>(PostHogPersistedProperty.SessionId)
+    let sessionTimestamp = this.getPersistedProperty<number>(PostHogPersistedProperty.SessionLastTimestamp) || 0
+    if (!sessionId || Date.now() - sessionTimestamp > this._sessionExpirationTimeSeconds * 1000) {
+      sessionId = generateUUID(globalThis)
+      this.setPersistedProperty(PostHogPersistedProperty.SessionId, sessionId)
+    }
+    this.setPersistedProperty(PostHogPersistedProperty.SessionLastTimestamp, Date.now())
+
+    return sessionId
   }
 
   getDistinctId(): string {
