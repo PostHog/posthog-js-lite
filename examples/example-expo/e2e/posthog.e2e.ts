@@ -127,12 +127,6 @@ describe('PostHog React Native E2E', () => {
       body: objectContaining({
         batch: arrayContaining([
           objectContaining({
-            event: 'Application Opened',
-            properties: objectContaining({
-              $lib: 'posthog-react-native',
-            }),
-          }),
-          objectContaining({
             event: '$autocapture',
             properties: objectContaining({
               $event_type: 'touch',

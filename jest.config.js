@@ -8,8 +8,7 @@ module.exports = {
   collectCoverage: true,
   clearMocks: true,
   coverageDirectory: 'coverage',
-  testPathIgnorePatterns: ['node_modules', 'examples'],
   fakeTimers: { enableGlobally: true },
   transformIgnorePatterns: ['<rootDir>/node_modules/'],
-  testPathIgnorePatterns: ['<rootDir>/lib/', '/node_modules/'],
+  testPathIgnorePatterns: ['<rootDir>/lib/', '/node_modules/', '/examples/'],
 }
