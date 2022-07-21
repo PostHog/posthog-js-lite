@@ -1,12 +1,6 @@
 import { PostHog } from './posthog-rn'
 import { PostHogAutocaptureElement } from 'posthog-core'
-
-export type PostHogAutocaptureOptions = {
-  customLabelProp?: string
-  noCaptureProp?: string
-  maxElementsCaptured?: number
-  ignoredLabels?: string[]
-}
+import { PostHogAutocaptureOptions } from './types'
 
 interface Element {
   elementType?: {
@@ -50,7 +44,7 @@ export const autocaptureFromTouchEvent = (e: any, posthog: PostHog, options: Pos
     noCaptureProp = 'ph-no-capture',
     customLabelProp = 'ph-label',
     maxElementsCaptured = 20,
-    ignoredLabels = [],
+    ignoreLabels = [],
   } = options
 
   if (!e._targetInst) {
@@ -97,7 +91,7 @@ export const autocaptureFromTouchEvent = (e: any, posthog: PostHog, options: Pos
         ? `${props[customLabelProp]}`
         : currentInst.elementType?.displayName || currentInst.elementType?.name
 
-    if (label && !ignoredLabels.includes(label)) {
+    if (label && !ignoreLabels.includes(label)) {
       el.tag_name = sanitiseLabel(label)
       elements.push(el)
     }

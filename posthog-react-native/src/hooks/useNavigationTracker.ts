@@ -1,19 +1,14 @@
 import { useEffect } from 'react'
 import { OptionalReactNativeNavigation } from '../optional-imports'
 import type { PostHog } from '../posthog-rn'
+import { PostHogAutocaptureNavigationTrackerOptions } from '../types'
 import { usePostHog } from './usePostHog'
-
-export interface PostHogNavigationTrackerOptions {
-  ignoreScreens?: string[]
-  routeToName?: (name: string, params: any) => string
-  routeToProperties?: (name: string, params: any) => string
-}
 
 function _useNavigationTrackerDisabled() {
   return
 }
 
-function _useNavigationTracker(options?: PostHogNavigationTrackerOptions, client?: PostHog) {
+function _useNavigationTracker(options?: PostHogAutocaptureNavigationTrackerOptions, client?: PostHog) {
   const contextClient = usePostHog()
   const posthog = client || contextClient
 
