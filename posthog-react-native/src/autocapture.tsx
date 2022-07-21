@@ -92,9 +92,10 @@ export const autocaptureFromTouchEvent = (e: any, posthog: PostHog, options: Pos
     }
 
     // Try and find a sensible label
-    let label = typeof props?.[customLabelProp] !== 'undefined' ? `${props[customLabelProp]}` : undefined
-    label = label || (typeof props?.accessibilityLabel === 'string' ? props?.accessibilityLabel : undefined)
-    label = label || currentInst.elementType?.displayName
+    let label =
+      typeof props?.[customLabelProp] !== 'undefined'
+        ? `${props[customLabelProp]}`
+        : currentInst.elementType?.displayName || currentInst.elementType?.name
 
     if (label && !ignoredLabels.includes(label)) {
       el.tag_name = sanitiseLabel(label)
