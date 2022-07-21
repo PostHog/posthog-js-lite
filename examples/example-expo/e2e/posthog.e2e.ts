@@ -34,8 +34,11 @@ describe('PostHog React Native E2E', () => {
 
   beforeEach(async () => {
     await reloadApp()
-
     httpMock.mockReset()
+
+    await waitFor(element(by.id('title-TabOne')))
+      .toBeVisible()
+      .withTimeout(5000)
   })
 
   afterAll(async () => {
@@ -43,10 +46,6 @@ describe('PostHog React Native E2E', () => {
   })
 
   it('should track $screen', async () => {
-    await waitFor(element(by.id('title-TabOne')))
-      .toBeVisible()
-      .withTimeout(5000)
-
     await wait(1500)
 
     const calls = httpMock.mock.calls
@@ -85,11 +84,7 @@ describe('PostHog React Native E2E', () => {
     })
   })
 
-  it.only('should automatically track $screen on navigation', async () => {
-    await waitFor(element(by.id('title-TabOne')))
-      .toBeVisible()
-      .withTimeout(5000)
-
+  it('should automatically track $screen on navigation', async () => {
     await wait(1500)
     httpMock.mockReset()
 
@@ -118,9 +113,7 @@ describe('PostHog React Native E2E', () => {
   })
 
   it('should autocapture taps', async () => {
-    await waitFor(element(by.id('title-TabOne')))
-      .toBeVisible()
-      .withTimeout(5000)
+    await wait(1500)
 
     httpMock.mockReset()
 
@@ -157,10 +150,7 @@ describe('PostHog React Native E2E', () => {
   })
 
   it('should ignore autocapture for ph-no-capture', async () => {
-    await waitFor(element(by.id('title-TabOne')))
-      .toBeVisible()
-      .withTimeout(5000)
-
+    await wait(1500)
     httpMock.mockReset()
 
     await element(by.id('example-ph-no-capture')).tap()

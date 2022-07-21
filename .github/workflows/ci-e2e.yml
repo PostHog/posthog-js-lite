@@ -4,7 +4,7 @@ on:
   - pull_request
 
 jobs:
-  build:
+  e2e:
     runs-on: macos-latest
     timeout-minutes: 15
 
@@ -13,9 +13,6 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: 16
-
-      - name: Select Xcode
-        run: sudo xcode-select -switch /Applications/Xcode_13.4.1.app && /usr/bin/xcodebuild -version
 
       - name: Install Global Dependencies
         run: yarn install
