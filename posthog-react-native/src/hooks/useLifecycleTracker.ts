@@ -1,16 +1,16 @@
 import { useEffect, useRef } from 'react'
 import { AppState } from 'react-native'
 import type { PostHog } from '../posthog-rn'
-import { usePostHog } from '../PostHogProvider'
+import { usePostHog } from './usePostHog'
 
 export function useLifecycleTracker(client?: PostHog) {
   const openTrackedRef = useRef(false)
   const contextClient = usePostHog()
   const posthog = client || contextClient
 
-  if (!posthog) return
-
   return useEffect(() => {
+    if (!posthog) return
+
     if (!openTrackedRef.current) {
       openTrackedRef.current = true
       posthog.capture('Application Opened')

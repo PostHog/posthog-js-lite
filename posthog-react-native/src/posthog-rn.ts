@@ -17,6 +17,10 @@ import { version } from '../package.json'
 export interface PostHogOptions extends PosthogCoreOptions {}
 
 export class PostHog extends PostHogCore {
+  static initAsync() {
+    return preloadSemiAsyncStorage()
+  }
+
   constructor(apiKey: string, options?: PostHogOptions) {
     super(apiKey, options)
 
@@ -25,7 +29,6 @@ export class PostHog extends PostHogCore {
     })
 
     // Ensure the async storage has been preloaded (this call is cached)
-    void preloadSemiAsyncStorage()
 
     // It is possible that the old library was used so we try to get the legacy distinctID
     void preloadSemiAsyncStorage().then(() => {
@@ -92,3 +95,7 @@ export class PostHog extends PostHogCore {
     })
   }
 }
+
+// NOTE: This ensures that we have the AsyncStorage loaded into memory hopefully before PostHog
+// is used
+void PostHog.initAsync()

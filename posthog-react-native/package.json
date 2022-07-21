@@ -1,6 +1,6 @@
 {
   "name": "@ben-posthog/posthog-react-native",
-  "version": "2.0.0-alpha5",
+  "version": "2.0.0-alpha6",
   "main": "lib/index.cjs.js",
   "module": "lib/index.esm.js",
   "types": "lib/index.d.ts",

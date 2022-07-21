@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { usePostHog } from '../PostHogProvider'
+import { usePostHog } from './usePostHog'
 
 export function useFeatureFlag(flag: string, defaultValue?: boolean | string) {
   const posthog = usePostHog()

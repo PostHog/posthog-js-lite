@@ -2,6 +2,9 @@ import React, { useCallback, useRef } from 'react'
 import { GestureResponderEvent, StyleProp, View, ViewStyle } from 'react-native'
 import { PostHog, PostHogOptions } from './posthog-rn'
 import { autocaptureFromTouchEvent, PostHogAutocaptureOptions } from './autocapture'
+import { useNavigationTracker } from './hooks/useNavigationTracker'
+import { useLifecycleTracker } from './hooks/useLifecycleTracker'
+import { PostHogContext } from './PosthogContext'
 
 export interface PostHogProviderProps {
   children: React.ReactNode
@@ -13,7 +16,11 @@ export interface PostHogProviderProps {
   style?: StyleProp<ViewStyle>
 }
 
-export const PostHogContext = React.createContext<{ client?: PostHog }>({ client: undefined })
+function PostHogHooks(): JSX.Element | null {
+  useNavigationTracker()
+  useLifecycleTracker()
+  return null
+}
 
 export const PostHogProvider = ({
   children,
@@ -48,12 +55,10 @@ export const PostHogProvider = ({
 
   return (
     <View ph-label="PostHogProvider" style={style || { flex: 1 }} onTouchEndCapture={(e) => onTouch('end', e)}>
-      <PostHogContext.Provider value={{ client: posthogRef.current }}>{children}</PostHogContext.Provider>
+      <PostHogContext.Provider value={{ client: posthogRef.current }}>
+        {autocapture ? <PostHogHooks /> : null}
+        {children}
+      </PostHogContext.Provider>
     </View>
   )
-}
-
-export const usePostHog = (): PostHog | undefined => {
-  const { client } = React.useContext(PostHogContext)
-  return client
 }

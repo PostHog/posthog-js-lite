@@ -13,24 +13,25 @@ import { ColorSchemeName, Pressable } from 'react-native'
 import { RootStackParamList, RootTabParamList, RootTabScreenProps } from '../types'
 import LinkingConfiguration from './LinkingConfiguration'
 
-import { useNavigationTracker, useLifecycleTracker, PostHogProvider } from '@ben-posthog/posthog-react-native'
+import { PostHogProvider } from '@ben-posthog/posthog-react-native'
 import PostHogDebugScreen, { usePosthogDebugEvents } from '../screens/PostHogDebugScreen'
 import PosthogDemoScreen from '../screens/PosthogDemoScreen'
 
 export default function Navigation({ colorScheme }: { colorScheme: ColorSchemeName }) {
   return (
-    <PostHogProvider
-      apiKey="phc_FzKQvNvps9ZUTxF5KJR9jIKdGb4bq4HNBa9SRyAHi0C"
-      options={{
-        host: 'http://localhost:8000',
-        flushAt: 1,
-      }}
-      autocapture
-    >
-      <NavigationContainer linking={LinkingConfiguration} theme={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <NavigationContainer linking={LinkingConfiguration} theme={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      {/* IMPORTANT - PostHogProvider must be a child of the NavigationContainer but a parent of everything else */}
+      <PostHogProvider
+        apiKey="phc_FzKQvNvps9ZUTxF5KJR9jIKdGb4bq4HNBa9SRyAHi0C"
+        options={{
+          host: 'http://localhost:8000',
+          flushAt: 1,
+        }}
+        autocapture
+      >
         <RootNavigator />
-      </NavigationContainer>
-    </PostHogProvider>
+      </PostHogProvider>
+    </NavigationContainer>
   )
 }
 
@@ -41,18 +42,6 @@ export default function Navigation({ colorScheme }: { colorScheme: ColorSchemeNa
 const Stack = createNativeStackNavigator<RootStackParamList>()
 
 function RootNavigator() {
-  useNavigationTracker({
-    routeToProperties(name, params) {
-      // Here we could filter the params for only ones we want to tracj
-      return params
-    },
-    routeToName(name, params) {
-      // Here we could modify the route name if necessary (for example using a param)
-      return name
-    },
-  })
-  useLifecycleTracker()
-
   // NOTE: This is a debugging hook just for this example
   usePosthogDebugEvents()
   return (

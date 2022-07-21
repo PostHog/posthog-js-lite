@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { OptionalReactNativeNavigation } from '../optional-imports'
 import type { PostHog } from '../posthog-rn'
-import { usePostHog } from '../PostHogProvider'
+import { usePostHog } from './usePostHog'
 
 export interface PostHogNavigationTrackerOptions {
   ignoreScreens?: string[]
@@ -9,20 +9,24 @@ export interface PostHogNavigationTrackerOptions {
   routeToProperties?: (name: string, params: any) => string
 }
 
-export function useNavigationTracker(options?: PostHogNavigationTrackerOptions, client?: PostHog) {
+function _useNavigationTrackerDisabled() {
+  return
+}
+
+function _useNavigationTracker(options?: PostHogNavigationTrackerOptions, client?: PostHog) {
   const contextClient = usePostHog()
   const posthog = client || contextClient
 
-  if (!posthog) return
-
   if (!OptionalReactNativeNavigation) {
-    throw new Error('Navigation tracking requires @react-native navigation')
+    // NOTE: This is taken care of by the export but we keep this here for TS
+    return
   }
 
   const routes = OptionalReactNativeNavigation.useNavigationState((state) => state?.routes)
   const navigation = OptionalReactNativeNavigation.useNavigation()
 
   useEffect(() => {
+    if (!posthog) return
     // NOTE: This method is not typed correctly but is available and takes care of parsing the router state correctly
     const currentRoute = (navigation as any).getCurrentRoute()
     if (!currentRoute) {
@@ -45,3 +49,7 @@ export function useNavigationTracker(options?: PostHogNavigationTrackerOptions, 
     }
   }, [routes])
 }
+
+export const useNavigationTracker = OptionalReactNativeNavigation
+  ? _useNavigationTracker
+  : _useNavigationTrackerDisabled

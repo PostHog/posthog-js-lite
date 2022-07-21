@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { PostHog } from '../posthog-rn'
-import { usePostHog } from '../PostHogProvider'
 import { PostHogDecideResponse } from 'posthog-core'
+import { usePostHog } from './usePostHog'
 
 export function useFeatureFlags(client?: PostHog) {
   const contextClient = usePostHog()
