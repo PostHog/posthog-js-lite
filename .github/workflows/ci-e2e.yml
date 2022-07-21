@@ -18,6 +18,11 @@ jobs:
         with:
           node-version: 16
 
+      - uses: actions/cache@v2
+        with:
+          path: '**/node_modules'
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+
       - name: Install Global Dependencies
         run: yarn install
 
