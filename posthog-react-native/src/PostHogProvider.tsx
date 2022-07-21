@@ -39,11 +39,12 @@ export const PostHogProvider = ({
   }
 
   const posthog = posthogRef.current
+  const captureTouches = autocapture && posthog && autocaptureOptions?.captureTouches
 
   const onTouch = useCallback(
     (type: 'start' | 'move' | 'end', e: GestureResponderEvent) => {
       // TODO: Improve this to ensure we only capture presses and not just ends of a drag for example
-      if (!autocapture || !posthog) {
+      if (!captureTouches) {
         return
       }
 
@@ -54,8 +55,13 @@ export const PostHogProvider = ({
     [posthog, autocapture]
   )
 
+  // TODO: Improve this to ensure we only capture presses and not just ends of a drag for example
   return (
-    <View ph-label="PostHogProvider" style={style || { flex: 1 }} onTouchEndCapture={(e) => onTouch('end', e)}>
+    <View
+      ph-label="PostHogProvider"
+      style={style || { flex: 1 }}
+      onTouchEndCapture={captureTouches ? (e) => onTouch('end', e) : undefined}
+    >
       <PostHogContext.Provider value={{ client: posthogRef.current }}>
         {autocapture ? <PostHogHooks options={autocaptureOptions} /> : null}
         {children}
