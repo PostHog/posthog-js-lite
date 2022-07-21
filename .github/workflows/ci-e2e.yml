@@ -42,4 +42,4 @@ jobs:
       - working-directory: examples/example-expo
         run: |
           open -a simulator
-          yarn ios & yarn test
+          yarn start & yarn test
