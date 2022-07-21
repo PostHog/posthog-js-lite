@@ -48,9 +48,9 @@ export type PostHogAutocaptureElement = {
   $el_text?: string
   tag_name: string
   href?: string
-  nth_child: number
-  nth_of_type: number
-  order: number
+  nth_child?: number
+  nth_of_type?: number
+  order?: number
 } & {
   [key: string]: any
 } // Any key prefixed with `attr__` can be added
