@@ -1,5 +1,4 @@
 export type PostHogAutocaptureNavigationTrackerOptions = {
-  ignoreScreens?: string[]
   routeToName?: (name: string, params: any) => string
   routeToProperties?: (name: string, params: any) => string
 }

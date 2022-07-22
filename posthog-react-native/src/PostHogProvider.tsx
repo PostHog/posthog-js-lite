@@ -12,8 +12,7 @@ export interface PostHogProviderProps {
   options?: PostHogOptions
   apiKey?: string
   client?: PostHog
-  autocapture?: boolean
-  autocaptureOptions?: PostHogAutocaptureOptions
+  autocapture?: boolean | PostHogAutocaptureOptions
   style?: StyleProp<ViewStyle>
 }
 
@@ -23,23 +22,18 @@ function PostHogHooks({ options }: { options?: PostHogAutocaptureOptions }): JSX
   return null
 }
 
-export const PostHogProvider = ({
-  children,
-  client,
-  options,
-  apiKey,
-  autocapture,
-  autocaptureOptions,
-  style,
-}: PostHogProviderProps) => {
+export const PostHogProvider = ({ children, client, options, apiKey, autocapture, style }: PostHogProviderProps) => {
   const posthogRef = useRef<PostHog>()
 
   if (!posthogRef.current) {
     posthogRef.current = client ? client : apiKey ? new PostHog(apiKey, options) : undefined
   }
 
+  const autocaptureEnabled = !!autocapture
+  const autocaptureOptions = autocapture && typeof autocapture !== 'boolean' ? autocapture : {}
+
   const posthog = posthogRef.current
-  const captureTouches = autocapture && posthog && autocaptureOptions?.captureTouches
+  const captureTouches = posthog && (autocapture === true || autocaptureOptions?.captureTouches)
 
   const onTouch = useCallback(
     (type: 'start' | 'move' | 'end', e: GestureResponderEvent) => {
@@ -63,7 +57,7 @@ export const PostHogProvider = ({
       onTouchEndCapture={captureTouches ? (e) => onTouch('end', e) : undefined}
     >
       <PostHogContext.Provider value={{ client: posthogRef.current }}>
-        {autocapture ? <PostHogHooks options={autocaptureOptions} /> : null}
+        {autocaptureEnabled ? <PostHogHooks options={autocaptureOptions} /> : null}
         {children}
       </PostHogContext.Provider>
     </View>

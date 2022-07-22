@@ -168,6 +168,11 @@ export abstract class PostHogCore {
     this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.Props, this.props)
   }
 
+  unregister(property: string) {
+    delete this.props[property]
+    this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.Props, this.props)
+  }
+
   /***
    *** TRACKING
    ***/
