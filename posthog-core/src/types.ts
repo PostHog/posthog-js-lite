@@ -1,17 +1,26 @@
 export type PosthogCoreOptions = {
+  // PostHog API host (https://app.posthog.com by default)
   host?: string
-  timeout?: number
+  // The number of events to queue before sending to Posthog (flushing)
   flushAt?: number
+  // The interval in milliseconds between periodic flushes
   flushInterval?: number
-  personalApiKey?: string
+  // If set to false, tracking will be disabled until `optIn` is called
   enable?: boolean
-  captureMode?: 'json' | 'form'
+  // Whether to track that `getFeatureFlag` was called (used by Expriements)
   sendFeatureFlagEvent?: boolean
+  // Whether to load feature flags when initialised or not
   preloadFeatureFlags?: boolean
+  // The interval in milliseconds between decide polls (refreshing feature flags)
   decidePollInterval?: number
+  // How many times we will retry HTTP requests
   fetchRetryCount?: number
+  // The delay between HTTP request retries
   fetchRetryDelay?: number
+  // For Session Analysis how long before we expire a session (defaults to 30 mins)
   sessionExpirationTimeSeconds?: number
+  // Whether to post events to PostHog in JSON or compressed format
+  captureMode?: 'json' | 'form'
 }
 
 export enum PostHogPersistedProperty {

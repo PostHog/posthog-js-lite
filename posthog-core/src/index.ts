@@ -412,7 +412,7 @@ export abstract class PostHogCore {
   /***
    *** QUEUEING AND FLUSHING
    ***/
-  enqueue(type: string, _message: any) {
+  private enqueue(type: string, _message: any) {
     if (this.optedOut) {
       return
     }
