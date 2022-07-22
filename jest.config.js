@@ -11,4 +11,12 @@ module.exports = {
   fakeTimers: { enableGlobally: true },
   transformIgnorePatterns: ['<rootDir>/node_modules/'],
   testPathIgnorePatterns: ['<rootDir>/lib/', '/node_modules/', '/examples/'],
+
+  globals: {
+    'ts-jest': {
+      tsconfig: {
+        lib: ['ES2015', 'DOM'], // We need to include DOM for tests
+      },
+    },
+  },
 }
