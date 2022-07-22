@@ -9,7 +9,7 @@ import {
   utils,
 } from '../../posthog-core/src'
 
-export interface PostHogOptions extends PosthogCoreOptions {}
+export type PostHogOptions = PosthogCoreOptions
 
 const SHARED_PERSISTENCE_PROPERTIES = [PostHogPersistedProperty.Queue]
 
@@ -27,7 +27,7 @@ export class PostHog extends PostHogCore {
     this.scheduleFlushTimer(options.flushInterval ?? 10000)
   }
 
-  scheduleFlushTimer(interval: number) {
+  scheduleFlushTimer(interval: number): void {
     if (interval && !this._flushTimer) {
       this._flushTimer = utils.safeSetTimeout(
         () =>
@@ -84,16 +84,16 @@ export class PostHogGlobal {
   /**
    * @deprecated Since version 2.0.0. Use .user(distinctId: string).capture(event, properties)
    */
-  capture(message: { distinctId: string; event: string; properties?: any }) {
+  capture(message: { distinctId: string; event: string; properties?: any }): this {
     this.user(message.distinctId).capture(message.event, message.properties)
     return this
   }
 
-  shutdown() {
-    return this._sharedClient.shutdownAsync()
+  shutdown(): void {
+    void this._sharedClient.shutdownAsync()
   }
 
-  shutdownAsync() {
+  shutdownAsync(): Promise<void> {
     return this._sharedClient.shutdownAsync()
   }
 

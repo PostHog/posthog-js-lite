@@ -2,6 +2,7 @@ import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } f
 
 describe('PostHog Core', () => {
   let posthog: PostHogCoreTestClient
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let mocks: PostHogCoreTestClientMocks
 
   beforeEach(() => {
@@ -14,7 +15,7 @@ describe('PostHog Core', () => {
     })
 
     it('should throw if missing api key', () => {
-      expect(() => createTestClient((undefined as unknown) as string)).toThrowError(
+      expect(() => createTestClient(undefined as unknown as string)).toThrowError(
         "You must pass your PostHog project's api key."
       )
     })

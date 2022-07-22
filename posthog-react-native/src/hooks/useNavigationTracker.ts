@@ -4,11 +4,11 @@ import type { PostHog } from '../posthog-rn'
 import { PostHogAutocaptureNavigationTrackerOptions } from '../types'
 import { usePostHog } from './usePostHog'
 
-function _useNavigationTrackerDisabled() {
+function _useNavigationTrackerDisabled(): void {
   return
 }
 
-function _useNavigationTracker(options?: PostHogAutocaptureNavigationTrackerOptions, client?: PostHog) {
+function _useNavigationTracker(options?: PostHogAutocaptureNavigationTrackerOptions, client?: PostHog): void {
   const contextClient = usePostHog()
   const posthog = client || contextClient
 
@@ -20,15 +20,18 @@ function _useNavigationTracker(options?: PostHogAutocaptureNavigationTrackerOpti
   const routes = OptionalReactNativeNavigation.useNavigationState((state) => state?.routes)
   const navigation = OptionalReactNativeNavigation.useNavigation()
 
-  const trackRoute = () => {
-    if (!posthog) return
+  const trackRoute = (): void => {
+    if (!posthog) {
+      return
+    }
     // NOTE: This method is not typed correctly but is available and takes care of parsing the router state correctly
     const currentRoute = (navigation as any).getCurrentRoute()
     if (!currentRoute) {
       return
     }
 
-    let { name, params, state } = currentRoute
+    const { state } = currentRoute
+    let { name, params } = currentRoute
 
     if (state?.routes?.length) {
       const route = state.routes[state.routes.length - 1]
@@ -36,7 +39,7 @@ function _useNavigationTracker(options?: PostHogAutocaptureNavigationTrackerOpti
       params = route.params
     }
 
-    let currentRouteName = options?.routeToName?.(name, params) || name || 'Unknown'
+    const currentRouteName = options?.routeToName?.(name, params) || name || 'Unknown'
 
     if (currentRouteName) {
       const properties = options?.routeToProperties?.(currentRouteName, params)

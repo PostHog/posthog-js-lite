@@ -14,17 +14,17 @@ import { SemiAsyncStorage, preloadSemiAsyncStorage } from './storage'
 import { OptionalExpoLocalization } from './optional-imports'
 import { version } from '../package.json'
 
-export interface PostHogOptions extends PosthogCoreOptions {}
+export type PostHogOptions = PosthogCoreOptions
 
 export class PostHog extends PostHogCore {
-  static initAsync() {
+  static initAsync(): Promise<void> {
     return preloadSemiAsyncStorage()
   }
 
   constructor(apiKey: string, options?: PostHogOptions) {
     super(apiKey, options)
 
-    AppState.addEventListener('change', (state) => {
+    AppState.addEventListener('change', () => {
       this.flush()
     })
 
@@ -88,8 +88,8 @@ export class PostHog extends PostHogCore {
   }
 
   // Custom methods
-  screen(name: string, properties?: any) {
-    this.capture('$screen', {
+  screen(name: string, properties?: any): this {
+    return this.capture('$screen', {
       ...properties,
       $screen_name: name,
     })

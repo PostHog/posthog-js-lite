@@ -22,7 +22,14 @@ function PostHogHooks({ options }: { options?: PostHogAutocaptureOptions }): JSX
   return null
 }
 
-export const PostHogProvider = ({ children, client, options, apiKey, autocapture, style }: PostHogProviderProps) => {
+export const PostHogProvider = ({
+  children,
+  client,
+  options,
+  apiKey,
+  autocapture,
+  style,
+}: PostHogProviderProps): JSX.Element => {
   const posthogRef = useRef<PostHog>()
 
   if (!posthogRef.current) {

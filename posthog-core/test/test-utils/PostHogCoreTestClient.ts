@@ -26,13 +26,13 @@ export class PostHogCoreTestClient extends PostHogCore {
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
     return this.mocks.fetch(url, options)
   }
-  getLibraryId() {
+  getLibraryId(): string {
     return 'posthog-core-tests'
   }
-  getLibraryVersion() {
+  getLibraryVersion(): string {
     return version
   }
-  getCustomUserAgent() {
+  getCustomUserAgent(): string {
     return 'posthog-core-tests'
   }
 }

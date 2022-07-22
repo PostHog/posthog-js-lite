@@ -5,7 +5,7 @@ export class SimpleEventEmitter {
     this.events = {}
   }
 
-  on(event: string, listener: (e: any) => void) {
+  on(event: string, listener: (e: any) => void): () => void {
     if (!this.events[event]) {
       this.events[event] = []
     }
@@ -16,7 +16,7 @@ export class SimpleEventEmitter {
     }
   }
 
-  emit(event: string, payload: any) {
+  emit(event: string, payload: any): void {
     if (!this.events[event]) {
       return
     }

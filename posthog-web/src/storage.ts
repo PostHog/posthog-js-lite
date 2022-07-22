@@ -1,4 +1,3 @@
-
 export type PostHogStorage = {
   getItem: (key: string) => string | null | undefined
   setItem: (key: string, value: string) => void
@@ -7,13 +6,12 @@ export type PostHogStorage = {
   getAllKeys: () => readonly string[]
 }
 
-
 // Methods partially borrowed from quirksmode.org/js/cookies.html
 export const cookieStore: PostHogStorage = {
   getItem(key) {
     try {
-      let nameEQ = key + '='
-      let ca = document.cookie.split(';')
+      const nameEQ = key + '='
+      const ca = document.cookie.split(';')
       for (let i = 0; i < ca.length; i++) {
         let c = ca[i]
         while (c.charAt(0) == ' ') {
@@ -29,7 +27,7 @@ export const cookieStore: PostHogStorage = {
 
   setItem(key: string, value: string) {
     try {
-      let cdomain = '',
+      const cdomain = '',
         expires = '',
         secure = ''
 
@@ -52,8 +50,8 @@ export const cookieStore: PostHogStorage = {
     document.cookie = ''
   },
   getAllKeys() {
-    let ca = document.cookie.split(';')
-    let keys = []
+    const ca = document.cookie.split(';')
+    const keys = []
 
     for (let i = 0; i < ca.length; i++) {
       let c = ca[i]
@@ -85,7 +83,7 @@ const createStorageLike = (store: any): PostHogStorage => {
     },
     getAllKeys() {
       const keys = []
-      for (let key in localStorage) {
+      for (const key in localStorage) {
         keys.push(key)
       }
       return keys
@@ -101,7 +99,7 @@ const checkStoreIsSupported = (storage: PostHogStorage, key = '__mplssupport__')
     return false
   }
   try {
-    let val = 'xyz'
+    const val = 'xyz'
     storage.setItem(key, val)
     if (storage.getItem(key) !== val) {
       return false

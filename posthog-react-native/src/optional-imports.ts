@@ -6,7 +6,7 @@ let _OptionalReactNativeNavigation: typeof ReactNativeNavigation | undefined = u
 let _OptionalExpoLocalization: typeof ExpoLocalization | undefined = undefined
 let _OptionalExpoNetwork: typeof ExpoNetwork | undefined = undefined
 
-const warn = (name: string) => {
+const warn = (name: string): void => {
   console.warn(`PostHog: Missing ${name} optional dependency. Some functions may not work as expected...`)
 }
 

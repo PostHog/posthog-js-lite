@@ -9,25 +9,26 @@
 // LZ-based compression algorithm, version 1.4.4
 
 // private property
-var f = String.fromCharCode
-var keyStrBase64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='
-var keyStrUriSafe = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$'
-var baseReverseDic: any = {}
+const f = String.fromCharCode
+const keyStrBase64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='
+const baseReverseDic: any = {}
 
-function getBaseValue(alphabet: any, character: any) {
+function getBaseValue(alphabet: any, character: any): any {
   if (!baseReverseDic[alphabet]) {
     baseReverseDic[alphabet] = {}
-    for (var i = 0; i < alphabet.length; i++) {
+    for (let i = 0; i < alphabet.length; i++) {
       baseReverseDic[alphabet][alphabet.charAt(i)] = i
     }
   }
   return baseReverseDic[alphabet][character]
 }
 
-export var LZString = {
-  compressToBase64: function (input: any) {
-    if (input == null) return ''
-    var res = LZString._compress(input, 6, function (a: any) {
+export const LZString = {
+  compressToBase64: function (input: any): string {
+    if (input == null) {
+      return ''
+    }
+    const res = LZString._compress(input, 6, function (a: any) {
       return keyStrBase64.charAt(a)
     })
     switch (
@@ -45,32 +46,39 @@ export var LZString = {
     }
   },
 
-  decompressFromBase64: function (input: any) {
-    if (input == null) return ''
-    if (input == '') return null
+  decompressFromBase64: function (input: any): any {
+    if (input == null) {
+      return ''
+    }
+    if (input == '') {
+      return null
+    }
     return LZString._decompress(input.length, 32, function (index: any) {
       return getBaseValue(keyStrBase64, input.charAt(index))
     })
   },
 
-  compress: function (uncompressed: any) {
+  compress: function (uncompressed: any): any {
     return LZString._compress(uncompressed, 16, function (a: any) {
       return f(a)
     })
   },
-  _compress: function (uncompressed: any, bitsPerChar: any, getCharFromInt: any) {
-    if (uncompressed == null) return ''
-    var i,
-      value,
-      context_dictionary: any = {},
+  _compress: function (uncompressed: any, bitsPerChar: any, getCharFromInt: any): any {
+    if (uncompressed == null) {
+      return ''
+    }
+    const context_dictionary: any = {},
       context_dictionaryToCreate: any = {},
+      context_data = []
+
+    let i,
+      value,
       context_c = '',
       context_wc = '',
       context_w = '',
       context_enlargeIn = 2, // Compensate for the first entry which should not count
       context_dictSize = 3,
       context_numBits = 2,
-      context_data = [],
       context_data_val = 0,
       context_data_position = 0,
       ii
@@ -266,35 +274,42 @@ export var LZString = {
       if (context_data_position == bitsPerChar - 1) {
         context_data.push(getCharFromInt(context_data_val))
         break
-      } else context_data_position++
+      } else {
+        context_data_position++
+      }
     }
     return context_data.join('')
   },
 
-  decompress: function (compressed: any) {
-    if (compressed == null) return ''
-    if (compressed == '') return null
+  decompress: function (compressed: any): any {
+    if (compressed == null) {
+      return ''
+    }
+    if (compressed == '') {
+      return null
+    }
     return LZString._decompress(compressed.length, 32768, function (index: any) {
       return compressed.charCodeAt(index)
     })
   },
 
-  _decompress: function (length: any, resetValue: any, getNextValue: any) {
-    var dictionary = [],
-      next,
+  _decompress: function (length: any, resetValue: any, getNextValue: any): any {
+    const dictionary = [],
+      result = [],
+      data = { val: getNextValue(0), position: resetValue, index: 1 }
+
+    let next,
       enlargeIn = 4,
       dictSize = 4,
       numBits = 3,
       entry: any = '',
-      result = [],
       i,
       w,
       bits,
       resb,
       maxpower,
       power,
-      c,
-      data = { val: getNextValue(0), position: resetValue, index: 1 }
+      c
 
     for (i = 0; i < 3; i += 1) {
       dictionary[i] = i
@@ -314,6 +329,7 @@ export var LZString = {
       power <<= 1
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     switch ((next = bits)) {
       case 0:
         bits = 0

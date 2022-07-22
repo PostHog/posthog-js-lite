@@ -3,7 +3,7 @@ import type { PostHog } from '../posthog-rn'
 import { PostHogDecideResponse } from 'posthog-core'
 import { usePostHog } from './usePostHog'
 
-export function useFeatureFlags(client?: PostHog) {
+export function useFeatureFlags(client?: PostHog): PostHogDecideResponse['featureFlags'] | undefined {
   const contextClient = usePostHog()
   const posthog = client || contextClient
 
@@ -11,7 +11,9 @@ export function useFeatureFlags(client?: PostHog) {
     posthog?.getFeatureFlags()
   )
 
-  if (!posthog) return featureFlags
+  if (!posthog) {
+    return featureFlags
+  }
 
   useEffect(() => {
     setFeatureFlags(posthog.getFeatureFlags())

@@ -4,7 +4,7 @@ import { utils } from '../../posthog-core'
 // TODO: Get this from package.json
 const version = '2.0.0-alpha'
 
-export function getContext(window: Window) {
+export function getContext(window: Window): any {
   let context = {}
   if (window.navigator) {
     const userAgent = window.navigator.userAgent
@@ -34,7 +34,7 @@ export function getContext(window: Window) {
   return context // TODO: strip empty props?
 }
 
-function includes(haystack: string, needle: string) {
+function includes(haystack: string, needle: string): boolean {
   return haystack.indexOf(needle) >= 0
 }
 
@@ -84,7 +84,7 @@ function browser(userAgent: string, vendor: string, opera: boolean): string {
   }
 }
 
-function browserVersion(userAgent: string, vendor: string, opera: boolean) {
+function browserVersion(userAgent: string, vendor: string, opera: boolean): number | null {
   const regexList = {
     'Internet Explorer Mobile': /rv:(\d+(\.\d+)?)/,
     'Microsoft Edge': /Edge?\/(\d+(\.\d+)?)/,
@@ -110,15 +110,15 @@ function browserVersion(userAgent: string, vendor: string, opera: boolean) {
   if (regex === undefined) {
     return null
   }
-  var matches = userAgent.match(regex)
+  const matches = userAgent.match(regex)
   if (!matches) {
     return null
   }
   return parseFloat(matches[matches.length - 2])
 }
 
-function os(window: Window) {
-  var a = window.navigator.userAgent
+function os(window: Window): string {
+  const a = window.navigator.userAgent
   if (/Windows/i.test(a)) {
     if (/Phone/.test(a) || /WPDesktop/.test(a)) {
       return 'Windows Phone'
@@ -141,7 +141,7 @@ function os(window: Window) {
   }
 }
 
-function device(userAgent: string) {
+function device(userAgent: string): string {
   if (/Windows Phone/i.test(userAgent) || /WPDesktop/.test(userAgent)) {
     return 'Windows Phone'
   } else if (/iPad/.test(userAgent)) {
@@ -159,8 +159,8 @@ function device(userAgent: string) {
   }
 }
 
-function referringDomain(referrer: string) {
-  var split = referrer.split('/')
+function referringDomain(referrer: string): string {
+  const split = referrer.split('/')
   if (split.length >= 3) {
     return split[2]
   }

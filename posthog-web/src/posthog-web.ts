@@ -48,7 +48,6 @@ export class PostHog extends PostHogCore {
     }
   }
 
-
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
     return window.fetch(url, options)
   }

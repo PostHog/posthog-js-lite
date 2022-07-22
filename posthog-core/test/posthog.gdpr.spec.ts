@@ -3,6 +3,7 @@ import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } f
 
 describe('PostHog Core', () => {
   let posthog: PostHogCoreTestClient
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let mocks: PostHogCoreTestClientMocks
 
   jest.useFakeTimers()
@@ -39,10 +40,10 @@ describe('PostHog Core', () => {
     })
 
     it('should start in the correct state', async () => {
-      [posthog, mocks] = createTestClient('TEST_API_KEY', { enable: false }, mocks => {
+      ;[posthog, mocks] = createTestClient('TEST_API_KEY', { enable: false }, (mocks) => {
         mocks.storage.setItem(PostHogPersistedProperty.OptedOut, true)
       })
-      
+
       expect(posthog.optedOut).toEqual(true)
     })
   })

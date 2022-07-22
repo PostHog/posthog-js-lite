@@ -3,13 +3,15 @@ import { AppState } from 'react-native'
 import type { PostHog } from '../posthog-rn'
 import { usePostHog } from './usePostHog'
 
-export function useLifecycleTracker(client?: PostHog) {
+export function useLifecycleTracker(client?: PostHog): void {
   const openTrackedRef = useRef(false)
   const contextClient = usePostHog()
   const posthog = client || contextClient
 
   return useEffect(() => {
-    if (!posthog) return
+    if (!posthog) {
+      return
+    }
 
     if (!openTrackedRef.current) {
       openTrackedRef.current = true

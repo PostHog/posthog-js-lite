@@ -4,7 +4,7 @@ export function assert(truthyValue: any, message: string): void {
   }
 }
 
-export function removeTrailingSlash(url: string) {
+export function removeTrailingSlash(url: string): string {
   return url?.replace(/\/+$/, '')
 }
 
@@ -38,11 +38,11 @@ export async function retriable<T>(fn: () => Promise<T>, props: RetriableOptions
 // https://stackoverflow.com/a/8809472
 export function generateUUID(globalThis?: any): string {
   // Public Domain/MIT
-  var d = new Date().getTime() //Timestamp
-  var d2 =
+  let d = new Date().getTime() //Timestamp
+  let d2 =
     (globalThis && globalThis.performance && globalThis.performance.now && globalThis.performance.now() * 1000) || 0 //Time in microseconds since page-load or 0 if unsupported
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    var r = Math.random() * 16 //random number between 0 and 16
+    let r = Math.random() * 16 //random number between 0 and 16
     if (d > 0) {
       //Use timestamp until depleted
       r = (d + r) % 16 | 0
@@ -64,11 +64,11 @@ export function currentISOTime(): string {
   return new Date().toISOString()
 }
 
-export function isUndefined(obj: any) {
+export function isUndefined(obj: any): boolean {
   return obj === void 0
 }
 
-export function safeSetTimeout(fn: () => void, timeout: number) {
+export function safeSetTimeout(fn: () => void, timeout: number): any {
   // NOTE: we use this so rarely that it is totally fine to do `safeSetTimeout(fn, 0)``
   // rather than setImmediate.
   const t = setTimeout(fn, timeout) as any

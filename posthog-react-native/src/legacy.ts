@@ -11,7 +11,7 @@ export const getLegacyValues = async (): Promise<{ distinctId?: string; anonymou
     const posthogDistinctIdFile = posthogFileDirectory + 'posthog.distinctId'
     const posthogAnonymousIdFile = posthogFileDirectory + 'posthog.anonymousId'
 
-    let res = {
+    const res = {
       distinctId: undefined,
       anonymousId: undefined,
     }

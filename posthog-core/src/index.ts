@@ -90,43 +90,43 @@ export abstract class PostHogCore {
   }
 
   // NOTE: Props are lazy loaded from localstorage hence the complex getter setter logic
-  private get props() {
+  private get props(): PostHogEventProperties {
     if (!this._props) {
       this._props = this.getPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.Props)
     }
     return this._props || {}
   }
 
-  private set props(val: { [key: string]: any }) {
+  private set props(val: PostHogEventProperties) {
     this._props = val
   }
 
-  private _props: { [key: string]: any } | undefined
+  private _props: PostHogEventProperties | undefined
 
-  public get optedOut() {
+  public get optedOut(): boolean {
     return this.getPersistedProperty(PostHogPersistedProperty.OptedOut) ?? this._optoutOverride ?? false
   }
 
-  optIn() {
+  optIn(): void {
     this.setPersistedProperty(PostHogPersistedProperty.OptedOut, false)
   }
 
-  optOut() {
+  optOut(): void {
     this.setPersistedProperty(PostHogPersistedProperty.OptedOut, true)
   }
 
-  on(event: string, cb: (e: any) => void) {
+  on(event: string, cb: (e: any) => void): () => void {
     return this._events.on(event, cb)
   }
 
-  reset() {
-    for (let key in PostHogPersistedProperty) {
+  reset(): void {
+    for (const key in PostHogPersistedProperty) {
       this.setPersistedProperty((PostHogPersistedProperty as any)[key], null)
     }
     this.setPersistedProperty(PostHogPersistedProperty.DistinctId, generateUUID(globalThis))
   }
 
-  private buildPayload(payload: { event: string; properties?: PostHogEventProperties; distinct_id?: string }) {
+  private buildPayload(payload: { event: string; properties?: PostHogEventProperties; distinct_id?: string }): any {
     return {
       distinct_id: payload.distinct_id || this.getDistinctId(),
       event: payload.event,
@@ -141,7 +141,7 @@ export abstract class PostHogCore {
 
   getSessionId(): string {
     let sessionId = this.getPersistedProperty<string>(PostHogPersistedProperty.SessionId)
-    let sessionTimestamp = this.getPersistedProperty<number>(PostHogPersistedProperty.SessionLastTimestamp) || 0
+    const sessionTimestamp = this.getPersistedProperty<number>(PostHogPersistedProperty.SessionLastTimestamp) || 0
     if (!sessionId || Date.now() - sessionTimestamp > this._sessionExpirationTimeSeconds * 1000) {
       sessionId = generateUUID(globalThis)
       this.setPersistedProperty(PostHogPersistedProperty.SessionId, sessionId)
@@ -160,7 +160,7 @@ export abstract class PostHogCore {
     return distinctId
   }
 
-  register(properties: { [key: string]: any }) {
+  register(properties: { [key: string]: any }): void {
     this.props = {
       ...this.props,
       ...properties,
@@ -168,7 +168,7 @@ export abstract class PostHogCore {
     this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.Props, this.props)
   }
 
-  unregister(property: string) {
+  unregister(property: string): void {
     delete this.props[property]
     this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.Props, this.props)
   }
@@ -176,7 +176,7 @@ export abstract class PostHogCore {
   /***
    *** TRACKING
    ***/
-  identify(distinctId?: string, properties?: PostHogEventProperties) {
+  identify(distinctId?: string, properties?: PostHogEventProperties): this {
     distinctId = distinctId || this.getDistinctId()
 
     if (properties?.$groups) {
@@ -203,7 +203,7 @@ export abstract class PostHogCore {
     return this
   }
 
-  capture(event: string, properties?: { [key: string]: any }) {
+  capture(event: string, properties?: { [key: string]: any }): this {
     // NOTE: Legacy nodejs implementation uses groups
     if (properties && properties['groups']) {
       properties.$groups = properties.groups
@@ -219,7 +219,7 @@ export abstract class PostHogCore {
     return this
   }
 
-  alias(alias: string) {
+  alias(alias: string): this {
     const distinctId = this.getDistinctId()
 
     const payload = this.buildPayload({
@@ -234,7 +234,7 @@ export abstract class PostHogCore {
     return this
   }
 
-  autocapture(eventType: string, elements: PostHogAutocaptureElement[], properties: PostHogEventProperties = {}) {
+  autocapture(eventType: string, elements: PostHogAutocaptureElement[], properties: PostHogEventProperties = {}): this {
     const payload = this.buildPayload({
       event: '$autocapture',
       properties: {
@@ -252,7 +252,7 @@ export abstract class PostHogCore {
    *** GROUPS
    ***/
 
-  groups(groups: { [type: string]: string }) {
+  groups(groups: { [type: string]: string }): this {
     // Get persisted groups
     const existingGroups = this.props.$groups || {}
 
@@ -271,7 +271,7 @@ export abstract class PostHogCore {
     return this
   }
 
-  group(groupType: string, groupKey: string, groupProperties?: PostHogEventProperties) {
+  group(groupType: string, groupKey: string, groupProperties?: PostHogEventProperties): this {
     this.groups({
       [groupType]: groupKey,
     })
@@ -283,7 +283,7 @@ export abstract class PostHogCore {
     return this
   }
 
-  groupIdentify(groupType: string, groupKey: string, groupProperties?: PostHogEventProperties) {
+  groupIdentify(groupType: string, groupKey: string, groupProperties?: PostHogEventProperties): this {
     const payload = {
       event: '$groupidentify',
       distinctId: `$${groupType}_${groupKey}`,
@@ -357,7 +357,7 @@ export abstract class PostHogCore {
     return featureFlags[key] ?? defaultResult
   }
 
-  getFeatureFlags() {
+  getFeatureFlags(): PostHogDecideResponse['featureFlags'] | undefined {
     let flags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(PostHogPersistedProperty.FeatureFlags)
     const overriddenFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
       PostHogPersistedProperty.OverrideFeatureFlags
@@ -369,7 +369,7 @@ export abstract class PostHogCore {
 
     flags = flags || {}
 
-    for (let key in overriddenFlags) {
+    for (const key in overriddenFlags) {
       if (!overriddenFlags[key]) {
         delete flags[key]
       } else {
@@ -380,12 +380,12 @@ export abstract class PostHogCore {
     return flags
   }
 
-  isFeatureEnabled(key: string, defaultResult: boolean = false) {
+  isFeatureEnabled(key: string, defaultResult: boolean = false): boolean {
     const flag = this.getFeatureFlag(key, defaultResult) ?? defaultResult
     return !!flag
   }
 
-  async reloadFeatureFlagsAsync() {
+  async reloadFeatureFlagsAsync(): Promise<PostHogDecideResponse['featureFlags']> {
     clearTimeout(this._decideTimer)
     this._decideTimer = safeSetTimeout(() => this.reloadFeatureFlagsAsync(), this._decidePollInterval)
     this._decideResponsePromise = undefined
@@ -393,16 +393,20 @@ export abstract class PostHogCore {
   }
 
   // When listening to feature flags polling is active
-  onFeatureFlags(cb: (flags: PostHogDecideResponse['featureFlags']) => void) {
-    if (!this._decideTimer) void this.reloadFeatureFlagsAsync()
+  onFeatureFlags(cb: (flags: PostHogDecideResponse['featureFlags']) => void): () => void {
+    if (!this._decideTimer) {
+      void this.reloadFeatureFlagsAsync()
+    }
 
     return this.on('featureflags', async () => {
       const flags = this.getFeatureFlags()
-      if (flags) cb(flags)
+      if (flags) {
+        cb(flags)
+      }
     })
   }
 
-  overrideFeatureFlag(flags: PostHogDecideResponse['featureFlags'] | null) {
+  overrideFeatureFlag(flags: PostHogDecideResponse['featureFlags'] | null): void {
     if (flags === null) {
       return this.setPersistedProperty(PostHogPersistedProperty.OverrideFeatureFlags, null)
     }
@@ -412,7 +416,7 @@ export abstract class PostHogCore {
   /***
    *** QUEUEING AND FLUSHING
    ***/
-  private enqueue(type: string, _message: any) {
+  private enqueue(type: string, _message: any): void {
     if (this.optedOut) {
       return
     }
@@ -451,7 +455,7 @@ export abstract class PostHogCore {
     })
   }
 
-  flush(callback?: (err?: any, data?: any) => void) {
+  flush(callback?: (err?: any, data?: any) => void): void {
     if (this.optedOut) {
       return callback && safeSetTimeout(callback, 0)
     }
@@ -478,7 +482,7 @@ export abstract class PostHogCore {
       sent_at: currentISOTime(),
     }
 
-    const done = (err?: any) => {
+    const done = (err?: any): void => {
       callback?.(err, messages)
       this._events.emit('flush', messages)
     }
@@ -535,13 +539,13 @@ export abstract class PostHogCore {
     return retriable(() => this.fetch(url, options), retryOptions || this._retryOptions)
   }
 
-  async shutdownAsync() {
+  async shutdownAsync(): Promise<void> {
     clearTimeout(this._decideTimer)
     clearTimeout(this._flushTimer)
     await this.flushAsync()
   }
 
-  shutdown() {
+  shutdown(): void {
     void this.shutdownAsync()
   }
 }

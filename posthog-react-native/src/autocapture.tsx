@@ -11,11 +11,11 @@ interface Element {
   return?: Element
 }
 
-const flattenStyles = (styles: any) => {
+const flattenStyles = (styles: any): any => {
   const flattened: any = {}
 
   if (Array.isArray(styles)) {
-    for (let style of styles) {
+    for (const style of styles) {
       Object.assign(flattened, flattenStyles(style))
     }
   } else {
@@ -25,7 +25,7 @@ const flattenStyles = (styles: any) => {
   return flattened
 }
 
-const stringifyStyle = (styles: any) => {
+const stringifyStyle = (styles: any): string => {
   const flattened = flattenStyles(styles)
 
   const str = Object.keys(flattened)
@@ -35,11 +35,11 @@ const stringifyStyle = (styles: any) => {
   return str
 }
 
-const sanitiseLabel = (label: string) => {
+const sanitiseLabel = (label: string): string => {
   return label.replace(/[^a-z0-9]+/gi, '-')
 }
 
-export const autocaptureFromTouchEvent = (e: any, posthog: PostHog, options: PostHogAutocaptureOptions = {}) => {
+export const autocaptureFromTouchEvent = (e: any, posthog: PostHog, options: PostHogAutocaptureOptions = {}): void => {
   const {
     noCaptureProp = 'ph-no-capture',
     customLabelProp = 'ph-label',
@@ -86,7 +86,7 @@ export const autocaptureFromTouchEvent = (e: any, posthog: PostHog, options: Pos
     }
 
     // Try and find a sensible label
-    let label =
+    const label =
       typeof props?.[customLabelProp] !== 'undefined'
         ? `${props[customLabelProp]}`
         : currentInst.elementType?.displayName || currentInst.elementType?.name

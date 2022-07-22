@@ -9,7 +9,7 @@ describe('PostHog Core', () => {
   jest.useFakeTimers()
   jest.setSystemTime(new Date('2022-01-01'))
 
-  let mockFeatureFlags = {
+  const mockFeatureFlags = {
     'feature-1': true,
     'feature-2': true,
     'feature-variant': 'variant',
@@ -17,7 +17,7 @@ describe('PostHog Core', () => {
 
   beforeEach(() => {
     ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1 }, (_mocks) => {
-      _mocks.fetch.mockImplementation((url, options) => {
+      _mocks.fetch.mockImplementation((url) => {
         if (url.includes('/decide/')) {
           return Promise.resolve({
             status: 200,

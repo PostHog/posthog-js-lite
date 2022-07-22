@@ -12,6 +12,6 @@ describe('PostHog Core', () => {
   describe('legacy methods', () => {
     it('should capture an event', async () => {
       posthog.user('user-id').capture('what')
-    })  
+    })
   })
 })
