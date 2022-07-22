@@ -54,7 +54,7 @@ jobs:
 
       - name: Publish the package in the npm registry
         working-directory: ${{ env.package }}
-        run: npm publish --access public
+        run: npm publish --access public --tag alpha
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN_NOT }}
 

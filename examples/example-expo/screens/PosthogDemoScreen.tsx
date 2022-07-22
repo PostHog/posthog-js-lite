@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native'
-import { useFeatureFlags, usePostHog } from '@ben-posthog/posthog-react-native'
+import { useFeatureFlags, usePostHog } from 'posthog-react-native'
 import React from 'react'
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native'
 

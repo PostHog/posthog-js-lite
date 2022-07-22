@@ -13,7 +13,7 @@ import { ColorSchemeName, Pressable } from 'react-native'
 import { RootStackParamList, RootTabParamList, RootTabScreenProps } from '../types'
 import LinkingConfiguration from './LinkingConfiguration'
 
-import { PostHogProvider } from '@ben-posthog/posthog-react-native'
+import { PostHogProvider } from 'posthog-react-native'
 import PostHogDebugScreen, { usePosthogDebugEvents } from '../screens/PostHogDebugScreen'
 import PosthogDemoScreen from '../screens/PosthogDemoScreen'
 

@@ -1,5 +1,5 @@
 {
-  "name": "@ben-posthog/posthog-react-native",
+  "name": "posthog-react-native",
   "version": "2.0.0-alpha7",
   "main": "lib/index.cjs.js",
   "module": "lib/index.esm.js",

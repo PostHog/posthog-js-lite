@@ -1,4 +1,4 @@
-import { usePostHog } from '@ben-posthog/posthog-react-native'
+import { usePostHog } from 'posthog-react-native'
 import React, { useEffect, useState } from 'react'
 import { Alert, FlatList, StyleSheet, TouchableOpacity, View, Text } from 'react-native'
 
