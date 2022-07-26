@@ -55,9 +55,7 @@ jobs:
             tag="latest"
           fi
 
-          echo $tag
-          # npm publish --access public --tag $tag
-          exit 1
+          npm publish --access public --tag $tag
         env:
           NODE_AUTH_TOKEN: ${{ secrets[matrix.package.npm_token_secret] }}
           VERSION: ${{ steps.check-package-version.outputs.committed-version }}
