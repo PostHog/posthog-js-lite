@@ -1,6 +1,6 @@
 {
   "name": "posthog-js-lite",
-  "version": "0.0.5",
+  "version": "2.0.0",
   "description": "Reimplementation of posthog-js to be as light and modular as possible.",
   "workspaces": [
     "posthog-core",

@@ -69,4 +69,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ matrix.package.name }}-v${{ steps.check-package-version.outputs.committed-version }}
-          release_name: ${{ matrix.package }}-${{ steps.check-package-version.outputs.committed-version }}
+          release_name: ${{ matrix.package.name }}-${{ steps.check-package-version.outputs.committed-version }}
