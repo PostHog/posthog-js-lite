@@ -41,11 +41,11 @@ export class PostHog extends PostHogCore {
 
     if (value === null) {
       delete this._storageCache[key]
-      this._storage.removeItem(this._storageKey)
     } else {
       this._storageCache[key] = value
-      this._storage.setItem(this._storageKey, JSON.stringify(this._storageCache))
     }
+
+    this._storage.setItem(this._storageKey, JSON.stringify(this._storageCache))
   }
 
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {

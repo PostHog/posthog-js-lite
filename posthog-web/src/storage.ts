@@ -31,8 +31,7 @@ export const cookieStore: PostHogStorage = {
         expires = '',
         secure = ''
 
-      const new_cookie_val =
-        key + '=' + encodeURIComponent(JSON.stringify(value)) + expires + '; path=/' + cdomain + secure
+      const new_cookie_val = key + '=' + encodeURIComponent(value) + expires + '; path=/' + cdomain + secure
       document.cookie = new_cookie_val
     } catch (err) {
       return
@@ -72,7 +71,7 @@ const createStorageLike = (store: any): PostHogStorage => {
     },
 
     setItem(key, value) {
-      store.setItem(key, JSON.stringify(value))
+      store.setItem(key, value)
     },
 
     removeItem(key) {
