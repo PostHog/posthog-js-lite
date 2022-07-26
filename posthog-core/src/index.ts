@@ -139,7 +139,7 @@ export abstract class PostHogCore {
     }
   }
 
-  getSessionId(): string {
+  getSessionId(): string | undefined {
     let sessionId = this.getPersistedProperty<string>(PostHogPersistedProperty.SessionId)
     const sessionTimestamp = this.getPersistedProperty<number>(PostHogPersistedProperty.SessionLastTimestamp) || 0
     if (!sessionId || Date.now() - sessionTimestamp > this._sessionExpirationTimeSeconds * 1000) {
@@ -252,7 +252,7 @@ export abstract class PostHogCore {
    *** GROUPS
    ***/
 
-  groups(groups: { [type: string]: string }): this {
+  groups(groups: { [type: string]: string | number }): this {
     // Get persisted groups
     const existingGroups = this.props.$groups || {}
 
@@ -271,7 +271,7 @@ export abstract class PostHogCore {
     return this
   }
 
-  group(groupType: string, groupKey: string, groupProperties?: PostHogEventProperties): this {
+  group(groupType: string, groupKey: string | number, groupProperties?: PostHogEventProperties): this {
     this.groups({
       [groupType]: groupKey,
     })
@@ -283,7 +283,7 @@ export abstract class PostHogCore {
     return this
   }
 
-  groupIdentify(groupType: string, groupKey: string, groupProperties?: PostHogEventProperties): this {
+  groupIdentify(groupType: string, groupKey: string | number, groupProperties?: PostHogEventProperties): this {
     const payload = {
       event: '$groupidentify',
       distinctId: `$${groupType}_${groupKey}`,
@@ -387,7 +387,9 @@ export abstract class PostHogCore {
 
   async reloadFeatureFlagsAsync(): Promise<PostHogDecideResponse['featureFlags']> {
     clearTimeout(this._decideTimer)
-    this._decideTimer = safeSetTimeout(() => this.reloadFeatureFlagsAsync(), this._decidePollInterval)
+    if (this._decidePollInterval) {
+      this._decideTimer = safeSetTimeout(() => this.reloadFeatureFlagsAsync(), this._decidePollInterval)
+    }
     this._decideResponsePromise = undefined
     return (await this.decideAsync()).featureFlags
   }

@@ -6,46 +6,32 @@ import {
   PostHogFetchOptions,
   PostHogFetchResponse,
   PostHogPersistedProperty,
-  utils,
 } from '../../posthog-core/src'
+import { EventMessageV1, GroupIdentifyMessage, IdentifyMessageV1, PostHogNodeV1 } from './types'
 
 export type PostHogOptions = PosthogCoreOptions
 
-const SHARED_PERSISTENCE_PROPERTIES = [PostHogPersistedProperty.Queue]
-
-export class PostHog extends PostHogCore {
-  private _sharedStorage: { [key: string]: any | undefined } = {}
+class PostHog extends PostHogCore {
   private _memoryStorage: { [key: string]: any | undefined } = {}
 
-  constructor(globalStorage: { [key: string]: any | undefined }, apiKey: string, options: PostHogOptions = {}) {
+  constructor(apiKey: string, options: PostHogOptions = {}) {
     options.captureMode = options?.captureMode || 'json'
     options.preloadFeatureFlags = false // Don't preload as this makes no sense without a distinctId
 
     super(apiKey, options)
-    this._sharedStorage = globalStorage
-
-    this.scheduleFlushTimer(options.flushInterval ?? 10000)
-  }
-
-  scheduleFlushTimer(interval: number): void {
-    if (interval && !this._flushTimer) {
-      this._flushTimer = utils.safeSetTimeout(
-        () =>
-          this.flush(() => {
-            this.scheduleFlushTimer(interval)
-          }),
-        interval
-      )
-    }
   }
 
   getPersistedProperty(key: PostHogPersistedProperty): any | undefined {
-    const storage = SHARED_PERSISTENCE_PROPERTIES.includes(key) ? this._sharedStorage : this._memoryStorage
-    return storage[key]
+    return this._memoryStorage[key]
   }
+
   setPersistedProperty(key: PostHogPersistedProperty, value: any | null): void {
-    const storage = SHARED_PERSISTENCE_PROPERTIES.includes(key) ? this._sharedStorage : this._memoryStorage
-    storage[key] = value !== null ? value : undefined
+    this._memoryStorage[key] = value !== null ? value : undefined
+  }
+
+  getSessionId(): string | undefined {
+    // Sessions don't make sense for Node
+    return undefined
   }
 
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
@@ -64,29 +50,69 @@ export class PostHog extends PostHogCore {
 }
 
 // The actual exported Nodejs API.
-export class PostHogGlobal {
-  private _sharedStorage: { [key: string]: any | undefined } = {}
+export class PostHogGlobal implements PostHogNodeV1 {
   private _sharedClient: PostHog
 
-  constructor(private apiKey: string, private options?: PostHogOptions) {
-    this._sharedClient = new PostHog(this._sharedStorage, apiKey, options)
+  constructor(apiKey: string, options: PostHogOptions = {}) {
+    options.decidePollInterval = 0 // Forcefully set to 0 so we don't auto-reload
+    this._sharedClient = new PostHog(apiKey, options)
   }
 
-  user(distinctId: string): PostHog {
-    const client = new PostHog(this._sharedStorage, this.apiKey, {
-      ...(this.options || {}),
-      flushInterval: 0,
-    })
-    client.setPersistedProperty(PostHogPersistedProperty.DistinctId, distinctId)
-    return client
+  private reInit(distinctId: string): void {
+    // Remove all state except the queue
+    const queue = this._sharedClient.getPersistedProperty(PostHogPersistedProperty.Queue)
+    this._sharedClient.reset()
+    this._sharedClient.setPersistedProperty(PostHogPersistedProperty.Queue, queue)
+    this._sharedClient.setPersistedProperty(PostHogPersistedProperty.DistinctId, distinctId)
   }
 
-  /**
-   * @deprecated Since version 2.0.0. Use .user(distinctId: string).capture(event, properties)
-   */
-  capture(message: { distinctId: string; event: string; properties?: any }): this {
-    this.user(message.distinctId).capture(message.event, message.properties)
-    return this
+  capture({ distinctId, event, properties, groups }: EventMessageV1): void {
+    this.reInit(distinctId)
+    if (groups) {
+      this._sharedClient.groups(groups)
+    }
+    this._sharedClient.capture(event, properties)
+  }
+
+  identify({ distinctId, properties }: IdentifyMessageV1): void {
+    this.reInit(distinctId)
+    this._sharedClient.identify(distinctId, properties)
+  }
+
+  alias(data: { distinctId: string; alias: string }): void {
+    this.reInit(data.distinctId)
+    this._sharedClient.alias(data.alias)
+  }
+
+  async getFeatureFlag(
+    key: string,
+    distinctId: string,
+    groups?: Record<string, string> | undefined
+  ): Promise<string | boolean | undefined> {
+    this.reInit(distinctId)
+    if (groups) {
+      this._sharedClient.groups(groups)
+    }
+    await this._sharedClient.reloadFeatureFlagsAsync()
+    return this._sharedClient.getFeatureFlag(key)
+  }
+
+  async isFeatureEnabled(
+    key: string,
+    distinctId: string,
+    defaultResult?: boolean | undefined,
+    groups?: Record<string, string> | undefined
+  ): Promise<boolean> {
+    const feat = this.getFeatureFlag(key, distinctId, groups)
+    return !!feat || defaultResult || false
+  }
+
+  groupIdentify({ groupType, groupKey, properties }: GroupIdentifyMessage): void {
+    this._sharedClient.groupIdentify(groupType, groupKey, properties)
+  }
+
+  reloadFeatureFlags(): Promise<void> {
+    throw new Error('Method not implemented.')
   }
 
   shutdown(): void {
@@ -96,6 +122,4 @@ export class PostHogGlobal {
   shutdownAsync(): Promise<void> {
     return this._sharedClient.shutdownAsync()
   }
-
-  // TODO: Implement previous global API, doing some sort of clever linking to the underlying "user" prop
 }

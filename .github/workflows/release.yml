@@ -5,7 +5,7 @@ on:
     branches:
       - main
       - master
-      - feat/multi-domain-support
+      - feat/multi-domain-support # TODO: Remove this once merged
 
 env:
   package: posthog-react-native
@@ -56,7 +56,7 @@ jobs:
         working-directory: ${{ env.package }}
         run: npm publish --access public --tag alpha
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN_NOT }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN_BEN_WHITE }}
 
       - name: Create GitHub release
         uses: actions/create-release@v1

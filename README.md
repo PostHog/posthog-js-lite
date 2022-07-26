@@ -2,7 +2,7 @@
 
 # posthog-js-lite
 
-The next generation of PostHog client libraries within the JS/TS ecosystem (maybe...)
+The next generation of PostHog client libraries within the JS/TS ecosystem.
 
 The lofty goals of this codebase is to solve the core client logic of our various JS based libraries in one place (web, node, React Native).
 
