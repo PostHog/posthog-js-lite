@@ -52,7 +52,7 @@ export class PostHog extends PostHogCore {
     return window.fetch(url, options)
   }
   getLibraryId(): string {
-    return 'posthog-web'
+    return 'posthog-js-lite'
   }
   getLibraryVersion(): string {
     return version
