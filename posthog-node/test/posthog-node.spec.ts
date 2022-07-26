@@ -41,12 +41,6 @@ describe('PostHog Core', () => {
     it('should capture an event to shared queue', async () => {
       expect(mockedUndici.fetch).toHaveBeenCalledTimes(0)
       posthog.capture({ distinctId: '123', event: 'test-event', properties: { foo: 'bar' }, groups: { org: 123 } })
-      posthog
-        .user('124')
-        .groups({
-          org: 234,
-        })
-        .capture('test-event2', { foo: 'bar2' })
 
       jest.runOnlyPendingTimers()
       const batchEvents = getLastBatchEvents()
@@ -57,14 +51,6 @@ describe('PostHog Core', () => {
           properties: {
             $groups: { org: 123 },
             foo: 'bar',
-          },
-        },
-        {
-          distinct_id: '124',
-          event: 'test-event2',
-          properties: {
-            $groups: { org: 234 },
-            foo: 'bar2',
           },
         },
       ])

@@ -15,11 +15,11 @@ jobs:
       matrix:
         package:
           - name: posthog-react-native
-            npm_token: ${{ secrets.NPM_TOKEN_BEN_WHITE }} # TODO: Change to standard token once able
+            npm_token_secret: NPM_TOKEN_BEN_WHITE # TODO: Change to standard token once able
           - name: posthog-node
-            npm_token: ${{ secrets.NPM_TOKEN_BEN_WHITE }} # TODO: Change to standard token once able
+            npm_token_secret: NPM_TOKEN_BEN_WHITE # TODO: Change to standard token once able
           - name: posthog-web
-            npm_token: ${{ secrets.NPM_TOKEN }} # TODO: Change to standard token once able
+            npm_token_secret: NPM_TOKEN # TODO: Change to standard token once able
 
     steps:
       - name: Checkout the repository
@@ -51,7 +51,7 @@ jobs:
         working-directory: ${{ matrix.package.name }}
         run: npm publish --access public --tag alpha
         env:
-          NODE_AUTH_TOKEN: ${{ matrix.package.npm_token }}
+          NODE_AUTH_TOKEN: ${{ secrets[matrix.package.npm_token_secret] }}
 
       - name: Create GitHub release
         if: steps.check-package-version.outputs.is-new-version == 'true'
