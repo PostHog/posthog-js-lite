@@ -9,14 +9,17 @@ on:
 
 jobs:
   release:
-    name: Publish release if new version
+    name: Publish
     runs-on: ubuntu-latest
     strategy:
       matrix:
         package:
-          - posthog-react-native
-          - posthog-node
-          - posthog-web
+          - name: posthog-react-native
+            npm_token: ${{ secrets.NPM_TOKEN_BEN_WHITE }} # TODO: Change to standard token once able
+          - name: posthog-node
+            npm_token: ${{ secrets.NPM_TOKEN_BEN_WHITE }} # TODO: Change to standard token once able
+          - name: posthog-web
+            npm_token: ${{ secrets.NPM_TOKEN }} # TODO: Change to standard token once able
 
     steps:
       - name: Checkout the repository
@@ -26,7 +29,7 @@ jobs:
         id: check-package-version
         uses: PostHog/check-package-version@v2
         with:
-          path: ${{ matrix.package }}
+          path: ${{ matrix.package.name }}
 
       - name: Set up Node 14
         uses: actions/setup-node@v2
@@ -45,10 +48,10 @@ jobs:
 
       - name: Publish the package in the npm registry
         if: steps.check-package-version.outputs.is-new-version == 'true'
-        working-directory: ${{ matrix.package }}
+        working-directory: ${{ matrix.package.name }}
         run: npm publish --access public --tag alpha
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ matrix.package.npm_token }}
 
       - name: Create GitHub release
         if: steps.check-package-version.outputs.is-new-version == 'true'
@@ -56,5 +59,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ matrix.package }}-v${{ steps.check-package-version.outputs.committed-version }}
+          tag_name: ${{ matrix.package.name }}-v${{ steps.check-package-version.outputs.committed-version }}
           release_name: ${{ matrix.package }}-${{ steps.check-package-version.outputs.committed-version }}
