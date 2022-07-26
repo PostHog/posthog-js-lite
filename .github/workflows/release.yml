@@ -56,7 +56,7 @@ jobs:
         working-directory: ${{ env.package }}
         run: npm publish --access public --tag alpha
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN_BEN_WHITE }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create GitHub release
         uses: actions/create-release@v1
