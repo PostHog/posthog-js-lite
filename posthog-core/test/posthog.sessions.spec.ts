@@ -48,5 +48,14 @@ describe('PostHog Core', () => {
       posthog.capture('test')
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.SessionId)).not.toEqual(sessionId)
     })
+
+    it('should reset sessionId if called', () => {
+      posthog.capture('test')
+      const sessionId = posthog.getPersistedProperty(PostHogPersistedProperty.SessionId)
+
+      posthog.resetSessionId()
+      posthog.capture('test2')
+      expect(posthog.getPersistedProperty(PostHogPersistedProperty.SessionId)).not.toEqual(sessionId)
+    })
   })
 })

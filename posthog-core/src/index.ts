@@ -151,6 +151,10 @@ export abstract class PostHogCore {
     return sessionId
   }
 
+  resetSessionId(): void {
+    this.setPersistedProperty(PostHogPersistedProperty.SessionId, null)
+  }
+
   getDistinctId(): string {
     let distinctId = this.getPersistedProperty<string>(PostHogPersistedProperty.DistinctId)
     if (!distinctId) {
