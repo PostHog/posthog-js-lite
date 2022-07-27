@@ -66,6 +66,14 @@ export class PostHogGlobal implements PostHogNodeV1 {
     this._sharedClient.setPersistedProperty(PostHogPersistedProperty.DistinctId, distinctId)
   }
 
+  enable(): void {
+    return this._sharedClient.optIn()
+  }
+
+  disable(): void {
+    return this._sharedClient.optOut()
+  }
+
   capture({ distinctId, event, properties, groups }: EventMessageV1): void {
     this.reInit(distinctId)
     if (groups) {
