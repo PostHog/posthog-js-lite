@@ -62,10 +62,14 @@ export class PostHogGlobal implements PostHogNodeV1 {
   }
 
   private reInit(distinctId: string): void {
-    // Remove all state except the queue
-    const queue = this._sharedClient.getPersistedProperty(PostHogPersistedProperty.Queue)
-    this._sharedClient.reset()
-    this._sharedClient.setPersistedProperty(PostHogPersistedProperty.Queue, queue)
+    // Certain properties we want to persist
+    const propertiesToKeep = [PostHogPersistedProperty.Queue, PostHogPersistedProperty.OptedOut]
+
+    for (const key in PostHogPersistedProperty) {
+      if (!propertiesToKeep.includes(key as any)) {
+        this._sharedClient.setPersistedProperty((PostHogPersistedProperty as any)[key], null)
+      }
+    }
     this._sharedClient.setPersistedProperty(PostHogPersistedProperty.DistinctId, distinctId)
   }
 
