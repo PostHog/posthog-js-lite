@@ -118,7 +118,7 @@ export class PostHogGlobal implements PostHogNodeV1 {
     defaultResult?: boolean | undefined,
     groups?: Record<string, string> | undefined
   ): Promise<boolean> {
-    const feat = this.getFeatureFlag(key, distinctId, groups)
+    const feat = await this.getFeatureFlag(key, distinctId, groups)
     return !!feat || defaultResult || false
   }
 
