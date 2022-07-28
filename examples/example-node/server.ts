@@ -3,10 +3,12 @@ import PostHog from 'posthog-node'
 
 const app = express()
 
-const posthog = new PostHog('phc_FzKQvNvps9ZUTxF5KJR9jIKdGb4bq4HNBa9SRyAHi0C', {
+const posthog = new PostHog('phc_sRe6hMjzNFoFM3FQFh4GkTeMiWr1V9oy5CxBgF2vbO2', {
   host: 'http://localhost:8000',
   flushAt: 10,
 })
+
+posthog.debug()
 
 app.get('/', (req, res) => {
   posthog.capture({ distinctId: 'EXAMPLE_APP_GLOBAL', event: 'legacy capture' })
@@ -17,6 +19,12 @@ app.get('/user/:userId/action', (req, res) => {
   posthog.capture({ distinctId: req.params.userId, event: 'user did action', properties: req.params })
 
   res.send({ status: 'ok' })
+})
+
+app.get('/user/:userId/flags/:flagId', async (req, res) => {
+  const flag = await posthog.getFeatureFlag('key-1', req.params.userId).catch((e) => console.error(e))
+
+  res.send({ [req.params.flagId]: flag })
 })
 
 const server = app.listen(8010, () => {

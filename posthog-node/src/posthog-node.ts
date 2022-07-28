@@ -137,4 +137,8 @@ export class PostHogGlobal implements PostHogNodeV1 {
   shutdownAsync(): Promise<void> {
     return this._sharedClient.shutdownAsync()
   }
+
+  debug(enabled?: boolean): void {
+    return this._sharedClient.debug(enabled)
+  }
 }

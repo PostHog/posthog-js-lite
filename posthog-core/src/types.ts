@@ -45,6 +45,7 @@ export type PostHogFetchOptions = {
 export type PostHogFetchResponse = {
   status: number
   text: () => Promise<string>
+  json: () => Promise<any>
 }
 
 export type PostHogQueueItem = {

@@ -335,7 +335,7 @@ export abstract class PostHogCore {
     }
 
     this._decideResponsePromise = this.fetchWithRetry(url, fetchOptions)
-      .then((r) => r.json() as PostHogDecideResponse)
+      .then((r) => r.json() as Promise<PostHogDecideResponse>)
       .then((res) => {
         if (res.featureFlags) {
           this.setPersistedProperty<PostHogDecideResponse['featureFlags']>(
@@ -550,7 +550,7 @@ export abstract class PostHogCore {
     url: string,
     options: PostHogFetchOptions,
     retryOptions?: RetriableOptions
-  ): Promise<any> {
+  ): Promise<PostHogFetchResponse> {
     return retriable(() => this.fetch(url, options), retryOptions || this._retryOptions)
   }
 
