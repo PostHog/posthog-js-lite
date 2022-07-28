@@ -68,9 +68,10 @@ describe('PostHog Core', () => {
       it('should load feature flags on init', async () => {
         expect(mocks.fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=2', {
           body: JSON.stringify({
-            groups: {},
-            distinct_id: posthog.getDistinctId(),
             token: 'TEST_API_KEY',
+            distinct_id: posthog.getDistinctId(),
+            $anon_distinct_id: posthog.getAnonymousId(),
+            groups: {},
           }),
           method: 'POST',
           headers: {

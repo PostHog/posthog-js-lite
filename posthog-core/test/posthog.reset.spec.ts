@@ -20,7 +20,7 @@ describe('PostHog Core', () => {
         prop: 1,
       })
 
-      expect(posthog.getPersistedProperty(PostHogPersistedProperty.DistinctId)).toEqual(distinctId)
+      expect(posthog.getPersistedProperty(PostHogPersistedProperty.AnonymousId)).toEqual(distinctId)
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.OverrideFeatureFlags)).toEqual({ foo: 'bar' })
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.Props)).toEqual({ prop: 1 })
 
