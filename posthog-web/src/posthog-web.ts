@@ -1,21 +1,16 @@
 import {
   PostHogCore,
-  PosthogCoreOptions,
   PostHogFetchOptions,
   PostHogFetchResponse,
   PostHogPersistedProperty,
 } from '../../posthog-core/src'
 import { getContext } from './context'
-import { localStore, cookieStore, sessionStorage } from './storage'
+import { PostHogStorage, getStorage } from './storage'
 import { version } from '../package.json'
-
-export interface PostHogOptions extends PosthogCoreOptions {
-  autocapture?: boolean
-  persistence_name?: string
-}
+import { PostHogOptions } from './types'
 
 export class PostHog extends PostHogCore {
-  private _storage = localStore || sessionStorage || cookieStore
+  private _storage: PostHogStorage
   private _storageCache: any
   private _storageKey: string
 
@@ -24,6 +19,7 @@ export class PostHog extends PostHogCore {
 
     // posthog-js stores options in one object on
     this._storageKey = options?.persistence_name ? `ph_${options.persistence_name}` : `ph_${apiKey}_posthog`
+    this._storage = getStorage(options?.persistence || 'localStorage')
   }
 
   getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined {

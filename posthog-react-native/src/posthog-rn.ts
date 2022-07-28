@@ -9,20 +9,27 @@ import {
   PostHogFetchResponse,
   PostHogPersistedProperty,
 } from '../../posthog-core/src'
+import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
 import { getLegacyValues } from './legacy'
 import { SemiAsyncStorage, preloadSemiAsyncStorage } from './storage'
 import { OptionalExpoLocalization } from './optional-imports'
 import { version } from '../package.json'
 
-export type PostHogOptions = PosthogCoreOptions
+export type PostHogOptions = PosthogCoreOptions & {
+  persistence?: 'memory' | 'file'
+}
 
 export class PostHog extends PostHogCore {
+  private _persistence: PostHogOptions['persistence']
+  private _memoryStorage = new PostHogMemoryStorage()
+
   static initAsync(): Promise<void> {
     return preloadSemiAsyncStorage()
   }
 
   constructor(apiKey: string, options?: PostHogOptions) {
     super(apiKey, options)
+    this._persistence = options?.persistence
 
     AppState.addEventListener('change', () => {
       this.flush()
@@ -43,9 +50,15 @@ export class PostHog extends PostHogCore {
   }
 
   getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined {
+    if (this._persistence === 'memory') {
+      return this._memoryStorage.getProperty(key)
+    }
     return SemiAsyncStorage.getItem(key) || undefined
   }
   setPersistedProperty<T>(key: PostHogPersistedProperty, value: T | null): void {
+    if (this._persistence === 'memory') {
+      return this._memoryStorage.getProperty(key)
+    }
     return value !== null ? SemiAsyncStorage.setItem(key, value) : SemiAsyncStorage.removeItem(key)
   }
 

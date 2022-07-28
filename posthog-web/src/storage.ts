@@ -1,3 +1,5 @@
+import { PostHogOptions } from './types'
+
 export type PostHogStorage = {
   getItem: (key: string) => string | null | undefined
   setItem: (key: string, value: string) => void
@@ -112,3 +114,49 @@ const checkStoreIsSupported = (storage: PostHogStorage, key = '__mplssupport__')
 
 export const localStore = checkStoreIsSupported(_localStore) ? _localStore : undefined
 export const sessionStorage = checkStoreIsSupported(_sessionStore) ? _sessionStore : undefined
+
+const createMemoryStorage = (): PostHogStorage => {
+  const _cache: { [key: string]: any | undefined } = {}
+
+  const store: PostHogStorage = {
+    getItem(key) {
+      return _cache[key]
+    },
+
+    setItem(key, value) {
+      _cache[key] = value !== null ? value : undefined
+    },
+
+    removeItem(key) {
+      delete _cache[key]
+    },
+    clear() {
+      for (const key in _cache) {
+        delete _cache[key]
+      }
+    },
+    getAllKeys() {
+      const keys = []
+      for (const key in _cache) {
+        keys.push(key)
+      }
+      return keys
+    },
+  }
+  return store
+}
+
+export const getStorage = (type: PostHogOptions['persistence']): PostHogStorage => {
+  switch (type) {
+    case 'cookie':
+      return cookieStore || localStore || sessionStorage || createMemoryStorage()
+    case 'localStorage':
+      return localStore || sessionStorage || createMemoryStorage()
+    case 'sessionStorage':
+      return sessionStorage || createMemoryStorage()
+    case 'memory':
+      return createMemoryStorage()
+    default:
+      return createMemoryStorage()
+  }
+}

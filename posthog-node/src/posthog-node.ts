@@ -7,12 +7,15 @@ import {
   PostHogFetchResponse,
   PostHogPersistedProperty,
 } from '../../posthog-core/src'
+import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
 import { EventMessageV1, GroupIdentifyMessage, IdentifyMessageV1, PostHogNodeV1 } from './types'
 
-export type PostHogOptions = PosthogCoreOptions
+export type PostHogOptions = PosthogCoreOptions & {
+  persistence?: 'memory'
+}
 
 class PostHog extends PostHogCore {
-  private _memoryStorage: { [key: string]: any | undefined } = {}
+  private _memoryStorage = new PostHogMemoryStorage()
 
   constructor(apiKey: string, options: PostHogOptions = {}) {
     options.captureMode = options?.captureMode || 'json'
@@ -22,11 +25,11 @@ class PostHog extends PostHogCore {
   }
 
   getPersistedProperty(key: PostHogPersistedProperty): any | undefined {
-    return this._memoryStorage[key]
+    return this._memoryStorage.getProperty(key)
   }
 
   setPersistedProperty(key: PostHogPersistedProperty, value: any | null): void {
-    this._memoryStorage[key] = value !== null ? value : undefined
+    return this._memoryStorage.setProperty(key, value)
   }
 
   getSessionId(): string | undefined {
