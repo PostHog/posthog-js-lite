@@ -86,5 +86,12 @@ describe('PostHog Core', () => {
         ],
       })
     })
+
+    it('should not update stored properties if distinct_id the same', () => {
+      mocks.storage.setItem(PostHogPersistedProperty.DistinctId, 'id-1')
+      mocks.storage.setItem.mockClear()
+      posthog.identify('id-1', { foo: 'bar' })
+      expect(mocks.storage.setItem).not.toHaveBeenCalledWith('distinct_id', 'id-1')
+    })
   })
 })
