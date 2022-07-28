@@ -16,6 +16,7 @@ import {
   PostHogFeatureFlag,
   PostHogNodeV1,
 } from './types'
+import { getLocalFeatureFlag } from './feature-flags'
 
 export type PostHogOptions = PosthogCoreOptions & {
   persistence?: 'memory'
@@ -75,6 +76,10 @@ class PostHog extends PostHogCore {
   }
 
   private async _loadAllFeatureFlags(): Promise<PostHogFeatureFlag[]> {
+    if (!this.personalApiKey) {
+      throw new Error('personalApiKey is required to load server-side feature flags')
+    }
+
     const res = await this.fetchWithApiKey(`${this.host}/api/feature_flag/local_evaluation`)
     if (res.status !== 200) {
       throw new Error('Could not load flags...')
@@ -151,8 +156,15 @@ export class PostHogGlobal implements PostHogNodeV1 {
   ): Promise<string | boolean | undefined> {
     this.reInit(distinctId)
 
-    // TODO: Attempt local evaulation using this.
-    // const allFeatureFlags = await this._sharedClient.getAllFeatureFlags()
+    try {
+      const allFeatureFlags = await this._sharedClient.getAllFeatureFlags()
+      const flag = getLocalFeatureFlag(allFeatureFlags, key, distinctId, groups)
+      if (flag !== null) {
+        return flag
+      }
+    } catch (e) {
+      console.warn('Local evaluation of feature flags was not possible. Calling /decide instead')
+    }
 
     // If local evaulation failed - call decide
     if (groups) {
