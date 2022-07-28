@@ -15,6 +15,39 @@ export interface GroupIdentifyMessage {
   properties?: Record<string | number, any>
 }
 
+export type PostHogFeatureFlag = {
+  id: number
+  name: string
+  key: string
+  filters?: {
+    groups?: {
+      properties: {
+        key: string
+        type: string
+        value: string | number
+        operator: null | string
+      }[]
+      rollout_percentage: null | number
+    }[]
+    multivariate?: {
+      variants: {
+        key: string
+        rollout_percentage: number
+      }[]
+    }
+  }
+  deleted: boolean
+  active: boolean
+  is_simple_flag: boolean
+  rollout_percentage: null | number
+  ensure_experience_continuity: boolean
+  experiment_set: number[]
+}
+
+export type PostHogAllFeatureFlagsResponse = {
+  results: PostHogFeatureFlag[]
+}
+
 export type PostHogNodeV1 = {
   /**
    * @description Capture allows you to capture anything a user does within your system,

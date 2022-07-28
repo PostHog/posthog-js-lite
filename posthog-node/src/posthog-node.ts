@@ -8,20 +8,33 @@ import {
   PostHogPersistedProperty,
 } from '../../posthog-core/src'
 import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
-import { EventMessageV1, GroupIdentifyMessage, IdentifyMessageV1, PostHogNodeV1 } from './types'
+import {
+  EventMessageV1,
+  GroupIdentifyMessage,
+  IdentifyMessageV1,
+  PostHogAllFeatureFlagsResponse,
+  PostHogFeatureFlag,
+  PostHogNodeV1,
+} from './types'
 
 export type PostHogOptions = PosthogCoreOptions & {
   persistence?: 'memory'
+  personalApiKey?: string
 }
 
 class PostHog extends PostHogCore {
   private _memoryStorage = new PostHogMemoryStorage()
+  private personalApiKey?: string
+
+  protected _allFeatureFlagsResponse?: Promise<PostHogFeatureFlag[]> // TODO
+  protected allFeatureFlags?: PostHogFeatureFlag[] // TODO
 
   constructor(apiKey: string, options: PostHogOptions = {}) {
     options.captureMode = options?.captureMode || 'json'
     options.preloadFeatureFlags = false // Don't preload as this makes no sense without a distinctId
 
     super(apiKey, options)
+    this.personalApiKey = options.personalApiKey
   }
 
   getPersistedProperty(key: PostHogPersistedProperty): any | undefined {
@@ -37,18 +50,50 @@ class PostHog extends PostHogCore {
     return undefined
   }
 
-  fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
+  fetch(url: string, options?: PostHogFetchOptions): Promise<PostHogFetchResponse> {
     return undici.fetch(url, options)
   }
 
   getLibraryId(): string {
     return 'posthog-node'
   }
+
   getLibraryVersion(): string {
     return version
   }
+
   getCustomUserAgent(): string {
     return `posthog-node/${version}`
+  }
+
+  public getAllFeatureFlags(): Promise<PostHogFeatureFlag[]> {
+    if (!this._allFeatureFlagsResponse) {
+      this._allFeatureFlagsResponse = this._loadAllFeatureFlags()
+    }
+
+    return this._allFeatureFlagsResponse
+  }
+
+  private async _loadAllFeatureFlags(): Promise<PostHogFeatureFlag[]> {
+    const res = await this.fetchWithApiKey(`${this.host}/api/feature_flag/local_evaluation`)
+    if (res.status !== 200) {
+      throw new Error('Could not load flags...')
+    }
+    const data = (await res.json()) as PostHogAllFeatureFlagsResponse
+
+    this.allFeatureFlags = data.results
+    return this.allFeatureFlags
+  }
+
+  private fetchWithApiKey = (url: string, options: PostHogFetchOptions = {}): Promise<PostHogFetchResponse> => {
+    // TODO: Support urls that might have query params...
+    return this.fetch(url + `?token={this.personalApiKey}`, {
+      ...options,
+      headers: {
+        ...(options.headers || {}),
+        Authorization: `Bearer ${this.personalApiKey}`,
+      },
+    })
   }
 }
 
@@ -105,6 +150,11 @@ export class PostHogGlobal implements PostHogNodeV1 {
     groups?: Record<string, string> | undefined
   ): Promise<string | boolean | undefined> {
     this.reInit(distinctId)
+
+    // TODO: Attempt local evaulation using this.
+    // const allFeatureFlags = await this._sharedClient.getAllFeatureFlags()
+
+    // If local evaulation failed - call decide
     if (groups) {
       this._sharedClient.groups(groups)
     }

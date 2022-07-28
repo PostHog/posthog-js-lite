@@ -24,14 +24,14 @@ import { SimpleEventEmitter } from './eventemitter'
 
 export abstract class PostHogCore {
   // options
-  private apiKey: string
-  private host: string
-  private flushAt: number
-  private flushInterval: number
-  private captureMode: 'form' | 'json'
-  private sendFeatureFlagEvent: boolean
-  private flagCallReported: { [key: string]: boolean } = {}
-  private removeDebugCallback?: () => void
+  protected apiKey: string
+  protected host: string
+  protected flushAt: number
+  protected flushInterval: number
+  protected captureMode: 'form' | 'json'
+  protected sendFeatureFlagEvent: boolean
+  protected flagCallReported: { [key: string]: boolean } = {}
+  protected removeDebugCallback?: () => void
 
   // internal
   protected _events = new SimpleEventEmitter()
@@ -43,7 +43,7 @@ export abstract class PostHogCore {
   protected _sessionExpirationTimeSeconds: number
 
   // Abstract methods to be overridden by implementations
-  abstract fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse>
+  abstract fetch(url: string, options?: PostHogFetchOptions): Promise<PostHogFetchResponse>
   abstract getLibraryId(): string
   abstract getLibraryVersion(): string
   abstract getCustomUserAgent(): string | void
