@@ -217,12 +217,6 @@ export abstract class PostHogCore {
   }
 
   capture(event: string, properties?: { [key: string]: any }): this {
-    // NOTE: Legacy nodejs implementation uses groups
-    if (properties && properties['groups']) {
-      properties.$groups = properties.groups
-      delete properties.groups
-    }
-
     if (properties?.$groups) {
       this.groups(properties.$groups)
     }
