@@ -124,7 +124,6 @@ export abstract class PostHogCore {
     for (const key in PostHogPersistedProperty) {
       this.setPersistedProperty((PostHogPersistedProperty as any)[key], null)
     }
-    this.setPersistedProperty(PostHogPersistedProperty.DistinctId, generateUUID(globalThis))
   }
 
   debug(enabled: boolean = true): void {
@@ -164,13 +163,17 @@ export abstract class PostHogCore {
     this.setPersistedProperty(PostHogPersistedProperty.SessionId, null)
   }
 
-  getDistinctId(): string {
-    let distinctId = this.getPersistedProperty<string>(PostHogPersistedProperty.DistinctId)
-    if (!distinctId) {
-      distinctId = generateUUID(globalThis)
-      this.setPersistedProperty(PostHogPersistedProperty.DistinctId, distinctId)
+  getAnonymousId(): string {
+    let anonId = this.getPersistedProperty<string>(PostHogPersistedProperty.AnonymousId)
+    if (!anonId) {
+      anonId = generateUUID(globalThis)
+      this.setPersistedProperty(PostHogPersistedProperty.AnonymousId, anonId)
     }
-    return distinctId
+    return anonId
+  }
+
+  getDistinctId(): string {
+    return this.getPersistedProperty<string>(PostHogPersistedProperty.DistinctId) || this.getAnonymousId()
   }
 
   register(properties: { [key: string]: any }): void {
@@ -190,7 +193,8 @@ export abstract class PostHogCore {
    *** TRACKING
    ***/
   identify(distinctId?: string, properties?: PostHogEventProperties): this {
-    distinctId = distinctId || this.getDistinctId()
+    const previousDistinctId = this.getDistinctId()
+    distinctId = distinctId || previousDistinctId
 
     if (properties?.$groups) {
       this.groups(properties.$groups)
@@ -202,14 +206,20 @@ export abstract class PostHogCore {
         event: '$identify',
         properties: {
           ...(properties || {}),
-          $anon_distinct_id: this.getDistinctId(), // TODO: Should this be the previous distinct id or the original anon id??
+          $anon_distinct_id: this.getAnonymousId(),
         },
       }),
       $set: properties,
     }
 
-    if (distinctId !== this.getDistinctId()) {
+    if (distinctId !== previousDistinctId) {
+      // We keep the AnonymousId to be used by decide calls and identify to link the previousId
+      this.setPersistedProperty(PostHogPersistedProperty.AnonymousId, previousDistinctId)
       this.setPersistedProperty(PostHogPersistedProperty.DistinctId, distinctId)
+
+      if (this._decideResponsePromise) {
+        void this.reloadFeatureFlagsAsync()
+      }
     }
 
     this.enqueue('identify', payload)
@@ -217,12 +227,6 @@ export abstract class PostHogCore {
   }
 
   capture(event: string, properties?: { [key: string]: any }): this {
-    // NOTE: Legacy nodejs implementation uses groups
-    if (properties && properties['groups']) {
-      properties.$groups = properties.groups
-      delete properties.groups
-    }
-
     if (properties?.$groups) {
       this.groups(properties.$groups)
     }
@@ -331,7 +335,12 @@ export abstract class PostHogCore {
     const fetchOptions: PostHogFetchOptions = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ groups, distinct_id: distinctId, token: this.apiKey }),
+      body: JSON.stringify({
+        token: this.apiKey,
+        distinct_id: distinctId,
+        $anon_distinct_id: this.getAnonymousId(),
+        groups,
+      }),
     }
 
     this._decideResponsePromise = this.fetchWithRetry(url, fetchOptions)

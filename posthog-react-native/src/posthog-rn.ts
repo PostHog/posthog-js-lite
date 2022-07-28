@@ -39,10 +39,11 @@ export class PostHog extends PostHogCore {
 
     // It is possible that the old library was used so we try to get the legacy distinctID
     void preloadSemiAsyncStorage().then(() => {
-      if (!SemiAsyncStorage.getItem(PostHogPersistedProperty.DistinctId)) {
+      if (!SemiAsyncStorage.getItem(PostHogPersistedProperty.AnonymousId)) {
         getLegacyValues().then((legacyValues) => {
           if (legacyValues?.distinctId) {
             SemiAsyncStorage.setItem(PostHogPersistedProperty.DistinctId, legacyValues.distinctId)
+            SemiAsyncStorage.setItem(PostHogPersistedProperty.AnonymousId, legacyValues.anonymousId)
           }
         })
       }
