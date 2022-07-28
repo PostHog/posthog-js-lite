@@ -31,6 +31,7 @@ export abstract class PostHogCore {
   private captureMode: 'form' | 'json'
   private sendFeatureFlagEvent: boolean
   private flagCallReported: { [key: string]: boolean } = {}
+  private removeDebugCallback?: () => void
 
   // internal
   protected _events = new SimpleEventEmitter()
@@ -115,7 +116,7 @@ export abstract class PostHogCore {
     this.setPersistedProperty(PostHogPersistedProperty.OptedOut, true)
   }
 
-  on(event: string, cb: (e: any) => void): () => void {
+  on(event: string, cb: (...args: any[]) => void): () => void {
     return this._events.on(event, cb)
   }
 
@@ -124,6 +125,14 @@ export abstract class PostHogCore {
       this.setPersistedProperty((PostHogPersistedProperty as any)[key], null)
     }
     this.setPersistedProperty(PostHogPersistedProperty.DistinctId, generateUUID(globalThis))
+  }
+
+  debug(enabled: boolean = true): void {
+    this.removeDebugCallback?.()
+
+    if (enabled) {
+      this.removeDebugCallback = this.on('*', (event, payload) => console.log('PostHog Debug', event, payload))
+    }
   }
 
   private buildPayload(payload: { event: string; properties?: PostHogEventProperties; distinct_id?: string }): any {

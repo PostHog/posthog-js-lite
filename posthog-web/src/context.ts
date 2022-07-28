@@ -1,8 +1,5 @@
 import { utils } from '../../posthog-core'
-// import { version } from '../package.json'
-
-// TODO: Get this from package.json
-const version = '2.0.0-alpha'
+import { version } from '../package.json'
 
 export function getContext(window: Window): any {
   let context = {}
