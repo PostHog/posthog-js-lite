@@ -24,6 +24,7 @@ export type PosthogCoreOptions = {
 }
 
 export enum PostHogPersistedProperty {
+  AnonymousId = 'anonymous_id',
   DistinctId = 'distinct_id',
   Props = 'props',
   FeatureFlags = 'feature_flags',
