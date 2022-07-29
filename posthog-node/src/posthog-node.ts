@@ -152,7 +152,9 @@ export class PostHogGlobal implements PostHogNodeV1 {
   async getFeatureFlag(
     key: string,
     distinctId: string,
-    groups?: Record<string, string> | undefined
+    groups?: Record<string, string> | undefined,
+    personProperties?: Record<string | number, any>,
+    groupProperties?: Record<string | number, any>,
   ): Promise<string | boolean | undefined> {
     this.reInit(distinctId)
 
@@ -178,9 +180,11 @@ export class PostHogGlobal implements PostHogNodeV1 {
     key: string,
     distinctId: string,
     defaultResult?: boolean | undefined,
-    groups?: Record<string, string> | undefined
+    groups?: Record<string, string> | undefined,
+    personProperties?: Record<string | number, any>,
+    groupProperties?: Record<string | number, any>,
   ): Promise<boolean> {
-    const feat = await this.getFeatureFlag(key, distinctId, groups)
+    const feat = await this.getFeatureFlag(key, distinctId, groups, personProperties, groupProperties)
     return !!feat || defaultResult || false
   }
 

@@ -20,6 +20,7 @@ export type PostHogFeatureFlag = {
   name: string
   key: string
   filters?: {
+    aggregation_group_type_index?: number
     groups?: {
       properties: {
         key: string
