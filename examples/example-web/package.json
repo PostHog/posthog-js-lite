@@ -26,7 +26,7 @@
     "eject": "react-scripts eject",
     "build:posthog": "yarn build:posthog:publish && yarn build:posthog:link",
     "build:posthog:publish": "cd ../../posthog-web && yalc publish --replace",
-    "build:posthog:link": "yalc remove  && yalc add posthog-js-lite"
+    "build:posthog:link": "yalc remove posthog-js-lite && yalc add posthog-js-lite"
   },
   "eslintConfig": {
     "extends": [

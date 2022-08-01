@@ -351,9 +351,9 @@ export abstract class PostHogCore {
             PostHogPersistedProperty.FeatureFlags,
             res.featureFlags
           )
+          this._events.emit('featureflags', res.featureFlags)
         }
 
-        this._events.emit('featureflags', res.featureFlags)
         return res
       })
     return this._decideResponsePromise

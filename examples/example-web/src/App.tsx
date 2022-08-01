@@ -43,7 +43,7 @@ const DebugEvents = (): JSX.Element => {
         <div>
           <>
             <span>{item.event}</span>
-            <span>{JSON.stringify(item.payload).substring(0, 100) + '...'}</span>
+            <span>{JSON.stringify(item.payload || '').substring(0, 100) + '...'}</span>
           </>
         </div>
       ))}
