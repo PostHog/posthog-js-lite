@@ -10,6 +10,7 @@ export type PostHogAutocaptureOptions = {
   noCaptureProp?: string
   maxElementsCaptured?: number
   ignoreLabels?: string[]
+  propsToCapture?: string[]
 
   // Navigation
   navigation?: PostHogAutocaptureNavigationTrackerOptions

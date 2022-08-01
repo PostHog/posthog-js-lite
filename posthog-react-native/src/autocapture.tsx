@@ -45,6 +45,7 @@ export const autocaptureFromTouchEvent = (e: any, posthog: PostHog, options: Pos
     customLabelProp = 'ph-label',
     maxElementsCaptured = 20,
     ignoreLabels = [],
+    propsToCapture = ['style', 'testID', 'accessibilityLabel', 'ph-label'],
   } = options
 
   if (!e._targetInst) {
@@ -65,8 +66,17 @@ export const autocaptureFromTouchEvent = (e: any, posthog: PostHog, options: Pos
 
     const props = currentInst.memoizedProps
 
+    if (props?.[noCaptureProp]) {
+      // Immediately ignore events if a no capture is in the chain
+      return
+    }
+
     if (props) {
+      // Capture only props we have said to capture. By default this is only "safe" props
       Object.keys(props).forEach((key) => {
+        if (!propsToCapture.includes(key)) {
+          return
+        }
         const value = props[key]
         if (key === 'style') {
           el.attr__style = stringifyStyle(value)
@@ -78,11 +88,6 @@ export const autocaptureFromTouchEvent = (e: any, posthog: PostHog, options: Pos
           }
         }
       })
-    }
-
-    if (props?.[noCaptureProp]) {
-      // Immediately ignore events if a no capture is in the chain
-      return
     }
 
     // Try and find a sensible label
