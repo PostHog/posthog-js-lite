@@ -57,7 +57,6 @@ export class PostHogGlobal implements PostHogNodeV1 {
   private _sharedClient: PostHog
 
   constructor(apiKey: string, options: PostHogOptions = {}) {
-    options.decidePollInterval = 0 // Forcefully set to 0 so we don't auto-reload
     this._sharedClient = new PostHog(apiKey, options)
   }
 
