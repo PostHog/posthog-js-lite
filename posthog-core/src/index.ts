@@ -37,8 +37,6 @@ export abstract class PostHogCore {
   protected _events = new SimpleEventEmitter()
   protected _flushTimer?: any
   protected _decideResponsePromise?: Promise<PostHogDecideResponse>
-  protected _decideTimer?: any
-  protected _decidePollInterval: number
   protected _retryOptions: RetriableOptions
   protected _sessionExpirationTimeSeconds: number
 
@@ -63,7 +61,6 @@ export abstract class PostHogCore {
     this.flushInterval = options?.flushInterval ?? 10000
     this.captureMode = options?.captureMode || 'form'
     this.sendFeatureFlagEvent = options?.sendFeatureFlagEvent ?? true
-    this._decidePollInterval = Math.max(0, options?.decidePollInterval ?? 30000)
     // If enable is explicitly set to false we override the optout
     this._optoutOverride = options?.enable === false
     this._retryOptions = {
@@ -408,20 +405,12 @@ export abstract class PostHogCore {
   }
 
   async reloadFeatureFlagsAsync(): Promise<PostHogDecideResponse['featureFlags']> {
-    clearTimeout(this._decideTimer)
-    if (this._decidePollInterval) {
-      this._decideTimer = safeSetTimeout(() => this.reloadFeatureFlagsAsync(), this._decidePollInterval)
-    }
     this._decideResponsePromise = undefined
     return (await this.decideAsync()).featureFlags
   }
 
   // When listening to feature flags polling is active
   onFeatureFlags(cb: (flags: PostHogDecideResponse['featureFlags']) => void): () => void {
-    if (!this._decideTimer) {
-      void this.reloadFeatureFlagsAsync()
-    }
-
     return this.on('featureflags', async () => {
       const flags = this.getFeatureFlags()
       if (flags) {
@@ -564,7 +553,6 @@ export abstract class PostHogCore {
   }
 
   async shutdownAsync(): Promise<void> {
-    clearTimeout(this._decideTimer)
     clearTimeout(this._flushTimer)
     await this.flushAsync()
   }
