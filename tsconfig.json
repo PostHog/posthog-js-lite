@@ -1,19 +1,24 @@
 {
-    "compilerOptions": {
-        "module": "commonjs",
-        "declaration": true,
-        "removeComments": true,
-        "emitDecoratorMetadata": true,
-        "experimentalDecorators": true,
-        "resolveJsonModule": true,
-        "allowJs": true,
-        "target": "es6",
-        "sourceMap": true,
-        "outDir": "./dist",
-        "baseUrl": "./src",
-        "incremental": true,
-        "types": ["jest", "node"],
-        "strict": true
-    },
-    "exclude": ["node_modules", "dist"]
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "declaration": true,
+    "removeComments": false,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "resolveJsonModule": true,
+    "target": "es5",
+    "sourceMap": true,
+    "noEmit": false,
+    "incremental": true,
+    "strict": true,
+    "baseUrl": "./", // this must be specified if "paths" is specified.
+    "rootDir": "./",
+    "lib": ["ES2015"],
+    "types": ["node", "jest"],
+    "jsx": "react"
+  },
+  "exclude": ["**/dist/**", "node_modules", "dist", "**/*.spec.*"]
 }

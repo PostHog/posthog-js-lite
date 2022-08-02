@@ -3,3 +3,8 @@ node_modules
 .vscode
 dist/
 yarn-error.log
+*.tsbuildinfo
+coverage/
+lib/
+.yalc
+yalc.lock
