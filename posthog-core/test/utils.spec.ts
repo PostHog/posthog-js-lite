@@ -1,4 +1,4 @@
-import { assert, removeTrailingSlash, generateUUID, currentISOTime, currentTimestamp, isUndefined } from '../src/utils'
+import { assert, removeTrailingSlash, generateUUID, currentISOTime, currentTimestamp } from '../src/utils'
 
 describe('utils', () => {
   describe('assert', () => {
