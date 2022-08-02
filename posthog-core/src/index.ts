@@ -13,6 +13,7 @@ import {
   currentISOTime,
   currentTimestamp,
   generateUUID,
+  isUndefined,
   removeTrailingSlash,
   retriable,
   RetriableOptions,
@@ -423,7 +424,9 @@ export abstract class PostHogCore {
   onFeatureFlag(key: string, cb: (value: string | boolean) => void): () => void {
     return this.on('featureflags', async () => {
       const flagResponse = this.getFeatureFlag(key)
-      cb(flagResponse)
+      if (flagResponse !== undefined) {
+        cb(flagResponse)
+      }
     })
   }
 
