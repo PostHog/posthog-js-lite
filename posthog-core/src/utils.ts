@@ -64,10 +64,6 @@ export function currentISOTime(): string {
   return new Date().toISOString()
 }
 
-export function isUndefined(obj: any): boolean {
-  return obj === void 0
-}
-
 export function safeSetTimeout(fn: () => void, timeout: number): any {
   // NOTE: we use this so rarely that it is totally fine to do `safeSetTimeout(fn, 0)``
   // rather than setImmediate.

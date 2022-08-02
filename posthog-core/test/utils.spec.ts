@@ -44,17 +44,4 @@ describe('utils', () => {
       expect(currentISOTime()).toEqual('2022-01-01T00:00:00.000Z')
     })
   })
-  describe('isUndefined', () => {
-    it('should do something', () => {
-      let t: any
-      expect(isUndefined(undefined)).toEqual(true)
-      expect(isUndefined(t)).toEqual(true)
-
-      expect(isUndefined(false)).toEqual(false)
-      expect(isUndefined(null)).toEqual(false)
-      expect(isUndefined('undefined')).toEqual(false)
-      expect(isUndefined(0)).toEqual(false)
-      expect(isUndefined([])).toEqual(false)
-    })
-  })
 })
