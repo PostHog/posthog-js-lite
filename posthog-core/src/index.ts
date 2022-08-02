@@ -214,7 +214,7 @@ export abstract class PostHogCore {
       this.setPersistedProperty(PostHogPersistedProperty.AnonymousId, previousDistinctId)
       this.setPersistedProperty(PostHogPersistedProperty.DistinctId, distinctId)
 
-      if (this._decideResponsePromise) {
+      if (this.getFeatureFlags()) {
         void this.reloadFeatureFlagsAsync()
       }
     }
@@ -278,7 +278,7 @@ export abstract class PostHogCore {
       },
     })
 
-    if (Object.keys(groups).find((type) => existingGroups[type] !== groups[type]) && this._decideResponsePromise) {
+    if (Object.keys(groups).find((type) => existingGroups[type] !== groups[type]) && this.getFeatureFlags()) {
       void this.reloadFeatureFlagsAsync()
     }
 
@@ -353,6 +353,9 @@ export abstract class PostHogCore {
 
         return res
       })
+      .finally(() => {
+        this._decideResponsePromise = undefined
+      })
     return this._decideResponsePromise
   }
 
@@ -405,7 +408,6 @@ export abstract class PostHogCore {
   }
 
   async reloadFeatureFlagsAsync(): Promise<PostHogDecideResponse['featureFlags']> {
-    this._decideResponsePromise = undefined
     return (await this.decideAsync()).featureFlags
   }
 
