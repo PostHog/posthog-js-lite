@@ -411,13 +411,19 @@ export abstract class PostHogCore {
     return (await this.decideAsync()).featureFlags
   }
 
-  // When listening to feature flags polling is active
   onFeatureFlags(cb: (flags: PostHogDecideResponse['featureFlags']) => void): () => void {
     return this.on('featureflags', async () => {
       const flags = this.getFeatureFlags()
       if (flags) {
         cb(flags)
       }
+    })
+  }
+
+  onFeatureFlag(key: string, cb: (value: string | boolean) => void): () => void {
+    return this.on('featureflags', async () => {
+      const flagResponse = this.getFeatureFlag(key)
+      cb(flagResponse)
     })
   }
 
