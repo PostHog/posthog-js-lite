@@ -60,6 +60,15 @@ describe('PostHog Core', () => {
       expect(posthog.getFeatureFlags()).toEqual(mockFeatureFlags)
     })
 
+    it('should only call fetch once if already calling', async () => {
+      expect(mocks.fetch).toHaveBeenCalledTimes(0)
+      posthog.reloadFeatureFlagsAsync()
+      posthog.reloadFeatureFlagsAsync()
+      const flags = await posthog.reloadFeatureFlagsAsync()
+      expect(mocks.fetch).toHaveBeenCalledTimes(1)
+      expect(flags).toEqual(mockFeatureFlags)
+    })
+
     describe('when loaded', () => {
       beforeEach(() => {
         jest.runOnlyPendingTimers() // trigger init setImmediate

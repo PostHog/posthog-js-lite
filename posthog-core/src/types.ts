@@ -11,8 +11,6 @@ export type PosthogCoreOptions = {
   sendFeatureFlagEvent?: boolean
   // Whether to load feature flags when initialised or not
   preloadFeatureFlags?: boolean
-  // The interval in milliseconds between decide polls (refreshing feature flags)
-  decidePollInterval?: number
   // How many times we will retry HTTP requests
   fetchRetryCount?: number
   // The delay between HTTP request retries
