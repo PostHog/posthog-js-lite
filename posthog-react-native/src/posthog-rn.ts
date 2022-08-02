@@ -1,6 +1,7 @@
 import { AppState, Dimensions } from 'react-native'
 import * as ExpoApplication from 'expo-application'
 import * as ExpoDevice from 'expo-device'
+import * as ExpoLocalization from 'expo-localization'
 
 import {
   PostHogCore,
@@ -12,7 +13,6 @@ import {
 import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
 import { getLegacyValues } from './legacy'
 import { SemiAsyncStorage, preloadSemiAsyncStorage } from './storage'
-import { OptionalExpoLocalization } from './optional-imports'
 import { version } from '../package.json'
 
 export type PostHogOptions = PosthogCoreOptions & {
@@ -79,25 +79,26 @@ export class PostHog extends PostHogCore {
   }
 
   getCommonEventProperties(): any {
+    console.log('DeviceInfo', ExpoDevice)
     return {
       ...super.getCommonEventProperties(),
       $app_build: '1',
-      $app_name: ExpoApplication?.applicationName,
-      $app_namespace: ExpoApplication?.applicationId,
-      $app_version: ExpoApplication?.nativeApplicationVersion,
+      $app_name: ExpoApplication.applicationName,
+      $app_namespace: ExpoApplication.applicationId,
+      $app_version: ExpoApplication.nativeApplicationVersion,
       // "$device_id": "F31C35E8-5B28-4626-8AFC-213D1C655FF9",
-      $device_manufacturer: ExpoDevice?.manufacturer,
+      $device_manufacturer: ExpoDevice.manufacturer,
       //     "$device_model": "x86_64",
-      $device_name: ExpoDevice?.modelName,
+      $device_name: ExpoDevice.modelName,
       // "$device_type": "ios",
-      $locale: OptionalExpoLocalization?.locale,
+      $locale: ExpoLocalization.locale,
       //     "$network_cellular": false,
       //     "$network_wifi": true,
-      $os_name: ExpoDevice?.osName,
-      $os_version: ExpoDevice?.osVersion,
+      $os_name: ExpoDevice.osName,
+      $os_version: ExpoDevice.osVersion,
       $screen_height: Dimensions.get('screen').height,
       $screen_width: Dimensions.get('screen').width,
-      $timezone: OptionalExpoLocalization?.timezone,
+      $timezone: ExpoLocalization.timezone,
     }
   }
 

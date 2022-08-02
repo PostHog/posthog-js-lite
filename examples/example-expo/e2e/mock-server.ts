@@ -12,7 +12,6 @@ export interface MockRequest {
 }
 
 export const createMockServer = (): [any, jest.Mock<MockRequest, any>] => {
-  // TODO: Pull this out to helper function
   let app = express()
   app.use(bodyParser.urlencoded())
 
