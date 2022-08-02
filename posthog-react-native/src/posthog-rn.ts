@@ -78,7 +78,6 @@ export class PostHog extends PostHogCore {
   }
 
   getCommonEventProperties(): any {
-    console.log('DeviceInfo', ExpoDevice)
     return {
       ...super.getCommonEventProperties(),
       $app_build: '1',
