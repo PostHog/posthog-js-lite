@@ -1,4 +1,4 @@
-import { AppState, Dimensions } from 'react-native'
+import { AppState, Dimensions, Platform } from 'react-native'
 import * as ExpoApplication from 'expo-application'
 import * as ExpoDevice from 'expo-device'
 import * as ExpoLocalization from 'expo-localization'
@@ -74,7 +74,6 @@ export class PostHog extends PostHogCore {
     return version
   }
   getCustomUserAgent(): void {
-    // TODO
     return
   }
 
@@ -86,14 +85,10 @@ export class PostHog extends PostHogCore {
       $app_name: ExpoApplication.applicationName,
       $app_namespace: ExpoApplication.applicationId,
       $app_version: ExpoApplication.nativeApplicationVersion,
-      // "$device_id": "F31C35E8-5B28-4626-8AFC-213D1C655FF9",
       $device_manufacturer: ExpoDevice.manufacturer,
-      //     "$device_model": "x86_64",
       $device_name: ExpoDevice.modelName,
-      // "$device_type": "ios",
+      $device_type: Platform.OS,
       $locale: ExpoLocalization.locale,
-      //     "$network_cellular": false,
-      //     "$network_wifi": true,
       $os_name: ExpoDevice.osName,
       $os_version: ExpoDevice.osVersion,
       $screen_height: Dimensions.get('screen').height,
