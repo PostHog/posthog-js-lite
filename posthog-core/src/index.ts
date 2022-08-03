@@ -531,17 +531,17 @@ export abstract class PostHogCore {
     const fetchOptions: PostHogFetchOptions =
       this.captureMode === 'form'
         ? {
-            method: 'POST',
-            mode: 'no-cors',
-            credentials: 'omit',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `data=${encodeURIComponent(LZString.compressToBase64(payload))}&compression=lz64`,
-          }
+          method: 'POST',
+          mode: 'no-cors',
+          credentials: 'omit',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `data=${encodeURIComponent(LZString.compressToBase64(payload))}&compression=lz64`,
+        }
         : {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: payload,
-          }
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload,
+        }
 
     this.fetchWithRetry(url, fetchOptions)
       .then(() => done())

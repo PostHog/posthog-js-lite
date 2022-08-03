@@ -18,11 +18,11 @@ export const getLegacyValues = async (): Promise<{ distinctId?: string; anonymou
 
     try {
       res.distinctId = JSON.parse(await FileSystem.readAsStringAsync(posthogDistinctIdFile))['posthog.distinctId']
-    } catch (e) {}
+    } catch (e) { }
 
     try {
       res.anonymousId = JSON.parse(await FileSystem.readAsStringAsync(posthogAnonymousIdFile))['posthog.anonymousId']
-    } catch (e) {}
+    } catch (e) { }
 
     return res
   } else {
