@@ -22,7 +22,7 @@ describe('utils', () => {
     })
   })
   describe.skip('retriable', () => {
-    it('should do something', () => { })
+    it('should do something', () => {})
   })
   describe('generateUUID', () => {
     it('should generate something that looks like a UUID', () => {
