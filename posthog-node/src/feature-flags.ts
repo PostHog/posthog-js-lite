@@ -131,19 +131,14 @@ class FeatureFlagsPoller {
         const flagFilters = flag.filters || {}
         const aggregation_group_type_index = flagFilters.aggregation_group_type_index
 
-        console.log(aggregation_group_type_index, this.groupTypeMapping, flagFilters)
 
         if (aggregation_group_type_index !== undefined) {
             const groupName = this.groupTypeMapping[String(aggregation_group_type_index)]
-
-            console.log('groupName is', groupName)
 
             if (!groupName) {
                 console.warn(`[FEATURE FLAGS] Unknown group type index ${aggregation_group_type_index} for feature flag ${flag.key}`)
                 throw new InconclusiveMatchError("Flag has unknown group type index")
             }
-
-            console.log('here after throwing')
 
             if (!(groupName in groups)) {
                 console.warn(`[FEATURE FLAGS] Can't compute group feature flag: ${flag.key} without group names passed in`)
@@ -162,8 +157,6 @@ class FeatureFlagsPoller {
         const flagConditions = flagFilters.groups || []
         let isInconclusive = false
         let result = undefined
-
-        console.log(flag, distinctId, properties)
 
         flagConditions.forEach(condition => {
             try {
@@ -192,14 +185,10 @@ class FeatureFlagsPoller {
     isConditionMatch(flag: PostHogFeatureFlag, distinctId: string, condition: FeatureFlagCondition, properties: Record<string, string>) {
         const rolloutPercentage = condition.rollout_percentage
 
-        console.log(distinctId, condition, properties)
-
         if ((condition.properties || []).length !== 0) {
-            console.log(condition.properties)
             const matchAll = condition.properties.every(property => {
                 return matchProperty(property, properties)
             })
-            console.log('did I matchAll?', matchAll, rolloutPercentage)
             if (!matchAll) {
                 return false
             } else if (rolloutPercentage === undefined) {
@@ -207,10 +196,7 @@ class FeatureFlagsPoller {
             }
         }
 
-        console.log('continuing hash eval')
-        console.log(_hash(flag.key, distinctId), rolloutPercentage, distinctId, flag.key)
         if (rolloutPercentage !== undefined && _hash(flag.key, distinctId) > (rolloutPercentage/100.0)) {
-            console.log('returning falssee', _hash(flag.key, distinctId), rolloutPercentage, distinctId, rolloutPercentage/100.0)
             return false
         }
 
@@ -255,7 +241,6 @@ class FeatureFlagsPoller {
     }
 
     async _loadFeatureFlags() {
-        console.log('actually loading flags!')
         if (this.poller) {
             clearTimeout(this.poller)
             this.poller = undefined
@@ -334,9 +319,6 @@ function matchProperty(property: FeatureFlagCondition['properties'][number], pro
     const key = property.key
     const value = property.value
     const operator = property.operator || 'exact'
-
-    console.log(key, value, operator, propertyValues)
-
 
     if (!(key in propertyValues)) {
         throw new InconclusiveMatchError(`Property ${key} not found in propertyValues`)

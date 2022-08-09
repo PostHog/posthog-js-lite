@@ -139,7 +139,6 @@ export abstract class PostHogCore {
   }
 
   private buildPayload(payload: { event: string; properties?: PostHogEventProperties; distinct_id?: string }): any {
-    console.log('building payload!', payload)
     return {
       distinct_id: payload.distinct_id || this.getDistinctId(),
       event: payload.event,
@@ -496,7 +495,6 @@ export abstract class PostHogCore {
   _sendFeatureFlags(event: string, properties?: { [key: string]: any }) {
     // Used for posthog-node only
     this.reloadFeatureFlagsAsync(false).then(_ => {
-        console.log('Feature flags reloaded, now enqueuing payload!')
         const payload = this.buildPayload({event, properties})
         this.enqueue('capture', payload)
     })
@@ -524,7 +522,6 @@ export abstract class PostHogCore {
 
     const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
 
-    console.log('enqueuing message to queue', message)
     queue.push({ message })
     this.setPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue, queue)
 
@@ -532,12 +529,10 @@ export abstract class PostHogCore {
 
     // Flush queued events if we meet the flushAt length
     if (queue.length >= this.flushAt) {
-      console.log('flushing queue', queue, this.flushAt)
       this.flush()
     }
 
     if (this.flushInterval && !this._flushTimer) {
-      console.log('setting flush interval', queue, this.flushInterval)
       this._flushTimer = safeSetTimeout(() => this.flush(), this.flushInterval)
     }
   }
@@ -549,7 +544,6 @@ export abstract class PostHogCore {
   }
 
   flush(callback?: (err?: any, data?: any) => void): void {
-    console.log('starting flush!')
     if (this.optedOut) {
       return callback && safeSetTimeout(callback, 0)
     }

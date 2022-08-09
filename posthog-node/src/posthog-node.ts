@@ -112,7 +112,6 @@ export class PostHogGlobal implements PostHogNodeV1 {
     if (groups) {
       this._sharedClient.groups(groups)
     }
-    console.log('sending capture call to shared client')
     this._sharedClient.capture(event, properties, (sendFeatureFlags || false))
   }
 
@@ -205,7 +204,6 @@ export class PostHogGlobal implements PostHogNodeV1 {
   ): Promise<Record<string, string | boolean>> {
     const localEvaluationResult = await this.featureFlagsPoller?.getAllFlags(distinctId, groups, personProperties, groupProperties)
 
-    console.log('local evaluation result', localEvaluationResult)
     let response = {}
     let fallbackToDecide = true
     if (localEvaluationResult) {
