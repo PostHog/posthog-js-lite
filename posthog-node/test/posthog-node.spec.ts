@@ -100,6 +100,10 @@ describe('PostHog Node.js', () => {
       }
 
       mockedUndici.fetch.mockImplementation(decideImplementation(mockFeatureFlags))
+
+      posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+      })
     })
 
     it('should do getFeatureFlag', async () => {
@@ -118,6 +122,11 @@ describe('PostHog Node.js', () => {
     it('captures feature flags when no personal API key is present', async () => {
       mockedUndici.fetch.mockClear()
       expect(mockedUndici.fetch).toHaveBeenCalledTimes(0)
+
+      posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        flushAt: 1,
+      })
 
       posthog.capture({
         distinctId: 'distinct_id',
@@ -208,6 +217,8 @@ describe('PostHog Node.js', () => {
         const distinctId = `some-distinct-id${i}`
         await posthog.getFeatureFlag('beta-feature', distinctId)
         console.log(Object.keys(posthog.distinctIdHasSentFlagCalls).length)
+
+        // TODO: Mock the MAX_DICT_SIZE, or pass in as parameter
         expect(Object.keys(posthog.distinctIdHasSentFlagCalls).length <= 10).toEqual(true)
       }
 

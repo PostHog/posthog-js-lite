@@ -8,8 +8,8 @@ jest.spyOn(global.console, 'debug').mockImplementation()
 
 const mockedUndici = jest.mocked(undici, true)
 
-// eslint-disable-next-line
-export const localEvaluationImplementation = (flags: any) => (url: any) => {
+
+export const localEvaluationImplementation = (flags: any) => (url: any): Promise<any> => {
   if ((url as any).includes('api/feature_flag/local_evaluation?token=TEST_API_KEY')) {
     return Promise.resolve({
       statusCode: 200,
@@ -32,10 +32,10 @@ export const localEvaluationImplementation = (flags: any) => (url: any) => {
   }) as any
 }
 
-// eslint-disable-next-line
+ 
 export const decideImplementation =
   (flags: any, decideStatus: number = 200) =>
-  (url: any) => {
+  (url: any): Promise<any> => {
     if ((url as any).includes('/decide/')) {
       return Promise.resolve({
         status: decideStatus,

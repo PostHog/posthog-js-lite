@@ -46,8 +46,8 @@ describe('PostHog Core', () => {
       expect(posthog.getFeatureFlags()).toEqual(undefined)
     })
 
-    it('getFeatureFlag should return undefined if not loaded', () => {
-      expect(posthog.getFeatureFlag('my-flag')).toEqual(undefined)
+    it('getFeatureFlag should return defaults if not loaded', () => {
+      expect(posthog.getFeatureFlag('my-flag')).toEqual(false)
     })
 
     it('isFeatureEnabled should return undefined if not loaded', () => {
@@ -81,6 +81,8 @@ describe('PostHog Core', () => {
             distinct_id: posthog.getDistinctId(),
             $anon_distinct_id: posthog.getAnonymousId(),
             groups: {},
+            person_properties: {},
+            group_properties: {},
           }),
           method: 'POST',
           headers: {
@@ -98,19 +100,47 @@ describe('PostHog Core', () => {
       it('should return the value of a flag or the default', async () => {
         expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
         expect(posthog.getFeatureFlag('feature-variant')).toEqual('variant')
-        expect(posthog.getFeatureFlag('feature-missing', true)).toEqual(true)
-        expect(posthog.getFeatureFlag('feature-missing', false)).toEqual(false)
-        expect(posthog.getFeatureFlag('feature-missing', 'other')).toEqual('other')
-        expect(posthog.getFeatureFlag('feature-missing')).toEqual(false)
+        expect(posthog.getFeatureFlag('feature-missing', true)).toEqual(undefined)
+        expect(posthog.getFeatureFlag('feature-missing', false)).toEqual(undefined)
+        expect(posthog.getFeatureFlag('feature-missing', 'other')).toEqual(undefined)
+        expect(posthog.getFeatureFlag('feature-missing')).toEqual(undefined)
       })
 
-      it('should return the value of a flag or the default', async () => {
-        expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
-        expect(posthog.getFeatureFlag('feature-variant')).toEqual('variant')
-        expect(posthog.getFeatureFlag('feature-missing', true)).toEqual(true)
-        expect(posthog.getFeatureFlag('feature-missing', false)).toEqual(false)
-        expect(posthog.getFeatureFlag('feature-missing', 'other')).toEqual('other')
-        expect(posthog.getFeatureFlag('feature-missing')).toEqual(false)
+      describe('when errored out', () => {
+        beforeEach(() => {
+          ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1 }, (_mocks) => {
+            _mocks.fetch.mockImplementation((url) => {
+              if (url.includes('/decide/')) {
+                return Promise.resolve({
+                  status: 400,
+                  text: () => Promise.resolve('ok'),
+                  json: () =>
+                    Promise.resolve({
+                      error: 'went wrong',
+                    }),
+                })
+              }
+
+              return Promise.resolve({
+                status: 400,
+                text: () => Promise.resolve('ok'),
+                json: () =>
+                  Promise.resolve({
+                    status: 'ok',
+                  }),
+              })
+            })
+          })
+        })
+
+        it('should return the default', async () => {
+          expect(posthog.getFeatureFlag('feature-1')).toEqual(false)
+          expect(posthog.getFeatureFlag('feature-variant')).toEqual(false)
+          expect(posthog.getFeatureFlag('feature-missing', true)).toEqual(true)
+          expect(posthog.getFeatureFlag('feature-missing', false)).toEqual(false)
+          expect(posthog.getFeatureFlag('feature-missing', 'other')).toEqual('other')
+          expect(posthog.getFeatureFlag('feature-missing')).toEqual(false)
+        })
       })
 
       it('should return the boolean value of a flag or the default', async () => {
@@ -161,11 +191,9 @@ describe('PostHog Core', () => {
               distinct_id: posthog.getDistinctId(),
               properties: {
                 $active_feature_flags: ['feature-1', 'feature-2', 'feature-variant'],
-                $enabled_feature_flags: {
-                  'feature-1': true,
-                  'feature-2': true,
-                  'feature-variant': 'variant',
-                },
+                '$feature/feature-1': true,
+                '$feature/feature-2': true,
+                '$feature/feature-variant': 'variant',
               },
               type: 'capture',
             },
