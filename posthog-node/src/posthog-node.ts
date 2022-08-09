@@ -23,7 +23,6 @@ export type PostHogOptions = PosthogCoreOptions & {
 const THIRTY_SECONDS = 30 * 1000
 const MAX_DICT_SIZE = 50 * 1000
 
-
 class PostHog extends PostHogCore {
   private _memoryStorage = new PostHogMemoryStorage()
 
@@ -67,22 +66,22 @@ class PostHog extends PostHogCore {
 export class PostHogGlobal implements PostHogNodeV1 {
   private _sharedClient: PostHog
   private featureFlagsPoller?: FeatureFlagsPoller
-  
+
   distinctIdHasSentFlagCalls: Record<string, string[]>
 
   constructor(apiKey: string, options: PostHogOptions = {}) {
     this._sharedClient = new PostHog(apiKey, options)
     if (options.personalApiKey) {
-        this.featureFlagsPoller = new FeatureFlagsPoller({
-            pollingInterval:
-                typeof options.featureFlagsPollingInterval === 'number'
-                    ? options.featureFlagsPollingInterval
-                    : THIRTY_SECONDS,
-            personalApiKey: options.personalApiKey,
-            projectApiKey: apiKey,
-            timeout: options.requestTimeout,
-            host: this._sharedClient.host,
-        })
+      this.featureFlagsPoller = new FeatureFlagsPoller({
+        pollingInterval:
+          typeof options.featureFlagsPollingInterval === 'number'
+            ? options.featureFlagsPollingInterval
+            : THIRTY_SECONDS,
+        personalApiKey: options.personalApiKey,
+        projectApiKey: apiKey,
+        timeout: options.requestTimeout,
+        host: this._sharedClient.host,
+      })
     }
     this.distinctIdHasSentFlagCalls = {}
   }
@@ -112,7 +111,7 @@ export class PostHogGlobal implements PostHogNodeV1 {
     if (groups) {
       this._sharedClient.groups(groups)
     }
-    this._sharedClient.capture(event, properties, (sendFeatureFlags || false))
+    this._sharedClient.capture(event, properties, sendFeatureFlags || false)
   }
 
   identify({ distinctId, properties }: IdentifyMessageV1): void {
@@ -133,13 +132,18 @@ export class PostHogGlobal implements PostHogNodeV1 {
     personProperties?: Record<string, string>,
     groupProperties?: Record<string, Record<string, string>>,
     onlyEvaluateLocally: boolean = false,
-    sendFeatureFlagEvents: boolean = true,
+    sendFeatureFlagEvents: boolean = true
   ): Promise<string | boolean | undefined> {
-
-    let response = await this.featureFlagsPoller?.getFeatureFlag(key, distinctId, groups, personProperties, groupProperties)
+    let response = await this.featureFlagsPoller?.getFeatureFlag(
+      key,
+      distinctId,
+      groups,
+      personProperties,
+      groupProperties
+    )
 
     const flagWasLocallyEvaluated = response !== undefined
-    
+
     if (!flagWasLocallyEvaluated && !onlyEvaluateLocally) {
       this.reInit(distinctId)
       if (groups !== undefined) {
@@ -158,8 +162,12 @@ export class PostHogGlobal implements PostHogNodeV1 {
     }
 
     const featureFlagReportedKey = `${key}_${response}`
-      
-    if (sendFeatureFlagEvents && (!(distinctId in this.distinctIdHasSentFlagCalls) || !(featureFlagReportedKey in this.distinctIdHasSentFlagCalls[distinctId]))) {
+
+    if (
+      sendFeatureFlagEvents &&
+      (!(distinctId in this.distinctIdHasSentFlagCalls) ||
+        !(featureFlagReportedKey in this.distinctIdHasSentFlagCalls[distinctId]))
+    ) {
       if (Object.keys(this.distinctIdHasSentFlagCalls).length >= MAX_DICT_SIZE) {
         this.distinctIdHasSentFlagCalls = {}
       }
@@ -172,9 +180,9 @@ export class PostHogGlobal implements PostHogNodeV1 {
         distinctId,
         event: '$feature_flag_called',
         properties: {
-          '$feature_flag': key,
-          '$feature_flag_response': response,
-          'locally_evaluated': flagWasLocallyEvaluated,
+          $feature_flag: key,
+          $feature_flag_response: response,
+          locally_evaluated: flagWasLocallyEvaluated,
         },
       })
     }
@@ -189,9 +197,18 @@ export class PostHogGlobal implements PostHogNodeV1 {
     personProperties?: Record<string, string>,
     groupProperties?: Record<string, Record<string, string>>,
     onlyEvaluateLocally: boolean = false,
-    sendFeatureFlagEvents: boolean = true,
+    sendFeatureFlagEvents: boolean = true
   ): Promise<boolean> {
-    const feat = await this.getFeatureFlag(key, distinctId, defaultResult, groups, personProperties, groupProperties, onlyEvaluateLocally, sendFeatureFlagEvents)
+    const feat = await this.getFeatureFlag(
+      key,
+      distinctId,
+      defaultResult,
+      groups,
+      personProperties,
+      groupProperties,
+      onlyEvaluateLocally,
+      sendFeatureFlagEvents
+    )
     return !!feat || false
   }
 
@@ -200,9 +217,14 @@ export class PostHogGlobal implements PostHogNodeV1 {
     groups?: Record<string, string>,
     personProperties?: Record<string, string>,
     groupProperties?: Record<string, Record<string, string>>,
-    onlyEvaluateLocally: boolean = false,
+    onlyEvaluateLocally: boolean = false
   ): Promise<Record<string, string | boolean>> {
-    const localEvaluationResult = await this.featureFlagsPoller?.getAllFlags(distinctId, groups, personProperties, groupProperties)
+    const localEvaluationResult = await this.featureFlagsPoller?.getAllFlags(
+      distinctId,
+      groups,
+      personProperties,
+      groupProperties
+    )
 
     let response = {}
     let fallbackToDecide = true
@@ -227,7 +249,7 @@ export class PostHogGlobal implements PostHogNodeV1 {
       await this._sharedClient.reloadFeatureFlagsAsync(false)
       const remoteEvaluationResult = this._sharedClient.getFeatureFlags()
 
-      return {...response, ...remoteEvaluationResult}
+      return { ...response, ...remoteEvaluationResult }
     }
 
     return response

@@ -234,7 +234,7 @@ export abstract class PostHogCore {
     if (properties?.$groups) {
       this.groups(properties.$groups)
     }
-    
+
     if (forceSendFeatureFlags) {
       // Used for `posthog-node` only.
       this._sendFeatureFlags(event, properties)
@@ -327,12 +327,13 @@ export abstract class PostHogCore {
 
   /***
    * PROPERTIES
-  ***/
+   ***/
 
   // TODO: Figure out resetting
   personProperties(properties: { [type: string]: string }): this {
     // Get persisted person properties
-    const existingProperties = this.getPersistedProperty<Record<string, string>>(PostHogPersistedProperty.PersonProperties) || {}
+    const existingProperties =
+      this.getPersistedProperty<Record<string, string>>(PostHogPersistedProperty.PersonProperties) || {}
 
     this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.PersonProperties, {
       ...existingProperties,
@@ -345,8 +346,8 @@ export abstract class PostHogCore {
   // Test heavilyy!
   groupProperties(properties: { [type: string]: Record<string, string> }): this {
     // Get persisted group properties
-    const existingProperties = this.getPersistedProperty<Record<string, Record<string,string>>>(PostHogPersistedProperty.GroupProperties) || {}
-
+    const existingProperties =
+      this.getPersistedProperty<Record<string, Record<string, string>>>(PostHogPersistedProperty.GroupProperties) || {}
 
     if (Object.keys(existingProperties).length !== 0) {
       Object.keys(existingProperties).forEach((groupType) => {
@@ -380,8 +381,10 @@ export abstract class PostHogCore {
 
     const distinctId = this.getDistinctId()
     const groups = this.props.$groups || {}
-    const personProperties = this.getPersistedProperty<Record<string, string>>(PostHogPersistedProperty.PersonProperties) || {}
-    const groupProperties = this.getPersistedProperty<Record<string, Record<string,string>>>(PostHogPersistedProperty.GroupProperties) || {}
+    const personProperties =
+      this.getPersistedProperty<Record<string, string>>(PostHogPersistedProperty.PersonProperties) || {}
+    const groupProperties =
+      this.getPersistedProperty<Record<string, Record<string, string>>>(PostHogPersistedProperty.GroupProperties) || {}
 
     const fetchOptions: PostHogFetchOptions = {
       method: 'POST',
@@ -492,13 +495,13 @@ export abstract class PostHogCore {
     return this.setPersistedProperty(PostHogPersistedProperty.OverrideFeatureFlags, flags)
   }
 
-  _sendFeatureFlags(event: string, properties?: { [key: string]: any }) {
+  _sendFeatureFlags(event: string, properties?: { [key: string]: any }): void {
     // Used for posthog-node only
-    this.reloadFeatureFlagsAsync(false).then(_ => {
-        const payload = this.buildPayload({event, properties})
-        this.enqueue('capture', payload)
+    this.reloadFeatureFlagsAsync(false).then(() => {
+      const payload = this.buildPayload({ event, properties })
+      this.enqueue('capture', payload)
     })
-}
+  }
 
   /***
    *** QUEUEING AND FLUSHING

@@ -115,33 +115,34 @@ describe('PostHog Node.js', () => {
       expect(mockedUndici.fetch).toHaveBeenCalledTimes(2)
     })
 
-    it.only('captures feature flags when no personal API key is present', async () => {
+    it('captures feature flags when no personal API key is present', async () => {
       mockedUndici.fetch.mockClear()
       expect(mockedUndici.fetch).toHaveBeenCalledTimes(0)
 
-      posthog.capture(
-        {
-          distinctId: "distinct_id",
-          event: "node test event",
-          sendFeatureFlags: true,
-        }
-      )
+      posthog.capture({
+        distinctId: 'distinct_id',
+        event: 'node test event',
+        sendFeatureFlags: true,
+      })
 
-      expect(mockedUndici.fetch).toHaveBeenCalledWith('http://example.com/decide/?v=2', expect.objectContaining({ "method": "POST" }))
+      expect(mockedUndici.fetch).toHaveBeenCalledWith(
+        'http://example.com/decide/?v=2',
+        expect.objectContaining({ method: 'POST' })
+      )
 
       jest.runOnlyPendingTimers()
 
       posthog.flush()
-      posthog.capture(
-        {
-          distinctId: "distinct_id2",
-          event: "fake event to flush",
-          sendFeatureFlags: true,
-        }
-      )
+      posthog.capture({
+        distinctId: 'distinct_id2',
+        event: 'fake event to flush',
+        sendFeatureFlags: true,
+      })
       await posthog.reloadFeatureFlags()
 
-      await setTimeout(() => {console.log('time out over!')}, 1000)
+      await setTimeout(() => {
+        console.log('time out over!')
+      }, 1000)
 
       jest.runOnlyPendingTimers()
       jest.advanceTimersToNextTimer()
@@ -149,24 +150,22 @@ describe('PostHog Node.js', () => {
       jest.advanceTimersToNextTimer()
       jest.runOnlyPendingTimers()
 
-
       // TODO: I don't get these timers, why isn't the batch call happening?
-      
-      
+
       console.log(mockedUndici.fetch.mock.calls)
-  
+
       const batchEvents = getLastBatchEvents()
       expect(batchEvents).toMatchObject([
         {
           distinct_id: 'distinct_id',
           event: 'node test event',
           properties: expect.objectContaining({
-            $active_feature_flags: ["feature-1", "feature-2", "feature-variant"],
+            $active_feature_flags: ['feature-1', 'feature-2', 'feature-variant'],
             '$feature/feature-1': true,
             '$feature/feature-2': true,
             '$feature/feature-variant': 'variant',
-            "$lib": "posthog-node",
-            "$lib_version": expect.stringContaining("2.0"),
+            $lib: 'posthog-node',
+            $lib_version: expect.stringContaining('2.0'),
           }),
         },
       ])
@@ -177,41 +176,39 @@ describe('PostHog Node.js', () => {
 
     it('manages memory well when sending feature flags', async () => {
       const flags = {
-          "flags": [
-              {
-                "id": 1,
-                "name": "Beta Feature",
-                "key": "beta-feature",
-                "active": true,
-                "filters": {
-                    "groups": [
-                        {
-                            "properties": [],
-                            "rollout_percentage": 100,
-                        }
-                    ],
+        flags: [
+          {
+            id: 1,
+            name: 'Beta Feature',
+            key: 'beta-feature',
+            active: true,
+            filters: {
+              groups: [
+                {
+                  properties: [],
+                  rollout_percentage: 100,
                 },
-              },
-            ]
+              ],
+            },
+          },
+        ],
       }
       mockedUndici.request.mockImplementation(localEvaluationImplementation(flags))
 
-      mockedUndici.fetch.mockImplementation(decideImplementation({"beta-feature": "decide-fallback-value"}))
+      mockedUndici.fetch.mockImplementation(decideImplementation({ 'beta-feature': 'decide-fallback-value' }))
 
       posthog = new PostHog('TEST_API_KEY', {
-          host: 'http://example.com',
-          personalApiKey: 'TEST_PERSONAL_API_KEY',
+        host: 'http://example.com',
+        personalApiKey: 'TEST_PERSONAL_API_KEY',
       })
-
 
       expect(Object.keys(posthog.distinctIdHasSentFlagCalls).length).toEqual(0)
 
-
-      for(let i=0; i < 1000; i++) {
-          const distinctId = `some-distinct-id${i}`
-          await posthog.getFeatureFlag("beta-feature", distinctId)
-          console.log(Object.keys(posthog.distinctIdHasSentFlagCalls).length)
-          expect(Object.keys(posthog.distinctIdHasSentFlagCalls).length <= 10).toEqual(true)
+      for (let i = 0; i < 1000; i++) {
+        const distinctId = `some-distinct-id${i}`
+        await posthog.getFeatureFlag('beta-feature', distinctId)
+        console.log(Object.keys(posthog.distinctIdHasSentFlagCalls).length)
+        expect(Object.keys(posthog.distinctIdHasSentFlagCalls).length <= 10).toEqual(true)
       }
 
       // TODO: Why can't I just flush the queue & force a batch? Makes testing consistent.
@@ -220,20 +217,18 @@ describe('PostHog Node.js', () => {
 
       const batchEvents = getLastBatchEvents()
       expect(batchEvents).toMatchObject([
-          {
-          distinct_id: expect.stringContaining("some-distinct-id"),
+        {
+          distinct_id: expect.stringContaining('some-distinct-id'),
           event: '$feature_flag_called',
           properties: expect.objectContaining({
-              "$feature_flag": "beta-feature",
-              "$feature_flag_response": true,
-              "$lib": "posthog-node",
-              "$lib_version": expect.stringContaining("2.0"),
-              "locally_evaluated": true,
-
+            $feature_flag: 'beta-feature',
+            $feature_flag_response: true,
+            $lib: 'posthog-node',
+            $lib_version: expect.stringContaining('2.0'),
+            locally_evaluated: true,
           }),
-          },
+        },
       ])
-  })
-
+    })
   })
 })
