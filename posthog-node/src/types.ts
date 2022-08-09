@@ -15,6 +15,38 @@ export interface GroupIdentifyMessage {
   properties?: Record<string | number, any>
 }
 
+export type FeatureFlagCondition = {
+  properties: {
+    key: string
+    type?: string
+    value: string | number | (string | number)[]
+    operator?: string
+  }[]
+  rollout_percentage?: number
+}
+
+export type PostHogFeatureFlag = {
+  id: number
+  name: string
+  key: string
+  filters?: {
+    aggregation_group_type_index?: number
+    groups?: FeatureFlagCondition[]
+    multivariate?: {
+      variants: {
+        key: string
+        rollout_percentage: number
+      }[]
+    }
+  }
+  deleted: boolean
+  active: boolean
+  is_simple_flag: boolean
+  rollout_percentage: null | number
+  ensure_experience_continuity: boolean
+  experiment_set: number[]
+}
+
 export type PostHogNodeV1 = {
   /**
    * @description Capture allows you to capture anything a user does within your system,
@@ -25,7 +57,7 @@ export type PostHogNodeV1 = {
    * @param event We recommend using [verb] [noun], like movie played or movie updated to easily identify what your events mean later on.
    * @param properties OPTIONAL | which can be a object with any information you'd like to add
    * @param groups OPTIONAL | object of what groups are related to this event, example: { company: 'id:5' }. Can be used to analyze companies instead of users.
-   * @param sendFeatureFlags OPTIONAL | Used with experiments
+   * @param sendFeatureFlags OPTIONAL | Used with experiments. Determines whether to send feature flag values with the event.
    */
   capture({ distinctId, event, properties, groups, sendFeatureFlags }: EventMessageV1): void
 
@@ -56,23 +88,33 @@ export type PostHogNodeV1 = {
    * allow you to safely deploy and roll back new features. Once you've created a feature flag in PostHog,
    * you can use this method to check if the flag is on for a given user, allowing you to create logic to turn
    * features on and off for different user groups or individual users.
-   * IMPORTANT: To use this method, you need to specify `personalApiKey` in your config! More info: https://posthog.com/docs/api/overview
    * @param key the unique key of your feature flag
    * @param distinctId the current unique id
-   * @param defaultResult optional - default value to be returned if the feature flag is not on for the user
-   * @param groups optional - what groups are currently active (group analytics)
+   * @param defaultResult optional - default value to be returned if there's an exception during computation.
+   * @param groups optional - what groups are currently active (group analytics). Required if the flag depends on groups.
+   * @param personProperties optional - what person properties are known. Used to compute flags locally, if personalApiKey is present.
+   * @param groupProperties optional - what group properties are known. Used to compute flags locally, if personalApiKey is present.
    */
   isFeatureEnabled(
     key: string,
     distinctId: string,
     defaultResult?: boolean,
-    groups?: Record<string, string>
+    groups?: Record<string, string>,
+    personProperties?: Record<string, string>,
+    groupProperties?: Record<string, Record<string, string>>,
+    onlyEvaluateLocally?: boolean,
+    sendFeatureFlagEvents?: boolean
   ): Promise<boolean>
 
   getFeatureFlag(
     key: string,
     distinctId: string,
-    groups?: Record<string, string>
+    defaultResult?: boolean | string,
+    groups?: Record<string, string>,
+    personProperties?: Record<string, string>,
+    groupProperties?: Record<string, Record<string, string>>,
+    onlyEvaluateLocally?: boolean,
+    sendFeatureFlagEvents?: boolean
   ): Promise<string | boolean | undefined>
 
   /**

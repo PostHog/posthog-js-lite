@@ -9,10 +9,20 @@ import {
 } from '../../posthog-core/src'
 import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
 import { EventMessageV1, GroupIdentifyMessage, IdentifyMessageV1, PostHogNodeV1 } from './types'
+import { FeatureFlagsPoller } from './feature-flags'
 
 export type PostHogOptions = PosthogCoreOptions & {
   persistence?: 'memory'
+  personalApiKey?: string
+  // The interval in milliseconds between polls for refreshing feature flag definitions
+  featureFlagsPollingInterval?: number
+  // Timeout in milliseconds for feature flag definitions calls. Defaults to 30 seconds.
+  requestTimeout?: number
 }
+
+const THIRTY_SECONDS = 30 * 1000
+const MAX_DICT_SIZE = 50 * 1000
+
 
 class PostHog extends PostHogCore {
   private _memoryStorage = new PostHogMemoryStorage()
@@ -20,6 +30,7 @@ class PostHog extends PostHogCore {
   constructor(apiKey: string, options: PostHogOptions = {}) {
     options.captureMode = options?.captureMode || 'json'
     options.preloadFeatureFlags = false // Don't preload as this makes no sense without a distinctId
+    options.sendFeatureFlagEvent = false // Let `posthog-node` handle this on its own, since we're dealing with multiple distinctIDs
 
     super(apiKey, options)
   }
@@ -55,9 +66,25 @@ class PostHog extends PostHogCore {
 // The actual exported Nodejs API.
 export class PostHogGlobal implements PostHogNodeV1 {
   private _sharedClient: PostHog
+  private featureFlagsPoller?: FeatureFlagsPoller
+  
+  distinctIdHasSentFlagCalls: Record<string, string[]>
 
   constructor(apiKey: string, options: PostHogOptions = {}) {
     this._sharedClient = new PostHog(apiKey, options)
+    if (options.personalApiKey) {
+        this.featureFlagsPoller = new FeatureFlagsPoller({
+            pollingInterval:
+                typeof options.featureFlagsPollingInterval === 'number'
+                    ? options.featureFlagsPollingInterval
+                    : THIRTY_SECONDS,
+            personalApiKey: options.personalApiKey,
+            projectApiKey: apiKey,
+            timeout: options.requestTimeout,
+            host: this._sharedClient.host,
+        })
+    }
+    this.distinctIdHasSentFlagCalls = {}
   }
 
   private reInit(distinctId: string): void {
@@ -80,12 +107,13 @@ export class PostHogGlobal implements PostHogNodeV1 {
     return this._sharedClient.optOut()
   }
 
-  capture({ distinctId, event, properties, groups }: EventMessageV1): void {
+  capture({ distinctId, event, properties, groups, sendFeatureFlags }: EventMessageV1): void {
     this.reInit(distinctId)
     if (groups) {
       this._sharedClient.groups(groups)
     }
-    this._sharedClient.capture(event, properties)
+    console.log('sending capture call to shared client')
+    this._sharedClient.capture(event, properties, (sendFeatureFlags || false))
   }
 
   identify({ distinctId, properties }: IdentifyMessageV1): void {
@@ -101,32 +129,122 @@ export class PostHogGlobal implements PostHogNodeV1 {
   async getFeatureFlag(
     key: string,
     distinctId: string,
-    groups?: Record<string, string> | undefined
+    defaultResult?: boolean | string,
+    groups?: Record<string, string>,
+    personProperties?: Record<string, string>,
+    groupProperties?: Record<string, Record<string, string>>,
+    onlyEvaluateLocally: boolean = false,
+    sendFeatureFlagEvents: boolean = true,
   ): Promise<string | boolean | undefined> {
-    this.reInit(distinctId)
-    if (groups) {
-      this._sharedClient.groups(groups)
+
+    let response = await this.featureFlagsPoller?.getFeatureFlag(key, distinctId, groups, personProperties, groupProperties)
+
+    const flagWasLocallyEvaluated = response !== undefined
+    
+    if (!flagWasLocallyEvaluated && !onlyEvaluateLocally) {
+      this.reInit(distinctId)
+      if (groups !== undefined) {
+        this._sharedClient.groups(groups)
+      }
+
+      if (personProperties) {
+        this._sharedClient.personProperties(personProperties)
+      }
+
+      if (groupProperties) {
+        this._sharedClient.groupProperties(groupProperties)
+      }
+      await this._sharedClient.reloadFeatureFlagsAsync(false)
+      response = this._sharedClient.getFeatureFlag(key, defaultResult)
     }
-    await this._sharedClient.reloadFeatureFlagsAsync()
-    return this._sharedClient.getFeatureFlag(key)
+
+    const featureFlagReportedKey = `${key}_${response}`
+      
+    if (sendFeatureFlagEvents && (!(distinctId in this.distinctIdHasSentFlagCalls) || !(featureFlagReportedKey in this.distinctIdHasSentFlagCalls[distinctId]))) {
+      if (Object.keys(this.distinctIdHasSentFlagCalls).length >= MAX_DICT_SIZE) {
+        this.distinctIdHasSentFlagCalls = {}
+      }
+      if (Array.isArray(this.distinctIdHasSentFlagCalls[distinctId])) {
+        this.distinctIdHasSentFlagCalls[distinctId].push(featureFlagReportedKey)
+      } else {
+        this.distinctIdHasSentFlagCalls[distinctId] = [featureFlagReportedKey]
+      }
+      this.capture({
+        distinctId,
+        event: '$feature_flag_called',
+        properties: {
+          '$feature_flag': key,
+          '$feature_flag_response': response,
+          'locally_evaluated': flagWasLocallyEvaluated,
+        },
+      })
+    }
+    return response
   }
 
   async isFeatureEnabled(
     key: string,
     distinctId: string,
-    defaultResult?: boolean | undefined,
-    groups?: Record<string, string> | undefined
+    defaultResult?: boolean,
+    groups?: Record<string, string>,
+    personProperties?: Record<string, string>,
+    groupProperties?: Record<string, Record<string, string>>,
+    onlyEvaluateLocally: boolean = false,
+    sendFeatureFlagEvents: boolean = true,
   ): Promise<boolean> {
-    const feat = await this.getFeatureFlag(key, distinctId, groups)
-    return !!feat || defaultResult || false
+    const feat = await this.getFeatureFlag(key, distinctId, defaultResult, groups, personProperties, groupProperties, onlyEvaluateLocally, sendFeatureFlagEvents)
+    return !!feat || false
+  }
+
+  async getAllFlags(
+    distinctId: string,
+    groups?: Record<string, string>,
+    personProperties?: Record<string, string>,
+    groupProperties?: Record<string, Record<string, string>>,
+    onlyEvaluateLocally: boolean = false,
+  ): Promise<Record<string, string | boolean>> {
+    const localEvaluationResult = await this.featureFlagsPoller?.getAllFlags(distinctId, groups, personProperties, groupProperties)
+
+    console.log('local evaluation result', localEvaluationResult)
+    let response = {}
+    let fallbackToDecide = true
+    if (localEvaluationResult) {
+      response = localEvaluationResult.response
+      fallbackToDecide = localEvaluationResult.fallbackToDecide
+    }
+
+    if (fallbackToDecide && !onlyEvaluateLocally) {
+      this.reInit(distinctId)
+      if (groups !== undefined) {
+        this._sharedClient.groups(groups)
+      }
+
+      if (personProperties) {
+        this._sharedClient.personProperties(personProperties)
+      }
+
+      if (groupProperties) {
+        this._sharedClient.groupProperties(groupProperties)
+      }
+      await this._sharedClient.reloadFeatureFlagsAsync(false)
+      const remoteEvaluationResult = this._sharedClient.getFeatureFlags()
+
+      return {...response, ...remoteEvaluationResult}
+    }
+
+    return response
   }
 
   groupIdentify({ groupType, groupKey, properties }: GroupIdentifyMessage): void {
     this._sharedClient.groupIdentify(groupType, groupKey, properties)
   }
 
-  reloadFeatureFlags(): Promise<void> {
-    throw new Error('Method not implemented.')
+  async reloadFeatureFlags(): Promise<void> {
+    await this.featureFlagsPoller?.loadFeatureFlags(true)
+  }
+
+  flush(): void {
+    this._sharedClient.flush()
   }
 
   shutdown(): void {
