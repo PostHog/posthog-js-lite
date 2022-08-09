@@ -8,31 +8,31 @@ jest.spyOn(global.console, 'debug').mockImplementation()
 
 const mockedUndici = jest.mocked(undici, true)
 
+export const localEvaluationImplementation =
+  (flags: any) =>
+  (url: any): Promise<any> => {
+    if ((url as any).includes('api/feature_flag/local_evaluation?token=TEST_API_KEY')) {
+      return Promise.resolve({
+        statusCode: 200,
+        body: {
+          text: () => Promise.resolve('ok'),
+          json: () => Promise.resolve(flags),
+        },
+      }) as any
+    }
 
-export const localEvaluationImplementation = (flags: any) => (url: any): Promise<any> => {
-  if ((url as any).includes('api/feature_flag/local_evaluation?token=TEST_API_KEY')) {
-    return Promise.resolve({
-      statusCode: 200,
+    return Promise.reject({
+      statusCode: 401,
       body: {
         text: () => Promise.resolve('ok'),
-        json: () => Promise.resolve(flags),
+        json: () =>
+          Promise.resolve({
+            statusCode: 'ok',
+          }),
       },
     }) as any
   }
 
-  return Promise.reject({
-    statusCode: 401,
-    body: {
-      text: () => Promise.resolve('ok'),
-      json: () =>
-        Promise.resolve({
-          statusCode: 'ok',
-        }),
-    },
-  }) as any
-}
-
- 
 export const decideImplementation =
   (flags: any, decideStatus: number = 200) =>
   (url: any): Promise<any> => {
