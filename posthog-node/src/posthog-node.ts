@@ -94,6 +94,9 @@ export class PostHogGlobal implements PostHogNodeV1 {
     // Certain properties we want to persist
     const propertiesToKeep = [PostHogPersistedProperty.Queue, PostHogPersistedProperty.OptedOut]
 
+    // clean up props
+    this._sharedClient.clearProps()
+
     for (const key of <(keyof typeof PostHogPersistedProperty)[]>Object.keys(PostHogPersistedProperty)) {
       if (!propertiesToKeep.includes(PostHogPersistedProperty[key])) {
         this._sharedClient.setPersistedProperty((PostHogPersistedProperty as any)[key], null)

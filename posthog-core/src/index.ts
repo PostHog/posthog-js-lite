@@ -102,7 +102,7 @@ export abstract class PostHogCore {
     return this._props || {}
   }
 
-  private set props(val: PostHogEventProperties) {
+  private set props(val: PostHogEventProperties | undefined) {
     this._props = val
   }
 
@@ -124,7 +124,15 @@ export abstract class PostHogCore {
     return this._events.on(event, cb)
   }
 
+  clearProps(): void {
+    this.props = undefined
+  }
+
   reset(): void {
+    // TODO: troublesome, also resets queue.
+    // confirm the right keys are set, ts enums are nasty.
+    // Runs into issues with not resetting lazy loaded this.props
+    this.clearProps()
     for (const key in PostHogPersistedProperty) {
       this.setPersistedProperty((PostHogPersistedProperty as any)[key], null)
     }
@@ -280,8 +288,7 @@ export abstract class PostHogCore {
 
   groups(groups: { [type: string]: string | number }): this {
     // Get persisted groups
-    const existingGroups =
-      this.getPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.Props)?.$groups || {}
+    const existingGroups = this.props.$groups || {}
 
     this.register({
       $groups: {
