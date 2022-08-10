@@ -5,6 +5,8 @@ import undici from 'undici'
 import { decideImplementation, localEvaluationImplementation } from './feature-flags.spec'
 import { waitForPromises } from '../../posthog-core/test/test-utils/test-utils'
 
+jest.mock('../package.json', () => ({ version: '1.2.3' }))
+
 const mockedUndici = jest.mocked(undici, true)
 
 const getLastBatchEvents = (): any[] | undefined => {
@@ -163,7 +165,7 @@ describe('PostHog Node.js', () => {
             '$feature/feature-2': true,
             '$feature/feature-variant': 'variant',
             $lib: 'posthog-node',
-            $lib_version: expect.stringContaining('2.0'),
+            $lib_version: '1.2.3',
           }),
         },
       ])
@@ -218,7 +220,7 @@ describe('PostHog Node.js', () => {
               $feature_flag: 'beta-feature',
               $feature_flag_response: true,
               $lib: 'posthog-node',
-              $lib_version: expect.stringContaining('2.0'),
+              $lib_version: '1.2.3',
               locally_evaluated: true,
             }),
           },
@@ -227,6 +229,155 @@ describe('PostHog Node.js', () => {
 
         expect(Object.keys(posthog.distinctIdHasSentFlagCalls).length <= 10).toEqual(true)
       }
+    })
+
+    it('$feature_flag_called is called appropriately when querying flags', async () => {
+      const flags = {
+        flags: [
+          {
+            id: 1,
+            name: 'Beta Feature',
+            key: 'beta-feature',
+            active: true,
+            filters: {
+              groups: [
+                {
+                  properties: [{ key: 'region', value: 'USA' }],
+                  rollout_percentage: 100,
+                },
+              ],
+            },
+          },
+        ],
+      }
+      mockedUndici.request.mockImplementation(localEvaluationImplementation(flags))
+
+      mockedUndici.fetch.mockImplementation(decideImplementation({ 'decide-flag': 'decide-value' }))
+
+      posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        personalApiKey: 'TEST_PERSONAL_API_KEY',
+        maxCacheSize: 10,
+      })
+
+      expect(
+        await posthog.getFeatureFlag('beta-feature', 'some-distinct-id', false, {}, { region: 'USA', name: 'Aloha' })
+      ).toEqual(true)
+      jest.runOnlyPendingTimers()
+      expect(mockedUndici.fetch.mock.calls.length).toEqual(1)
+
+      expect(getLastBatchEvents()).toMatchObject([
+        {
+          distinct_id: 'some-distinct-id',
+          event: '$feature_flag_called',
+          properties: expect.objectContaining({
+            $feature_flag: 'beta-feature',
+            $feature_flag_response: true,
+            $lib: 'posthog-node',
+            $lib_version: '1.2.3',
+            locally_evaluated: true,
+            $groups: {},
+          }),
+        },
+      ])
+      mockedUndici.fetch.mockClear()
+
+      // # called again for same user, shouldn't call capture again
+      expect(
+        await posthog.getFeatureFlag('beta-feature', 'some-distinct-id', false, {}, { region: 'USA', name: 'Aloha' })
+      ).toEqual(true)
+      jest.runOnlyPendingTimers()
+
+      expect(mockedUndici.fetch).not.toBeCalled()
+
+      // # called for different user, should call capture again
+      expect(
+        await posthog.getFeatureFlag(
+          'beta-feature',
+          'some-distinct-id2',
+          false,
+          { x: 'y' },
+          { region: 'USA', name: 'Aloha' }
+        )
+      ).toEqual(true)
+      jest.runOnlyPendingTimers()
+      expect(mockedUndici.fetch.mock.calls.length).toEqual(1)
+
+      expect(getLastBatchEvents()).toMatchObject([
+        {
+          distinct_id: 'some-distinct-id2',
+          event: '$feature_flag_called',
+          properties: expect.objectContaining({
+            $feature_flag: 'beta-feature',
+            $feature_flag_response: true,
+            $lib: 'posthog-node',
+            $lib_version: '1.2.3',
+            locally_evaluated: true,
+            $groups: { x: 'y' },
+          }),
+        },
+      ])
+      mockedUndici.fetch.mockClear()
+
+      // # called for different user, but send configuration is false, so should NOT call capture again
+      expect(
+        await posthog.getFeatureFlag(
+          'beta-feature',
+          'some-distinct-id23',
+          false,
+          undefined,
+          { region: 'USA', name: 'Aloha' },
+          {},
+          false,
+          false
+        )
+      ).toEqual(true)
+      jest.runOnlyPendingTimers()
+      expect(mockedUndici.fetch).not.toBeCalled()
+
+      // # called for different flag, falls back to decide, should call capture again
+      expect(
+        await posthog.getFeatureFlag(
+          'decide-flag',
+          'some-distinct-id2345',
+          false,
+          { organization: 'org1' },
+          { region: 'USA', name: 'Aloha' }
+        )
+      ).toEqual('decide-value')
+      jest.runOnlyPendingTimers()
+      // one to decide, one to batch
+      expect(mockedUndici.fetch.mock.calls.length).toEqual(2)
+
+      expect(getLastBatchEvents()).toMatchObject([
+        {
+          distinct_id: 'some-distinct-id2345',
+          event: '$feature_flag_called',
+          properties: expect.objectContaining({
+            $feature_flag: 'decide-flag',
+            $feature_flag_response: 'decide-value',
+            $lib: 'posthog-node',
+            $lib_version: '1.2.3',
+            locally_evaluated: false,
+            $groups: { organization: 'org1' },
+          }),
+        },
+      ])
+      mockedUndici.fetch.mockClear()
+
+      expect(
+        await posthog.isFeatureEnabled(
+          'decide-flag',
+          'some-distinct-id2345',
+          false,
+          { organization: 'org1' },
+          { region: 'USA', name: 'Aloha' }
+        )
+      ).toEqual(true)
+      jest.runOnlyPendingTimers()
+      // call decide, but not batch
+      expect(mockedUndici.fetch).toBeCalledTimes(1)
+      expect(mockedUndici.fetch.mock.calls.find((x) => (x[0] as string).includes('/batch/'))).toEqual(undefined)
     })
   })
 })

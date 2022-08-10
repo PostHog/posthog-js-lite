@@ -280,9 +280,9 @@ export abstract class PostHogCore {
 
   groups(groups: { [type: string]: string | number }): this {
     // Get persisted groups
-    const existingGroups = this.props.$groups || {}
+    const existingGroups =
+      this.getPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.Props)?.$groups || {}
 
-    // NOTE: Should we do the same for groups listed in identify / capture?
     this.register({
       $groups: {
         ...existingGroups,

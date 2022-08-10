@@ -170,7 +170,7 @@ export class PostHogGlobal implements PostHogNodeV1 {
     if (
       sendFeatureFlagEvents &&
       (!(distinctId in this.distinctIdHasSentFlagCalls) ||
-        !(featureFlagReportedKey in this.distinctIdHasSentFlagCalls[distinctId]))
+        !this.distinctIdHasSentFlagCalls[distinctId].includes(featureFlagReportedKey))
     ) {
       if (Object.keys(this.distinctIdHasSentFlagCalls).length >= this.maxCacheSize) {
         this.distinctIdHasSentFlagCalls = {}
@@ -240,7 +240,7 @@ export class PostHogGlobal implements PostHogNodeV1 {
 
     if (fallbackToDecide && !onlyEvaluateLocally) {
       this.reInit(distinctId)
-      if (groups != undefined) {
+      if (groups) {
         this._sharedClient.groups(groups)
       }
 
