@@ -497,7 +497,8 @@ export abstract class PostHogCore {
 
   _sendFeatureFlags(event: string, properties?: { [key: string]: any }): void {
     // Used for posthog-node only
-    this.reloadFeatureFlagsAsync(false).then(() => {
+    this.reloadFeatureFlagsAsync(false).finally(() => {
+      // Try to enqueue message irrespective of errors during feature flag fetching
       const payload = this.buildPayload({ event, properties })
       this.enqueue('capture', payload)
     })
@@ -542,13 +543,15 @@ export abstract class PostHogCore {
 
   flushAsync(): Promise<any> {
     return new Promise((resolve, reject) => {
-      this.flush((err, data) => (err ? reject(err) : resolve(data)))
+      this.flush((err, data) => {
+        return err ? reject(err) : resolve(data)
+      })
     })
   }
 
   flush(callback?: (err?: any, data?: any) => void): void {
     if (this.optedOut) {
-      return callback && safeSetTimeout(callback, 0)
+      return callback && safeSetTimeout(callback, 1)
     }
 
     if (this._flushTimer) {
@@ -559,7 +562,10 @@ export abstract class PostHogCore {
     const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
 
     if (!queue.length) {
-      return callback && safeSetTimeout(callback, 0)
+      callback?.()
+      // TODO: Ask Ben what timeout on the callback really does. I don't understand
+      // what's happening here with the event loop that prevents a clean shutdown.
+      return callback && safeSetTimeout(callback, 1)
     }
 
     const items = queue.splice(0, this.flushAt)

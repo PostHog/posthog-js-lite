@@ -18,10 +18,12 @@ export type PostHogOptions = PosthogCoreOptions & {
   featureFlagsPollingInterval?: number
   // Timeout in milliseconds for feature flag definitions calls. Defaults to 30 seconds.
   requestTimeout?: number
+  // Maximum size of cache that deduplicates $feature_flag_called calls per user.
+  maxCacheSize?: number
 }
 
 const THIRTY_SECONDS = 30 * 1000
-const MAX_DICT_SIZE = 50 * 1000
+const MAX_CACHE_SIZE = 50 * 1000
 
 class PostHog extends PostHogCore {
   private _memoryStorage = new PostHogMemoryStorage()
@@ -66,6 +68,7 @@ class PostHog extends PostHogCore {
 export class PostHogGlobal implements PostHogNodeV1 {
   private _sharedClient: PostHog
   private featureFlagsPoller?: FeatureFlagsPoller
+  private maxCacheSize: number
 
   distinctIdHasSentFlagCalls: Record<string, string[]>
 
@@ -84,14 +87,15 @@ export class PostHogGlobal implements PostHogNodeV1 {
       })
     }
     this.distinctIdHasSentFlagCalls = {}
+    this.maxCacheSize = options.maxCacheSize || MAX_CACHE_SIZE
   }
 
   private reInit(distinctId: string): void {
     // Certain properties we want to persist
     const propertiesToKeep = [PostHogPersistedProperty.Queue, PostHogPersistedProperty.OptedOut]
 
-    for (const key in PostHogPersistedProperty) {
-      if (!propertiesToKeep.includes(key as any)) {
+    for (const key of <(keyof typeof PostHogPersistedProperty)[]>Object.keys(PostHogPersistedProperty)) {
+      if (!propertiesToKeep.includes(PostHogPersistedProperty[key])) {
         this._sharedClient.setPersistedProperty((PostHogPersistedProperty as any)[key], null)
       }
     }
@@ -146,7 +150,7 @@ export class PostHogGlobal implements PostHogNodeV1 {
 
     if (!flagWasLocallyEvaluated && !onlyEvaluateLocally) {
       this.reInit(distinctId)
-      if (groups !== undefined) {
+      if (groups != undefined) {
         this._sharedClient.groups(groups)
       }
 
@@ -168,7 +172,7 @@ export class PostHogGlobal implements PostHogNodeV1 {
       (!(distinctId in this.distinctIdHasSentFlagCalls) ||
         !(featureFlagReportedKey in this.distinctIdHasSentFlagCalls[distinctId]))
     ) {
-      if (Object.keys(this.distinctIdHasSentFlagCalls).length >= MAX_DICT_SIZE) {
+      if (Object.keys(this.distinctIdHasSentFlagCalls).length >= this.maxCacheSize) {
         this.distinctIdHasSentFlagCalls = {}
       }
       if (Array.isArray(this.distinctIdHasSentFlagCalls[distinctId])) {
@@ -184,6 +188,7 @@ export class PostHogGlobal implements PostHogNodeV1 {
           $feature_flag_response: response,
           locally_evaluated: flagWasLocallyEvaluated,
         },
+        groups,
       })
     }
     return response
@@ -235,7 +240,7 @@ export class PostHogGlobal implements PostHogNodeV1 {
 
     if (fallbackToDecide && !onlyEvaluateLocally) {
       this.reInit(distinctId)
-      if (groups !== undefined) {
+      if (groups != undefined) {
         this._sharedClient.groups(groups)
       }
 
@@ -268,10 +273,11 @@ export class PostHogGlobal implements PostHogNodeV1 {
   }
 
   shutdown(): void {
-    void this._sharedClient.shutdownAsync()
+    void this.shutdownAsync()
   }
 
-  shutdownAsync(): Promise<void> {
+  async shutdownAsync(): Promise<void> {
+    this.featureFlagsPoller?.stopPoller()
     return this._sharedClient.shutdownAsync()
   }
 

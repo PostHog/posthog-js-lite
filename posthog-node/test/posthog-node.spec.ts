@@ -1,7 +1,9 @@
-import PostHog from '../'
+// import PostHog from '../'
+import { PostHogGlobal as PostHog } from '../src/posthog-node'
 jest.mock('undici')
 import undici from 'undici'
 import { decideImplementation, localEvaluationImplementation } from './feature-flags.spec'
+import { waitForPromises } from '../../posthog-core/test/test-utils/test-utils'
 
 const mockedUndici = jest.mocked(undici, true)
 
@@ -36,6 +38,11 @@ describe('PostHog Node.js', () => {
           status: 'ok',
         }),
     } as any)
+  })
+
+  afterEach(async () => {
+    // ensure clean shutdown & no test interdependencies
+    await posthog.shutdownAsync()
   })
 
   describe('core methods', () => {
@@ -103,6 +110,7 @@ describe('PostHog Node.js', () => {
 
       posthog = new PostHog('TEST_API_KEY', {
         host: 'http://example.com',
+        // flushAt: 1,
       })
     })
 
@@ -121,6 +129,7 @@ describe('PostHog Node.js', () => {
 
     it('captures feature flags when no personal API key is present', async () => {
       mockedUndici.fetch.mockClear()
+      mockedUndici.request.mockClear()
       expect(mockedUndici.fetch).toHaveBeenCalledTimes(0)
 
       posthog = new PostHog('TEST_API_KEY', {
@@ -141,27 +150,7 @@ describe('PostHog Node.js', () => {
 
       jest.runOnlyPendingTimers()
 
-      posthog.flush()
-      posthog.capture({
-        distinctId: 'distinct_id2',
-        event: 'fake event to flush',
-        sendFeatureFlags: true,
-      })
-      await posthog.reloadFeatureFlags()
-
-      await setTimeout(() => {
-        console.log('time out over!')
-      }, 1000)
-
-      jest.runOnlyPendingTimers()
-      jest.advanceTimersToNextTimer()
-      posthog.flush()
-      jest.advanceTimersToNextTimer()
-      jest.runOnlyPendingTimers()
-
-      // TODO: I don't get these timers, why isn't the batch call happening?
-
-      console.log(mockedUndici.fetch.mock.calls)
+      await waitForPromises()
 
       const batchEvents = getLastBatchEvents()
       expect(batchEvents).toMatchObject([
@@ -209,6 +198,7 @@ describe('PostHog Node.js', () => {
       posthog = new PostHog('TEST_API_KEY', {
         host: 'http://example.com',
         personalApiKey: 'TEST_PERSONAL_API_KEY',
+        maxCacheSize: 10,
       })
 
       expect(Object.keys(posthog.distinctIdHasSentFlagCalls).length).toEqual(0)
@@ -216,30 +206,27 @@ describe('PostHog Node.js', () => {
       for (let i = 0; i < 1000; i++) {
         const distinctId = `some-distinct-id${i}`
         await posthog.getFeatureFlag('beta-feature', distinctId)
-        console.log(Object.keys(posthog.distinctIdHasSentFlagCalls).length)
 
-        // TODO: Mock the MAX_DICT_SIZE, or pass in as parameter
+        jest.runOnlyPendingTimers()
+
+        const batchEvents = getLastBatchEvents()
+        expect(batchEvents).toMatchObject([
+          {
+            distinct_id: distinctId,
+            event: '$feature_flag_called',
+            properties: expect.objectContaining({
+              $feature_flag: 'beta-feature',
+              $feature_flag_response: true,
+              $lib: 'posthog-node',
+              $lib_version: expect.stringContaining('2.0'),
+              locally_evaluated: true,
+            }),
+          },
+        ])
+        mockedUndici.fetch.mockClear()
+
         expect(Object.keys(posthog.distinctIdHasSentFlagCalls).length <= 10).toEqual(true)
       }
-
-      // TODO: Why can't I just flush the queue & force a batch? Makes testing consistent.
-
-      jest.runOnlyPendingTimers()
-
-      const batchEvents = getLastBatchEvents()
-      expect(batchEvents).toMatchObject([
-        {
-          distinct_id: expect.stringContaining('some-distinct-id'),
-          event: '$feature_flag_called',
-          properties: expect.objectContaining({
-            $feature_flag: 'beta-feature',
-            $feature_flag_response: true,
-            $lib: 'posthog-node',
-            $lib_version: expect.stringContaining('2.0'),
-            locally_evaluated: true,
-          }),
-        },
-      ])
     })
   })
 })

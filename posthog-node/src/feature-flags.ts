@@ -146,7 +146,7 @@ class FeatureFlagsPoller {
     const flagFilters = flag.filters || {}
     const aggregation_group_type_index = flagFilters.aggregation_group_type_index
 
-    if (aggregation_group_type_index !== undefined) {
+    if (aggregation_group_type_index != undefined) {
       const groupName = this.groupTypeMapping[String(aggregation_group_type_index)]
 
       if (!groupName) {
@@ -210,18 +210,19 @@ class FeatureFlagsPoller {
   ): boolean {
     const rolloutPercentage = condition.rollout_percentage
 
-    if ((condition.properties || []).length !== 0) {
+    if ((condition.properties || []).length > 0) {
       const matchAll = condition.properties.every((property) => {
         return matchProperty(property, properties)
       })
       if (!matchAll) {
         return false
-      } else if (rolloutPercentage === undefined) {
+      } else if (rolloutPercentage == undefined) {
+        // == to include `null` as a match, not just `undefined`
         return true
       }
     }
 
-    if (rolloutPercentage !== undefined && _hash(flag.key, distinctId) > rolloutPercentage / 100.0) {
+    if (rolloutPercentage != undefined && _hash(flag.key, distinctId) > rolloutPercentage / 100.0) {
       return false
     }
 

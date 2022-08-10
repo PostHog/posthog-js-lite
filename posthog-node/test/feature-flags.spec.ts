@@ -1,4 +1,5 @@
 // import PostHog from '../'
+// Uncomment below line while developing to not compile code everytime
 import { PostHogGlobal as PostHog } from '../src/posthog-node'
 import { matchProperty, InconclusiveMatchError } from '../src/feature-flags'
 jest.mock('undici')
@@ -21,7 +22,7 @@ export const localEvaluationImplementation =
       }) as any
     }
 
-    return Promise.reject({
+    return Promise.resolve({
       statusCode: 401,
       body: {
         text: () => Promise.resolve('ok'),
@@ -52,7 +53,7 @@ export const decideImplementation =
       }) as any
     }
 
-    return Promise.reject({
+    return Promise.resolve({
       status: 400,
       text: () => Promise.resolve('ok'),
       json: () =>
@@ -66,6 +67,11 @@ describe('local evaluation', () => {
   let posthog: PostHog
 
   jest.useFakeTimers()
+
+  afterEach(async () => {
+    // ensure clean shutdown & no test interdependencies
+    await posthog.shutdownAsync()
+  })
 
   it('evaluates person properties', async () => {
     const flags = {
@@ -87,7 +93,7 @@ describe('local evaluation', () => {
                     type: 'person',
                   },
                 ],
-                rollout_percentage: 100,
+                rollout_percentage: null,
               },
             ],
           },
@@ -153,7 +159,7 @@ describe('local evaluation', () => {
         'group-flag',
         'some-distinct-id',
         false,
-        {},
+        undefined,
         {},
         { company: { name: 'Project Name 1' } }
       )
@@ -186,7 +192,7 @@ describe('local evaluation', () => {
       await posthog.getFeatureFlag(
         'group-flag',
         'some-distinct-2',
-        false,
+        true,
         { company: 'amazon' },
         {},
         { company: { name: 'Project Name 1' } }
@@ -250,14 +256,9 @@ describe('local evaluation', () => {
     })
     // # group_type_mappings not present, so fallback to `/decide`
     expect(
-      await posthog.getFeatureFlag(
-        'group-flag',
-        'some-distinct-2',
-        false,
-        {},
-        {},
-        { company: { name: 'Project Name 1' } }
-      )
+      await posthog.getFeatureFlag('group-flag', 'some-distinct-2', false, {}, undefined, {
+        company: { name: 'Project Name 1' },
+      })
     ).toEqual('decide-fallback-value')
   })
 
@@ -287,7 +288,7 @@ describe('local evaluation', () => {
                     type: 'person',
                   },
                 ],
-                rollout_percentage: 100,
+                rollout_percentage: undefined,
               },
               {
                 properties: [
@@ -352,7 +353,6 @@ describe('local evaluation', () => {
         { region: 'USA', email: 'a@b.com' }
       )
     ).toEqual('decide-fallback-value')
-    console.log(mockedUndici.fetch.mock.calls)
     expect(mockedUndici.fetch).toHaveBeenCalledWith(
       'http://example.com/decide/?v=2',
       expect.objectContaining({
@@ -368,9 +368,9 @@ describe('local evaluation', () => {
     mockedUndici.fetch.mockClear()
 
     // # same as above
-    expect(await posthog.getFeatureFlag('complex-flag', 'some-distinct-id', false, {}, { doesnt_matter: '1' })).toEqual(
-      'decide-fallback-value'
-    )
+    expect(
+      await posthog.getFeatureFlag('complex-flag', 'some-distinct-id', false, undefined, { doesnt_matter: '1' })
+    ).toEqual('decide-fallback-value')
     expect(mockedUndici.fetch).toHaveBeenCalledWith(
       'http://example.com/decide/?v=2',
       expect.objectContaining({
@@ -1129,7 +1129,12 @@ describe('consistency tests', () => {
   // # where this test has directly been copied from.
   // # They ensure that the server and library hash calculations are in sync.
 
+  let posthog: PostHog
   jest.useFakeTimers()
+
+  afterEach(async () => {
+    await posthog.shutdownAsync()
+  })
 
   it('is consistent for simple flags', () => {
     const flags = {
@@ -1151,7 +1156,7 @@ describe('consistency tests', () => {
 
     mockedUndici.fetch.mockImplementation(decideImplementation({}, 400))
 
-    const posthog = new PostHog('TEST_API_KEY', {
+    posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
     })
@@ -2195,7 +2200,7 @@ describe('consistency tests', () => {
 
     mockedUndici.fetch.mockImplementation(decideImplementation({}, 400))
 
-    const posthog = new PostHog('TEST_API_KEY', {
+    posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
     })
