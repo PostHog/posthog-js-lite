@@ -66,6 +66,42 @@ describe('PostHog Node.js', () => {
       ])
     })
 
+    it('shouldnt muddy subsequent capture calls', async () => {
+      expect(mockedUndici.fetch).toHaveBeenCalledTimes(0)
+      posthog.capture({ distinctId: '123', event: 'test-event', properties: { foo: 'bar' }, groups: { org: 123 } })
+
+      jest.runOnlyPendingTimers()
+      expect(getLastBatchEvents()?.[0]).toEqual(expect.objectContaining(
+        {
+          distinct_id: '123',
+          event: 'test-event',
+          properties: expect.objectContaining({
+            $groups: { org: 123 },
+            foo: 'bar',
+          }),
+          library: 'posthog-node',
+          library_version: '1.2.3',
+        },
+      ))
+      mockedUndici.fetch.mockClear()
+
+      posthog.capture({ distinctId: '123', event: 'test-event', properties: { foo: 'bar' }, groups: { other_group: 'x' } })
+
+      jest.runOnlyPendingTimers()
+      expect(getLastBatchEvents()?.[0]).toEqual(expect.objectContaining(
+        {
+          distinct_id: '123',
+          event: 'test-event',
+          properties: expect.objectContaining({
+            $groups: { other_group: 'x' },
+            foo: 'bar',
+          }),
+          library: 'posthog-node',
+          library_version: '1.2.3',
+        },
+      ))
+    })
+
     it('should capture identify events on shared queue', async () => {
       expect(mockedUndici.fetch).toHaveBeenCalledTimes(0)
       posthog.identify({ distinctId: '123', properties: { foo: 'bar' } })
@@ -154,8 +190,7 @@ describe('PostHog Node.js', () => {
 
       await waitForPromises()
 
-      const batchEvents = getLastBatchEvents()
-      expect(batchEvents).toMatchObject([
+      expect(getLastBatchEvents()?.[0]).toEqual(expect.objectContaining(
         {
           distinct_id: 'distinct_id',
           event: 'node test event',
@@ -168,7 +203,7 @@ describe('PostHog Node.js', () => {
             $lib_version: '1.2.3',
           }),
         },
-      ])
+      ))
 
       // no calls to `/local_evaluation`
       expect(mockedUndici.request).not.toHaveBeenCalled()
@@ -266,7 +301,7 @@ describe('PostHog Node.js', () => {
       jest.runOnlyPendingTimers()
       expect(mockedUndici.fetch.mock.calls.length).toEqual(1)
 
-      expect(getLastBatchEvents()).toMatchObject([
+      expect(getLastBatchEvents()?.[0]).toEqual(expect.objectContaining(
         {
           distinct_id: 'some-distinct-id',
           event: '$feature_flag_called',
@@ -279,7 +314,7 @@ describe('PostHog Node.js', () => {
             $groups: {},
           }),
         },
-      ])
+      ))
       mockedUndici.fetch.mockClear()
 
       // # called again for same user, shouldn't call capture again
@@ -303,7 +338,7 @@ describe('PostHog Node.js', () => {
       jest.runOnlyPendingTimers()
       expect(mockedUndici.fetch.mock.calls.length).toEqual(1)
 
-      expect(getLastBatchEvents()).toMatchObject([
+      expect(getLastBatchEvents()?.[0]).toEqual(expect.objectContaining(
         {
           distinct_id: 'some-distinct-id2',
           event: '$feature_flag_called',
@@ -316,7 +351,7 @@ describe('PostHog Node.js', () => {
             $groups: { x: 'y' },
           }),
         },
-      ])
+      ))
       mockedUndici.fetch.mockClear()
 
       // # called for different user, but send configuration is false, so should NOT call capture again
@@ -349,7 +384,7 @@ describe('PostHog Node.js', () => {
       // one to decide, one to batch
       expect(mockedUndici.fetch.mock.calls.length).toEqual(2)
 
-      expect(getLastBatchEvents()).toMatchObject([
+      expect(getLastBatchEvents()?.[0]).toEqual(expect.objectContaining(
         {
           distinct_id: 'some-distinct-id2345',
           event: '$feature_flag_called',
@@ -362,7 +397,7 @@ describe('PostHog Node.js', () => {
             $groups: { organization: 'org1' },
           }),
         },
-      ])
+      ))
       mockedUndici.fetch.mockClear()
 
       expect(
