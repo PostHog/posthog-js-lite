@@ -244,7 +244,6 @@ export abstract class PostHogCore {
     }
 
     if (forceSendFeatureFlags) {
-      // Used for `posthog-node` only.
       this._sendFeatureFlags(event, properties)
     } else {
       const payload = this.buildPayload({ event, properties })
@@ -425,24 +424,30 @@ export abstract class PostHogCore {
     return this._decideResponsePromise
   }
 
-  getFeatureFlag(key: string, defaultResult: string | boolean = false): boolean | string | undefined {
+  getFeatureFlag(key: string): boolean | string | undefined {
     const featureFlags = this.getFeatureFlags()
 
     if (!featureFlags) {
-      // If we haven't loaded flags yet, or errored out, we respond with the default result
-      return defaultResult
+      // If we haven't loaded flags yet, or errored out, we respond with undefined
+      return undefined
+    }
+
+    let response = featureFlags[key]
+    if (response === undefined) {
+      // `/decide` returns nothing for flags which are false.
+      response = false
     }
 
     if (this.sendFeatureFlagEvent && !this.flagCallReported[key]) {
       this.flagCallReported[key] = true
       this.capture('$feature_flag_called', {
         $feature_flag: key,
-        $feature_flag_response: featureFlags[key],
+        $feature_flag_response: response,
       })
     }
 
-    // If we have flags we either return the value (true or string) or undefined
-    return featureFlags[key]
+    // If we have flags we either return the value (true or string) or false
+    return response
   }
 
   getFeatureFlags(): PostHogDecideResponse['featureFlags'] | undefined {
@@ -468,9 +473,12 @@ export abstract class PostHogCore {
     return flags
   }
 
-  isFeatureEnabled(key: string, defaultResult: boolean = false): boolean {
-    const flag = this.getFeatureFlag(key, defaultResult) ?? defaultResult
-    return !!flag
+  isFeatureEnabled(key: string): boolean | undefined {
+    const response = this.getFeatureFlag(key)
+    if (response === undefined) {
+      return undefined
+    }
+    return !!this.getFeatureFlag(key)
   }
 
   async reloadFeatureFlagsAsync(sendAnonDistinctId: boolean = true): Promise<PostHogDecideResponse['featureFlags']> {
@@ -503,7 +511,6 @@ export abstract class PostHogCore {
   }
 
   _sendFeatureFlags(event: string, properties?: { [key: string]: any }): void {
-    // Used for posthog-node only
     this.reloadFeatureFlagsAsync(false).finally(() => {
       // Try to enqueue message irrespective of errors during feature flag fetching
       const payload = this.buildPayload({ event, properties })
@@ -558,7 +565,7 @@ export abstract class PostHogCore {
 
   flush(callback?: (err?: any, data?: any) => void): void {
     if (this.optedOut) {
-      return callback && safeSetTimeout(callback, 1)
+      return callback?.()
     }
 
     if (this._flushTimer) {
@@ -569,10 +576,7 @@ export abstract class PostHogCore {
     const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
 
     if (!queue.length) {
-      callback?.()
-      // TODO: Ask Ben what timeout on the callback really does. I don't understand
-      // what's happening here with the event loop that prevents a clean shutdown.
-      return callback && safeSetTimeout(callback, 1)
+      return callback?.()
     }
 
     const items = queue.splice(0, this.flushAt)

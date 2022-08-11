@@ -90,31 +90,53 @@ export type PostHogNodeV1 = {
    * features on and off for different user groups or individual users.
    * @param key the unique key of your feature flag
    * @param distinctId the current unique id
-   * @param defaultResult optional - default value to be returned if there's an exception during computation.
+   * @param options: dict with optional parameters below
    * @param groups optional - what groups are currently active (group analytics). Required if the flag depends on groups.
    * @param personProperties optional - what person properties are known. Used to compute flags locally, if personalApiKey is present.
    * @param groupProperties optional - what group properties are known. Used to compute flags locally, if personalApiKey is present.
+   * @param onlyEvaluateLocally optional - whether to only evaluate the flag locally. Defaults to false.
+   * @param sendFeatureFlagEvents optional - whether to send feature flag events. Used for Experiments. Defaults to true.
+   *
+   * @returns true if the flag is on, false if the flag is off, undefined if there was an error.
    */
   isFeatureEnabled(
     key: string,
     distinctId: string,
-    defaultResult?: boolean,
-    groups?: Record<string, string>,
-    personProperties?: Record<string, string>,
-    groupProperties?: Record<string, Record<string, string>>,
-    onlyEvaluateLocally?: boolean,
-    sendFeatureFlagEvents?: boolean
-  ): Promise<boolean>
+    options?: {
+      groups?: Record<string, string>
+      personProperties?: Record<string, string>
+      groupProperties?: Record<string, Record<string, string>>
+      onlyEvaluateLocally?: boolean
+      sendFeatureFlagEvents?: boolean
+    }
+  ): Promise<boolean | undefined>
 
+  /**
+   * @description PostHog feature flags (https://posthog.com/docs/features/feature-flags)
+   * allow you to safely deploy and roll back new features. Once you've created a feature flag in PostHog,
+   * you can use this method to check if the flag is on for a given user, allowing you to create logic to turn
+   * features on and off for different user groups or individual users.
+   * @param key the unique key of your feature flag
+   * @param distinctId the current unique id
+   * @param options: dict with optional parameters below
+   * @param groups optional - what groups are currently active (group analytics). Required if the flag depends on groups.
+   * @param personProperties optional - what person properties are known. Used to compute flags locally, if personalApiKey is present.
+   * @param groupProperties optional - what group properties are known. Used to compute flags locally, if personalApiKey is present.
+   * @param onlyEvaluateLocally optional - whether to only evaluate the flag locally. Defaults to false.
+   * @param sendFeatureFlagEvents optional - whether to send feature flag events. Used for Experiments. Defaults to true.
+   *
+   * @returns true or string(for multivariates) if the flag is on, false if the flag is off, undefined if there was an error.
+   */
   getFeatureFlag(
     key: string,
     distinctId: string,
-    defaultResult?: boolean | string,
-    groups?: Record<string, string>,
-    personProperties?: Record<string, string>,
-    groupProperties?: Record<string, Record<string, string>>,
-    onlyEvaluateLocally?: boolean,
-    sendFeatureFlagEvents?: boolean
+    options?: {
+      groups?: Record<string, string>
+      personProperties?: Record<string, string>
+      groupProperties?: Record<string, Record<string, string>>
+      onlyEvaluateLocally?: boolean
+      sendFeatureFlagEvents?: boolean
+    }
   ): Promise<string | boolean | undefined>
 
   /**

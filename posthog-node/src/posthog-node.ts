@@ -134,13 +134,25 @@ export class PostHogGlobal implements PostHogNodeV1 {
   async getFeatureFlag(
     key: string,
     distinctId: string,
-    defaultResult?: boolean | string,
-    groups?: Record<string, string>,
-    personProperties?: Record<string, string>,
-    groupProperties?: Record<string, Record<string, string>>,
-    onlyEvaluateLocally: boolean = false,
-    sendFeatureFlagEvents: boolean = true
+    options?: {
+      groups?: Record<string, string>
+      personProperties?: Record<string, string>
+      groupProperties?: Record<string, Record<string, string>>
+      onlyEvaluateLocally?: boolean
+      sendFeatureFlagEvents?: boolean
+    }
   ): Promise<string | boolean | undefined> {
+    const { groups, personProperties, groupProperties } = options || {}
+    let { onlyEvaluateLocally, sendFeatureFlagEvents } = options || {}
+
+    // set defaults
+    if (onlyEvaluateLocally == undefined) {
+      onlyEvaluateLocally = false
+    }
+    if (sendFeatureFlagEvents == undefined) {
+      sendFeatureFlagEvents = true
+    }
+
     let response = await this.featureFlagsPoller?.getFeatureFlag(
       key,
       distinctId,
@@ -165,7 +177,7 @@ export class PostHogGlobal implements PostHogNodeV1 {
         this._sharedClient.groupProperties(groupProperties)
       }
       await this._sharedClient.reloadFeatureFlagsAsync(false)
-      response = this._sharedClient.getFeatureFlag(key, defaultResult)
+      response = this._sharedClient.getFeatureFlag(key)
     }
 
     const featureFlagReportedKey = `${key}_${response}`
@@ -200,23 +212,18 @@ export class PostHogGlobal implements PostHogNodeV1 {
   async isFeatureEnabled(
     key: string,
     distinctId: string,
-    defaultResult?: boolean,
-    groups?: Record<string, string>,
-    personProperties?: Record<string, string>,
-    groupProperties?: Record<string, Record<string, string>>,
-    onlyEvaluateLocally: boolean = false,
-    sendFeatureFlagEvents: boolean = true
-  ): Promise<boolean> {
-    const feat = await this.getFeatureFlag(
-      key,
-      distinctId,
-      defaultResult,
-      groups,
-      personProperties,
-      groupProperties,
-      onlyEvaluateLocally,
-      sendFeatureFlagEvents
-    )
+    options?: {
+      groups?: Record<string, string>
+      personProperties?: Record<string, string>
+      groupProperties?: Record<string, Record<string, string>>
+      onlyEvaluateLocally?: boolean
+      sendFeatureFlagEvents?: boolean
+    }
+  ): Promise<boolean | undefined> {
+    const feat = await this.getFeatureFlag(key, distinctId, options)
+    if (feat === undefined) {
+      return undefined
+    }
     return !!feat || false
   }
 

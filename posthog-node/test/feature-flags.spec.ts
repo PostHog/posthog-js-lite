@@ -108,10 +108,10 @@ describe('local evaluation', () => {
     })
 
     expect(
-      await posthog.getFeatureFlag('person-flag', 'some-distinct-id', false, undefined, { region: 'USA' })
+      await posthog.getFeatureFlag('person-flag', 'some-distinct-id', { personProperties: { region: 'USA' } })
     ).toEqual(true)
     expect(
-      await posthog.getFeatureFlag('person-flag', 'some-distinct-id', false, undefined, { region: 'Canada' })
+      await posthog.getFeatureFlag('person-flag', 'some-distinct-id', { personProperties: { region: 'Canada' } })
     ).toEqual(false)
     expect(mockedUndici.request).toHaveBeenCalled()
   })
@@ -155,60 +155,38 @@ describe('local evaluation', () => {
 
     // # groups not passed in, hence false
     expect(
-      await posthog.getFeatureFlag(
-        'group-flag',
-        'some-distinct-id',
-        false,
-        undefined,
-        {},
-        { company: { name: 'Project Name 1' } }
-      )
+      await posthog.getFeatureFlag('group-flag', 'some-distinct-id', {
+        groupProperties: { company: { name: 'Project Name 1' } },
+      })
     ).toEqual(false)
     expect(
-      await posthog.getFeatureFlag(
-        'group-flag',
-        'some-distinct-2',
-        false,
-        {},
-        {},
-        { company: { name: 'Project Name 2' } }
-      )
+      await posthog.getFeatureFlag('group-flag', 'some-distinct-2', {
+        groupProperties: { company: { name: 'Project Name 2' } },
+      })
     ).toEqual(false)
 
     // # this is good
     expect(
-      await posthog.getFeatureFlag(
-        'group-flag',
-        'some-distinct-2',
-        false,
-        { company: 'amazon_without_rollout' },
-        {},
-        { company: { name: 'Project Name 1' } }
-      )
+      await posthog.getFeatureFlag('group-flag', 'some-distinct-2', {
+        groups: { company: 'amazon_without_rollout' },
+        groupProperties: { company: { name: 'Project Name 1' } },
+      })
     ).toEqual(true)
 
     // # rollout % not met
     expect(
-      await posthog.getFeatureFlag(
-        'group-flag',
-        'some-distinct-2',
-        true,
-        { company: 'amazon' },
-        {},
-        { company: { name: 'Project Name 1' } }
-      )
+      await posthog.getFeatureFlag('group-flag', 'some-distinct-2', {
+        groups: { company: 'amazon' },
+        groupProperties: { company: { name: 'Project Name 1' } },
+      })
     ).toEqual(false)
 
     // # property mismatch
     expect(
-      await posthog.getFeatureFlag(
-        'group-flag',
-        'some-distinct-2',
-        false,
-        { company: 'amazon_without_rollout' },
-        {},
-        { company: { name: 'Project Name 2' } }
-      )
+      await posthog.getFeatureFlag('group-flag', 'some-distinct-2', {
+        groups: { company: 'amazon_without_rollout' },
+        groupProperties: { company: { name: 'Project Name 2' } },
+      })
     ).toEqual(false)
 
     expect(mockedUndici.request).toHaveBeenCalled()
@@ -256,8 +234,10 @@ describe('local evaluation', () => {
     })
     // # group_type_mappings not present, so fallback to `/decide`
     expect(
-      await posthog.getFeatureFlag('group-flag', 'some-distinct-2', false, {}, undefined, {
-        company: { name: 'Project Name 1' },
+      await posthog.getFeatureFlag('group-flag', 'some-distinct-2', {
+        groupProperties: {
+          company: { name: 'Project Name 1' },
+        },
       })
     ).toEqual('decide-fallback-value')
   })
@@ -327,31 +307,25 @@ describe('local evaluation', () => {
     })
 
     expect(
-      await posthog.getFeatureFlag('complex-flag', 'some-distinct-id', false, {}, { region: 'USA', name: 'Aloha' })
+      await posthog.getFeatureFlag('complex-flag', 'some-distinct-id', {
+        personProperties: { region: 'USA', name: 'Aloha' },
+      })
     ).toEqual(true)
     expect(mockedUndici.fetch).not.toHaveBeenCalled()
 
     // # this distinctIDs hash is < rollout %
     expect(
-      await posthog.getFeatureFlag(
-        'complex-flag',
-        'some-distinct-id_within_rollout?',
-        false,
-        {},
-        { region: 'USA', email: 'a@b.com' }
-      )
+      await posthog.getFeatureFlag('complex-flag', 'some-distinct-id_within_rollout?', {
+        personProperties: { region: 'USA', email: 'a@b.com' },
+      })
     ).toEqual(true)
     expect(mockedUndici.fetch).not.toHaveBeenCalled()
 
     // # will fall back on `/decide`, as all properties present for second group, but that group resolves to false
     expect(
-      await posthog.getFeatureFlag(
-        'complex-flag',
-        'some-distinct-id_outside_rollout?',
-        false,
-        {},
-        { region: 'USA', email: 'a@b.com' }
-      )
+      await posthog.getFeatureFlag('complex-flag', 'some-distinct-id_outside_rollout?', {
+        personProperties: { region: 'USA', email: 'a@b.com' },
+      })
     ).toEqual('decide-fallback-value')
     expect(mockedUndici.fetch).toHaveBeenCalledWith(
       'http://example.com/decide/?v=2',
@@ -369,7 +343,7 @@ describe('local evaluation', () => {
 
     // # same as above
     expect(
-      await posthog.getFeatureFlag('complex-flag', 'some-distinct-id', false, undefined, { doesnt_matter: '1' })
+      await posthog.getFeatureFlag('complex-flag', 'some-distinct-id', { personProperties: { doesnt_matter: '1' } })
     ).toEqual('decide-fallback-value')
     expect(mockedUndici.fetch).toHaveBeenCalledWith(
       'http://example.com/decide/?v=2',
@@ -385,21 +359,17 @@ describe('local evaluation', () => {
     )
     mockedUndici.fetch.mockClear()
 
-    expect(await posthog.getFeatureFlag('complex-flag', 'some-distinct-id', false, {}, { region: 'USA' })).toEqual(
-      'decide-fallback-value'
-    )
+    expect(
+      await posthog.getFeatureFlag('complex-flag', 'some-distinct-id', { personProperties: { region: 'USA' } })
+    ).toEqual('decide-fallback-value')
     expect(mockedUndici.fetch).toHaveBeenCalledTimes(1)
     mockedUndici.fetch.mockClear()
 
     // # won't need to fallback when all values are present, and resolves to False
     expect(
-      await posthog.getFeatureFlag(
-        'complex-flag',
-        'some-distinct-id_outside_rollout?',
-        false,
-        {},
-        { region: 'USA', email: 'a@b.com', name: 'X', doesnt_matter: '1' }
-      )
+      await posthog.getFeatureFlag('complex-flag', 'some-distinct-id_outside_rollout?', {
+        personProperties: { region: 'USA', email: 'a@b.com', name: 'X', doesnt_matter: '1' },
+      })
     ).toEqual(false)
     expect(mockedUndici.fetch).not.toHaveBeenCalled()
   })
@@ -518,20 +488,26 @@ describe('local evaluation', () => {
 
     // # beta-feature should fallback to decide because property type is unknown
     // # but doesn't because only_evaluate_locally is true
-    expect(await posthog.getFeatureFlag('beta-feature', 'some-distinct-id', false, {}, {}, {}, true)).toEqual(undefined)
-    expect(await posthog.isFeatureEnabled('beta-feature', 'some-distinct-id', false, {}, {}, {}, true)).toEqual(false)
+    expect(await posthog.getFeatureFlag('beta-feature', 'some-distinct-id', { onlyEvaluateLocally: true })).toEqual(
+      undefined
+    )
+    expect(await posthog.isFeatureEnabled('beta-feature', 'some-distinct-id', { onlyEvaluateLocally: true })).toEqual(
+      undefined
+    )
     expect(mockedUndici.fetch).not.toHaveBeenCalled()
 
     // # beta-feature2 should fallback to decide because region property not given with call
     // # but doesn't because only_evaluate_locally is true
-    expect(await posthog.getFeatureFlag('beta-feature2', 'some-distinct-id', false, {}, {}, {}, true)).toEqual(
+    expect(await posthog.getFeatureFlag('beta-feature2', 'some-distinct-id', { onlyEvaluateLocally: true })).toEqual(
       undefined
     )
-    expect(await posthog.isFeatureEnabled('beta-feature2', 'some-distinct-id', false, {}, {}, {}, true)).toEqual(false)
+    expect(await posthog.isFeatureEnabled('beta-feature2', 'some-distinct-id', { onlyEvaluateLocally: true })).toEqual(
+      undefined
+    )
     expect(mockedUndici.fetch).not.toHaveBeenCalled()
   })
 
-  it('defaults dont hinder regular evaluation', async () => {
+  it("doesn't return undefined when flag is evaluated successfully", async () => {
     const flags = {
       flags: [
         {
@@ -560,18 +536,18 @@ describe('local evaluation', () => {
       personalApiKey: 'TEST_PERSONAL_API_KEY',
     })
 
-    // # beta-feature resolves to False, so no matter the default, stays False
-    expect(await posthog.getFeatureFlag('beta-feature', 'some-distinct-id', true)).toEqual(false)
-    expect(await posthog.getFeatureFlag('beta-feature', 'some-distinct-id', false)).toEqual(false)
+    // # beta-feature resolves to False
+    expect(await posthog.getFeatureFlag('beta-feature', 'some-distinct-id')).toEqual(false)
+    expect(await posthog.isFeatureEnabled('beta-feature', 'some-distinct-id')).toEqual(false)
     expect(mockedUndici.fetch).not.toHaveBeenCalled()
 
     // # beta-feature2 falls back to decide, and whatever decide returns is the value
-    expect(await posthog.getFeatureFlag('beta-feature2', 'some-distinct-id', true)).toEqual(undefined)
-    expect(await posthog.getFeatureFlag('beta-feature2', 'some-distinct-id', false)).toEqual(undefined)
+    expect(await posthog.getFeatureFlag('beta-feature2', 'some-distinct-id')).toEqual(false)
+    expect(await posthog.isFeatureEnabled('beta-feature2', 'some-distinct-id')).toEqual(false)
     expect(mockedUndici.fetch).toHaveBeenCalledTimes(2)
   })
 
-  it('defaults come into play when decide errors out', async () => {
+  it('returns undefined when decide errors out', async () => {
     const flags = {
       flags: [
         {
@@ -600,11 +576,10 @@ describe('local evaluation', () => {
       personalApiKey: 'TEST_PERSONAL_API_KEY',
     })
 
-    // # beta-feature2 falls back to decide, which on error returns default
-    expect(await posthog.getFeatureFlag('beta-feature2', 'some-distinct-id', true)).toEqual(true)
-    expect(await posthog.getFeatureFlag('beta-feature2', 'some-distinct-id', 'xyz')).toEqual('xyz')
-    expect(await posthog.getFeatureFlag('beta-feature2', 'some-distinct-id', false)).toEqual(false)
-    expect(mockedUndici.fetch).toHaveBeenCalledTimes(3)
+    // # beta-feature2 falls back to decide, which on error returns undefined
+    expect(await posthog.getFeatureFlag('beta-feature2', 'some-distinct-id')).toEqual(undefined)
+    expect(await posthog.isFeatureEnabled('beta-feature2', 'some-distinct-id')).toEqual(undefined)
+    expect(mockedUndici.fetch).toHaveBeenCalledTimes(2)
   })
 
   it('experience continuity flags are not evaluated locally', async () => {

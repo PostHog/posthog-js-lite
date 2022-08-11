@@ -46,13 +46,14 @@ describe('PostHog Core', () => {
       expect(posthog.getFeatureFlags()).toEqual(undefined)
     })
 
-    it('getFeatureFlag should return defaults if not loaded', () => {
-      expect(posthog.getFeatureFlag('my-flag')).toEqual(false)
+    it('getFeatureFlag should return undefined if not loaded', () => {
+      expect(posthog.getFeatureFlag('my-flag')).toEqual(undefined)
+      expect(posthog.getFeatureFlag('feature-1')).toEqual(undefined)
     })
 
     it('isFeatureEnabled should return undefined if not loaded', () => {
-      expect(posthog.isFeatureEnabled('my-flag')).toEqual(false)
-      expect(posthog.isFeatureEnabled('my-flag', true)).toEqual(true)
+      expect(posthog.isFeatureEnabled('my-flag')).toEqual(undefined)
+      expect(posthog.isFeatureEnabled('feature-1')).toEqual(undefined)
     })
 
     it('should load persisted feature flags', () => {
@@ -97,13 +98,10 @@ describe('PostHog Core', () => {
         })
       })
 
-      it('should return the value of a flag or the default', async () => {
+      it('should return the value of a flag', async () => {
         expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
         expect(posthog.getFeatureFlag('feature-variant')).toEqual('variant')
-        expect(posthog.getFeatureFlag('feature-missing', true)).toEqual(undefined)
-        expect(posthog.getFeatureFlag('feature-missing', false)).toEqual(undefined)
-        expect(posthog.getFeatureFlag('feature-missing', 'other')).toEqual(undefined)
-        expect(posthog.getFeatureFlag('feature-missing')).toEqual(undefined)
+        expect(posthog.getFeatureFlag('feature-missing')).toEqual(false)
       })
 
       describe('when errored out', () => {
@@ -133,19 +131,21 @@ describe('PostHog Core', () => {
           })
         })
 
-        it('should return the default', async () => {
-          expect(posthog.getFeatureFlag('feature-1')).toEqual(false)
-          expect(posthog.getFeatureFlag('feature-variant')).toEqual(false)
-          expect(posthog.getFeatureFlag('feature-missing', true)).toEqual(true)
-          expect(posthog.getFeatureFlag('feature-missing', false)).toEqual(false)
-          expect(posthog.getFeatureFlag('feature-missing', 'other')).toEqual('other')
-          expect(posthog.getFeatureFlag('feature-missing')).toEqual(false)
+        it('should return undefined', async () => {
+          expect(posthog.getFeatureFlag('feature-1')).toEqual(undefined)
+          expect(posthog.getFeatureFlag('feature-variant')).toEqual(undefined)
+          expect(posthog.getFeatureFlag('feature-missing')).toEqual(undefined)
+
+          expect(posthog.isFeatureEnabled('feature-1')).toEqual(undefined)
+          expect(posthog.isFeatureEnabled('feature-variant')).toEqual(undefined)
+          expect(posthog.isFeatureEnabled('feature-missing')).toEqual(undefined)
         })
       })
 
-      it('should return the boolean value of a flag or the default', async () => {
+      it('should return the boolean value of a flag', async () => {
         expect(posthog.isFeatureEnabled('feature-1')).toEqual(true)
         expect(posthog.isFeatureEnabled('feature-variant')).toEqual(true)
+        expect(posthog.isFeatureEnabled('feature-missing')).toEqual(false)
       })
 
       it('should reload if groups are set', async () => {

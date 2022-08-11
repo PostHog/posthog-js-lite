@@ -159,14 +159,16 @@ describe('PostHog Node.js', () => {
 
     it('should do getFeatureFlag', async () => {
       expect(mockedUndici.fetch).toHaveBeenCalledTimes(0)
-      await expect(posthog.getFeatureFlag('feature-variant', '123', false, { org: '123' })).resolves.toEqual('variant')
+      await expect(posthog.getFeatureFlag('feature-variant', '123', { groups: { org: '123' } })).resolves.toEqual(
+        'variant'
+      )
       expect(mockedUndici.fetch).toHaveBeenCalledTimes(1)
     })
 
     it('should do isFeatureEnabled', async () => {
       expect(mockedUndici.fetch).toHaveBeenCalledTimes(0)
-      await expect(posthog.isFeatureEnabled('feature-1', '123', false, { org: '123' })).resolves.toEqual(true)
-      await expect(posthog.isFeatureEnabled('feature-4', '123', false, { org: '123' })).resolves.toEqual(false)
+      await expect(posthog.isFeatureEnabled('feature-1', '123', { groups: { org: '123' } })).resolves.toEqual(true)
+      await expect(posthog.isFeatureEnabled('feature-4', '123', { groups: { org: '123' } })).resolves.toEqual(false)
       expect(mockedUndici.fetch).toHaveBeenCalledTimes(2)
     })
 
@@ -301,7 +303,9 @@ describe('PostHog Node.js', () => {
       })
 
       expect(
-        await posthog.getFeatureFlag('beta-feature', 'some-distinct-id', false, {}, { region: 'USA', name: 'Aloha' })
+        await posthog.getFeatureFlag('beta-feature', 'some-distinct-id', {
+          personProperties: { region: 'USA', name: 'Aloha' },
+        })
       ).toEqual(true)
       jest.runOnlyPendingTimers()
       expect(mockedUndici.fetch.mock.calls.length).toEqual(1)
@@ -316,7 +320,6 @@ describe('PostHog Node.js', () => {
             $lib: 'posthog-node',
             $lib_version: '1.2.3',
             locally_evaluated: true,
-            $groups: {},
           }),
         })
       )
@@ -324,7 +327,9 @@ describe('PostHog Node.js', () => {
 
       // # called again for same user, shouldn't call capture again
       expect(
-        await posthog.getFeatureFlag('beta-feature', 'some-distinct-id', false, {}, { region: 'USA', name: 'Aloha' })
+        await posthog.getFeatureFlag('beta-feature', 'some-distinct-id', {
+          personProperties: { region: 'USA', name: 'Aloha' },
+        })
       ).toEqual(true)
       jest.runOnlyPendingTimers()
 
@@ -332,13 +337,10 @@ describe('PostHog Node.js', () => {
 
       // # called for different user, should call capture again
       expect(
-        await posthog.getFeatureFlag(
-          'beta-feature',
-          'some-distinct-id2',
-          false,
-          { x: 'y' },
-          { region: 'USA', name: 'Aloha' }
-        )
+        await posthog.getFeatureFlag('beta-feature', 'some-distinct-id2', {
+          groups: { x: 'y' },
+          personProperties: { region: 'USA', name: 'Aloha' },
+        })
       ).toEqual(true)
       jest.runOnlyPendingTimers()
       expect(mockedUndici.fetch.mock.calls.length).toEqual(1)
@@ -361,29 +363,20 @@ describe('PostHog Node.js', () => {
 
       // # called for different user, but send configuration is false, so should NOT call capture again
       expect(
-        await posthog.getFeatureFlag(
-          'beta-feature',
-          'some-distinct-id23',
-          false,
-          undefined,
-          { region: 'USA', name: 'Aloha' },
-          {},
-          false,
-          false
-        )
+        await posthog.getFeatureFlag('beta-feature', 'some-distinct-id23', {
+          personProperties: { region: 'USA', name: 'Aloha' },
+          sendFeatureFlagEvents: false,
+        })
       ).toEqual(true)
       jest.runOnlyPendingTimers()
       expect(mockedUndici.fetch).not.toBeCalled()
 
       // # called for different flag, falls back to decide, should call capture again
       expect(
-        await posthog.getFeatureFlag(
-          'decide-flag',
-          'some-distinct-id2345',
-          false,
-          { organization: 'org1' },
-          { region: 'USA', name: 'Aloha' }
-        )
+        await posthog.getFeatureFlag('decide-flag', 'some-distinct-id2345', {
+          groups: { organization: 'org1' },
+          personProperties: { region: 'USA', name: 'Aloha' },
+        })
       ).toEqual('decide-value')
       jest.runOnlyPendingTimers()
       // one to decide, one to batch
@@ -406,13 +399,10 @@ describe('PostHog Node.js', () => {
       mockedUndici.fetch.mockClear()
 
       expect(
-        await posthog.isFeatureEnabled(
-          'decide-flag',
-          'some-distinct-id2345',
-          false,
-          { organization: 'org1' },
-          { region: 'USA', name: 'Aloha' }
-        )
+        await posthog.isFeatureEnabled('decide-flag', 'some-distinct-id2345', {
+          groups: { organization: 'org1' },
+          personProperties: { region: 'USA', name: 'Aloha' },
+        })
       ).toEqual(true)
       jest.runOnlyPendingTimers()
       // call decide, but not batch
