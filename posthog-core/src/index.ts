@@ -481,7 +481,7 @@ export abstract class PostHogCore {
     if (response === undefined) {
       return undefined
     }
-    return !!this.getFeatureFlag(key)
+    return !!response
   }
 
   async reloadFeatureFlagsAsync(sendAnonDistinctId: boolean = true): Promise<PostHogDecideResponse['featureFlags']> {
