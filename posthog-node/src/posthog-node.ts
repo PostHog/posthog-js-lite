@@ -91,17 +91,8 @@ export class PostHogGlobal implements PostHogNodeV1 {
   }
 
   private reInit(distinctId: string): void {
-    // Certain properties we want to persist
-    const propertiesToKeep = [PostHogPersistedProperty.Queue, PostHogPersistedProperty.OptedOut]
-
-    // clean up props
-    this._sharedClient.clearProps()
-
-    for (const key of <(keyof typeof PostHogPersistedProperty)[]>Object.keys(PostHogPersistedProperty)) {
-      if (!propertiesToKeep.includes(PostHogPersistedProperty[key])) {
-        this._sharedClient.setPersistedProperty((PostHogPersistedProperty as any)[key], null)
-      }
-    }
+    // Certain properties we want to persist. Queue is persisted always by default.
+    this._sharedClient.reset([PostHogPersistedProperty.OptedOut])
     this._sharedClient.setPersistedProperty(PostHogPersistedProperty.DistinctId, distinctId)
   }
 
@@ -229,11 +220,21 @@ export class PostHogGlobal implements PostHogNodeV1 {
 
   async getAllFlags(
     distinctId: string,
-    groups?: Record<string, string>,
-    personProperties?: Record<string, string>,
-    groupProperties?: Record<string, Record<string, string>>,
-    onlyEvaluateLocally: boolean = false
+    options?: {
+      groups?: Record<string, string>
+      personProperties?: Record<string, string>
+      groupProperties?: Record<string, Record<string, string>>
+      onlyEvaluateLocally?: boolean
+    }
   ): Promise<Record<string, string | boolean>> {
+    const { groups, personProperties, groupProperties } = options || {}
+    let { onlyEvaluateLocally } = options || {}
+
+    // set defaults
+    if (onlyEvaluateLocally == undefined) {
+      onlyEvaluateLocally = false
+    }
+
     const localEvaluationResult = await this.featureFlagsPoller?.getAllFlags(
       distinctId,
       groups,

@@ -106,6 +106,10 @@ export abstract class PostHogCore {
     this._props = val
   }
 
+  private clearProps(): void {
+    this.props = undefined
+  }
+
   private _props: PostHogEventProperties | undefined
 
   public get optedOut(): boolean {
@@ -124,17 +128,19 @@ export abstract class PostHogCore {
     return this._events.on(event, cb)
   }
 
-  clearProps(): void {
-    this.props = undefined
-  }
-
-  reset(): void {
-    // TODO: troublesome, also resets queue.
+  reset(propertiesToKeep?: PostHogPersistedProperty[]): void {
     // confirm the right keys are set, ts enums are nasty.
     // Runs into issues with not resetting lazy loaded this.props
+
+    const allPropertiesToKeep = [PostHogPersistedProperty.Queue, ...(propertiesToKeep || [])]
+
+    // clean up props
     this.clearProps()
-    for (const key in PostHogPersistedProperty) {
-      this.setPersistedProperty((PostHogPersistedProperty as any)[key], null)
+
+    for (const key of <(keyof typeof PostHogPersistedProperty)[]>Object.keys(PostHogPersistedProperty)) {
+      if (!allPropertiesToKeep.includes(PostHogPersistedProperty[key])) {
+        this.setPersistedProperty((PostHogPersistedProperty as any)[key], null)
+      }
     }
   }
 
@@ -334,8 +340,6 @@ export abstract class PostHogCore {
   /***
    * PROPERTIES
    ***/
-
-  // TODO: Figure out resetting
   personProperties(properties: { [type: string]: string }): this {
     // Get persisted person properties
     const existingProperties =
@@ -349,7 +353,6 @@ export abstract class PostHogCore {
     return this
   }
 
-  // Test heavilyy!
   groupProperties(properties: { [type: string]: Record<string, string> }): this {
     // Get persisted group properties
     const existingProperties =
