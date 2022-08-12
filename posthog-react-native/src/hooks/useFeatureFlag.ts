@@ -1,23 +1,21 @@
 import { useEffect, useState } from 'react'
 import { usePostHog } from './usePostHog'
 
-export function useFeatureFlag(flag: string, defaultValue?: boolean | string): string | boolean | undefined {
+export function useFeatureFlag(flag: string): string | boolean | undefined {
   const posthog = usePostHog()
 
-  const [featureFlag, setFeatureFlag] = useState<boolean | string | undefined>(
-    posthog?.getFeatureFlag(flag, defaultValue)
-  )
+  const [featureFlag, setFeatureFlag] = useState<boolean | string | undefined>(posthog?.getFeatureFlag(flag))
 
   if (!posthog) {
     return featureFlag
   }
 
   useEffect(() => {
-    setFeatureFlag(posthog.getFeatureFlag(flag, defaultValue))
+    setFeatureFlag(posthog.getFeatureFlag(flag))
     return posthog.onFeatureFlags(() => {
-      setFeatureFlag(posthog.getFeatureFlag(flag, defaultValue))
+      setFeatureFlag(posthog.getFeatureFlag(flag))
     })
-  }, [posthog, flag, defaultValue])
+  }, [posthog, flag])
 
   return featureFlag
 }

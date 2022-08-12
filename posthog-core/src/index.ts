@@ -25,7 +25,7 @@ import { SimpleEventEmitter } from './eventemitter'
 export abstract class PostHogCore {
   // options
   private apiKey: string
-  private host: string
+  host: string
   private flushAt: number
   private flushInterval: number
   private captureMode: 'form' | 'json'
@@ -79,11 +79,18 @@ export abstract class PostHogCore {
 
   protected getCommonEventProperties(): any {
     const featureFlags = this.getFeatureFlags()
+
+    const featureVariantProperties: Record<string, string | boolean> = {}
+    if (featureFlags) {
+      for (const [feature, variant] of Object.entries(featureFlags)) {
+        featureVariantProperties[`$feature/${feature}`] = variant
+      }
+    }
     return {
       $lib: this.getLibraryId(),
       $lib_version: this.getLibraryVersion(),
       $active_feature_flags: featureFlags ? Object.keys(featureFlags) : undefined,
-      $enabled_feature_flags: featureFlags,
+      ...featureVariantProperties,
     }
   }
 
@@ -95,8 +102,12 @@ export abstract class PostHogCore {
     return this._props || {}
   }
 
-  private set props(val: PostHogEventProperties) {
+  private set props(val: PostHogEventProperties | undefined) {
     this._props = val
+  }
+
+  private clearProps(): void {
+    this.props = undefined
   }
 
   private _props: PostHogEventProperties | undefined
@@ -117,9 +128,16 @@ export abstract class PostHogCore {
     return this._events.on(event, cb)
   }
 
-  reset(): void {
-    for (const key in PostHogPersistedProperty) {
-      this.setPersistedProperty((PostHogPersistedProperty as any)[key], null)
+  reset(propertiesToKeep?: PostHogPersistedProperty[]): void {
+    const allPropertiesToKeep = [PostHogPersistedProperty.Queue, ...(propertiesToKeep || [])]
+
+    // clean up props
+    this.clearProps()
+
+    for (const key of <(keyof typeof PostHogPersistedProperty)[]>Object.keys(PostHogPersistedProperty)) {
+      if (!allPropertiesToKeep.includes(PostHogPersistedProperty[key])) {
+        this.setPersistedProperty((PostHogPersistedProperty as any)[key], null)
+      }
     }
   }
 
@@ -223,13 +241,17 @@ export abstract class PostHogCore {
     return this
   }
 
-  capture(event: string, properties?: { [key: string]: any }): this {
+  capture(event: string, properties?: { [key: string]: any }, forceSendFeatureFlags: boolean = false): this {
     if (properties?.$groups) {
       this.groups(properties.$groups)
     }
 
-    const payload = this.buildPayload({ event, properties })
-    this.enqueue('capture', payload)
+    if (forceSendFeatureFlags) {
+      this._sendFeatureFlags(event, properties)
+    } else {
+      const payload = this.buildPayload({ event, properties })
+      this.enqueue('capture', payload)
+    }
     return this
   }
 
@@ -270,7 +292,6 @@ export abstract class PostHogCore {
     // Get persisted groups
     const existingGroups = this.props.$groups || {}
 
-    // NOTE: Should we do the same for groups listed in identify / capture?
     this.register({
       $groups: {
         ...existingGroups,
@@ -314,20 +335,62 @@ export abstract class PostHogCore {
   }
 
   /***
+   * PROPERTIES
+   ***/
+  personProperties(properties: { [type: string]: string }): this {
+    // Get persisted person properties
+    const existingProperties =
+      this.getPersistedProperty<Record<string, string>>(PostHogPersistedProperty.PersonProperties) || {}
+
+    this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.PersonProperties, {
+      ...existingProperties,
+      ...properties,
+    })
+
+    return this
+  }
+
+  groupProperties(properties: { [type: string]: Record<string, string> }): this {
+    // Get persisted group properties
+    const existingProperties =
+      this.getPersistedProperty<Record<string, Record<string, string>>>(PostHogPersistedProperty.GroupProperties) || {}
+
+    if (Object.keys(existingProperties).length !== 0) {
+      Object.keys(existingProperties).forEach((groupType) => {
+        existingProperties[groupType] = {
+          ...existingProperties[groupType],
+          ...properties[groupType],
+        }
+        delete properties[groupType]
+      })
+    }
+
+    this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.GroupProperties, {
+      ...existingProperties,
+      ...properties,
+    })
+    return this
+  }
+
+  /***
    *** FEATURE FLAGS
    ***/
-  private decideAsync(): Promise<PostHogDecideResponse> {
+  private decideAsync(sendAnonDistinctId: boolean = true): Promise<PostHogDecideResponse> {
     if (this._decideResponsePromise) {
       return this._decideResponsePromise
     }
-    return this._decideAsync()
+    return this._decideAsync(sendAnonDistinctId)
   }
 
-  private async _decideAsync(): Promise<PostHogDecideResponse> {
+  private async _decideAsync(sendAnonDistinctId: boolean = true): Promise<PostHogDecideResponse> {
     const url = `${this.host}/decide/?v=2`
 
     const distinctId = this.getDistinctId()
     const groups = this.props.$groups || {}
+    const personProperties =
+      this.getPersistedProperty<Record<string, string>>(PostHogPersistedProperty.PersonProperties) || {}
+    const groupProperties =
+      this.getPersistedProperty<Record<string, Record<string, string>>>(PostHogPersistedProperty.GroupProperties) || {}
 
     const fetchOptions: PostHogFetchOptions = {
       method: 'POST',
@@ -335,8 +398,10 @@ export abstract class PostHogCore {
       body: JSON.stringify({
         token: this.apiKey,
         distinct_id: distinctId,
-        $anon_distinct_id: this.getAnonymousId(),
+        $anon_distinct_id: sendAnonDistinctId ? this.getAnonymousId() : undefined,
         groups,
+        person_properties: personProperties,
+        group_properties: groupProperties,
       }),
     }
 
@@ -359,24 +424,30 @@ export abstract class PostHogCore {
     return this._decideResponsePromise
   }
 
-  getFeatureFlag(key: string, defaultResult: string | boolean = false): boolean | string | undefined {
+  getFeatureFlag(key: string): boolean | string | undefined {
     const featureFlags = this.getFeatureFlags()
 
     if (!featureFlags) {
-      // If we haven't loaded flags yet we respond undefined to indicate this
+      // If we haven't loaded flags yet, or errored out, we respond with undefined
       return undefined
+    }
+
+    let response = featureFlags[key]
+    if (response === undefined) {
+      // `/decide` returns nothing for flags which are false.
+      response = false
     }
 
     if (this.sendFeatureFlagEvent && !this.flagCallReported[key]) {
       this.flagCallReported[key] = true
       this.capture('$feature_flag_called', {
         $feature_flag: key,
-        $feature_flag_response: featureFlags[key],
+        $feature_flag_response: response,
       })
     }
 
-    // If we have flags we either return the value (true or string) or the defaultResult
-    return featureFlags[key] ?? defaultResult
+    // If we have flags we either return the value (true or string) or false
+    return response
   }
 
   getFeatureFlags(): PostHogDecideResponse['featureFlags'] | undefined {
@@ -402,13 +473,16 @@ export abstract class PostHogCore {
     return flags
   }
 
-  isFeatureEnabled(key: string, defaultResult: boolean = false): boolean {
-    const flag = this.getFeatureFlag(key, defaultResult) ?? defaultResult
-    return !!flag
+  isFeatureEnabled(key: string): boolean | undefined {
+    const response = this.getFeatureFlag(key)
+    if (response === undefined) {
+      return undefined
+    }
+    return !!response
   }
 
-  async reloadFeatureFlagsAsync(): Promise<PostHogDecideResponse['featureFlags']> {
-    return (await this.decideAsync()).featureFlags
+  async reloadFeatureFlagsAsync(sendAnonDistinctId: boolean = true): Promise<PostHogDecideResponse['featureFlags']> {
+    return (await this.decideAsync(sendAnonDistinctId)).featureFlags
   }
 
   onFeatureFlags(cb: (flags: PostHogDecideResponse['featureFlags']) => void): () => void {
@@ -436,6 +510,14 @@ export abstract class PostHogCore {
     return this.setPersistedProperty(PostHogPersistedProperty.OverrideFeatureFlags, flags)
   }
 
+  _sendFeatureFlags(event: string, properties?: { [key: string]: any }): void {
+    this.reloadFeatureFlagsAsync(false).finally(() => {
+      // Try to enqueue message irrespective of errors during feature flag fetching
+      const payload = this.buildPayload({ event, properties })
+      this.enqueue('capture', payload)
+    })
+  }
+
   /***
    *** QUEUEING AND FLUSHING
    ***/
@@ -457,6 +539,7 @@ export abstract class PostHogCore {
     }
 
     const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
+
     queue.push({ message })
     this.setPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue, queue)
 
@@ -474,13 +557,15 @@ export abstract class PostHogCore {
 
   flushAsync(): Promise<any> {
     return new Promise((resolve, reject) => {
-      this.flush((err, data) => (err ? reject(err) : resolve(data)))
+      this.flush((err, data) => {
+        return err ? reject(err) : resolve(data)
+      })
     })
   }
 
   flush(callback?: (err?: any, data?: any) => void): void {
     if (this.optedOut) {
-      return callback && safeSetTimeout(callback, 0)
+      return callback?.()
     }
 
     if (this._flushTimer) {
@@ -491,7 +576,7 @@ export abstract class PostHogCore {
     const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
 
     if (!queue.length) {
-      return callback && safeSetTimeout(callback, 0)
+      return callback?.()
     }
 
     const items = queue.splice(0, this.flushAt)

@@ -31,6 +31,8 @@ export enum PostHogPersistedProperty {
   OptedOut = 'opted_out',
   SessionId = 'session_id',
   SessionLastTimestamp = 'session_timestamp',
+  PersonProperties = 'person_properties',
+  GroupProperties = 'group_properties',
 }
 
 export type PostHogFetchOptions = {
