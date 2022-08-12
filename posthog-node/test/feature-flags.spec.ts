@@ -752,7 +752,7 @@ describe('local evaluation', () => {
     })
 
     // # beta-feature2 has no value
-    expect(await posthog.getAllFlags('distinct-id', {}, {}, {}, true)).toEqual({
+    expect(await posthog.getAllFlags('distinct-id', { onlyEvaluateLocally: true })).toEqual({
       'beta-feature': true,
       'disabled-feature': false,
     })
