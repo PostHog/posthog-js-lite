@@ -56,3 +56,9 @@ cd examples/example-node
 yarn && yarn start
 # example-expo has some buttons that will talk to this server
 ```
+
+## Publishing a new version
+
+1. Go to the appropriate `package.json` file. For example, for `posthog-node`, this is `posthog-node/package.json`.
+2. Bump the version number in the file.
+3. On merge, a new version is published automatically thanks to the CI pipeline.
