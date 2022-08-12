@@ -129,9 +129,6 @@ export abstract class PostHogCore {
   }
 
   reset(propertiesToKeep?: PostHogPersistedProperty[]): void {
-    // confirm the right keys are set, ts enums are nasty.
-    // Runs into issues with not resetting lazy loaded this.props
-
     const allPropertiesToKeep = [PostHogPersistedProperty.Queue, ...(propertiesToKeep || [])]
 
     // clean up props
