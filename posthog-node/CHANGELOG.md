@@ -5,6 +5,8 @@ Breaking changes:
 1. Feature flag defaults are no more. When we fail to compute any flag, we return `undefined`. All computed flags return either `true`, `false` or `String`.
 2. Minimum PostHog version requirement is 1.38
 3. Default polling interval for feature flags is now set at 30 seconds. If you don't want local evaluation, don't set a personal API key in the library.
+4. The `callback` parameter passed as an optional last argument to most of the methods is no longer supported
+
 
 What's new:
 
