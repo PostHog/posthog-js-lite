@@ -1,10 +1,10 @@
-import PostHog from 'posthog-node'
+import { PostHog } from 'posthog-node'
 // @ts-ignore
 import wtf from 'wtfnode'
 
 const posthog = new PostHog('phc_X8B6bhR1QgQKP1WdpFLN82LxLxgZ7WPXDgJyRyvIpib', {
   // host: 'http://127.0.0.1:8000',
-  personalApiKey: 'phx_tA4d9iwpQ16fOhR8IC63azT1jioYCYgLh73MWeUkpR1',
+  // personalApiKey: 'phx_tA4d9iwpQ16fOhR8IC63azT1jioYCYgLh73MWeUkpR1',
   featureFlagsPollingInterval: 10000,
   // flushAt: 1,
 })
