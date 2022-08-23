@@ -1,6 +1,6 @@
 {
   "name": "posthog-node",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "PostHog Node.js integration",
   "repository": "PostHog/posthog-node",
   "scripts": {
@@ -19,7 +19,6 @@
   "module": "lib/index.esm.js",
   "types": "lib/index.d.ts",
   "dependencies": {
-    "posthog-node": "file:.yalc/posthog-node",
     "undici": "^5.8.0"
   },
   "devDependencies": {
