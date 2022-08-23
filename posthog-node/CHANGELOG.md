@@ -1,3 +1,8 @@
+# 2.0.2 - 2022-08-23
+
+1. Removes references to `cli.js`
+2. Updates default export to be `PostHog` and work with non-ts installations.
+
 # 2.0.1 - 2022-08-15
 
 Breaking changes:
@@ -6,6 +11,7 @@ Breaking changes:
 2. Minimum PostHog version requirement is 1.38
 3. Default polling interval for feature flags is now set at 30 seconds. If you don't want local evaluation, don't set a personal API key in the library.
 4. The `callback` parameter passed as an optional last argument to most of the methods is no longer supported
+5. The CLI is no longer supported
 
 
 What's new:

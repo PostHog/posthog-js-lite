@@ -19,6 +19,7 @@
   "module": "lib/index.esm.js",
   "types": "lib/index.d.ts",
   "dependencies": {
+    "posthog-node": "file:.yalc/posthog-node",
     "undici": "^5.8.0"
   },
   "devDependencies": {
@@ -30,8 +31,5 @@
     "stats",
     "analysis",
     "funnels"
-  ],
-  "bin": {
-    "posthog": "cli.js"
-  }
+  ]
 }
