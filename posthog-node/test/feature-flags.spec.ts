@@ -1,4 +1,4 @@
-// import PostHog from '../'
+// import { PostHog } from '../'
 // Uncomment below line while developing to not compile code everytime
 import { PostHog as PostHog } from '../src/posthog-node'
 import { matchProperty, InconclusiveMatchError } from '../src/feature-flags'

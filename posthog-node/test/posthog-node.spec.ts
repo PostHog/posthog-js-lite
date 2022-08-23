@@ -1,4 +1,4 @@
-// import PostHog from '../'
+// import { PostHog } from '../'
 import { PostHog as PostHog } from '../src/posthog-node'
 jest.mock('undici')
 import undici from 'undici'

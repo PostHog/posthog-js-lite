@@ -2,9 +2,9 @@ import { PostHog } from 'posthog-node'
 // @ts-ignore
 import wtf from 'wtfnode'
 
-const posthog = new PostHog('phc_X8B6bhR1QgQKP1WdpFLN82LxLxgZ7WPXDgJyRyvIpib', {
+const posthog = new PostHog('YOUR API KEY', {
   // host: 'http://127.0.0.1:8000',
-  // personalApiKey: 'phx_tA4d9iwpQ16fOhR8IC63azT1jioYCYgLh73MWeUkpR1',
+  personalApiKey: 'YOUR PERSONAL API KEY',
   featureFlagsPollingInterval: 10000,
   // flushAt: 1,
 })
