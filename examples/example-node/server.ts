@@ -1,5 +1,5 @@
 import express from 'express'
-import PostHog from 'posthog-node'
+import { PostHog } from 'posthog-node'
 
 const app = express()
 
