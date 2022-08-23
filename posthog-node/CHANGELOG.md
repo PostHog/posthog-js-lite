@@ -1,7 +1,7 @@
 # 2.0.2 - 2022-08-23
 
 1. Removes references to `cli.js`
-2. Updates default export to be `PostHog` and work with non-ts installations.
+2. Removes default `PostHogGlobal` export, and unifies import signature for `typescript`, `commonjs` and `esm` builds.
 
 # 2.0.1 - 2022-08-15
 
