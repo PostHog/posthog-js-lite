@@ -1,5 +1,5 @@
 // import PostHog from '../'
-import { PostHogGlobal as PostHog } from '../src/posthog-node'
+import { PostHog as PostHog } from '../src/posthog-node'
 jest.mock('undici')
 import undici from 'undici'
 import { decideImplementation, localEvaluationImplementation } from './feature-flags.spec'

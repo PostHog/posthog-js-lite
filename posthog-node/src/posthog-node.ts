@@ -25,7 +25,7 @@ export type PostHogOptions = PosthogCoreOptions & {
 const THIRTY_SECONDS = 30 * 1000
 const MAX_CACHE_SIZE = 50 * 1000
 
-class PostHog extends PostHogCore {
+class PostHogClient extends PostHogCore {
   private _memoryStorage = new PostHogMemoryStorage()
 
   constructor(apiKey: string, options: PostHogOptions = {}) {
@@ -65,15 +65,15 @@ class PostHog extends PostHogCore {
 }
 
 // The actual exported Nodejs API.
-export class PostHogGlobal implements PostHogNodeV1 {
-  private _sharedClient: PostHog
+export class PostHog implements PostHogNodeV1 {
+  private _sharedClient: PostHogClient
   private featureFlagsPoller?: FeatureFlagsPoller
   private maxCacheSize: number
 
   distinctIdHasSentFlagCalls: Record<string, string[]>
 
   constructor(apiKey: string, options: PostHogOptions = {}) {
-    this._sharedClient = new PostHog(apiKey, options)
+    this._sharedClient = new PostHogClient(apiKey, options)
     if (options.personalApiKey) {
       this.featureFlagsPoller = new FeatureFlagsPoller({
         pollingInterval:

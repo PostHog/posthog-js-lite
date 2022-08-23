@@ -1,4 +1,4 @@
-import { PostHogGlobal } from './src/posthog-node'
+import { PostHog } from './src/posthog-node'
 export * from './src/posthog-node'
 
-export default PostHogGlobal
+export default PostHog
