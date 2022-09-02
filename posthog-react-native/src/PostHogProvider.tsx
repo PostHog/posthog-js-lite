@@ -16,8 +16,12 @@ export interface PostHogProviderProps {
   style?: StyleProp<ViewStyle>
 }
 
-function PostHogHooks({ options }: { options?: PostHogAutocaptureOptions }): JSX.Element | null {
+function PostHogNavigationHook({ options }: { options?: PostHogAutocaptureOptions }): JSX.Element | null {
   useNavigationTracker(options?.navigation)
+  return null
+}
+
+function PostHogLifecycleHook(): JSX.Element | null {
   useLifecycleTracker()
   return null
 }
@@ -36,11 +40,12 @@ export const PostHogProvider = ({
     posthogRef.current = client ? client : apiKey ? new PostHog(apiKey, options) : undefined
   }
 
-  const autocaptureEnabled = !!autocapture
   const autocaptureOptions = autocapture && typeof autocapture !== 'boolean' ? autocapture : {}
 
   const posthog = posthogRef.current
   const captureTouches = posthog && (autocapture === true || autocaptureOptions?.captureTouches)
+  const captureScreens = posthog && (autocapture === true || (autocaptureOptions?.captureScreens ?? true)) // Default to true if not set
+  const captureLifecycle = posthog && (autocapture === true || (autocaptureOptions?.captureLifecycleEvents ?? true)) // Default to true if not set
 
   const onTouch = useCallback(
     (type: 'start' | 'move' | 'end', e: GestureResponderEvent) => {
@@ -56,7 +61,6 @@ export const PostHogProvider = ({
     [posthog, autocapture]
   )
 
-  // TODO: Improve this to ensure we only capture presses and not just ends of a drag for example
   return (
     <View
       ph-label="PostHogProvider"
@@ -64,7 +68,10 @@ export const PostHogProvider = ({
       onTouchEndCapture={captureTouches ? (e) => onTouch('end', e) : undefined}
     >
       <PostHogContext.Provider value={{ client: posthogRef.current }}>
-        {autocaptureEnabled ? <PostHogHooks options={autocaptureOptions} /> : null}
+        <>
+          {captureScreens ? <PostHogNavigationHook options={autocaptureOptions} /> : null}
+          {captureLifecycle ? <PostHogLifecycleHook /> : null}
+        </>
         {children}
       </PostHogContext.Provider>
     </View>
