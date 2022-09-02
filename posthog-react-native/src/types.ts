@@ -13,5 +13,9 @@ export type PostHogAutocaptureOptions = {
   propsToCapture?: string[]
 
   // Navigation
+  captureScreens?: boolean
   navigation?: PostHogAutocaptureNavigationTrackerOptions
+
+  // LifecycleEvents
+  captureLifecycleEvents?: boolean
 }
