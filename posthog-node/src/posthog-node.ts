@@ -1,5 +1,5 @@
 import { version } from '../package.json'
-import undici from 'undici'
+
 import {
   PostHogCore,
   PosthogCoreOptions,
@@ -10,6 +10,7 @@ import {
 import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
 import { EventMessageV1, GroupIdentifyMessage, IdentifyMessageV1, PostHogNodeV1 } from './types'
 import { FeatureFlagsPoller } from './feature-flags'
+import { fetch } from './fetch'
 
 export type PostHogOptions = PosthogCoreOptions & {
   persistence?: 'memory'
@@ -20,6 +21,7 @@ export type PostHogOptions = PosthogCoreOptions & {
   requestTimeout?: number
   // Maximum size of cache that deduplicates $feature_flag_called calls per user.
   maxCacheSize?: number
+  fetch?: (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
 }
 
 const THIRTY_SECONDS = 30 * 1000
@@ -28,7 +30,7 @@ const MAX_CACHE_SIZE = 50 * 1000
 class PostHogClient extends PostHogCore {
   private _memoryStorage = new PostHogMemoryStorage()
 
-  constructor(apiKey: string, options: PostHogOptions = {}) {
+  constructor(apiKey: string, private options: PostHogOptions = {}) {
     options.captureMode = options?.captureMode || 'json'
     options.preloadFeatureFlags = false // Don't preload as this makes no sense without a distinctId
     options.sendFeatureFlagEvent = false // Let `posthog-node` handle this on its own, since we're dealing with multiple distinctIDs
@@ -50,7 +52,7 @@ class PostHogClient extends PostHogCore {
   }
 
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
-    return undici.fetch(url, options)
+    return this.options.fetch ? this.options.fetch(url, options) : fetch(url, options)
   }
 
   getLibraryId(): string {
@@ -84,6 +86,7 @@ export class PostHog implements PostHogNodeV1 {
         projectApiKey: apiKey,
         timeout: options.requestTimeout,
         host: this._sharedClient.host,
+        fetch: options.fetch,
       })
     }
     this.distinctIdHasSentFlagCalls = {}

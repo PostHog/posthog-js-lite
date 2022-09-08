@@ -151,7 +151,9 @@ describe('PostHog Core', () => {
       it('should reload if groups are set', async () => {
         posthog.group('my-group', 'is-great')
         expect(mocks.fetch).toHaveBeenCalledTimes(2)
-        expect(JSON.parse(mocks.fetch.mock.calls[1][1].body)).toMatchObject({ groups: { 'my-group': 'is-great' } })
+        expect(JSON.parse(mocks.fetch.mock.calls[1][1].body || '')).toMatchObject({
+          groups: { 'my-group': 'is-great' },
+        })
       })
 
       it('should capture $feature_flag_called when called', () => {

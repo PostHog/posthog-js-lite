@@ -46,7 +46,8 @@ export type PostHogFetchOptions = {
   mode?: 'no-cors'
   credentials?: 'omit'
   headers: { [key: string]: string }
-  body: string
+  body?: string
+  signal?: AbortSignal
 }
 
 export type PostHogFetchResponse = {
