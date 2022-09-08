@@ -1,8 +1,9 @@
 import { createHash } from 'crypto'
-import { request } from 'undici'
 import { FeatureFlagCondition, PostHogFeatureFlag } from './types'
 import { version } from '../package.json'
-import { ResponseData } from 'undici/types/dispatcher'
+import { PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src'
+import fetch from 'node-fetch'
+import { safeSetTimeout } from 'posthog-core/src/utils'
 
 // eslint-disable-next-line
 const LONG_SCALE = 0xfffffffffffffff
@@ -35,6 +36,7 @@ type FeatureFlagsPollerOptions = {
   host: string
   pollingInterval: number
   timeout?: number
+  fetch?: (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
 }
 
 class FeatureFlagsPoller {
@@ -47,8 +49,16 @@ class FeatureFlagsPoller {
   timeout?: number
   host: FeatureFlagsPollerOptions['host']
   poller?: NodeJS.Timeout
+  fetch: (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
 
-  constructor({ pollingInterval, personalApiKey, projectApiKey, timeout, host }: FeatureFlagsPollerOptions) {
+  constructor({
+    pollingInterval,
+    personalApiKey,
+    projectApiKey,
+    timeout,
+    host,
+    ...options
+  }: FeatureFlagsPollerOptions) {
     this.pollingInterval = pollingInterval
     this.personalApiKey = personalApiKey
     this.featureFlags = []
@@ -58,6 +68,8 @@ class FeatureFlagsPoller {
     this.projectApiKey = projectApiKey
     this.host = host
     this.poller = undefined
+    // NOTE: as any is required here as the AbortSignal typing is slightly misaligned but works just fine
+    this.fetch = options.fetch || (fetch as any)
 
     void this.loadFeatureFlags()
   }
@@ -275,12 +287,12 @@ class FeatureFlagsPoller {
     try {
       const res = await this._requestFeatureFlagDefinitions()
 
-      if (res && res.statusCode === 401) {
+      if (res && res.status === 401) {
         throw new ClientError(
           `Your personalApiKey is invalid. Are you sure you're not using your Project API key? More information: https://posthog.com/docs/api/overview`
         )
       }
-      const responseJson = await res.body.json()
+      const responseJson = await res.json()
       if (!('flags' in responseJson)) {
         console.error(`Invalid response when getting feature flags: ${JSON.stringify(responseJson)}`)
       }
@@ -297,31 +309,31 @@ class FeatureFlagsPoller {
     }
   }
 
-  async _requestFeatureFlagDefinitions(): Promise<ResponseData> {
+  async _requestFeatureFlagDefinitions(): Promise<PostHogFetchResponse> {
     const url = `${this.host}/api/feature_flag/local_evaluation?token=${this.projectApiKey}`
-    const headers = {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${this.personalApiKey}`,
-      'user-agent': `posthog-node/${version}`,
-    }
 
-    const options: Parameters<typeof request>[1] = {
+    const options: PostHogFetchOptions = {
       method: 'GET',
-      headers: headers,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.personalApiKey}`,
+        'user-agent': `posthog-node/${version}`,
+      },
     }
 
     if (this.timeout && typeof this.timeout === 'number') {
-      options.bodyTimeout = this.timeout
+      const controller = new AbortController()
+      safeSetTimeout(() => {
+        controller.abort()
+      }, this.timeout)
+      options.signal = controller.signal
     }
 
-    let res
     try {
-      res = await request(url, options)
+      return await this.fetch(url, options)
     } catch (err) {
       throw new Error(`Request failed with error: ${err}`)
     }
-
-    return res
   }
 
   stopPoller(): void {
