@@ -2,8 +2,8 @@
 // Uncomment below line while developing to not compile code everytime
 import { PostHog as PostHog } from '../src/posthog-node'
 import { matchProperty, InconclusiveMatchError } from '../src/feature-flags'
-jest.mock('node-fetch')
-import fetch from 'node-fetch'
+jest.mock('../src/fetch')
+import { fetch } from '../src/fetch'
 
 jest.spyOn(global.console, 'debug').mockImplementation()
 

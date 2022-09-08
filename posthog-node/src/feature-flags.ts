@@ -321,9 +321,11 @@ class FeatureFlagsPoller {
       },
     }
 
+    let abortTimeout = null
+
     if (this.timeout && typeof this.timeout === 'number') {
       const controller = new AbortController()
-      safeSetTimeout(() => {
+      abortTimeout = safeSetTimeout(() => {
         controller.abort()
       }, this.timeout)
       options.signal = controller.signal
@@ -333,6 +335,8 @@ class FeatureFlagsPoller {
       return await this.fetch(url, options)
     } catch (err) {
       throw new Error(`Request failed with error: ${err}`)
+    } finally {
+      clearTimeout(abortTimeout)
     }
   }
 
