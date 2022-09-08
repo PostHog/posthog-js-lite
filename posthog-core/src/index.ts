@@ -72,6 +72,7 @@ export abstract class PostHogCore {
     // NOTE: It is important we don't initiate anything in the constructor as some async IO may still be underway on the parent
     if (options?.preloadFeatureFlags !== false) {
       safeSetTimeout(() => {
+        this.setupBootstrap(options)
         void this.reloadFeatureFlagsAsync()
       }, 1)
     }
@@ -102,17 +103,17 @@ export abstract class PostHogCore {
         this.setPersistedProperty(PostHogPersistedProperty.AnonymousId, options.bootstrap.distinctId)
       }
     }
-    
+
     if (options?.bootstrap?.featureFlags) {
       const activeFlags = Object.keys(options.bootstrap?.featureFlags || {})
         .filter((flag) => !!options.bootstrap?.featureFlags?.[flag])
         .reduce(
-            (res: Record<string, string | boolean>, key) => (
-                (res[key] = options.bootstrap?.featureFlags?.[key] || false), res
-            ),
-            {}
+          (res: Record<string, string | boolean>, key) => (
+            (res[key] = options.bootstrap?.featureFlags?.[key] || false), res
+          ),
+          {}
         )
-        this.setKnownFeatureFlags(activeFlags)
+      this.setKnownFeatureFlags(activeFlags)
     }
   }
 

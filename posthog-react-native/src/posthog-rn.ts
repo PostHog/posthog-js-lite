@@ -30,7 +30,6 @@ export class PostHog extends PostHogCore {
   constructor(apiKey: string, options?: PostHogOptions) {
     super(apiKey, options)
     this._persistence = options?.persistence
-    this.setupBootstrap(options)
 
     AppState.addEventListener('change', () => {
       this.flush()
@@ -40,6 +39,8 @@ export class PostHog extends PostHogCore {
 
     // It is possible that the old library was used so we try to get the legacy distinctID
     void preloadSemiAsyncStorage().then(() => {
+      this.setupBootstrap(options)
+
       if (!SemiAsyncStorage.getItem(PostHogPersistedProperty.AnonymousId)) {
         getLegacyValues().then((legacyValues) => {
           if (legacyValues?.distinctId) {
