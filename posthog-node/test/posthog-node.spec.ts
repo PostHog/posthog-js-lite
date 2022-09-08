@@ -1,21 +1,18 @@
 // import { PostHog } from '../'
 import { PostHog as PostHog } from '../src/posthog-node'
-jest.mock('undici')
-import undici from 'undici'
-import { decideImplementation, localEvaluationImplementation } from './feature-flags.spec'
+jest.mock('../src/fetch')
+import { fetch } from '../src/fetch'
+import { anyDecideCall, anyLocalEvalCall, apiImplementation } from './feature-flags.spec'
 import { waitForPromises } from '../../posthog-core/test/test-utils/test-utils'
 
 jest.mock('../package.json', () => ({ version: '1.2.3' }))
 
-const mockedUndici = jest.mocked(undici, true)
+const mockedFetch = jest.mocked(fetch, true)
 
 const getLastBatchEvents = (): any[] | undefined => {
-  expect(mockedUndici.fetch).toHaveBeenCalledWith(
-    'http://example.com/batch/',
-    expect.objectContaining({ method: 'POST' })
-  )
+  expect(mockedFetch).toHaveBeenCalledWith('http://example.com/batch/', expect.objectContaining({ method: 'POST' }))
 
-  const call = mockedUndici.fetch.mock.calls.find((x) => (x[0] as string).includes('/batch/'))
+  const call = mockedFetch.mock.calls.find((x) => (x[0] as string).includes('/batch/'))
   if (!call) {
     return undefined
   }
@@ -32,7 +29,7 @@ describe('PostHog Node.js', () => {
       host: 'http://example.com',
     })
 
-    mockedUndici.fetch.mockResolvedValue({
+    mockedFetch.mockResolvedValue({
       status: 200,
       text: () => Promise.resolve('ok'),
       json: () =>
@@ -49,7 +46,7 @@ describe('PostHog Node.js', () => {
 
   describe('core methods', () => {
     it('should capture an event to shared queue', async () => {
-      expect(mockedUndici.fetch).toHaveBeenCalledTimes(0)
+      expect(mockedFetch).toHaveBeenCalledTimes(0)
       posthog.capture({ distinctId: '123', event: 'test-event', properties: { foo: 'bar' }, groups: { org: 123 } })
 
       jest.runOnlyPendingTimers()
@@ -67,7 +64,7 @@ describe('PostHog Node.js', () => {
     })
 
     it('shouldnt muddy subsequent capture calls', async () => {
-      expect(mockedUndici.fetch).toHaveBeenCalledTimes(0)
+      expect(mockedFetch).toHaveBeenCalledTimes(0)
       posthog.capture({ distinctId: '123', event: 'test-event', properties: { foo: 'bar' }, groups: { org: 123 } })
 
       jest.runOnlyPendingTimers()
@@ -83,7 +80,7 @@ describe('PostHog Node.js', () => {
           library_version: '1.2.3',
         })
       )
-      mockedUndici.fetch.mockClear()
+      mockedFetch.mockClear()
 
       posthog.capture({
         distinctId: '123',
@@ -108,7 +105,7 @@ describe('PostHog Node.js', () => {
     })
 
     it('should capture identify events on shared queue', async () => {
-      expect(mockedUndici.fetch).toHaveBeenCalledTimes(0)
+      expect(mockedFetch).toHaveBeenCalledTimes(0)
       posthog.identify({ distinctId: '123', properties: { foo: 'bar' } })
       jest.runOnlyPendingTimers()
       const batchEvents = getLastBatchEvents()
@@ -124,7 +121,7 @@ describe('PostHog Node.js', () => {
     })
 
     it('should capture alias events on shared queue', async () => {
-      expect(mockedUndici.fetch).toHaveBeenCalledTimes(0)
+      expect(mockedFetch).toHaveBeenCalledTimes(0)
       posthog.alias({ distinctId: '123', alias: '1234' })
       jest.runOnlyPendingTimers()
       const batchEvents = getLastBatchEvents()
@@ -149,7 +146,7 @@ describe('PostHog Node.js', () => {
         'feature-variant': 'variant',
       }
 
-      mockedUndici.fetch.mockImplementation(decideImplementation(mockFeatureFlags))
+      mockedFetch.mockImplementation(apiImplementation({ decideFlags: mockFeatureFlags }))
 
       posthog = new PostHog('TEST_API_KEY', {
         host: 'http://example.com',
@@ -158,24 +155,24 @@ describe('PostHog Node.js', () => {
     })
 
     it('should do getFeatureFlag', async () => {
-      expect(mockedUndici.fetch).toHaveBeenCalledTimes(0)
+      expect(mockedFetch).toHaveBeenCalledTimes(0)
       await expect(posthog.getFeatureFlag('feature-variant', '123', { groups: { org: '123' } })).resolves.toEqual(
         'variant'
       )
-      expect(mockedUndici.fetch).toHaveBeenCalledTimes(1)
+      expect(mockedFetch).toHaveBeenCalledTimes(1)
     })
 
     it('should do isFeatureEnabled', async () => {
-      expect(mockedUndici.fetch).toHaveBeenCalledTimes(0)
+      expect(mockedFetch).toHaveBeenCalledTimes(0)
       await expect(posthog.isFeatureEnabled('feature-1', '123', { groups: { org: '123' } })).resolves.toEqual(true)
       await expect(posthog.isFeatureEnabled('feature-4', '123', { groups: { org: '123' } })).resolves.toEqual(false)
-      expect(mockedUndici.fetch).toHaveBeenCalledTimes(2)
+      expect(mockedFetch).toHaveBeenCalledTimes(2)
     })
 
     it('captures feature flags when no personal API key is present', async () => {
-      mockedUndici.fetch.mockClear()
-      mockedUndici.request.mockClear()
-      expect(mockedUndici.fetch).toHaveBeenCalledTimes(0)
+      mockedFetch.mockClear()
+      mockedFetch.mockClear()
+      expect(mockedFetch).toHaveBeenCalledTimes(0)
 
       posthog = new PostHog('TEST_API_KEY', {
         host: 'http://example.com',
@@ -188,7 +185,7 @@ describe('PostHog Node.js', () => {
         sendFeatureFlags: true,
       })
 
-      expect(mockedUndici.fetch).toHaveBeenCalledWith(
+      expect(mockedFetch).toHaveBeenCalledWith(
         'http://example.com/decide/?v=2',
         expect.objectContaining({ method: 'POST' })
       )
@@ -213,7 +210,8 @@ describe('PostHog Node.js', () => {
       )
 
       // no calls to `/local_evaluation`
-      expect(mockedUndici.request).not.toHaveBeenCalled()
+
+      expect(mockedFetch).not.toHaveBeenCalledWith(...anyLocalEvalCall)
     })
 
     it('manages memory well when sending feature flags', async () => {
@@ -235,9 +233,10 @@ describe('PostHog Node.js', () => {
           },
         ],
       }
-      mockedUndici.request.mockImplementation(localEvaluationImplementation(flags))
 
-      mockedUndici.fetch.mockImplementation(decideImplementation({ 'beta-feature': 'decide-fallback-value' }))
+      mockedFetch.mockImplementation(
+        apiImplementation({ localFlags: flags, decideFlags: { 'beta-feature': 'decide-fallback-value' } })
+      )
 
       posthog = new PostHog('TEST_API_KEY', {
         host: 'http://example.com',
@@ -267,7 +266,7 @@ describe('PostHog Node.js', () => {
             }),
           },
         ])
-        mockedUndici.fetch.mockClear()
+        mockedFetch.mockClear()
 
         expect(Object.keys(posthog.distinctIdHasSentFlagCalls).length <= 10).toEqual(true)
       }
@@ -292,9 +291,10 @@ describe('PostHog Node.js', () => {
           },
         ],
       }
-      mockedUndici.request.mockImplementation(localEvaluationImplementation(flags))
 
-      mockedUndici.fetch.mockImplementation(decideImplementation({ 'decide-flag': 'decide-value' }))
+      mockedFetch.mockImplementation(
+        apiImplementation({ localFlags: flags, decideFlags: { 'decide-flag': 'decide-value' } })
+      )
 
       posthog = new PostHog('TEST_API_KEY', {
         host: 'http://example.com',
@@ -308,7 +308,7 @@ describe('PostHog Node.js', () => {
         })
       ).toEqual(true)
       jest.runOnlyPendingTimers()
-      expect(mockedUndici.fetch.mock.calls.length).toEqual(1)
+      expect(mockedFetch).toHaveBeenCalledWith('http://example.com/batch/', expect.any(Object))
 
       expect(getLastBatchEvents()?.[0]).toEqual(
         expect.objectContaining({
@@ -323,7 +323,7 @@ describe('PostHog Node.js', () => {
           }),
         })
       )
-      mockedUndici.fetch.mockClear()
+      mockedFetch.mockClear()
 
       // # called again for same user, shouldn't call capture again
       expect(
@@ -333,7 +333,7 @@ describe('PostHog Node.js', () => {
       ).toEqual(true)
       jest.runOnlyPendingTimers()
 
-      expect(mockedUndici.fetch).not.toBeCalled()
+      expect(mockedFetch).not.toHaveBeenCalledWith('http://example.com/batch/', expect.any(Object))
 
       // # called for different user, should call capture again
       expect(
@@ -343,7 +343,7 @@ describe('PostHog Node.js', () => {
         })
       ).toEqual(true)
       jest.runOnlyPendingTimers()
-      expect(mockedUndici.fetch.mock.calls.length).toEqual(1)
+      expect(mockedFetch).toHaveBeenCalledWith('http://example.com/batch/', expect.any(Object))
 
       expect(getLastBatchEvents()?.[0]).toEqual(
         expect.objectContaining({
@@ -359,7 +359,7 @@ describe('PostHog Node.js', () => {
           }),
         })
       )
-      mockedUndici.fetch.mockClear()
+      mockedFetch.mockClear()
 
       // # called for different user, but send configuration is false, so should NOT call capture again
       expect(
@@ -369,7 +369,7 @@ describe('PostHog Node.js', () => {
         })
       ).toEqual(true)
       jest.runOnlyPendingTimers()
-      expect(mockedUndici.fetch).not.toBeCalled()
+      expect(mockedFetch).not.toHaveBeenCalledWith('http://example.com/batch/', expect.any(Object))
 
       // # called for different flag, falls back to decide, should call capture again
       expect(
@@ -380,7 +380,8 @@ describe('PostHog Node.js', () => {
       ).toEqual('decide-value')
       jest.runOnlyPendingTimers()
       // one to decide, one to batch
-      expect(mockedUndici.fetch.mock.calls.length).toEqual(2)
+      expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
+      expect(mockedFetch).toHaveBeenCalledWith('http://example.com/batch/', expect.any(Object))
 
       expect(getLastBatchEvents()?.[0]).toEqual(
         expect.objectContaining({
@@ -396,7 +397,7 @@ describe('PostHog Node.js', () => {
           }),
         })
       )
-      mockedUndici.fetch.mockClear()
+      mockedFetch.mockClear()
 
       expect(
         await posthog.isFeatureEnabled('decide-flag', 'some-distinct-id2345', {
@@ -406,8 +407,8 @@ describe('PostHog Node.js', () => {
       ).toEqual(true)
       jest.runOnlyPendingTimers()
       // call decide, but not batch
-      expect(mockedUndici.fetch).toBeCalledTimes(1)
-      expect(mockedUndici.fetch.mock.calls.find((x) => (x[0] as string).includes('/batch/'))).toEqual(undefined)
+      expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
+      expect(mockedFetch).not.toHaveBeenCalledWith('http://example.com/batch/', expect.any(Object))
     })
   })
 })

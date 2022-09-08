@@ -2,9 +2,15 @@ import { PostHog } from 'posthog-node'
 // @ts-ignore
 import wtf from 'wtfnode'
 
-const posthog = new PostHog('YOUR API KEY', {
-  // host: 'http://127.0.0.1:8000',
-  personalApiKey: 'YOUR PERSONAL API KEY',
+const {
+  PH_API_KEY = 'YOUR API KEY',
+  PH_HOST = 'http://127.0.0.1:8000',
+  PH_PERSONAL_API_KEY = 'YOUR PERSONAL API KEY',
+} = process.env
+
+const posthog = new PostHog(PH_API_KEY, {
+  host: PH_HOST,
+  personalApiKey: PH_PERSONAL_API_KEY,
   featureFlagsPollingInterval: 10000,
   // flushAt: 1,
 })

@@ -1,11 +1,24 @@
 import express from 'express'
 import { PostHog } from 'posthog-node'
+import undici from 'undici'
 
 const app = express()
 
-const posthog = new PostHog('phc_sRe6hMjzNFoFM3FQFh4GkTeMiWr1V9oy5CxBgF2vbO2', {
-  host: 'http://localhost:8000',
+const {
+  PH_API_KEY = 'YOUR API KEY',
+  PH_HOST = 'http://127.0.0.1:8000',
+  PH_PERSONAL_API_KEY = 'YOUR PERSONAL API KEY',
+} = process.env
+
+const posthog = new PostHog(PH_API_KEY, {
+  host: PH_HOST,
   flushAt: 10,
+  personalApiKey: PH_PERSONAL_API_KEY,
+  // By default PostHog uses axios for fetch but you can specify your own implementation if preferred
+  fetch(url, options) {
+    console.log(url, options)
+    return undici.fetch(url, options)
+  },
 })
 
 posthog.debug()

@@ -2,54 +2,44 @@
 // Uncomment below line while developing to not compile code everytime
 import { PostHog as PostHog } from '../src/posthog-node'
 import { matchProperty, InconclusiveMatchError } from '../src/feature-flags'
-jest.mock('undici')
-import undici from 'undici'
+jest.mock('../src/fetch')
+import { fetch } from '../src/fetch'
 
 jest.spyOn(global.console, 'debug').mockImplementation()
 
-const mockedUndici = jest.mocked(undici, true)
+const mockedFetch = jest.mocked(fetch, true)
 
-export const localEvaluationImplementation =
-  (flags: any) =>
-  (url: any): Promise<any> => {
-    if ((url as any).includes('api/feature_flag/local_evaluation?token=TEST_API_KEY')) {
-      return Promise.resolve({
-        statusCode: 200,
-        body: {
-          text: () => Promise.resolve('ok'),
-          json: () => Promise.resolve(flags),
-        },
-      }) as any
-    }
-
-    return Promise.resolve({
-      statusCode: 401,
-      body: {
-        text: () => Promise.resolve('ok'),
-        json: () =>
-          Promise.resolve({
-            statusCode: 'ok',
-          }),
-      },
-    }) as any
-  }
-
-export const decideImplementation =
-  (flags: any, decideStatus: number = 200) =>
-  (url: any): Promise<any> => {
+export const apiImplementation = ({
+  localFlags,
+  decideFlags,
+  decideStatus = 200,
+}: {
+  localFlags?: any
+  decideFlags?: any
+  decideStatus?: number
+}) => {
+  return (url: any): Promise<any> => {
     if ((url as any).includes('/decide/')) {
       return Promise.resolve({
         status: decideStatus,
         text: () => Promise.resolve('ok'),
         json: () => {
           if (decideStatus !== 200) {
-            return Promise.resolve(flags)
+            return Promise.resolve(decideFlags)
           } else {
             return Promise.resolve({
-              featureFlags: flags,
+              featureFlags: decideFlags,
             })
           }
         },
+      }) as any
+    }
+
+    if ((url as any).includes('api/feature_flag/local_evaluation?token=TEST_API_KEY')) {
+      return Promise.resolve({
+        status: 200,
+        text: () => Promise.resolve('ok'),
+        json: () => Promise.resolve(localFlags),
       }) as any
     }
 
@@ -62,6 +52,13 @@ export const decideImplementation =
         }),
     }) as any
   }
+}
+
+export const anyLocalEvalCall = [
+  'http://example.com/api/feature_flag/local_evaluation?token=TEST_API_KEY',
+  expect.any(Object),
+]
+export const anyDecideCall = ['http://example.com/decide/?v=2', expect.any(Object)]
 
 describe('local evaluation', () => {
   let posthog: PostHog
@@ -100,7 +97,7 @@ describe('local evaluation', () => {
         },
       ],
     }
-    mockedUndici.request.mockImplementation(localEvaluationImplementation(flags))
+    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags }))
 
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
@@ -113,7 +110,7 @@ describe('local evaluation', () => {
     expect(
       await posthog.getFeatureFlag('person-flag', 'some-distinct-id', { personProperties: { region: 'Canada' } })
     ).toEqual(false)
-    expect(mockedUndici.request).toHaveBeenCalled()
+    expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
   })
 
   it('evaluates group properties', async () => {
@@ -146,7 +143,7 @@ describe('local evaluation', () => {
       ],
       group_type_mapping: { '0': 'company', '1': 'project' },
     }
-    mockedUndici.request.mockImplementation(localEvaluationImplementation(flags))
+    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags }))
 
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
@@ -189,9 +186,9 @@ describe('local evaluation', () => {
       })
     ).toEqual(false)
 
-    expect(mockedUndici.request).toHaveBeenCalled()
+    expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
     // decide not called
-    expect(mockedUndici.fetch).not.toHaveBeenCalled()
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
   })
 
   it('evaluates group properties and falls back to decide when group_type_mappings not present', async () => {
@@ -224,9 +221,9 @@ describe('local evaluation', () => {
       ],
       //   "group_type_mapping": {"0": "company", "1": "project"}
     }
-    mockedUndici.request.mockImplementation(localEvaluationImplementation(flags))
-
-    mockedUndici.fetch.mockImplementation(decideImplementation({ 'group-flag': 'decide-fallback-value' }))
+    mockedFetch.mockImplementation(
+      apiImplementation({ localFlags: flags, decideFlags: { 'group-flag': 'decide-fallback-value' } })
+    )
 
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
@@ -297,9 +294,9 @@ describe('local evaluation', () => {
         },
       ],
     }
-    mockedUndici.request.mockImplementation(localEvaluationImplementation(flags))
-
-    mockedUndici.fetch.mockImplementation(decideImplementation({ 'complex-flag': 'decide-fallback-value' }))
+    mockedFetch.mockImplementation(
+      apiImplementation({ localFlags: flags, decideFlags: { 'complex-flag': 'decide-fallback-value' } })
+    )
 
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
@@ -311,7 +308,7 @@ describe('local evaluation', () => {
         personProperties: { region: 'USA', name: 'Aloha' },
       })
     ).toEqual(true)
-    expect(mockedUndici.fetch).not.toHaveBeenCalled()
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
 
     // # this distinctIDs hash is < rollout %
     expect(
@@ -319,7 +316,7 @@ describe('local evaluation', () => {
         personProperties: { region: 'USA', email: 'a@b.com' },
       })
     ).toEqual(true)
-    expect(mockedUndici.fetch).not.toHaveBeenCalled()
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
 
     // # will fall back on `/decide`, as all properties present for second group, but that group resolves to false
     expect(
@@ -327,7 +324,7 @@ describe('local evaluation', () => {
         personProperties: { region: 'USA', email: 'a@b.com' },
       })
     ).toEqual('decide-fallback-value')
-    expect(mockedUndici.fetch).toHaveBeenCalledWith(
+    expect(mockedFetch).toHaveBeenCalledWith(
       'http://example.com/decide/?v=2',
       expect.objectContaining({
         body: JSON.stringify({
@@ -339,13 +336,13 @@ describe('local evaluation', () => {
         }),
       })
     )
-    mockedUndici.fetch.mockClear()
+    mockedFetch.mockClear()
 
     // # same as above
     expect(
       await posthog.getFeatureFlag('complex-flag', 'some-distinct-id', { personProperties: { doesnt_matter: '1' } })
     ).toEqual('decide-fallback-value')
-    expect(mockedUndici.fetch).toHaveBeenCalledWith(
+    expect(mockedFetch).toHaveBeenCalledWith(
       'http://example.com/decide/?v=2',
       expect.objectContaining({
         body: JSON.stringify({
@@ -357,13 +354,13 @@ describe('local evaluation', () => {
         }),
       })
     )
-    mockedUndici.fetch.mockClear()
+    mockedFetch.mockClear()
 
     expect(
       await posthog.getFeatureFlag('complex-flag', 'some-distinct-id', { personProperties: { region: 'USA' } })
     ).toEqual('decide-fallback-value')
-    expect(mockedUndici.fetch).toHaveBeenCalledTimes(1)
-    mockedUndici.fetch.mockClear()
+    expect(mockedFetch).toHaveBeenCalledTimes(1) // TODO: Check this
+    mockedFetch.mockClear()
 
     // # won't need to fallback when all values are present, and resolves to False
     expect(
@@ -371,7 +368,7 @@ describe('local evaluation', () => {
         personProperties: { region: 'USA', email: 'a@b.com', name: 'X', doesnt_matter: '1' },
       })
     ).toEqual(false)
-    expect(mockedUndici.fetch).not.toHaveBeenCalled()
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
   })
 
   it('falls back to decide', async () => {
@@ -414,10 +411,11 @@ describe('local evaluation', () => {
         },
       ],
     }
-    mockedUndici.request.mockImplementation(localEvaluationImplementation(flags))
-
-    mockedUndici.fetch.mockImplementation(
-      decideImplementation({ 'beta-feature': 'alakazam', 'beta-feature2': 'alakazam2' })
+    mockedFetch.mockImplementation(
+      apiImplementation({
+        localFlags: flags,
+        decideFlags: { 'beta-feature': 'alakazam', 'beta-feature2': 'alakazam2' },
+      })
     )
 
     posthog = new PostHog('TEST_API_KEY', {
@@ -427,12 +425,12 @@ describe('local evaluation', () => {
 
     // # beta-feature fallbacks to decide because property type is unknown
     expect(await posthog.getFeatureFlag('beta-feature', 'some-distinct-id')).toEqual('alakazam')
-    expect(mockedUndici.fetch).toHaveBeenCalledTimes(1)
-    mockedUndici.fetch.mockClear()
+    expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
+    mockedFetch.mockClear()
 
     // # beta-feature2 fallbacks to decide because region property not given with call
     expect(await posthog.getFeatureFlag('beta-feature2', 'some-distinct-id')).toEqual('alakazam2')
-    expect(mockedUndici.fetch).toHaveBeenCalledTimes(1)
+    expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
   })
 
   it('dont fall back to decide when local evaluation is set', async () => {
@@ -475,10 +473,11 @@ describe('local evaluation', () => {
         },
       ],
     }
-    mockedUndici.request.mockImplementation(localEvaluationImplementation(flags))
-
-    mockedUndici.fetch.mockImplementation(
-      decideImplementation({ 'beta-feature': 'alakazam', 'beta-feature2': 'alakazam2' })
+    mockedFetch.mockImplementation(
+      apiImplementation({
+        localFlags: flags,
+        decideFlags: { 'beta-feature': 'alakazam', 'beta-feature2': 'alakazam2' },
+      })
     )
 
     posthog = new PostHog('TEST_API_KEY', {
@@ -494,7 +493,7 @@ describe('local evaluation', () => {
     expect(await posthog.isFeatureEnabled('beta-feature', 'some-distinct-id', { onlyEvaluateLocally: true })).toEqual(
       undefined
     )
-    expect(mockedUndici.fetch).not.toHaveBeenCalled()
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
 
     // # beta-feature2 should fallback to decide because region property not given with call
     // # but doesn't because only_evaluate_locally is true
@@ -504,7 +503,7 @@ describe('local evaluation', () => {
     expect(await posthog.isFeatureEnabled('beta-feature2', 'some-distinct-id', { onlyEvaluateLocally: true })).toEqual(
       undefined
     )
-    expect(mockedUndici.fetch).not.toHaveBeenCalled()
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
   })
 
   it("doesn't return undefined when flag is evaluated successfully", async () => {
@@ -527,9 +526,7 @@ describe('local evaluation', () => {
         },
       ],
     }
-    mockedUndici.request.mockImplementation(localEvaluationImplementation(flags))
-
-    mockedUndici.fetch.mockImplementation(decideImplementation({}))
+    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags, decideFlags: {} }))
 
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
@@ -539,12 +536,12 @@ describe('local evaluation', () => {
     // # beta-feature resolves to False
     expect(await posthog.getFeatureFlag('beta-feature', 'some-distinct-id')).toEqual(false)
     expect(await posthog.isFeatureEnabled('beta-feature', 'some-distinct-id')).toEqual(false)
-    expect(mockedUndici.fetch).not.toHaveBeenCalled()
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
 
     // # beta-feature2 falls back to decide, and whatever decide returns is the value
     expect(await posthog.getFeatureFlag('beta-feature2', 'some-distinct-id')).toEqual(false)
     expect(await posthog.isFeatureEnabled('beta-feature2', 'some-distinct-id')).toEqual(false)
-    expect(mockedUndici.fetch).toHaveBeenCalledTimes(2)
+    expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
   })
 
   it('returns undefined when decide errors out', async () => {
@@ -567,9 +564,9 @@ describe('local evaluation', () => {
         },
       ],
     }
-    mockedUndici.request.mockImplementation(localEvaluationImplementation(flags))
-
-    mockedUndici.fetch.mockImplementation(decideImplementation({ error: 'went wrong' }, 400))
+    mockedFetch.mockImplementation(
+      apiImplementation({ localFlags: flags, decideFlags: { error: 'went wrong' }, decideStatus: 400 })
+    )
 
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
@@ -579,7 +576,7 @@ describe('local evaluation', () => {
     // # beta-feature2 falls back to decide, which on error returns undefined
     expect(await posthog.getFeatureFlag('beta-feature2', 'some-distinct-id')).toEqual(undefined)
     expect(await posthog.isFeatureEnabled('beta-feature2', 'some-distinct-id')).toEqual(undefined)
-    expect(mockedUndici.fetch).toHaveBeenCalledTimes(2)
+    expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
   })
 
   it('experience continuity flags are not evaluated locally', async () => {
@@ -603,9 +600,9 @@ describe('local evaluation', () => {
         },
       ],
     }
-    mockedUndici.request.mockImplementation(localEvaluationImplementation(flags))
-
-    mockedUndici.fetch.mockImplementation(decideImplementation({ 'beta-feature': 'decide-fallback-value' }))
+    mockedFetch.mockImplementation(
+      apiImplementation({ localFlags: flags, decideFlags: { 'beta-feature': 'decide-fallback-value' } })
+    )
 
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
@@ -614,7 +611,7 @@ describe('local evaluation', () => {
 
     // # beta-feature2 falls back to decide, which on error returns default
     expect(await posthog.getFeatureFlag('beta-feature', 'some-distinct-id')).toEqual('decide-fallback-value')
-    expect(mockedUndici.fetch).toHaveBeenCalledTimes(1)
+    expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
   })
 
   it('get all flags with fallback', async () => {
@@ -668,10 +665,11 @@ describe('local evaluation', () => {
         },
       ],
     }
-    mockedUndici.request.mockImplementation(localEvaluationImplementation(flags))
-
-    mockedUndici.fetch.mockImplementation(
-      decideImplementation({ 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' })
+    mockedFetch.mockImplementation(
+      apiImplementation({
+        localFlags: flags,
+        decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
+      })
     )
 
     posthog = new PostHog('TEST_API_KEY', {
@@ -685,8 +683,8 @@ describe('local evaluation', () => {
       'beta-feature2': 'variant-2',
       'disabled-feature': false,
     })
-    expect(mockedUndici.fetch).toHaveBeenCalledTimes(1)
-    mockedUndici.fetch.mockClear()
+    expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
+    mockedFetch.mockClear()
   })
 
   it('get all flags with fallback but only_locally_evaluated set', async () => {
@@ -740,10 +738,11 @@ describe('local evaluation', () => {
         },
       ],
     }
-    mockedUndici.request.mockImplementation(localEvaluationImplementation(flags))
-
-    mockedUndici.fetch.mockImplementation(
-      decideImplementation({ 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' })
+    mockedFetch.mockImplementation(
+      apiImplementation({
+        localFlags: flags,
+        decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
+      })
     )
 
     posthog = new PostHog('TEST_API_KEY', {
@@ -756,17 +755,18 @@ describe('local evaluation', () => {
       'beta-feature': true,
       'disabled-feature': false,
     })
-    expect(mockedUndici.fetch).not.toHaveBeenCalled()
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
   })
 
   it('get all flags with fallback, with no local flags', async () => {
     const flags = {
       flags: [],
     }
-    mockedUndici.request.mockImplementation(localEvaluationImplementation(flags))
-
-    mockedUndici.fetch.mockImplementation(
-      decideImplementation({ 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' })
+    mockedFetch.mockImplementation(
+      apiImplementation({
+        localFlags: flags,
+        decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
+      })
     )
 
     posthog = new PostHog('TEST_API_KEY', {
@@ -778,8 +778,8 @@ describe('local evaluation', () => {
       'beta-feature': 'variant-1',
       'beta-feature2': 'variant-2',
     })
-    expect(mockedUndici.fetch).toHaveBeenCalledTimes(1)
-    mockedUndici.fetch.mockClear()
+    expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
+    mockedFetch.mockClear()
   })
 
   it('get all flags with no fallback', async () => {
@@ -818,10 +818,11 @@ describe('local evaluation', () => {
         },
       ],
     }
-    mockedUndici.request.mockImplementation(localEvaluationImplementation(flags))
-
-    mockedUndici.fetch.mockImplementation(
-      decideImplementation({ 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' })
+    mockedFetch.mockImplementation(
+      apiImplementation({
+        localFlags: flags,
+        decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
+      })
     )
 
     posthog = new PostHog('TEST_API_KEY', {
@@ -830,7 +831,7 @@ describe('local evaluation', () => {
     })
 
     expect(await posthog.getAllFlags('distinct-id')).toEqual({ 'beta-feature': true, 'disabled-feature': false })
-    expect(mockedUndici.fetch).not.toHaveBeenCalled()
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
   })
 
   it('computes inactive flags locally as well', async () => {
@@ -869,10 +870,11 @@ describe('local evaluation', () => {
         },
       ],
     }
-    mockedUndici.request.mockImplementation(localEvaluationImplementation(flags))
-
-    mockedUndici.fetch.mockImplementation(
-      decideImplementation({ 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' })
+    mockedFetch.mockImplementation(
+      apiImplementation({
+        localFlags: flags,
+        decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
+      })
     )
 
     posthog = new PostHog('TEST_API_KEY', {
@@ -881,7 +883,7 @@ describe('local evaluation', () => {
     })
 
     expect(await posthog.getAllFlags('distinct-id')).toEqual({ 'beta-feature': true, 'disabled-feature': false })
-    expect(mockedUndici.fetch).not.toHaveBeenCalled()
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
 
     //   # Now, after a poll interval, flag 1 is inactive, and flag 2 rollout is set to 100%.
     const flags2 = {
@@ -919,13 +921,13 @@ describe('local evaluation', () => {
         },
       ],
     }
-    mockedUndici.request.mockImplementation(localEvaluationImplementation(flags2))
+    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags2 }))
 
     // # force reload to simulate poll interval
     await posthog.reloadFeatureFlags()
 
     expect(await posthog.getAllFlags('distinct-id')).toEqual({ 'beta-feature': false, 'disabled-feature': true })
-    expect(mockedUndici.fetch).not.toHaveBeenCalled()
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
   })
 })
 
@@ -1127,9 +1129,7 @@ describe('consistency tests', () => {
       ],
     }
 
-    mockedUndici.request.mockImplementation(localEvaluationImplementation(flags))
-
-    mockedUndici.fetch.mockImplementation(decideImplementation({}, 400))
+    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags, decideFlags: {}, decideStatus: 400 }))
 
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
@@ -2171,9 +2171,7 @@ describe('consistency tests', () => {
       ],
     }
 
-    mockedUndici.request.mockImplementation(localEvaluationImplementation(flags))
-
-    mockedUndici.fetch.mockImplementation(decideImplementation({}, 400))
+    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags, decideFlags: {}, decideStatus: 400 }))
 
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
