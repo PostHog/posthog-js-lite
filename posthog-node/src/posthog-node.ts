@@ -10,7 +10,7 @@ import {
 import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
 import { EventMessageV1, GroupIdentifyMessage, IdentifyMessageV1, PostHogNodeV1 } from './types'
 import { FeatureFlagsPoller } from './feature-flags'
-import fetch from 'node-fetch'
+import { fetch } from './fetch'
 
 export type PostHogOptions = PosthogCoreOptions & {
   persistence?: 'memory'
@@ -52,7 +52,7 @@ class PostHogClient extends PostHogCore {
   }
 
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
-    return this.options.fetch ? this.options.fetch(url, options) : fetch(url, options as any)
+    return this.options.fetch ? this.options.fetch(url, options) : fetch(url, options)
   }
 
   getLibraryId(): string {

@@ -2,8 +2,8 @@ import { createHash } from 'crypto'
 import { FeatureFlagCondition, PostHogFeatureFlag } from './types'
 import { version } from '../package.json'
 import { PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src'
-import fetch from 'node-fetch'
 import { safeSetTimeout } from 'posthog-core/src/utils'
+import { fetch } from './fetch'
 
 // eslint-disable-next-line
 const LONG_SCALE = 0xfffffffffffffff
@@ -69,7 +69,7 @@ class FeatureFlagsPoller {
     this.host = host
     this.poller = undefined
     // NOTE: as any is required here as the AbortSignal typing is slightly misaligned but works just fine
-    this.fetch = options.fetch || (fetch as any)
+    this.fetch = options.fetch || fetch
 
     void this.loadFeatureFlags()
   }

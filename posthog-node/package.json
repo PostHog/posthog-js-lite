@@ -19,11 +19,10 @@
   "module": "lib/index.esm.js",
   "types": "lib/index.d.ts",
   "dependencies": {
-    "node-fetch": "2.6.7"
+    "axios": "^0.27.0"
   },
   "devDependencies": {
     "@types/node": "^18.0.0",
-    "@types/node-fetch": "^2.6.2",
     "commander": "^9.3.0"
   },
   "keywords": [
