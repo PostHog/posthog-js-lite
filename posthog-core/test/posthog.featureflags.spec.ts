@@ -218,33 +218,45 @@ describe('PostHog Core', () => {
 
   describe('bootstapped feature flags', () => {
     beforeEach(() => {
-      ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1, bootstrap: { distinctId: 'tomato', featureFlags: {'bootstrap-1': 'variant-1', 'enabled': true, 'disabled': false}} }, (_mocks) => {
-        _mocks.fetch.mockImplementation((url) => {
-          if (url.includes('/decide/')) {
+      ;[posthog, mocks] = createTestClient(
+        'TEST_API_KEY',
+        {
+          flushAt: 1,
+          bootstrap: {
+            distinctId: 'tomato',
+            featureFlags: { 'bootstrap-1': 'variant-1', enabled: true, disabled: false },
+          },
+        },
+        (_mocks) => {
+          _mocks.fetch.mockImplementation((url) => {
+            if (url.includes('/decide/')) {
+              return Promise.resolve({
+                status: 200,
+                text: () => Promise.resolve('ok'),
+                json: () =>
+                  Promise.resolve({
+                    featureFlags: mockFeatureFlags,
+                  }),
+              })
+            }
+
             return Promise.resolve({
               status: 200,
               text: () => Promise.resolve('ok'),
               json: () =>
                 Promise.resolve({
-                  featureFlags: mockFeatureFlags,
+                  status: 'ok',
                 }),
             })
-          }
-  
-          return Promise.resolve({
-            status: 200,
-            text: () => Promise.resolve('ok'),
-            json: () =>
-              Promise.resolve({
-                status: 'ok',
-              }),
           })
-        })
-      })
+        }
+      )
+
+      jest.runOnlyPendingTimers() // trigger init setImmediate
     })
 
     it('getFeatureFlags should return bootstrapped flags', () => {
-      expect(posthog.getFeatureFlags()).toEqual({'bootstrap-1': 'variant-1', 'enabled': true})
+      expect(posthog.getFeatureFlags()).toEqual({ 'bootstrap-1': 'variant-1', enabled: true })
       expect(posthog.getDistinctId()).toEqual('tomato')
       expect(posthog.getAnonymousId()).toEqual('tomato')
     })
@@ -263,32 +275,26 @@ describe('PostHog Core', () => {
       expect(posthog.isFeatureEnabled('disabled')).toEqual(false)
     })
 
-    describe('when loaded', () => {
-      beforeEach(() => {
-        jest.runOnlyPendingTimers() // trigger init setImmediate
+    it('should load new feature flags', async () => {
+      expect(mocks.fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=2', {
+        body: JSON.stringify({
+          token: 'TEST_API_KEY',
+          distinct_id: posthog.getDistinctId(),
+          $anon_distinct_id: 'tomato',
+          groups: {},
+          person_properties: {},
+          group_properties: {},
+        }),
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       })
 
-      it('should load new feature flags', async () => {
-        expect(mocks.fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=2', {
-          body: JSON.stringify({
-            token: 'TEST_API_KEY',
-            distinct_id: posthog.getDistinctId(),
-            $anon_distinct_id: 'tomato',
-            groups: {},
-            person_properties: {},
-            group_properties: {},
-          }),
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        })
-
-        expect(posthog.getFeatureFlags()).toEqual({
-          'feature-1': true,
-          'feature-2': true,
-          'feature-variant': 'variant',
-        })
+      expect(posthog.getFeatureFlags()).toEqual({
+        'feature-1': true,
+        'feature-2': true,
+        'feature-variant': 'variant',
       })
     })
   })

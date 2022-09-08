@@ -70,12 +70,12 @@ export abstract class PostHogCore {
     this._sessionExpirationTimeSeconds = options?.sessionExpirationTimeSeconds ?? 1800 // 30 minutes
 
     // NOTE: It is important we don't initiate anything in the constructor as some async IO may still be underway on the parent
-    if (options?.preloadFeatureFlags !== false) {
-      safeSetTimeout(() => {
-        this.setupBootstrap(options)
+    safeSetTimeout(() => {
+      this.setupBootstrap(options)
+      if (options?.preloadFeatureFlags !== false) {
         void this.reloadFeatureFlagsAsync()
-      }, 1)
-    }
+      }
+    }, 1)
   }
 
   protected getCommonEventProperties(): any {

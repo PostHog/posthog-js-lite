@@ -15,7 +15,6 @@ export class PostHogCoreTestClient extends PostHogCore {
 
   constructor(private mocks: PostHogCoreTestClientMocks, apiKey: string, options?: PosthogCoreOptions) {
     super(apiKey, options)
-    this.setupBootstrap(options)
   }
 
   getPersistedProperty<T>(key: string): T {
