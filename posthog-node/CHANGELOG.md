@@ -1,3 +1,9 @@
+# 2.1.0 - 2022-09-08
+
+1. Swaps `unidici` for `axios` in order to support older versions of Node
+2. The `fetch` implementation can be overridden as an option for those who wish to use an alternative implementation
+3. Fixes the minimum Node version to >=14.17.0
+
 # 2.0.2 - 2022-08-23
 
 1. Removes references to `cli.js`
@@ -12,7 +18,6 @@ Breaking changes:
 3. Default polling interval for feature flags is now set at 30 seconds. If you don't want local evaluation, don't set a personal API key in the library.
 4. The `callback` parameter passed as an optional last argument to most of the methods is no longer supported
 5. The CLI is no longer supported
-
 
 What's new:
 
