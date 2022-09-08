@@ -30,6 +30,7 @@ export class PostHog extends PostHogCore {
   constructor(apiKey: string, options?: PostHogOptions) {
     super(apiKey, options)
     this._persistence = options?.persistence
+    this.setupBootstrap(options)
 
     AppState.addEventListener('change', () => {
       this.flush()

@@ -11,6 +11,12 @@ export type PosthogCoreOptions = {
   sendFeatureFlagEvent?: boolean
   // Whether to load feature flags when initialised or not
   preloadFeatureFlags?: boolean
+  // Option to bootstrap the library with given distinctId and feature flags
+  bootstrap?: {
+    distinctId?: string
+    isIdentifiedId?: boolean
+    featureFlags?: Record<string, boolean | string>
+  }
   // How many times we will retry HTTP requests
   fetchRetryCount?: number
   // The delay between HTTP request retries

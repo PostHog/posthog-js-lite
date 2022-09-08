@@ -94,6 +94,28 @@ export abstract class PostHogCore {
     }
   }
 
+  protected setupBootstrap(options?: Partial<PosthogCoreOptions>): void {
+    if (options?.bootstrap?.distinctId) {
+      if (options?.bootstrap?.isIdentifiedId) {
+        this.setPersistedProperty(PostHogPersistedProperty.DistinctId, options.bootstrap.distinctId)
+      } else {
+        this.setPersistedProperty(PostHogPersistedProperty.AnonymousId, options.bootstrap.distinctId)
+      }
+    }
+    
+    if (options?.bootstrap?.featureFlags) {
+      const activeFlags = Object.keys(options.bootstrap?.featureFlags || {})
+        .filter((flag) => !!options.bootstrap?.featureFlags?.[flag])
+        .reduce(
+            (res: Record<string, string | boolean>, key) => (
+                (res[key] = options.bootstrap?.featureFlags?.[key] || false), res
+            ),
+            {}
+        )
+        this.setKnownFeatureFlags(activeFlags)
+    }
+  }
+
   // NOTE: Props are lazy loaded from localstorage hence the complex getter setter logic
   private get props(): PostHogEventProperties {
     if (!this._props) {
@@ -409,11 +431,7 @@ export abstract class PostHogCore {
       .then((r) => r.json() as Promise<PostHogDecideResponse>)
       .then((res) => {
         if (res.featureFlags) {
-          this.setPersistedProperty<PostHogDecideResponse['featureFlags']>(
-            PostHogPersistedProperty.FeatureFlags,
-            res.featureFlags
-          )
-          this._events.emit('featureflags', res.featureFlags)
+          this.setKnownFeatureFlags(res.featureFlags)
         }
 
         return res
@@ -422,6 +440,14 @@ export abstract class PostHogCore {
         this._decideResponsePromise = undefined
       })
     return this._decideResponsePromise
+  }
+
+  private setKnownFeatureFlags(featureFlags: PostHogDecideResponse['featureFlags']): void {
+    this.setPersistedProperty<PostHogDecideResponse['featureFlags']>(
+      PostHogPersistedProperty.FeatureFlags,
+      featureFlags
+    )
+    this._events.emit('featureflags', featureFlags)
   }
 
   getFeatureFlag(key: string): boolean | string | undefined {
