@@ -1,5 +1,5 @@
 import { version } from '../package.json'
-import fetch from 'node-fetch'
+
 import {
   PostHogCore,
   PosthogCoreOptions,
@@ -10,6 +10,7 @@ import {
 import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
 import { EventMessageV1, GroupIdentifyMessage, IdentifyMessageV1, PostHogNodeV1 } from './types'
 import { FeatureFlagsPoller } from './feature-flags'
+import fetch from 'node-fetch'
 
 export type PostHogOptions = PosthogCoreOptions & {
   persistence?: 'memory'
