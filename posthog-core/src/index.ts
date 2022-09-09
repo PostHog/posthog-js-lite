@@ -71,7 +71,6 @@ export abstract class PostHogCore {
 
     // NOTE: It is important we don't initiate anything in the constructor as some async IO may still be underway on the parent
     safeSetTimeout(() => {
-      this.setupBootstrap(options)
       if (options?.preloadFeatureFlags !== false) {
         void this.reloadFeatureFlagsAsync()
       }

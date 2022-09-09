@@ -9,11 +9,11 @@ describe('PostHog Core', () => {
   jest.useFakeTimers()
   jest.setSystemTime(new Date('2022-01-01'))
 
-  const mockFeatureFlags = {
+  const createMockFeatureFlags = (): any => ({
     'feature-1': true,
     'feature-2': true,
     'feature-variant': 'variant',
-  }
+  })
 
   beforeEach(() => {
     ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1 }, (_mocks) => {
@@ -24,7 +24,7 @@ describe('PostHog Core', () => {
             text: () => Promise.resolve('ok'),
             json: () =>
               Promise.resolve({
-                featureFlags: mockFeatureFlags,
+                featureFlags: createMockFeatureFlags(),
               }),
           })
         }
@@ -57,8 +57,8 @@ describe('PostHog Core', () => {
     })
 
     it('should load persisted feature flags', () => {
-      posthog.setPersistedProperty(PostHogPersistedProperty.FeatureFlags, mockFeatureFlags)
-      expect(posthog.getFeatureFlags()).toEqual(mockFeatureFlags)
+      posthog.setPersistedProperty(PostHogPersistedProperty.FeatureFlags, createMockFeatureFlags())
+      expect(posthog.getFeatureFlags()).toEqual(createMockFeatureFlags())
     })
 
     it('should only call fetch once if already calling', async () => {
@@ -67,7 +67,7 @@ describe('PostHog Core', () => {
       posthog.reloadFeatureFlagsAsync()
       const flags = await posthog.reloadFeatureFlagsAsync()
       expect(mocks.fetch).toHaveBeenCalledTimes(1)
-      expect(flags).toEqual(mockFeatureFlags)
+      expect(flags).toEqual(createMockFeatureFlags())
     })
 
     describe('when loaded', () => {
@@ -180,7 +180,7 @@ describe('PostHog Core', () => {
       })
 
       it('should persist feature flags', () => {
-        expect(posthog.getPersistedProperty(PostHogPersistedProperty.FeatureFlags)).toEqual(mockFeatureFlags)
+        expect(posthog.getPersistedProperty(PostHogPersistedProperty.FeatureFlags)).toEqual(createMockFeatureFlags())
       })
 
       it('should include feature flags in subsequent captures', () => {
@@ -235,7 +235,7 @@ describe('PostHog Core', () => {
                 text: () => Promise.resolve('ok'),
                 json: () =>
                   Promise.resolve({
-                    featureFlags: mockFeatureFlags,
+                    featureFlags: createMockFeatureFlags(),
                   }),
               })
             }
@@ -251,8 +251,6 @@ describe('PostHog Core', () => {
           })
         }
       )
-
-      jest.runOnlyPendingTimers() // trigger init setImmediate
     })
 
     it('getFeatureFlags should return bootstrapped flags', () => {
@@ -275,26 +273,32 @@ describe('PostHog Core', () => {
       expect(posthog.isFeatureEnabled('disabled')).toEqual(false)
     })
 
-    it('should load new feature flags', async () => {
-      expect(mocks.fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=2', {
-        body: JSON.stringify({
-          token: 'TEST_API_KEY',
-          distinct_id: posthog.getDistinctId(),
-          $anon_distinct_id: 'tomato',
-          groups: {},
-          person_properties: {},
-          group_properties: {},
-        }),
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+    describe('when loaded', () => {
+      beforeEach(() => {
+        jest.runOnlyPendingTimers() // trigger init setImmediate
       })
 
-      expect(posthog.getFeatureFlags()).toEqual({
-        'feature-1': true,
-        'feature-2': true,
-        'feature-variant': 'variant',
+      it('should load new feature flags', async () => {
+        expect(mocks.fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=2', {
+          body: JSON.stringify({
+            token: 'TEST_API_KEY',
+            distinct_id: posthog.getDistinctId(),
+            $anon_distinct_id: 'tomato',
+            groups: {},
+            person_properties: {},
+            group_properties: {},
+          }),
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+
+        expect(posthog.getFeatureFlags()).toEqual({
+          'feature-1': true,
+          'feature-2': true,
+          'feature-variant': 'variant',
+        })
       })
     })
   })
