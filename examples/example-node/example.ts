@@ -2,7 +2,6 @@ import { PostHog } from 'posthog-node'
 // @ts-ignore
 import wtf from 'wtfnode'
 
-
 const {
   PH_API_KEY = 'YOUR API KEY',
   PH_HOST = 'http://127.0.0.1:8000',
