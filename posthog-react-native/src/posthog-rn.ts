@@ -39,7 +39,6 @@ export class PostHog extends PostHogCore {
 
     // It is possible that the old library was used so we try to get the legacy distinctID
     void preloadSemiAsyncStorage().then(() => {
-      // We run this extra here as the storage may have been reset...
       this.setupBootstrap(options)
 
       if (!SemiAsyncStorage.getItem(PostHogPersistedProperty.AnonymousId)) {
