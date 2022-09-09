@@ -6,7 +6,7 @@ const POSTHOG_STORAGE_VERSION = 'v1'
 type PostHogStorageContents = { [key: string]: any }
 
 const loadStorageAsync = async (): Promise<PostHogStorageContents> => {
-  const uri = FileSystem.documentDirectory + POSTHOG_STORAGE_KEY
+  const uri = (FileSystem.documentDirectory || '') + POSTHOG_STORAGE_KEY
   // If we change POSTHOG_STORAGE_VERSION then we should migrate the persisted data here
   try {
     const stringContent = await FileSystem.readAsStringAsync(uri)
@@ -17,7 +17,7 @@ const loadStorageAsync = async (): Promise<PostHogStorageContents> => {
 }
 
 const persitStorageAsync = async (content: PostHogStorageContents): Promise<void> => {
-  const uri = FileSystem.documentDirectory + POSTHOG_STORAGE_KEY
+  const uri = (FileSystem.documentDirectory || '') + POSTHOG_STORAGE_KEY
   const data = {
     version: POSTHOG_STORAGE_VERSION,
     content,

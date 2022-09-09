@@ -61,7 +61,7 @@ export class PostHog extends PostHogCore {
   }
   setPersistedProperty<T>(key: PostHogPersistedProperty, value: T | null): void {
     if (this._persistence === 'memory') {
-      return this._memoryStorage.getProperty(key)
+      return this._memoryStorage.setProperty(key, value)
     }
     return value !== null ? SemiAsyncStorage.setItem(key, value) : SemiAsyncStorage.removeItem(key)
   }
