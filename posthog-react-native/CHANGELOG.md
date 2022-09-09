@@ -1,3 +1,6 @@
+# 2.1.1 - 2022-09-09
+
+1. Support for bootstrapping feature flags and distinctIDs. This allows you to initialise the library with a set of feature flags and distinctID that are immediately available.
 # 2.1.0 - 2022-09-02
 
 What's new:

@@ -20,6 +20,7 @@ export class PostHog extends PostHogCore {
     // posthog-js stores options in one object on
     this._storageKey = options?.persistence_name ? `ph_${options.persistence_name}` : `ph_${apiKey}_posthog`
     this._storage = getStorage(options?.persistence || 'localStorage')
+    this.setupBootstrap(options)
   }
 
   getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined {

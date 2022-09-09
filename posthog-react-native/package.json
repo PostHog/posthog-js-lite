@@ -1,6 +1,6 @@
 {
   "name": "posthog-react-native",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "main": "lib/index.cjs.js",
   "module": "lib/index.esm.js",
   "types": "lib/index.d.ts",
@@ -20,15 +20,16 @@
     "expo-device": "^4.0.0",
     "expo-file-system": "^13.0.0",
     "expo-localization": "~11.0.0",
+    "jest-expo": "^46.0.1",
     "react": "^18.2.0",
     "react-native": "^0.69.1"
   },
   "peerDependencies": {
     "@react-navigation/native": ">= 5.0.10",
-    "expo-localization": ">= 11.0.0",
-    "expo-file-system": ">= 13.0.0",
     "expo-application": ">= 4.0.0",
-    "expo-device": ">= 4.0.0"
+    "expo-device": ">= 4.0.0",
+    "expo-file-system": ">= 13.0.0",
+    "expo-localization": ">= 11.0.0"
   },
   "peerDependenciesMeta": {
     "@react-navigation/native": {

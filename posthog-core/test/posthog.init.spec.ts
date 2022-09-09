@@ -54,5 +54,32 @@ describe('PostHog Core', () => {
 
       expect((posthog as any).host).toEqual('http://my-posthog.com')
     })
+
+    it('should use bootstrapped distinct ID when present', () => {
+      ;[posthog, mocks] = createTestClient('TEST_API_KEY', { bootstrap: { distinctId: 'new_anon_id' } })
+
+      expect((posthog as any).getDistinctId()).toEqual('new_anon_id')
+      expect((posthog as any).getAnonymousId()).toEqual('new_anon_id')
+
+      posthog.identify('random_id')
+
+      expect((posthog as any).getDistinctId()).toEqual('random_id')
+      expect((posthog as any).getAnonymousId()).toEqual('new_anon_id')
+    })
+
+    it('should use bootstrapped distinct ID as identified ID when present', () => {
+      ;[posthog, mocks] = createTestClient('TEST_API_KEY', {
+        bootstrap: { distinctId: 'new_id', isIdentifiedId: true },
+      })
+      jest.runOnlyPendingTimers()
+
+      expect((posthog as any).getDistinctId()).toEqual('new_id')
+      expect((posthog as any).getAnonymousId()).not.toEqual('new_id')
+
+      posthog.identify('random_id')
+
+      expect((posthog as any).getDistinctId()).toEqual('random_id')
+      expect((posthog as any).getAnonymousId()).toEqual('new_id')
+    })
   })
 })

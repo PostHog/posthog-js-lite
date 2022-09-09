@@ -8,7 +8,6 @@ describe('PostHog React Native', () => {
   jest.useRealTimers()
   describe('storage', () => {
     beforeEach(() => {
-      mockedFileSystem.documentDirectory = 'file://documents/'
       mockedFileSystem.readAsStringAsync.mockImplementation(() => {
         const res = Promise.resolve(
           JSON.stringify({
@@ -36,7 +35,7 @@ describe('PostHog React Native', () => {
       SemiAsyncStorage.setItem('foo', 'bar2')
       expect(SemiAsyncStorage.getItem('foo')).toEqual('bar2')
       expect(mockedFileSystem.writeAsStringAsync).toHaveBeenCalledWith(
-        'file://documents/.posthog-rn.json',
+        '.posthog-rn.json',
         JSON.stringify({
           version: 'v1',
           content: {
