@@ -9,4 +9,11 @@ describe('PostHog React Native', () => {
     expect(posthog.getAnonymousId()).toEqual('bar')
     expect(posthog.getDistinctId()).toEqual('bar')
   })
+
+  it('should initialize properly with bootstrap using async storage', () => {
+    posthog = new PostHog('test-token', { bootstrap: { distinctId: 'bar' }, persistence: 'file' })
+    jest.runOnlyPendingTimers()
+    expect(posthog.getAnonymousId()).toEqual('bar')
+    expect(posthog.getDistinctId()).toEqual('bar')
+  })
 })
