@@ -1103,10 +1103,10 @@ describe('match properties', () => {
     // is date before
     const property_a = { key: 'key', value: '2022-05-01', operator: 'is_date_before' }
     expect(matchProperty(property_a, { key: '2022-03-01' })).toBe(true)
-    expect(matchProperty(property_a, { key: '2022-04-30', })).toBe(true)
-    expect(matchProperty(property_a, { key: new Date(2022, 4, 30) })).toBe(true)
-    expect(matchProperty(property_a, { key: new Date(2022, 4, 30, 1, 2, 3) })).toBe(true)
-    expect(matchProperty(property_a, { key: new Date("2022-04-30T00:00:00+02:00") })).toBe(true) // europe/madrid
+    expect(matchProperty(property_a, { key: '2022-04-30' })).toBe(true)
+    expect(matchProperty(property_a, { key: new Date(2022, 3, 30) })).toBe(true)
+    expect(matchProperty(property_a, { key: new Date(2022, 3, 30, 1, 2, 3) })).toBe(true)
+    expect(matchProperty(property_a, { key: new Date('2022-04-30T00:00:00+02:00') })).toBe(true) // europe/madrid
     expect(matchProperty(property_a, { key: new Date('2022-04-30') })).toBe(true)
     expect(matchProperty(property_a, { key: '2022-05-30' })).toBe(false)
 
@@ -1114,7 +1114,7 @@ describe('match properties', () => {
     const property_b = { key: 'key', value: '2022-05-01', operator: 'is_date_after' }
     expect(matchProperty(property_b, { key: '2022-05-02' })).toBe(true)
     expect(matchProperty(property_b, { key: '2022-05-30' })).toBe(true)
-    expect(matchProperty(property_b, { key: new Date(2022, 5, 30) })).toBe(true)
+    expect(matchProperty(property_b, { key: new Date(2022, 4, 30) })).toBe(true)
     expect(matchProperty(property_b, { key: new Date('2022-05-30') })).toBe(true)
     expect(matchProperty(property_b, { key: '2022-04-30' })).toBe(false)
 
