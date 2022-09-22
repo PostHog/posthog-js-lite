@@ -1098,6 +1098,42 @@ describe('match properties', () => {
     expect(matchProperty(property_d, { key: '44' })).toBe(false)
     expect(matchProperty(property_d, { key: 44 })).toBe(false)
   })
+
+  it('with date operators', () => {
+    // is date before
+    const property_a = { key: 'key', value: '2022-05-01', operator: 'is_date_before' }
+    expect(matchProperty(property_a, { key: '2022-03-01' })).toBe(true)
+    expect(matchProperty(property_a, { key: '2022-04-30', })).toBe(true)
+    expect(matchProperty(property_a, { key: new Date(2022, 4, 30) })).toBe(true)
+    expect(matchProperty(property_a, { key: new Date(2022, 4, 30, 1, 2, 3) })).toBe(true)
+    expect(matchProperty(property_a, { key: new Date("2022-04-30T00:00:00+02:00") })).toBe(true) // europe/madrid
+    expect(matchProperty(property_a, { key: new Date('2022-04-30') })).toBe(true)
+    expect(matchProperty(property_a, { key: '2022-05-30' })).toBe(false)
+
+    // is date after
+    const property_b = { key: 'key', value: '2022-05-01', operator: 'is_date_after' }
+    expect(matchProperty(property_b, { key: '2022-05-02' })).toBe(true)
+    expect(matchProperty(property_b, { key: '2022-05-30' })).toBe(true)
+    expect(matchProperty(property_b, { key: new Date(2022, 5, 30) })).toBe(true)
+    expect(matchProperty(property_b, { key: new Date('2022-05-30') })).toBe(true)
+    expect(matchProperty(property_b, { key: '2022-04-30' })).toBe(false)
+
+    // can't be a number or invalid string
+    expect(() => matchProperty(property_a, { key: 1 })).toThrow(InconclusiveMatchError)
+    expect(() => matchProperty(property_a, { key: 'abcdef' })).toThrow(InconclusiveMatchError)
+    // invalid flag property
+    const property_c = { key: 'key', value: 1234, operator: 'is_date_before' }
+    expect(() => matchProperty(property_c, { key: '2022-05-30' })).toThrow(InconclusiveMatchError)
+
+    // Timezone
+    const property_d = { key: 'key', value: '2022-04-05 12:34:12 +01:00', operator: 'is_date_before' }
+    expect(matchProperty(property_d, { key: '2022-05-30' })).toBe(false)
+
+    expect(matchProperty(property_d, { key: '2022-03-30' })).toBe(true)
+    expect(matchProperty(property_d, { key: '2022-04-05 12:34:11+01:00' })).toBe(true)
+    expect(matchProperty(property_d, { key: '2022-04-05 11:34:11 +00:00' })).toBe(true)
+    expect(matchProperty(property_d, { key: '2022-04-05 11:34:13 +00:00' })).toBe(false)
+  })
 })
 
 describe('consistency tests', () => {

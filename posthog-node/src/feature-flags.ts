@@ -394,6 +394,13 @@ function matchProperty(
       return typeof overrideValue == typeof value && overrideValue < value
     case 'lte':
       return typeof overrideValue == typeof value && overrideValue <= value
+    case 'is_date_after': case 'is_date_before':
+      const parsedDate = convertToDateTime(value)
+      const overrideDate = convertToDateTime(overrideValue)
+      if (operator === 'is_date_after') {
+        return overrideDate < parsedDate
+      }
+      return parsedDate < overrideDate
     default:
       console.error(`Unknown operator: ${operator}`)
       return false
@@ -406,6 +413,21 @@ function isValidRegex(regex: string): boolean {
     return true
   } catch (err) {
     return false
+  }
+}
+
+function convertToDateTime(value: string | number | (string | number)[] | Date): Date {
+  if (value instanceof Date) {
+    return value
+  } else if (typeof value === 'string') {
+    try {
+      const parsedDate = new Date(value)
+      return parsedDate
+    } catch (e) {
+      throw new InconclusiveMatchError(`${e} is in an invalid date format`)
+    }
+  } else {
+    throw new InconclusiveMatchError(`The date provided ${value} must be a string or date object`)
   }
 }
 
