@@ -1119,7 +1119,7 @@ describe('match properties', () => {
     expect(matchProperty(property_b, { key: '2022-04-30' })).toBe(false)
 
     // can't be an invalid number or invalid string
-    expect(() => matchProperty(property_a, { key: 62802180000012345 })).toThrow(InconclusiveMatchError)
+    expect(() => matchProperty(property_a, { key: 62802180000012345n })).toThrow(InconclusiveMatchError)
     expect(() => matchProperty(property_a, { key: 'abcdef' })).toThrow(InconclusiveMatchError)
     // invalid flag property
     const property_c = { key: 'key', value: 'abcd123', operator: 'is_date_before' }
