@@ -420,14 +420,14 @@ function isValidRegex(regex: string): boolean {
 function convertToDateTime(value: string | number | (string | number)[] | Date): Date {
   if (value instanceof Date) {
     return value
-  } else if (typeof value === 'string') {
-    const timestamp = Date.parse(value)
-    if (isNaN(timestamp) == false) {
-      return new Date(timestamp)
+  } else if (typeof value === 'string' || typeof value === 'number') {
+    const date = new Date(value)
+    if (!isNaN(date.valueOf())) {
+      return date
     }
     throw new InconclusiveMatchError(`${value} is in an invalid date format`)
   } else {
-    throw new InconclusiveMatchError(`The date provided ${value} must be a string or date object`)
+    throw new InconclusiveMatchError(`The date provided ${value} must be a string, number, or date object`)
   }
 }
 

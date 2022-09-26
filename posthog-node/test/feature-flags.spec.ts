@@ -1118,11 +1118,11 @@ describe('match properties', () => {
     expect(matchProperty(property_b, { key: new Date('2022-05-30') })).toBe(true)
     expect(matchProperty(property_b, { key: '2022-04-30' })).toBe(false)
 
-    // can't be a number or invalid string
-    expect(() => matchProperty(property_a, { key: 1 })).toThrow(InconclusiveMatchError)
+    // can't be an invalid number or invalid string
+    expect(() => matchProperty(property_a, { key: 62802180000012345 })).toThrow(InconclusiveMatchError)
     expect(() => matchProperty(property_a, { key: 'abcdef' })).toThrow(InconclusiveMatchError)
     // invalid flag property
-    const property_c = { key: 'key', value: 1234, operator: 'is_date_before' }
+    const property_c = { key: 'key', value: 'abcd123', operator: 'is_date_before' }
     expect(() => matchProperty(property_c, { key: '2022-05-30' })).toThrow(InconclusiveMatchError)
 
     // Timezone
