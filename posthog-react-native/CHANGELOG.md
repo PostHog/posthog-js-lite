@@ -1,3 +1,7 @@
+# 2.1.3 - 2022-10-27
+
+Actually include the fix.
+
 # 2.1.2 - 2022-10-27
 
 Fix bug where all values set while stored data was being loaded would get overwritten once the data was done loading.
