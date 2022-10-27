@@ -16,7 +16,7 @@ const loadStorageAsync = async (): Promise<PostHogStorageContents> => {
   }
 }
 
-const persitStorageAsync = async (content: PostHogStorageContents): Promise<void> => {
+const persistStorageAsync = async (content: PostHogStorageContents): Promise<void> => {
   const uri = (FileSystem.documentDirectory || '') + POSTHOG_STORAGE_KEY
   const data = {
     version: POSTHOG_STORAGE_VERSION,
@@ -36,17 +36,17 @@ export const SemiAsyncStorage = {
   },
   setItem: function (key: string, value: any): void {
     _memoryCache[key] = value
-    void persitStorageAsync(_memoryCache)
+    void persistStorageAsync(_memoryCache)
   },
   removeItem: function (key: string): void {
     delete _memoryCache[key]
-    void persitStorageAsync(_memoryCache)
+    void persistStorageAsync(_memoryCache)
   },
   clear: function (): void {
     for (const key in _memoryCache) {
       delete _memoryCache[key]
     }
-    void persitStorageAsync(_memoryCache)
+    void persistStorageAsync(_memoryCache)
   },
   getAllKeys: function (): readonly string[] {
     return Object.keys(_memoryCache)
@@ -61,7 +61,7 @@ export const preloadSemiAsyncStorage = (): Promise<void> => {
   }
   _preloadSemiAsyncStoragePromise = loadStorageAsync().then((res) => {
     for (const key in res) {
-      _memoryCache[key] = res[key]
+      _memoryCache[key] = _memoryCache[key] === undefined ? res[key] : _memoryCache[key]
     }
   })
 
