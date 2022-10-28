@@ -6,6 +6,6 @@
   "types": "lib/index.d.ts",
   "scripts": {
     "test": "jest -c jest.config.js",
-    "prepublish": "cd .. && yarn build"
+    "prepublishOnly": "cd .. && yarn build"
   }
 }

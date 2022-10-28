@@ -10,7 +10,7 @@
   "dependencies": {},
   "scripts": {
     "test": "jest -c jest.config.js",
-    "prepublish": "cd .. && yarn build"
+    "prepublishOnly": "cd .. && yarn build"
   },
   "devDependencies": {
     "@react-navigation/native": "^5.0.10",
