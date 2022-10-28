@@ -1,3 +1,7 @@
+# 2.1.4 - 2022-10-28
+
+Also include the fix in the compiled `lib` folder.
+
 # 2.1.3 - 2022-10-27
 
 Actually include the fix.
