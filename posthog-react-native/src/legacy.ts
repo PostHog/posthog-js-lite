@@ -1,5 +1,6 @@
-import { OptionalExpoApplication, OptionalExpoFileSystem } from './optional-imports'
 import { Platform } from 'react-native'
+import { OptionalExpoApplication } from './optional/OptionalExpoApplication'
+import { OptionalExpoFileSystem } from './optional/OptionalExpoFileSystem'
 
 export const getLegacyValues = async (): Promise<{ distinctId?: string; anonymousId?: string } | undefined> => {
   // NOTE: The old react-native lib stored data in files on the filesystem.

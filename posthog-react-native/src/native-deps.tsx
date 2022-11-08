@@ -1,11 +1,9 @@
-import {
-  OptionalExpoApplication,
-  OptionalExpoDevice,
-  OptionalExpoLocalization,
-  OptionalExpoFileSystem,
-  OptionalAsyncStorage,
-  OptionalReactNativeDeviceInfo,
-} from './optional-imports'
+import { OptionalAsyncStorage } from './optional/OptionalAsyncStorage'
+import { OptionalExpoApplication } from './optional/OptionalExpoApplication'
+import { OptionalExpoDevice } from './optional/OptionalExpoDevice'
+import { OptionalExpoFileSystem } from './optional/OptionalExpoFileSystem'
+import { OptionalExpoLocalization } from './optional/OptionalExpoLocalization'
+import { OptionalReactNativeDeviceInfo } from './optional/OptionalReactNativeDeviceInfo'
 import { PostHogCustomAppProperties, PostHogCustomAsyncStorage } from './types'
 
 export const getAppProperties = (): PostHogCustomAppProperties => {
@@ -69,7 +67,9 @@ export const buildOptimisiticAsyncStorage = (): PostHogCustomAsyncStorage => {
     return OptionalAsyncStorage
   }
 
+  console.log(OptionalAsyncStorage)
+
   throw new Error(
-    'PostHog: No storage available. Please install expo-filesystem or react-native-async-storage OR implemnet a custom storage provider.'
+    'PostHog: No storage available. Please install expo-filesystem or react-native-async-storage OR implement a custom storage provider.'
   )
 }
