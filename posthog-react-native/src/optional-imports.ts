@@ -4,6 +4,7 @@ import type ExpoDevice from 'expo-device'
 import type ExpoLocalization from 'expo-localization'
 import type ExpoFileSystem from 'expo-file-system'
 import type AsyncStorage from '@react-native-async-storage/async-storage'
+import type ReactNativeDeviceInfo from 'react-native-device-info'
 
 let _OptionalReactNativeNavigation: typeof ReactNativeNavigation | undefined = undefined
 let _OptionalExpoApplication: typeof ExpoApplication | undefined = undefined
@@ -11,6 +12,7 @@ let _OptionalExpoDevice: typeof ExpoDevice | undefined = undefined
 let _OptionalExpoLocalization: typeof ExpoLocalization | undefined = undefined
 let _OptionalExpoFileSystem: typeof ExpoFileSystem | undefined = undefined
 let _OptionalAsyncStorage: typeof AsyncStorage | undefined = undefined
+let _OptionalReactNativeDeviceInfo: typeof ReactNativeDeviceInfo | undefined = undefined
 
 const warn = (name: string): void => {
   console.warn(`PostHog: Missing ${name} optional dependency. Some functions may not work as expected...`)
@@ -53,3 +55,9 @@ try {
 } catch (e) {}
 
 export const OptionalAsyncStorage = _OptionalAsyncStorage
+
+try {
+  _OptionalReactNativeDeviceInfo = require('@react-native-async-storage/async-storage')
+} catch (e) {}
+
+export const OptionalReactNativeDeviceInfo = _OptionalReactNativeDeviceInfo

@@ -11,12 +11,12 @@ import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
 import { getLegacyValues } from './legacy'
 import { SemiAsyncStorage } from './storage'
 import { version } from '../package.json'
-import { buildAppProperties, buildOptimisiticAsyncStorage } from './native-deps'
+import { buildOptimisiticAsyncStorage, getAppProperties } from './native-deps'
 import { PostHogCustomAppProperties, PostHogCustomAsyncStorage } from './types'
 
 export type PostHogOptions = PosthogCoreOptions & {
   persistence?: 'memory' | 'file'
-  customAppProperties?: () => PostHogCustomAppProperties
+  customAppProperties?: PostHogCustomAppProperties
   customAsyncStorage?: PostHogCustomAsyncStorage
 }
 
@@ -24,12 +24,13 @@ export class PostHog extends PostHogCore {
   private _persistence: PostHogOptions['persistence']
   private _memoryStorage = new PostHogMemoryStorage()
   private _semiAsyncStorage: SemiAsyncStorage
-  private _buildAppProperties = buildAppProperties
+  private _appProperties: PostHogCustomAppProperties = {}
 
   constructor(apiKey: string, options?: PostHogOptions) {
     super(apiKey, options)
     this._persistence = options?.persistence
-    this._buildAppProperties = options?.customAppProperties || buildAppProperties
+
+    this._appProperties = options?.customAppProperties || getAppProperties()
     this._semiAsyncStorage = new SemiAsyncStorage(options?.customAsyncStorage || buildOptimisiticAsyncStorage())
 
     AppState.addEventListener('change', () => {
@@ -88,7 +89,7 @@ export class PostHog extends PostHogCore {
   getCommonEventProperties(): any {
     return {
       ...super.getCommonEventProperties(),
-      ...this._buildAppProperties(),
+      ...this._appProperties,
       $device_type: Platform.OS,
       $screen_height: Dimensions.get('screen').height,
       $screen_width: Dimensions.get('screen').width,

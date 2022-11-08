@@ -4,10 +4,11 @@ import {
   OptionalExpoLocalization,
   OptionalExpoFileSystem,
   OptionalAsyncStorage,
+  OptionalReactNativeDeviceInfo,
 } from './optional-imports'
 import { PostHogCustomAppProperties, PostHogCustomAsyncStorage } from './types'
 
-export const buildAppProperties = (): PostHogCustomAppProperties => {
+export const getAppProperties = (): PostHogCustomAppProperties => {
   const properties: PostHogCustomAppProperties = {}
 
   if (OptionalExpoApplication) {
@@ -27,6 +28,17 @@ export const buildAppProperties = (): PostHogCustomAppProperties => {
   if (OptionalExpoLocalization) {
     properties.$locale = OptionalExpoLocalization.locale
     properties.$timezone = OptionalExpoLocalization.timezone
+  }
+
+  if (OptionalReactNativeDeviceInfo) {
+    properties.$app_build = OptionalReactNativeDeviceInfo.getBuildIdSync()
+    properties.$app_name = OptionalReactNativeDeviceInfo.getApplicationName()
+    properties.$app_namespace = OptionalReactNativeDeviceInfo.getBundleId()
+    properties.$app_version = OptionalReactNativeDeviceInfo.getVersion()
+    properties.$device_manufacturer = OptionalReactNativeDeviceInfo.getManufacturerSync()
+    properties.$device_name = OptionalReactNativeDeviceInfo.getDeviceNameSync()
+    properties.$os_name = OptionalReactNativeDeviceInfo.getSystemName()
+    properties.$os_version = OptionalReactNativeDeviceInfo.getSystemVersion()
   }
 
   return properties
