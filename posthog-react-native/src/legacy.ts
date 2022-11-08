@@ -1,12 +1,16 @@
-import * as FileSystem from 'expo-file-system'
-import * as ExpoApplication from 'expo-application'
+import { OptionalExpoApplication, OptionalExpoFileSystem } from './optional-imports'
 import { Platform } from 'react-native'
 
 export const getLegacyValues = async (): Promise<{ distinctId?: string; anonymousId?: string } | undefined> => {
   // NOTE: The old react-native lib stored data in files on the filesystem.
   // This function takes care of pulling the legacy IDs to ensure we are using them if already present
+
+  if (!OptionalExpoFileSystem || !OptionalExpoApplication) {
+    return
+  }
+
   if (Platform.OS === 'ios') {
-    const posthogFileDirectory = `${FileSystem.documentDirectory}../Library/Application%20Support/${ExpoApplication.applicationId}/`
+    const posthogFileDirectory = `${OptionalExpoFileSystem.documentDirectory}../Library/Application%20Support/${OptionalExpoApplication.applicationId}/`
     const posthogDistinctIdFile = posthogFileDirectory + 'posthog.distinctId'
     const posthogAnonymousIdFile = posthogFileDirectory + 'posthog.anonymousId'
 
@@ -16,11 +20,15 @@ export const getLegacyValues = async (): Promise<{ distinctId?: string; anonymou
     }
 
     try {
-      res.distinctId = JSON.parse(await FileSystem.readAsStringAsync(posthogDistinctIdFile))['posthog.distinctId']
+      res.distinctId = JSON.parse(await OptionalExpoFileSystem.readAsStringAsync(posthogDistinctIdFile))[
+        'posthog.distinctId'
+      ]
     } catch (e) {}
 
     try {
-      res.anonymousId = JSON.parse(await FileSystem.readAsStringAsync(posthogAnonymousIdFile))['posthog.anonymousId']
+      res.anonymousId = JSON.parse(await OptionalExpoFileSystem.readAsStringAsync(posthogAnonymousIdFile))[
+        'posthog.anonymousId'
+      ]
     } catch (e) {}
 
     return res
