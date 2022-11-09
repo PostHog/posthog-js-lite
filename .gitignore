@@ -8,3 +8,6 @@ coverage/
 lib/
 .yalc
 yalc.lock
+
+# Generated at build time
+posthog-react-native/src/version.ts

@@ -6,6 +6,7 @@
     "lib/"
   ],
   "scripts": {
+    "pretest": "npm run prebuild",
     "test": "jest -c jest.config.js",
     "prepublishOnly": "cd .. && yarn build",
     "prebuild": "node -p \"'export const version = ' + JSON.stringify(require('./package.json').version) + ';'\" > src/version.ts",
