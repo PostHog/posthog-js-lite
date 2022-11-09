@@ -5598,7 +5598,7 @@ posix-character-classes@^0.1.0:
   integrity sha512-xTgYBc3fuo7Yt7JbiuFxSYGToMoz8fLoE6TC9Wx1P/u+LfeThMOAqmuyECnlBaaJb+u1m9hHiXUEtwW4OzfUJg==
 
 "posthog-react-native@file:.yalc/posthog-react-native":
-  version "2.1.4"
+  version "2.2.0-alpha1"
 
 prelude-ls@^1.2.1:
   version "1.2.1"

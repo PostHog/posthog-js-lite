@@ -27,15 +27,7 @@ import {
   ReloadInstructions,
 } from 'react-native/Libraries/NewAppScreen';
 
-const AsyncStorage =
-  require('@react-native-async-storage/async-storage').default;
 import {PostHogProvider} from 'posthog-react-native';
-
-AsyncStorage.getAllKeys().then(console.log);
-
-if (!AsyncStorage) {
-  throw new Error('no storage');
-}
 
 const Section: React.FC<
   PropsWithChildren<{
@@ -76,7 +68,7 @@ const App = () => {
 
   return (
     <PostHogProvider
-      apiKey="phc_5iOxj8RHWGoInKcXKmbqMBPCm0fqFlWEnbS2R97bqQB"
+      apiKey="phc_nOqnAZfwTKuERXGzY1Js1shY9mqaPCee4QMXOcT8YPq"
       options={{
         host: 'http://localhost:8000',
         flushAt: 10,

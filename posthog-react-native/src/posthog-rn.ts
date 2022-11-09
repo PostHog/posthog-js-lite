@@ -10,7 +10,7 @@ import {
 import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
 import { getLegacyValues } from './legacy'
 import { SemiAsyncStorage } from './storage'
-import { version } from '../package.json'
+import { version } from './version'
 import { buildOptimisiticAsyncStorage, getAppProperties } from './native-deps'
 import { PostHogCustomAppProperties, PostHogCustomAsyncStorage } from './types'
 
