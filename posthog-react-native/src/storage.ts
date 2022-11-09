@@ -5,7 +5,7 @@ const POSTHOG_STORAGE_VERSION = 'v1'
 
 type PostHogStorageContents = { [key: string]: any }
 
-// NOTE: The core prefers asynchronous storage so we mimic this by pre-loading all keys
+// NOTE: The core prefers a synchronous storage so we mimic this by pre-loading all keys
 export class SemiAsyncStorage {
   private _memoryCache: PostHogStorageContents = {}
   private _preloadSemiAsyncStoragePromise: Promise<void> | undefined
