@@ -9,7 +9,7 @@
     "pretest": "npm run prebuild",
     "test": "jest -c jest.config.js",
     "prepublishOnly": "cd .. && yarn build",
-    "prebuild": "node -p \"'export const version = ' + JSON.stringify(require('./package.json').version) + ';'\" > src/version.ts",
+    "prebuild": "node -p \"'export const version = ' + JSON.stringify(require('./package.json').version)\" > src/version.ts",
     "build": "rm -rf lib && tsc --outDir ./lib && babel ./lib --out-dir lib --extensions '.js'"
   },
   "devDependencies": {
