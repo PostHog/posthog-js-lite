@@ -10,6 +10,7 @@ export class SemiAsyncStorage {
   private _memoryCache: PostHogStorageContents = {}
   private _preloadSemiAsyncStoragePromise: Promise<void> | undefined
   private _asyncStorage: PostHogCustomAsyncStorage
+  public isPreloaded = false
 
   constructor(asyncStorage: PostHogCustomAsyncStorage) {
     this._asyncStorage = asyncStorage
@@ -24,8 +25,10 @@ export class SemiAsyncStorage {
         const data = res ? JSON.parse(res).content : {}
 
         for (const key in data) {
-          this._memoryCache[key] = this._memoryCache[key] === undefined ? data[key] : this._memoryCache[key]
+          this._memoryCache[key] = data[key]
         }
+
+        this.isPreloaded = true
       } catch (e) {
         console.warn(
           "PostHog failed to load persisted data from storage. This is likely because the storage format is. We'll reset the storage.",

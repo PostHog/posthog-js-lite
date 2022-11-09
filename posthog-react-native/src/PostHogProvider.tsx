@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { GestureResponderEvent, StyleProp, View, ViewStyle } from 'react-native'
 import { PostHog, PostHogOptions } from './posthog-rn'
 import { autocaptureFromTouchEvent } from './autocapture'
@@ -33,16 +33,17 @@ export const PostHogProvider = ({
   apiKey,
   autocapture,
   style,
-}: PostHogProviderProps): JSX.Element => {
-  const posthogRef = useRef<PostHog>()
+}: PostHogProviderProps): JSX.Element | null => {
+  const [posthog, setPosthog] = useState<PostHog | undefined>(client)
 
-  if (!posthogRef.current) {
-    posthogRef.current = client ? client : apiKey ? new PostHog(apiKey, options) : undefined
-  }
+  useEffect(() => {
+    if (apiKey && !posthog) {
+      PostHog.initAsync(apiKey, options).then(setPosthog)
+    }
+  }, [apiKey])
 
   const autocaptureOptions = autocapture && typeof autocapture !== 'boolean' ? autocapture : {}
 
-  const posthog = posthogRef.current
   const captureTouches = posthog && (autocapture === true || autocaptureOptions?.captureTouches)
   const captureScreens = posthog && (autocapture === true || (autocaptureOptions?.captureScreens ?? true)) // Default to true if not set
   const captureLifecycle = posthog && (autocapture === true || (autocaptureOptions?.captureLifecycleEvents ?? true)) // Default to true if not set
@@ -67,7 +68,7 @@ export const PostHogProvider = ({
       style={style || { flex: 1 }}
       onTouchEndCapture={captureTouches ? (e) => onTouch('end', e) : undefined}
     >
-      <PostHogContext.Provider value={{ client: posthogRef.current }}>
+      <PostHogContext.Provider value={{ client: posthog }}>
         <>
           {captureScreens ? <PostHogNavigationHook options={autocaptureOptions} /> : null}
           {captureLifecycle ? <PostHogLifecycleHook /> : null}

@@ -26,12 +26,21 @@ export class PostHog extends PostHogCore {
   private _semiAsyncStorage: SemiAsyncStorage
   private _appProperties: PostHogCustomAppProperties = {}
 
-  constructor(apiKey: string, options?: PostHogOptions) {
+  /** Await this method to ensure that all state has been loaded from the async provider */
+  static async initAsync(apiKey: string, options?: PostHogOptions): Promise<PostHog> {
+    const storage = new SemiAsyncStorage(options?.customAsyncStorage || buildOptimisiticAsyncStorage())
+    const posthog = new PostHog(apiKey, options, storage)
+    await posthog._semiAsyncStorage.preloadAsync()
+    return posthog
+  }
+
+  constructor(apiKey: string, options?: PostHogOptions, storage?: SemiAsyncStorage) {
     super(apiKey, options)
     this._persistence = options?.persistence
 
     this._appProperties = options?.customAppProperties || getAppProperties()
-    this._semiAsyncStorage = new SemiAsyncStorage(options?.customAsyncStorage || buildOptimisiticAsyncStorage())
+    this._semiAsyncStorage =
+      storage || new SemiAsyncStorage(options?.customAsyncStorage || buildOptimisiticAsyncStorage())
 
     AppState.addEventListener('change', () => {
       this.flush()
@@ -39,10 +48,10 @@ export class PostHog extends PostHogCore {
 
     // Ensure the async storage has been preloaded (this call is cached)
 
-    // It is possible that the old library was used so we try to get the legacy distinctID
-    void this._semiAsyncStorage.preloadAsync().then(() => {
+    const setupFromStorage = (): void => {
       this.setupBootstrap(options)
 
+      // It is possible that the old library was used so we try to get the legacy distinctID
       if (!this._semiAsyncStorage.getItem(PostHogPersistedProperty.AnonymousId)) {
         getLegacyValues().then((legacyValues) => {
           if (legacyValues?.distinctId) {
@@ -51,12 +60,15 @@ export class PostHog extends PostHogCore {
           }
         })
       }
-    })
-  }
+    }
 
-  /** Await this method to ensure that all state has been loaded from the async provider */
-  async initAsync(): Promise<void> {
-    await this._semiAsyncStorage
+    if (this._semiAsyncStorage.isPreloaded) {
+      setupFromStorage()
+    } else {
+      void this._semiAsyncStorage.preloadAsync().then(() => {
+        setupFromStorage()
+      })
+    }
   }
 
   getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined {
