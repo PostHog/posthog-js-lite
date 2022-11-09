@@ -5,7 +5,7 @@ on:
     branches:
       - main
       - master
-      - feat/multi-domain-support # TODO: Remove this once merged
+      - feat/expo-optional
 
 jobs:
   release:
