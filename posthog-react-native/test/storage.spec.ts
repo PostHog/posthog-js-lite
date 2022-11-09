@@ -1,11 +1,15 @@
 import * as FileSystem from 'expo-file-system'
-import { SemiAsyncStorage, preloadSemiAsyncStorage } from '../src/storage'
+import { SemiAsyncStorage } from '../src/storage'
+import { buildOptimisiticAsyncStorage } from '../src/native-deps'
 
 jest.mock('expo-file-system')
 const mockedFileSystem = jest.mocked(FileSystem, true)
 
 describe('PostHog React Native', () => {
   jest.useRealTimers()
+
+  const storage = new SemiAsyncStorage(buildOptimisiticAsyncStorage())
+
   describe('storage', () => {
     beforeEach(() => {
       mockedFileSystem.readAsStringAsync.mockImplementation(() => {
@@ -22,18 +26,18 @@ describe('PostHog React Native', () => {
     })
 
     it('should load storage from the file system', async () => {
-      expect(SemiAsyncStorage.getItem('foo')).toEqual(undefined)
-      preloadSemiAsyncStorage()
-      preloadSemiAsyncStorage()
-      preloadSemiAsyncStorage()
-      await preloadSemiAsyncStorage()
+      expect(storage.getItem('foo')).toEqual(undefined)
+      storage.preloadAsync()
+      storage.preloadAsync()
+      storage.preloadAsync()
+      await storage.preloadAsync()
       expect(mockedFileSystem.readAsStringAsync).toHaveBeenCalledTimes(1)
-      expect(SemiAsyncStorage.getItem('foo')).toEqual('bar')
+      expect(storage.getItem('foo')).toEqual('bar')
     })
 
     it('should save storage to the file system', async () => {
-      SemiAsyncStorage.setItem('foo', 'bar2')
-      expect(SemiAsyncStorage.getItem('foo')).toEqual('bar2')
+      storage.setItem('foo', 'bar2')
+      expect(storage.getItem('foo')).toEqual('bar2')
       expect(mockedFileSystem.writeAsStringAsync).toHaveBeenCalledWith(
         '.posthog-rn.json',
         JSON.stringify({
