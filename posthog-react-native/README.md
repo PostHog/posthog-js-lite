@@ -83,7 +83,7 @@ import { posthog, posthogPromise} from './posthog'
 export function MyApp1() {
     useEffect(() => {
         // Use posthog optionally with the possibility that it may still be loading
-        posthog?.capturee('MyApp1 loaded')
+        posthog?.capture('MyApp1 loaded')
         // OR use posthog via the promise
         posthogPromise.then(ph => ph.capture('MyApp1 loaded')
     }, [])
