@@ -67,8 +67,6 @@ export const buildOptimisiticAsyncStorage = (): PostHogCustomAsyncStorage => {
     return OptionalAsyncStorage
   }
 
-  console.log(OptionalAsyncStorage)
-
   throw new Error(
     'PostHog: No storage available. Please install expo-filesystem or react-native-async-storage OR implement a custom storage provider.'
   )
