@@ -929,6 +929,309 @@ describe('local evaluation', () => {
     expect(await posthog.getAllFlags('distinct-id')).toEqual({ 'beta-feature': false, 'disabled-feature': true })
     expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
   })
+
+  it('gets feature flag with variant overrides', async () => {
+    const flags = {
+      flags: [
+        {
+          id: 1,
+          name: 'Beta Feature',
+          key: 'beta-feature',
+          is_simple_flag: true,
+          active: true,
+          filters: {
+            groups: [
+              {
+                properties: [
+                  {
+                    key: 'email',
+                    operator: 'exact',
+                    value: 'test@posthog.com',
+                    type: 'person',
+                  },
+                ],
+                rollout_percentage: 100,
+                variant: 'second-variant',
+              },
+              {
+                rollout_percentage: 50,
+                variant: 'first-variant',
+              }
+            ],
+            multivariate: {
+              variants: [
+                {
+                  key: 'first-variant',
+                  name: 'First Variant',
+                  rollout_percentage: 50,
+                },
+                {
+                  key: 'second-variant',
+                  name: 'Second Variant',
+                  rollout_percentage: 25,
+                },
+                {
+                  key: 'third-variant',
+                  name: 'Third Variant',
+                  rollout_percentage: 25,
+                },
+              ],
+            }
+          },
+        },
+      ],
+    }
+    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags }))
+
+    posthog = new PostHog('TEST_API_KEY', {
+      host: 'http://example.com',
+      personalApiKey: 'TEST_PERSONAL_API_KEY',
+    })
+
+    expect(
+      await posthog.getFeatureFlag('beta-feature', 'test_id', { personProperties: { email: 'test@posthog.com' } })
+    ).toEqual('second-variant')
+    expect(
+      await posthog.getFeatureFlag('beta-feature', 'example_id')
+    ).toEqual('first-variant')
+
+    expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
+    // decide not called
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+  })
+
+  it('gets feature flag with clashing variant overrides', async () => {
+    const flags = {
+      flags: [
+        {
+          id: 1,
+          name: 'Beta Feature',
+          key: 'beta-feature',
+          is_simple_flag: true,
+          active: true,
+          filters: {
+            groups: [
+              {
+                properties: [
+                  {
+                    key: 'email',
+                    operator: 'exact',
+                    value: 'test@posthog.com',
+                    type: 'person',
+                  },
+                ],
+                rollout_percentage: 100,
+                variant: 'second-variant',
+              },
+              // # since second-variant comes first in the list, it will be the one that gets picked
+              {
+                properties: [
+                  {
+                    key: 'email',
+                    operator: 'exact',
+                    value: 'test@posthog.com',
+                    type: 'person',
+                  },
+                ],
+                rollout_percentage: 100,
+                variant: 'first-variant',
+              },
+              {
+                rollout_percentage: 50,
+                variant: 'first-variant',
+              }
+            ],
+            multivariate: {
+              variants: [
+                {
+                  key: 'first-variant',
+                  name: 'First Variant',
+                  rollout_percentage: 50,
+                },
+                {
+                  key: 'second-variant',
+                  name: 'Second Variant',
+                  rollout_percentage: 25,
+                },
+                {
+                  key: 'third-variant',
+                  name: 'Third Variant',
+                  rollout_percentage: 25,
+                },
+              ],
+            }
+          },
+        },
+      ],
+    }
+    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags }))
+
+    posthog = new PostHog('TEST_API_KEY', {
+      host: 'http://example.com',
+      personalApiKey: 'TEST_PERSONAL_API_KEY',
+    })
+
+    expect(
+      await posthog.getFeatureFlag('beta-feature', 'test_id', { personProperties: { email: 'test@posthog.com' } })
+    ).toEqual('second-variant')
+    expect(
+      await posthog.getFeatureFlag('beta-feature', 'example_id', { personProperties: { email: 'test@posthog.com' } })
+    ).toEqual('second-variant')
+    expect(
+      await posthog.getFeatureFlag('beta-feature', 'example_id')
+    ).toEqual('first-variant')
+
+    expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
+    // decide not called
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+  })
+
+  it('gets feature flag with invalid variant overrides', async () => {
+    const flags = {
+      flags: [
+        {
+          id: 1,
+          name: 'Beta Feature',
+          key: 'beta-feature',
+          is_simple_flag: true,
+          active: true,
+          filters: {
+            groups: [
+              {
+                properties: [
+                  {
+                    key: 'email',
+                    operator: 'exact',
+                    value: 'test@posthog.com',
+                    type: 'person',
+                  },
+                ],
+                rollout_percentage: 100,
+                variant: 'second???',
+              },
+              {
+                rollout_percentage: 50,
+                variant: 'first???',
+              }
+            ],
+            multivariate: {
+              variants: [
+                {
+                  key: 'first-variant',
+                  name: 'First Variant',
+                  rollout_percentage: 50,
+                },
+                {
+                  key: 'second-variant',
+                  name: 'Second Variant',
+                  rollout_percentage: 25,
+                },
+                {
+                  key: 'third-variant',
+                  name: 'Third Variant',
+                  rollout_percentage: 25,
+                },
+              ],
+            }
+          },
+        },
+      ],
+    }
+    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags }))
+
+    posthog = new PostHog('TEST_API_KEY', {
+      host: 'http://example.com',
+      personalApiKey: 'TEST_PERSONAL_API_KEY',
+    })
+
+    expect(
+      await posthog.getFeatureFlag('beta-feature', 'test_id', { personProperties: { email: 'test@posthog.com' } })
+    ).toEqual('third-variant')
+    expect(
+      await posthog.getFeatureFlag('beta-feature', 'example_id')
+    ).toEqual('second-variant')
+
+    expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
+    // decide not called
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+  })
+
+  it('gets feature flag with multiple variant overrides', async () => {
+    const flags = {
+      flags: [
+        {
+          id: 1,
+          name: 'Beta Feature',
+          key: 'beta-feature',
+          is_simple_flag: true,
+          active: true,
+          filters: {
+            groups: [
+              {
+                rollout_percentage: 100,
+                // # The override applies even if the first condition matches all and gives everyone their default group
+              },
+              {
+                properties: [
+                  {
+                    key: 'email',
+                    operator: 'exact',
+                    value: 'test@posthog.com',
+                    type: 'person',
+                  },
+                ],
+                rollout_percentage: 100,
+                variant: 'second-variant',
+              },
+              {
+                rollout_percentage: 50,
+                variant: 'third-variant',
+              }
+            ],
+            multivariate: {
+              variants: [
+                {
+                  key: 'first-variant',
+                  name: 'First Variant',
+                  rollout_percentage: 50,
+                },
+                {
+                  key: 'second-variant',
+                  name: 'Second Variant',
+                  rollout_percentage: 25,
+                },
+                {
+                  key: 'third-variant',
+                  name: 'Third Variant',
+                  rollout_percentage: 25,
+                },
+              ],
+            }
+          },
+        },
+      ],
+    }
+    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags }))
+
+    posthog = new PostHog('TEST_API_KEY', {
+      host: 'http://example.com',
+      personalApiKey: 'TEST_PERSONAL_API_KEY',
+    })
+
+    expect(
+      await posthog.getFeatureFlag('beta-feature', 'test_id', { personProperties: { email: 'test@posthog.com' } })
+    ).toEqual('second-variant')
+    expect(
+      await posthog.getFeatureFlag('beta-feature', 'example_id')
+    ).toEqual('third-variant')
+    expect(
+      await posthog.getFeatureFlag('beta-feature', 'another_id')
+    ).toEqual('second-variant')
+
+    expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
+    // decide not called
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+  })
 })
 
 describe('match properties', () => {
