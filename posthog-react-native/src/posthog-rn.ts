@@ -1,7 +1,4 @@
 import { AppState, Dimensions, Platform } from 'react-native'
-import * as ExpoApplication from 'expo-application'
-import * as ExpoDevice from 'expo-device'
-import * as ExpoLocalization from 'expo-localization'
 
 import {
   PostHogCore,
@@ -12,24 +9,38 @@ import {
 } from '../../posthog-core/src'
 import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
 import { getLegacyValues } from './legacy'
-import { SemiAsyncStorage, preloadSemiAsyncStorage } from './storage'
-import { version } from '../package.json'
+import { SemiAsyncStorage } from './storage'
+import { version } from './version'
+import { buildOptimisiticAsyncStorage, getAppProperties } from './native-deps'
+import { PostHogCustomAppProperties, PostHogCustomAsyncStorage } from './types'
 
 export type PostHogOptions = PosthogCoreOptions & {
   persistence?: 'memory' | 'file'
+  customAppProperties?: PostHogCustomAppProperties
+  customAsyncStorage?: PostHogCustomAsyncStorage
 }
 
 export class PostHog extends PostHogCore {
   private _persistence: PostHogOptions['persistence']
   private _memoryStorage = new PostHogMemoryStorage()
+  private _semiAsyncStorage: SemiAsyncStorage
+  private _appProperties: PostHogCustomAppProperties = {}
 
-  static initAsync(): Promise<void> {
-    return preloadSemiAsyncStorage()
+  /** Await this method to ensure that all state has been loaded from the async provider */
+  static async initAsync(apiKey: string, options?: PostHogOptions): Promise<PostHog> {
+    const storage = new SemiAsyncStorage(options?.customAsyncStorage || buildOptimisiticAsyncStorage())
+    const posthog = new PostHog(apiKey, options, storage)
+    await posthog._semiAsyncStorage.preloadAsync()
+    return posthog
   }
 
-  constructor(apiKey: string, options?: PostHogOptions) {
+  constructor(apiKey: string, options?: PostHogOptions, storage?: SemiAsyncStorage) {
     super(apiKey, options)
     this._persistence = options?.persistence
+
+    this._appProperties = options?.customAppProperties || getAppProperties()
+    this._semiAsyncStorage =
+      storage || new SemiAsyncStorage(options?.customAsyncStorage || buildOptimisiticAsyncStorage())
 
     AppState.addEventListener('change', () => {
       this.flush()
@@ -37,32 +48,40 @@ export class PostHog extends PostHogCore {
 
     // Ensure the async storage has been preloaded (this call is cached)
 
-    // It is possible that the old library was used so we try to get the legacy distinctID
-    void preloadSemiAsyncStorage().then(() => {
+    const setupFromStorage = (): void => {
       this.setupBootstrap(options)
 
-      if (!SemiAsyncStorage.getItem(PostHogPersistedProperty.AnonymousId)) {
+      // It is possible that the old library was used so we try to get the legacy distinctID
+      if (!this._semiAsyncStorage.getItem(PostHogPersistedProperty.AnonymousId)) {
         getLegacyValues().then((legacyValues) => {
           if (legacyValues?.distinctId) {
-            SemiAsyncStorage.setItem(PostHogPersistedProperty.DistinctId, legacyValues.distinctId)
-            SemiAsyncStorage.setItem(PostHogPersistedProperty.AnonymousId, legacyValues.anonymousId)
+            this._semiAsyncStorage.setItem(PostHogPersistedProperty.DistinctId, legacyValues.distinctId)
+            this._semiAsyncStorage.setItem(PostHogPersistedProperty.AnonymousId, legacyValues.anonymousId)
           }
         })
       }
-    })
+    }
+
+    if (this._semiAsyncStorage.isPreloaded) {
+      setupFromStorage()
+    } else {
+      void this._semiAsyncStorage.preloadAsync().then(() => {
+        setupFromStorage()
+      })
+    }
   }
 
   getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined {
     if (this._persistence === 'memory') {
       return this._memoryStorage.getProperty(key)
     }
-    return SemiAsyncStorage.getItem(key) || undefined
+    return this._semiAsyncStorage.getItem(key) || undefined
   }
   setPersistedProperty<T>(key: PostHogPersistedProperty, value: T | null): void {
     if (this._persistence === 'memory') {
       return this._memoryStorage.setProperty(key, value)
     }
-    return value !== null ? SemiAsyncStorage.setItem(key, value) : SemiAsyncStorage.removeItem(key)
+    return value !== null ? this._semiAsyncStorage.setItem(key, value) : this._semiAsyncStorage.removeItem(key)
   }
 
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
@@ -82,19 +101,10 @@ export class PostHog extends PostHogCore {
   getCommonEventProperties(): any {
     return {
       ...super.getCommonEventProperties(),
-      $app_build: '1',
-      $app_name: ExpoApplication.applicationName,
-      $app_namespace: ExpoApplication.applicationId,
-      $app_version: ExpoApplication.nativeApplicationVersion,
-      $device_manufacturer: ExpoDevice.manufacturer,
-      $device_name: ExpoDevice.modelName,
+      ...this._appProperties,
       $device_type: Platform.OS,
-      $locale: ExpoLocalization.locale,
-      $os_name: ExpoDevice.osName,
-      $os_version: ExpoDevice.osVersion,
       $screen_height: Dimensions.get('screen').height,
       $screen_width: Dimensions.get('screen').width,
-      $timezone: ExpoLocalization.timezone,
     }
   }
 
@@ -106,7 +116,3 @@ export class PostHog extends PostHogCore {
     })
   }
 }
-
-// NOTE: This ensures that we have the AsyncStorage loaded into memory hopefully before PostHog
-// is used
-void PostHog.initAsync()

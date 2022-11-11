@@ -19,7 +19,7 @@
     "test": "jest posthog-core posthog-node posthog-web",
     "test:all": "jest posthog-core posthog-node posthog-web && yarn test:rn",
     "test:rn": "cd posthog-react-native && yarn test",
-    "compile": "rollup -c"
+    "compile": "rollup -c && cd posthog-react-native && yarn build"
   },
   "devDependencies": {
     "@babel/core": "^7.18.6",

@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { OptionalReactNativeNavigation } from '../optional-imports'
+import { OptionalReactNativeNavigation } from '../optional/OptionalReactNativeNavigation'
 import type { PostHog } from '../posthog-rn'
 import { PostHogAutocaptureNavigationTrackerOptions } from '../types'
 import { usePostHog } from './usePostHog'
