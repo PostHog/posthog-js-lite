@@ -956,7 +956,7 @@ describe('local evaluation', () => {
               {
                 rollout_percentage: 50,
                 variant: 'first-variant',
-              }
+              },
             ],
             multivariate: {
               variants: [
@@ -976,7 +976,7 @@ describe('local evaluation', () => {
                   rollout_percentage: 25,
                 },
               ],
-            }
+            },
           },
         },
       ],
@@ -991,9 +991,7 @@ describe('local evaluation', () => {
     expect(
       await posthog.getFeatureFlag('beta-feature', 'test_id', { personProperties: { email: 'test@posthog.com' } })
     ).toEqual('second-variant')
-    expect(
-      await posthog.getFeatureFlag('beta-feature', 'example_id')
-    ).toEqual('first-variant')
+    expect(await posthog.getFeatureFlag('beta-feature', 'example_id')).toEqual('first-variant')
 
     expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
     // decide not called
@@ -1039,7 +1037,7 @@ describe('local evaluation', () => {
               {
                 rollout_percentage: 50,
                 variant: 'first-variant',
-              }
+              },
             ],
             multivariate: {
               variants: [
@@ -1059,7 +1057,7 @@ describe('local evaluation', () => {
                   rollout_percentage: 25,
                 },
               ],
-            }
+            },
           },
         },
       ],
@@ -1077,9 +1075,7 @@ describe('local evaluation', () => {
     expect(
       await posthog.getFeatureFlag('beta-feature', 'example_id', { personProperties: { email: 'test@posthog.com' } })
     ).toEqual('second-variant')
-    expect(
-      await posthog.getFeatureFlag('beta-feature', 'example_id')
-    ).toEqual('first-variant')
+    expect(await posthog.getFeatureFlag('beta-feature', 'example_id')).toEqual('first-variant')
 
     expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
     // decide not called
@@ -1112,7 +1108,7 @@ describe('local evaluation', () => {
               {
                 rollout_percentage: 50,
                 variant: 'first???',
-              }
+              },
             ],
             multivariate: {
               variants: [
@@ -1132,7 +1128,7 @@ describe('local evaluation', () => {
                   rollout_percentage: 25,
                 },
               ],
-            }
+            },
           },
         },
       ],
@@ -1147,9 +1143,7 @@ describe('local evaluation', () => {
     expect(
       await posthog.getFeatureFlag('beta-feature', 'test_id', { personProperties: { email: 'test@posthog.com' } })
     ).toEqual('third-variant')
-    expect(
-      await posthog.getFeatureFlag('beta-feature', 'example_id')
-    ).toEqual('second-variant')
+    expect(await posthog.getFeatureFlag('beta-feature', 'example_id')).toEqual('second-variant')
 
     expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
     // decide not called
@@ -1186,7 +1180,7 @@ describe('local evaluation', () => {
               {
                 rollout_percentage: 50,
                 variant: 'third-variant',
-              }
+              },
             ],
             multivariate: {
               variants: [
@@ -1206,7 +1200,7 @@ describe('local evaluation', () => {
                   rollout_percentage: 25,
                 },
               ],
-            }
+            },
           },
         },
       ],
@@ -1221,12 +1215,8 @@ describe('local evaluation', () => {
     expect(
       await posthog.getFeatureFlag('beta-feature', 'test_id', { personProperties: { email: 'test@posthog.com' } })
     ).toEqual('second-variant')
-    expect(
-      await posthog.getFeatureFlag('beta-feature', 'example_id')
-    ).toEqual('third-variant')
-    expect(
-      await posthog.getFeatureFlag('beta-feature', 'another_id')
-    ).toEqual('second-variant')
+    expect(await posthog.getFeatureFlag('beta-feature', 'example_id')).toEqual('third-variant')
+    expect(await posthog.getFeatureFlag('beta-feature', 'another_id')).toEqual('second-variant')
 
     expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
     // decide not called

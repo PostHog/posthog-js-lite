@@ -198,11 +198,9 @@ class FeatureFlagsPoller {
 
       if (AHasVariantOverride && BHasVariantOverride) {
         return 0
-      }
-      else if (AHasVariantOverride) {
+      } else if (AHasVariantOverride) {
         return -1
-      }
-      else if (BHasVariantOverride) {
+      } else if (BHasVariantOverride) {
         return 1
       } else {
         return 0
@@ -219,7 +217,7 @@ class FeatureFlagsPoller {
           } else {
             result = this.getMatchingVariant(flag, distinctId) || true
           }
-          break;
+          break
         }
       } catch (e) {
         if (e instanceof InconclusiveMatchError) {
