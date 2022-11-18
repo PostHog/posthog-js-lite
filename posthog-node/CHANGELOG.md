@@ -1,3 +1,8 @@
+# 2.2.0 - 2022-11-18
+
+1. Add support for variant overrides for feature flag local evaluation.
+2. Add support for date operators in feature flag local evaluation.
+
 # 2.1.0 - 2022-09-08
 
 1. Swaps `unidici` for `axios` in order to support older versions of Node

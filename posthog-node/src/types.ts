@@ -23,6 +23,7 @@ export type FeatureFlagCondition = {
     operator?: string
   }[]
   rollout_percentage?: number
+  variant?: string
 }
 
 export type PostHogFeatureFlag = {
