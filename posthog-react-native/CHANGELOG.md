@@ -1,3 +1,7 @@
+# 2.2.1 - 2022-11-21
+
+- Fixes an issue with async storage selection while installing PostHog React Native
+
 # 2.2.0 - 2022-11-11
 
 - Expo modules are no longer required. Expo apps work as before and standalone React Native apps can use the more common native dependencies or roll their own implementation of the necessary functions. See the [official docs](https://posthog.com/docs/integrate/client/react-native) for more information.
