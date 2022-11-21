@@ -1,6 +1,6 @@
 {
   "name": "posthog-react-native",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "main": "lib/posthog-react-native/index.js",
   "files": [
     "lib/"
@@ -28,7 +28,7 @@
     "react-native-device-info": "^10.3.0"
   },
   "peerDependencies": {
-    "@react-native-async-storage/async-storage": "^>=1.0.0",
+    "@react-native-async-storage/async-storage": ">=1.0.0",
     "@react-navigation/native": ">= 5.0.10",
     "expo-application": ">= 4.0.0",
     "expo-device": ">= 4.0.0",
