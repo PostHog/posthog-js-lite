@@ -11,11 +11,10 @@ export function useFeatureFlags(client?: PostHog): PostHogDecideResponse['featur
     posthog?.getFeatureFlags()
   )
 
-  if (!posthog) {
-    return featureFlags
-  }
-
   useEffect(() => {
+    if (!posthog) {
+      return
+    }
     setFeatureFlags(posthog.getFeatureFlags())
     return posthog.onFeatureFlags((flags) => {
       setFeatureFlags(flags)
