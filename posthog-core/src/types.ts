@@ -79,10 +79,8 @@ export type PostHogAutocaptureElement = {
 export type PostHogDecideResponse = {
   config: { enable_collect_everything: boolean }
   editorParams: { toolbarVersion: string; jsURL: string }
-  isAuthenticated: true
+  isAuthenticated: boolean
   supportedCompression: string[]
-  featureFlags: {
-    [key: string]: string | boolean
-  }
+  featureFlags: string[]
   sessionRecording: boolean
 }

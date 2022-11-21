@@ -486,15 +486,9 @@ export abstract class PostHogCore {
       return flags
     }
 
-    flags = flags || {}
+    flags = flags || []
 
-    for (const key in overriddenFlags) {
-      if (!overriddenFlags[key]) {
-        delete flags[key]
-      } else {
-        flags[key] = overriddenFlags[key]
-      }
-    }
+    flags.filter(flag => overriddenFlags.includes(flag))
 
     return flags
   }
