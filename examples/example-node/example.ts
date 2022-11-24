@@ -30,6 +30,8 @@ posthog.capture({
 })
 
 async function testFeatureFlags() {
+  await posthog.shutdownAsync()
+  console.log('flushed')
   console.log(await posthog.isFeatureEnabled('beta-feature', 'distinct_id'))
   console.log(await posthog.isFeatureEnabled('beta-feature', 'new_distinct_id'))
   console.log(await posthog.isFeatureEnabled('beta-feature', 'distinct_id', { groups: { company: 'id:5' } }))
