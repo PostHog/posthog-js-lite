@@ -89,6 +89,7 @@ describe('PostHog Core', () => {
           headers: {
             'Content-Type': 'application/json',
           },
+          signal: expect.anything()
         })
 
         expect(posthog.getFeatureFlags()).toEqual({
@@ -140,6 +141,13 @@ describe('PostHog Core', () => {
           expect(posthog.isFeatureEnabled('feature-variant')).toEqual(undefined)
           expect(posthog.isFeatureEnabled('feature-missing')).toEqual(undefined)
         })
+      })
+      it('should time out', async () => {
+        const abortSpy = jest.spyOn(AbortController.prototype, 'abort');
+
+        expect(posthog.isFeatureEnabled('feature-1')).toEqual(true
+
+        abortSpy.mockRestore();
       })
 
       it('should return the boolean value of a flag', async () => {
@@ -292,6 +300,7 @@ describe('PostHog Core', () => {
           headers: {
             'Content-Type': 'application/json',
           },
+          signal: expect.anything()
         })
 
         expect(posthog.getFeatureFlags()).toEqual({
