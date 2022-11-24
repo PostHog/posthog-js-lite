@@ -89,7 +89,7 @@ describe('PostHog Core', () => {
           headers: {
             'Content-Type': 'application/json',
           },
-          signal: expect.anything()
+          signal: expect.anything(),
         })
 
         expect(posthog.getFeatureFlags()).toEqual({
@@ -293,7 +293,7 @@ describe('PostHog Core', () => {
           headers: {
             'Content-Type': 'application/json',
           },
-          signal: expect.anything()
+          signal: expect.anything(),
         })
 
         expect(posthog.getFeatureFlags()).toEqual({

@@ -672,16 +672,20 @@ export abstract class PostHogCore {
     options: PostHogFetchOptions,
     retryOptions?: RetriableOptions
   ): Promise<PostHogFetchResponse> {
-    (AbortSignal as any).timeout ??= function timeout(ms: number) {
-        const ctrl = new AbortController()
-        setTimeout(() => ctrl.abort(), ms)
-        return ctrl.signal
-      }
+    ;(AbortSignal as any).timeout ??= function timeout(ms: number) {
+      const ctrl = new AbortController()
+      setTimeout(() => ctrl.abort(), ms)
+      return ctrl.signal
+    }
 
-    return retriable(() => this.fetch(url, {
-        signal: (AbortSignal as any).timeout(this.requestTimeout),
-        ...options
-    }), retryOptions || this._retryOptions)
+    return retriable(
+      () =>
+        this.fetch(url, {
+          signal: (AbortSignal as any).timeout(this.requestTimeout),
+          ...options,
+        }),
+      retryOptions || this._retryOptions
+    )
   }
 
   async shutdownAsync(): Promise<void> {
