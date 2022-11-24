@@ -21,6 +21,8 @@ export type PosthogCoreOptions = {
   fetchRetryCount?: number
   // The delay between HTTP request retries
   fetchRetryDelay?: number
+  // Timeout in milliseconds for any calls. Defaults to 10 seconds.
+  requestTimeout?: number
   // For Session Analysis how long before we expire a session (defaults to 30 mins)
   sessionExpirationTimeSeconds?: number
   // Whether to post events to PostHog in JSON or compressed format

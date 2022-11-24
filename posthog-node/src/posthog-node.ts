@@ -17,7 +17,7 @@ export type PostHogOptions = PosthogCoreOptions & {
   personalApiKey?: string
   // The interval in milliseconds between polls for refreshing feature flag definitions
   featureFlagsPollingInterval?: number
-  // Timeout in milliseconds for feature flag definitions calls. Defaults to 30 seconds.
+  // Timeout in milliseconds for any calls. Defaults to 10 seconds.
   requestTimeout?: number
   // Maximum size of cache that deduplicates $feature_flag_called calls per user.
   maxCacheSize?: number
@@ -84,7 +84,7 @@ export class PostHog implements PostHogNodeV1 {
             : THIRTY_SECONDS,
         personalApiKey: options.personalApiKey,
         projectApiKey: apiKey,
-        timeout: options.requestTimeout,
+        timeout: options.requestTimeout ?? 10,
         host: this._sharedClient.host,
         fetch: options.fetch,
       })

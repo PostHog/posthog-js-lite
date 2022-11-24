@@ -28,6 +28,7 @@ export abstract class PostHogCore {
   host: string
   private flushAt: number
   private flushInterval: number
+  private requestTimeout: number
   private captureMode: 'form' | 'json'
   private sendFeatureFlagEvent: boolean
   private flagCallReported: { [key: string]: boolean } = {}
@@ -67,6 +68,7 @@ export abstract class PostHogCore {
       retryCount: options?.fetchRetryCount ?? 3,
       retryDelay: options?.fetchRetryDelay ?? 3000,
     }
+    this.requestTimeout = options?.requestTimeout ?? 10
     this._sessionExpirationTimeSeconds = options?.sessionExpirationTimeSeconds ?? 1800 // 30 minutes
 
     // NOTE: It is important we don't initiate anything in the constructor as some async IO may still be underway on the parent
@@ -670,7 +672,20 @@ export abstract class PostHogCore {
     options: PostHogFetchOptions,
     retryOptions?: RetriableOptions
   ): Promise<PostHogFetchResponse> {
-    return retriable(() => this.fetch(url, options), retryOptions || this._retryOptions)
+    ;(AbortSignal as any).timeout ??= function timeout(ms: number) {
+      const ctrl = new AbortController()
+      setTimeout(() => ctrl.abort(), ms)
+      return ctrl.signal
+    }
+
+    return retriable(
+      () =>
+        this.fetch(url, {
+          signal: (AbortSignal as any).timeout(this.requestTimeout),
+          ...options,
+        }),
+      retryOptions || this._retryOptions
+    )
   }
 
   async shutdownAsync(): Promise<void> {

@@ -1,3 +1,6 @@
+# 2.2.1 - 2022-11-24
+1. Add standard 10 second timeout
+
 # 2.2.0 - 2022-11-18
 
 1. Add support for variant overrides for feature flag local evaluation.
