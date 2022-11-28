@@ -68,7 +68,7 @@ export abstract class PostHogCore {
       retryCount: options?.fetchRetryCount ?? 3,
       retryDelay: options?.fetchRetryDelay ?? 3000,
     }
-    this.requestTimeout = options?.requestTimeout ?? 10
+    this.requestTimeout = options?.requestTimeout ?? 10000 // 10 seconds
     this._sessionExpirationTimeSeconds = options?.sessionExpirationTimeSeconds ?? 1800 // 30 minutes
 
     // NOTE: It is important we don't initiate anything in the constructor as some async IO may still be underway on the parent
