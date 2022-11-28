@@ -1,3 +1,6 @@
+# 2.2.2 - 2022-11-28
+1. Fix issues with timeout
+
 # 2.2.1 - 2022-11-24
 1. Add standard 10 second timeout
 
