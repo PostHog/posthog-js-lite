@@ -84,7 +84,7 @@ export class PostHog implements PostHogNodeV1 {
             : THIRTY_SECONDS,
         personalApiKey: options.personalApiKey,
         projectApiKey: apiKey,
-        timeout: options.requestTimeout ?? 10,
+        timeout: options.requestTimeout ?? 10000, // 10 seconds
         host: this._sharedClient.host,
         fetch: options.fetch,
       })
