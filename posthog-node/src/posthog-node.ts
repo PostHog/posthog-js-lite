@@ -11,6 +11,7 @@ import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
 import { EventMessageV1, GroupIdentifyMessage, IdentifyMessageV1, PostHogNodeV1 } from './types'
 import { FeatureFlagsPoller } from './feature-flags'
 import { fetch } from './fetch'
+import { send } from 'process'
 
 export type PostHogOptions = PosthogCoreOptions & {
   persistence?: 'memory'
@@ -112,7 +113,18 @@ export class PostHog implements PostHogNodeV1 {
     if (groups) {
       this._sharedClient.groups(groups)
     }
-    this._sharedClient.capture(event, properties, sendFeatureFlags || false)
+
+    const _capture = (): void => {
+      this._sharedClient.capture(event, properties)
+    }
+
+    if (sendFeatureFlags) {
+      this._sharedClient.reloadFeatureFlagsAsync(false).finally(() => {
+        _capture()
+      })
+    } else {
+      _capture()
+    }
   }
 
   identify({ distinctId, properties }: IdentifyMessageV1): void {
