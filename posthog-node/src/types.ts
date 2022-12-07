@@ -7,6 +7,7 @@ export interface EventMessageV1 extends IdentifyMessageV1 {
   event: string
   groups?: Record<string, string | number> // Mapping of group type to group id
   sendFeatureFlags?: boolean
+  timestamp?: Date
 }
 
 export interface GroupIdentifyMessage {
