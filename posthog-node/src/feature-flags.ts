@@ -100,10 +100,9 @@ class FeatureFlagsPoller {
     if (featureFlag !== undefined) {
       try {
         response = this.computeFlagLocally(featureFlag, distinctId, groups, personProperties, groupProperties)
-        console.debug(`Successfully computed flag locally: ${key} -> ${response}`)
       } catch (e) {
         if (e instanceof InconclusiveMatchError) {
-          console.debug(`Can't compute flag locally: ${key}: ${e}`)
+          console.error(`InconclusiveMatchError when computing flag locally: ${key}: ${e}`)
         } else if (e instanceof Error) {
           console.error(`Error computing flag locally: ${key}: ${e}`)
         }
