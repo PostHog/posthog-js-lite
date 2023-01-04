@@ -43,10 +43,13 @@ export const PostHogProvider = ({
   }, [apiKey])
 
   const autocaptureOptions = autocapture && typeof autocapture !== 'boolean' ? autocapture : {}
+  const captureAll = autocapture === true
+  const captureNone = autocapture === false
 
-  const captureTouches = posthog && (autocapture === true || autocaptureOptions?.captureTouches)
-  const captureScreens = posthog && (autocapture === true || (autocaptureOptions?.captureScreens ?? true)) // Default to true if not set
-  const captureLifecycle = posthog && (autocapture === true || (autocaptureOptions?.captureLifecycleEvents ?? true)) // Default to true if not set
+  const captureTouches = !captureNone && posthog && (captureAll || autocaptureOptions?.captureTouches)
+  const captureScreens = !captureNone && posthog && (captureAll || (autocaptureOptions?.captureScreens ?? true)) // Default to true if not set
+  const captureLifecycle =
+    !captureNone && posthog && (captureAll || (autocaptureOptions?.captureLifecycleEvents ?? true)) // Default to true if not set
 
   const onTouch = useCallback(
     (type: 'start' | 'move' | 'end', e: GestureResponderEvent) => {
