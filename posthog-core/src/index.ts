@@ -454,7 +454,7 @@ export abstract class PostHogCore {
     this._events.emit('featureflags', featureFlags)
   }
 
-  getFeatureFlag(key: string): boolean | string | undefined {
+  getFeatureFlag(key: string): JsonType | undefined {
     const featureFlags = this.getFeatureFlags()
 
     if (!featureFlags) {
