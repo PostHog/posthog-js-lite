@@ -1,8 +1,11 @@
+# 2.2.2 - 2023-01-05
+
+- Fixes an issue with PostHogProvider where autocapture={false} would still capture lifecycle and navigation events.
+
 # 2.2.1 - 2022-11-21
 
 - Fixes an issue with async storage selection while installing PostHog React Native
 - Fixes an issue where React Hooks for feature flags were conditionally loaded
-
 
 # 2.2.0 - 2022-11-11
 
