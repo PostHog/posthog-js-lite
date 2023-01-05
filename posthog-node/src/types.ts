@@ -1,4 +1,4 @@
-import { JsonType } from "posthog-core/src"
+import { JsonType } from 'posthog-core/src'
 
 export interface IdentifyMessageV1 {
   distinctId: string

@@ -110,12 +110,7 @@ export abstract class PostHogCore {
     if (options?.bootstrap?.featureFlags) {
       const activeFlags = Object.keys(options.bootstrap?.featureFlags || {})
         .filter((flag) => !!options.bootstrap?.featureFlags?.[flag])
-        .reduce(
-          (res: FeatureFlags, key) => (
-            (res[key] = options.bootstrap?.featureFlags?.[key] || false), res
-          ),
-          {}
-        )
+        .reduce((res: FeatureFlags, key) => ((res[key] = options.bootstrap?.featureFlags?.[key] || false), res), {})
       this.setKnownFeatureFlags(activeFlags)
     }
   }
