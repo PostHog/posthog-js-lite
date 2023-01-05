@@ -83,8 +83,9 @@ export type PostHogDecideResponse = {
   editorParams: { toolbarVersion: string; jsURL: string }
   isAuthenticated: true
   supportedCompression: string[]
-  featureFlags: {
-    [key: string]: string | boolean
-  }
+  featureFlags: FeatureFlags
   sessionRecording: boolean
 }
+
+export type FeatureFlags = Record<string, JsonType>
+export type JsonType = string | number | boolean | null | { [key: string]: JsonType } | Array<JsonType>

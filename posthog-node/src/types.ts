@@ -1,3 +1,5 @@
+import { JsonType } from "posthog-core/src"
+
 export interface IdentifyMessageV1 {
   distinctId: string
   properties?: Record<string | number, any>
@@ -138,7 +140,7 @@ export type PostHogNodeV1 = {
       onlyEvaluateLocally?: boolean
       sendFeatureFlagEvents?: boolean
     }
-  ): Promise<string | boolean | undefined>
+  ): Promise<JsonType | undefined>
 
   /**
    * @description Sets a groups properties, which allows asking questions like "Who are the most active companies"

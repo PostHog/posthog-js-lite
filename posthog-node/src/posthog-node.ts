@@ -1,6 +1,8 @@
 import { version } from '../package.json'
 
 import {
+  FeatureFlags,
+  JsonType,
   PostHogCore,
   PosthogCoreOptions,
   PostHogFetchOptions,
@@ -135,7 +137,7 @@ export class PostHog implements PostHogNodeV1 {
       onlyEvaluateLocally?: boolean
       sendFeatureFlagEvents?: boolean
     }
-  ): Promise<string | boolean | undefined> {
+  ): Promise<JsonType | undefined> {
     const { groups, personProperties, groupProperties } = options || {}
     let { onlyEvaluateLocally, sendFeatureFlagEvents } = options || {}
 
@@ -229,7 +231,7 @@ export class PostHog implements PostHogNodeV1 {
       groupProperties?: Record<string, Record<string, string>>
       onlyEvaluateLocally?: boolean
     }
-  ): Promise<Record<string, string | boolean>> {
+  ): Promise<FeatureFlags> {
     const { groups, personProperties, groupProperties } = options || {}
     let { onlyEvaluateLocally } = options || {}
 

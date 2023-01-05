@@ -7,6 +7,8 @@ import {
   PosthogCoreOptions,
   PostHogEventProperties,
   PostHogPersistedProperty,
+  FeatureFlags,
+  JsonType,
 } from './types'
 import {
   assert,
@@ -82,7 +84,7 @@ export abstract class PostHogCore {
   protected getCommonEventProperties(): any {
     const featureFlags = this.getFeatureFlags()
 
-    const featureVariantProperties: Record<string, string | boolean> = {}
+    const featureVariantProperties: FeatureFlags = {}
     if (featureFlags) {
       for (const [feature, variant] of Object.entries(featureFlags)) {
         featureVariantProperties[`$feature/${feature}`] = variant
@@ -109,7 +111,7 @@ export abstract class PostHogCore {
       const activeFlags = Object.keys(options.bootstrap?.featureFlags || {})
         .filter((flag) => !!options.bootstrap?.featureFlags?.[flag])
         .reduce(
-          (res: Record<string, string | boolean>, key) => (
+          (res: FeatureFlags, key) => (
             (res[key] = options.bootstrap?.featureFlags?.[key] || false), res
           ),
           {}
@@ -522,7 +524,7 @@ export abstract class PostHogCore {
     })
   }
 
-  onFeatureFlag(key: string, cb: (value: string | boolean) => void): () => void {
+  onFeatureFlag(key: string, cb: (value: JsonType) => void): () => void {
     return this.on('featureflags', async () => {
       const flagResponse = this.getFeatureFlag(key)
       if (flagResponse !== undefined) {

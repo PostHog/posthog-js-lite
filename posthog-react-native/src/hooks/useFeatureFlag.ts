@@ -1,7 +1,8 @@
+import { JsonType } from 'posthog-core/src'
 import { useEffect, useState } from 'react'
 import { usePostHog } from './usePostHog'
 
-export function useFeatureFlag(flag: string): string | boolean | undefined {
+export function useFeatureFlag(flag: string): JsonType | undefined {
   const posthog = usePostHog()
 
   const [featureFlag, setFeatureFlag] = useState<boolean | string | undefined>(posthog?.getFeatureFlag(flag))

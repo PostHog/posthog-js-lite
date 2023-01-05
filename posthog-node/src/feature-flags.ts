@@ -1,7 +1,7 @@
 import { createHash } from 'crypto'
 import { FeatureFlagCondition, PostHogFeatureFlag } from './types'
 import { version } from '../package.json'
-import { PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src'
+import { FeatureFlags, JsonType, PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src'
 import { safeSetTimeout } from 'posthog-core/src/utils'
 import { fetch } from './fetch'
 
@@ -80,7 +80,7 @@ class FeatureFlagsPoller {
     groups: Record<string, string> = {},
     personProperties: Record<string, string> = {},
     groupProperties: Record<string, Record<string, string>> = {}
-  ): Promise<string | boolean | undefined> {
+  ): Promise<JsonType | undefined> {
     await this.loadFeatureFlags()
 
     let response = undefined
@@ -117,10 +117,10 @@ class FeatureFlagsPoller {
     groups: Record<string, string> = {},
     personProperties: Record<string, string> = {},
     groupProperties: Record<string, Record<string, string>> = {}
-  ): Promise<{ response: Record<string, string | boolean>; fallbackToDecide: boolean }> {
+  ): Promise<{ response: FeatureFlags; fallbackToDecide: boolean }> {
     await this.loadFeatureFlags()
 
-    const response: Record<string, string | boolean> = {}
+    const response: FeatureFlags = {}
     let fallbackToDecide = this.featureFlags.length == 0
 
     this.featureFlags.map((flag) => {
@@ -145,7 +145,7 @@ class FeatureFlagsPoller {
     groups: Record<string, string> = {},
     personProperties: Record<string, string> = {},
     groupProperties: Record<string, Record<string, string>> = {}
-  ): string | boolean {
+  ): JsonType {
     if (flag.ensure_experience_continuity) {
       throw new InconclusiveMatchError('Flag has experience continuity enabled')
     }
@@ -183,7 +183,7 @@ class FeatureFlagsPoller {
     flag: PostHogFeatureFlag,
     distinctId: string,
     properties: Record<string, string>
-  ): string | boolean {
+  ): JsonType {
     const flagFilters = flag.filters || {}
     const flagConditions = flagFilters.groups || []
     let isInconclusive = false
@@ -264,7 +264,7 @@ class FeatureFlagsPoller {
     return true
   }
 
-  getMatchingVariant(flag: PostHogFeatureFlag, distinctId: string): string | boolean | undefined {
+  getMatchingVariant(flag: PostHogFeatureFlag, distinctId: string): JsonType | undefined {
     const hashValue = _hash(flag.key, distinctId, 'variant')
     const matchingVariant = this.variantLookupTable(flag).find((variant) => {
       return hashValue >= variant.valueMin && hashValue < variant.valueMax
