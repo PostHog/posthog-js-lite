@@ -5,7 +5,7 @@ import { usePostHog } from './usePostHog'
 export function useFeatureFlag(flag: string): JsonType | undefined {
   const posthog = usePostHog()
 
-  const [featureFlag, setFeatureFlag] = useState<boolean | string | undefined>(posthog?.getFeatureFlag(flag))
+  const [featureFlag, setFeatureFlag] = useState<JsonType | undefined>(posthog?.getFeatureFlag(flag))
 
   useEffect(() => {
     if (!posthog) {
