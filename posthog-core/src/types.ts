@@ -87,7 +87,7 @@ export type PostHogDecideResponse = {
   featureFlags: {
     [key: string]: string | boolean
   }
-  feautreFlagPayloads: {
+  featureFlagPayloads: {
     [key: string]: JsonType
   }
   sessionRecording: boolean
