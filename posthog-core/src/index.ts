@@ -7,6 +7,7 @@ import {
   PosthogCoreOptions,
   PostHogEventProperties,
   PostHogPersistedProperty,
+  JsonType,
 } from './types'
 import {
   assert,
@@ -32,6 +33,7 @@ export abstract class PostHogCore {
   private captureMode: 'form' | 'json'
   private sendFeatureFlagEvent: boolean
   private flagCallReported: { [key: string]: boolean } = {}
+  private flagPayloadCallReported: { [key: string]: boolean } = {}
   private removeDebugCallback?: () => void
 
   // internal
@@ -476,6 +478,34 @@ export abstract class PostHogCore {
 
     // If we have flags we either return the value (true or string) or false
     return response
+  }
+
+  getFeatureFlagPayload(key: string): JsonType | undefined {
+    const payloads = this.getFeatureFlagPayloads()
+
+    if (!payloads) {
+      return undefined
+    }
+
+    let response = payloads[key]
+    if (response === undefined) {
+      response = null
+    }
+
+    if (this.sendFeatureFlagEvent && !this.flagPayloadCallReported[key]) {
+      this.flagPayloadCallReported[key] = true
+      this.capture('$feature_flag_payload_called', {
+        $feature_flag: key,
+        $feature_flag_payload: response,
+      })
+    }
+
+    return response
+  }
+
+  getFeatureFlagPayloads(): PostHogDecideResponse['feautreFlagPayloads'] | undefined {
+    let payloads = this.getPersistedProperty<PostHogDecideResponse['feautreFlagPayloads']>(PostHogPersistedProperty.FeatureFlagPayloads)
+    return payloads
   }
 
   getFeatureFlags(): PostHogDecideResponse['featureFlags'] | undefined {

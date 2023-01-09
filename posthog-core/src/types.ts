@@ -34,6 +34,7 @@ export enum PostHogPersistedProperty {
   DistinctId = 'distinct_id',
   Props = 'props',
   FeatureFlags = 'feature_flags',
+  FeatureFlagPayloads = 'feature_flag_payloads',
   OverrideFeatureFlags = 'override_feature_flags',
   Queue = 'queue',
   OptedOut = 'opted_out',
@@ -86,5 +87,10 @@ export type PostHogDecideResponse = {
   featureFlags: {
     [key: string]: string | boolean
   }
+  feautreFlagPayloads: {
+    [key: string]: JsonType
+  }
   sessionRecording: boolean
 }
+
+export type JsonType = string | number | boolean | null | { [key: string]: JsonType } | Array<JsonType>
