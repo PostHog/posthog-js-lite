@@ -499,7 +499,7 @@ export abstract class PostHogCore {
     }
 
     let response = payloads[key]
-    
+
     if (this.sendFeatureFlagEvent && !this.flagPayloadCallReported[key]) {
       this.flagPayloadCallReported[key] = true
       this.capture('$feature_flag_payload_called', {
@@ -512,7 +512,9 @@ export abstract class PostHogCore {
   }
 
   getFeatureFlagPayloads(): PostHogDecideResponse['featureFlagPayloads'] | undefined {
-    let payloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(PostHogPersistedProperty.FeatureFlagPayloads)
+    let payloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
+      PostHogPersistedProperty.FeatureFlagPayloads
+    )
     return payloads
   }
 
