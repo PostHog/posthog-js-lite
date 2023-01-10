@@ -43,7 +43,8 @@ export type PostHogFeatureFlag = {
       }[]
     },
     payloads?: {
-      [key: string]: JsonType
+      'true': JsonType,
+      'false': JsonType
     }
   }
   deleted: boolean
