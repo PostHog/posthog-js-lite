@@ -147,19 +147,20 @@ export type PostHogNodeV1 = {
   ): Promise<string | boolean | undefined>
 
   /**
-   * @description Retrieves payload associated with the specified flag and matched value that is passed in. 
+   * @description Retrieves payload associated with the specified flag and matched value that is passed in.
    * (Expected to be used in conjuction with getFeatureFlag but allows for manual lookup). 
-   * Will try to evaluate locally first otherwise default to network call if allowed
+   * If match_value isn't passed, getFeatureFlag is called implicitly.
+   * Will try to evaluate for payload locally first otherwise default to network call if allowed
    * 
    * @param key the unique key of your feature flag
    * @param distinctId the current unique id
-   * @param value the matched flag string or boolean
+   * @param match_value optional- the matched flag string or boolean
    * @param options: dict with optional parameters below
    * @param onlyEvaluateLocally optional - whether to only evaluate the flag locally. Defaults to false.
    *
    * @returns payload of a json type object
    */
-  getFeatureFlagPayload(key: string, distinctId: string, value: string | boolean, options?: {
+  getFeatureFlagPayload(key: string, distinctId: string, match_value?: string | boolean, options?: {
     onlyEvaluateLocally?: boolean
   }): Promise<JsonType | undefined>
 

@@ -140,6 +140,11 @@ class FeatureFlagsPoller {
       response = this.featureFlagPayloads?.[key]?.[value]
     }
 
+    // Undefined means a loading or missing data issue. Null means evaluation happened and there was no match
+    if (response === undefined) {
+      return null
+    }
+
     return response
   }
 

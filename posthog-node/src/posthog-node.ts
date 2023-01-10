@@ -204,30 +204,62 @@ export class PostHog implements PostHogNodeV1 {
     return response
   }
 
-  async getFeatureFlagPayload(key: string, distinctId: string, value: string | boolean, options?: {
+  async getFeatureFlagPayload(key: string, distinctId: string, match_value?: string | boolean, options?: {
+    groups?: Record<string, string>
+    personProperties?: Record<string, string>
+    groupProperties?: Record<string, Record<string, string>>
     onlyEvaluateLocally?: boolean
+    sendFeatureFlagEvents?: boolean
   }): Promise<JsonType | undefined> {
-    let { onlyEvaluateLocally } = options || {}
+    const { groups, personProperties, groupProperties } = options || {}
+    let { onlyEvaluateLocally, sendFeatureFlagEvents } = options || {}
     
+    if (!match_value) {
+      match_value = await this.getFeatureFlag(key, distinctId, options)
+    }
+
+    if (!match_value) {
+      return undefined
+    }
+
+    // set defaults
+    if (onlyEvaluateLocally == undefined) {
+      onlyEvaluateLocally = false
+    }
+    if (sendFeatureFlagEvents == undefined) {
+      sendFeatureFlagEvents = true
+    }
+
     // set defaults
     if (onlyEvaluateLocally == undefined) {
       onlyEvaluateLocally = false
     }
 
-    let response = await this.featureFlagsPoller?.getFeatureFlagPayload(
+    let response_payload = await this.featureFlagsPoller?.getFeatureFlagPayload(
       key,
-      value
+      match_value
     )
 
-    const flagWasLocallyEvaluated = response !== undefined
+    const payloadWasLocallyEvaluated = response_payload !== undefined
 
-    if (!flagWasLocallyEvaluated && !onlyEvaluateLocally) {
+    if (!payloadWasLocallyEvaluated && !onlyEvaluateLocally) {
       this.reInit(distinctId)
+      if (groups != undefined) {
+        this._sharedClient.groups(groups)
+      }
+
+      if (personProperties) {
+        this._sharedClient.personProperties(personProperties)
+      }
+
+      if (groupProperties) {
+        this._sharedClient.groupProperties(groupProperties)
+      }
       await this._sharedClient.reloadFeatureFlagsAsync(false)
-      response = this._sharedClient.getFeatureFlagPayload(key)
+      response_payload = this._sharedClient.getFeatureFlagPayload(key)
     }
 
-    return response
+    return response_payload
   }
 
   async isFeatureEnabled(
