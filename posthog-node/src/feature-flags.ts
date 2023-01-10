@@ -1,7 +1,7 @@
 import { createHash } from 'crypto'
 import { FeatureFlagCondition, PostHogFeatureFlag } from './types'
 import { version } from '../package.json'
-import { PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src'
+import { JsonType, PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src'
 import { safeSetTimeout } from 'posthog-core/src/utils'
 import { fetch } from './fetch'
 
@@ -44,6 +44,7 @@ class FeatureFlagsPoller {
   personalApiKey: string
   projectApiKey: string
   featureFlags: Array<PostHogFeatureFlag>
+  featureFlagPayloads: Record<string, Record<string, JsonType>>
   groupTypeMapping: Record<string, string>
   loadedSuccessfullyOnce: boolean
   timeout?: number
@@ -62,6 +63,7 @@ class FeatureFlagsPoller {
     this.pollingInterval = pollingInterval
     this.personalApiKey = personalApiKey
     this.featureFlags = []
+    this.featureFlagPayloads = {}
     this.groupTypeMapping = {}
     this.loadedSuccessfullyOnce = false
     this.timeout = timeout
@@ -107,6 +109,35 @@ class FeatureFlagsPoller {
           console.error(`Error computing flag locally: ${key}: ${e}`)
         }
       }
+    }
+
+    return response
+  }
+
+  async getFeatureFlagPayload(
+    key: string,
+    value: string | boolean
+  ): Promise<JsonType | undefined> {
+    await this.loadFeatureFlags()
+
+    let response = undefined
+    let featureFlag = undefined
+
+    if (!this.loadedSuccessfullyOnce) {
+      return undefined
+    }
+
+    for (const flag of this.featureFlags) {
+      if (key === flag.key) {
+        featureFlag = flag
+        break
+      }
+    }
+
+    if (typeof value == 'boolean') {
+      response = this.featureFlagPayloads[key]?.[value.toString()]
+    } else if (typeof value == 'string') {
+      response = this.featureFlagPayloads[key]?.[value]
     }
 
     return response
@@ -321,6 +352,7 @@ class FeatureFlagsPoller {
       }
 
       this.featureFlags = responseJson.flags || []
+      this.featureFlagPayloads = this._extractFeatureFlagVariantPayloads(this.featureFlags)
       this.groupTypeMapping = responseJson.group_type_mapping || {}
       this.loadedSuccessfullyOnce = true
     } catch (err) {
@@ -330,6 +362,28 @@ class FeatureFlagsPoller {
         throw err
       }
     }
+  }
+
+  _extractFeatureFlagVariantPayloads(featureFlags: Array<PostHogFeatureFlag>): Record<string, Record<string, JsonType>> {
+    let response: Record<string, Record<string, JsonType>> = {}
+    
+    featureFlags.forEach(flag => {
+      if (flag.filters?.multivariate) {
+        let multivariate_payloads: Record<string, JsonType> = {}
+        flag.filters.multivariate.variants.forEach(variant => {
+          if(variant.payload) {
+            multivariate_payloads[variant.key] = variant.payload
+          }
+        })
+        response[flag.key] = multivariate_payloads
+      } else {
+        if (flag.filters?.payloads) {
+          response[flag.key] = flag.filters?.payloads
+        }
+      }
+    })
+
+    return response
   }
 
   async _requestFeatureFlagDefinitions(): Promise<PostHogFetchResponse> {

@@ -1,6 +1,7 @@
 import { version } from '../package.json'
 
 import {
+  JsonType,
   PostHogCore,
   PosthogCoreOptions,
   PostHogFetchOptions,
@@ -200,6 +201,32 @@ export class PostHog implements PostHogNodeV1 {
         groups,
       })
     }
+    return response
+  }
+
+  async getFeatureFlagPayload(key: string, distinctId: string, value: string | boolean, options?: {
+    onlyEvaluateLocally?: boolean
+  }): Promise<JsonType | undefined> {
+    let { onlyEvaluateLocally } = options || {}
+    
+    // set defaults
+    if (onlyEvaluateLocally == undefined) {
+      onlyEvaluateLocally = false
+    }
+
+    let response = await this.featureFlagsPoller?.getFeatureFlagPayload(
+      key,
+      value
+    )
+
+    const flagWasLocallyEvaluated = response !== undefined
+
+    if (!flagWasLocallyEvaluated && !onlyEvaluateLocally) {
+      this.reInit(distinctId)
+      await this._sharedClient.reloadFeatureFlagsAsync(false)
+      response = this._sharedClient.getFeatureFlagPayload(key)
+    }
+
     return response
   }
 
