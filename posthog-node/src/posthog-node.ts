@@ -204,7 +204,7 @@ export class PostHog implements PostHogNodeV1 {
     return response
   }
 
-  async getFeatureFlagPayload(key: string, distinctId: string, match_value?: string | boolean, options?: {
+  async getFeatureFlagPayload(key: string, distinctId: string, matchValue?: string | boolean, options?: {
     groups?: Record<string, string>
     personProperties?: Record<string, string>
     groupProperties?: Record<string, Record<string, string>>
@@ -214,11 +214,11 @@ export class PostHog implements PostHogNodeV1 {
     const { groups, personProperties, groupProperties } = options || {}
     let { onlyEvaluateLocally, sendFeatureFlagEvents } = options || {}
     
-    if (!match_value) {
-      match_value = await this.getFeatureFlag(key, distinctId, options)
+    if (!matchValue) {
+      matchValue = await this.getFeatureFlag(key, distinctId, options)
     }
 
-    if (!match_value) {
+    if (!matchValue) {
       return undefined
     }
 
@@ -235,12 +235,12 @@ export class PostHog implements PostHogNodeV1 {
       onlyEvaluateLocally = false
     }
 
-    let response_payload = await this.featureFlagsPoller?.getFeatureFlagPayload(
+    let response = await this.featureFlagsPoller?.getFeatureFlagPayload(
       key,
-      match_value
+      matchValue
     )
 
-    const payloadWasLocallyEvaluated = response_payload !== undefined
+    const payloadWasLocallyEvaluated = response !== undefined
 
     if (!payloadWasLocallyEvaluated && !onlyEvaluateLocally) {
       this.reInit(distinctId)
@@ -256,10 +256,10 @@ export class PostHog implements PostHogNodeV1 {
         this._sharedClient.groupProperties(groupProperties)
       }
       await this._sharedClient.reloadFeatureFlagsAsync(false)
-      response_payload = this._sharedClient.getFeatureFlagPayload(key)
+      response = this._sharedClient.getFeatureFlagPayload(key)
     }
 
-    return response_payload
+    return response
   }
 
   async isFeatureEnabled(
