@@ -407,7 +407,7 @@ export abstract class PostHogCore {
   }
 
   private async _decideAsync(sendAnonDistinctId: boolean = true): Promise<PostHogDecideResponse> {
-    const url = `${this.host}/decide/?v=2`
+    const url = `${this.host}/decide/?v=3`
 
     const distinctId = this.getDistinctId()
     const groups = this.props.$groups || {}
@@ -433,9 +433,15 @@ export abstract class PostHogCore {
       .then((r) => r.json() as Promise<PostHogDecideResponse>)
       .then((res) => {
         if (res.featureFlags) {
-          this.setKnownFeatureFlags(res.featureFlags)
-        }
+          let newFeatureFlags = res.featureFlags
+          if (res.errorsWhileComputingFlags) {
+            // if not all flags were computed, we upsert flags instead of replacing them
+            const currentFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(PostHogPersistedProperty.FeatureFlags)
+            newFeatureFlags = { ...currentFlags, ...res.featureFlags }
 
+          }
+          this.setKnownFeatureFlags(newFeatureFlags)
+        }
         return res
       })
       .finally(() => {
@@ -461,8 +467,10 @@ export abstract class PostHogCore {
     }
 
     let response = featureFlags[key]
+    // `/decide` v3 returns all flags
+
     if (response === undefined) {
-      // `/decide` returns nothing for flags which are false.
+      // For cases where the flag is unknown, return false
       response = false
     }
 

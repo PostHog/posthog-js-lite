@@ -86,5 +86,6 @@ export type PostHogDecideResponse = {
   featureFlags: {
     [key: string]: string | boolean
   }
+  errorsWhileComputingFlags: boolean
   sessionRecording: boolean
 }
