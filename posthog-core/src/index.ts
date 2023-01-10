@@ -436,9 +436,10 @@ export abstract class PostHogCore {
           let newFeatureFlags = res.featureFlags
           if (res.errorsWhileComputingFlags) {
             // if not all flags were computed, we upsert flags instead of replacing them
-            const currentFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(PostHogPersistedProperty.FeatureFlags)
+            const currentFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
+              PostHogPersistedProperty.FeatureFlags
+            )
             newFeatureFlags = { ...currentFlags, ...res.featureFlags }
-
           }
           this.setKnownFeatureFlags(newFeatureFlags)
         }

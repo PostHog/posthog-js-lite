@@ -134,7 +134,6 @@ describe('PostHog Core', () => {
           })
 
           jest.runOnlyPendingTimers() // trigger init setImmediate
-
         })
 
         it('should return undefined', async () => {
@@ -167,42 +166,42 @@ describe('PostHog Core', () => {
       describe('when subsequent decide calls return partial results', () => {
         beforeEach(() => {
           ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1 }, (_mocks) => {
-            _mocks.fetch.mockImplementationOnce((url) => {
-              if (url.includes('/decide/?v=3')) {
-                return Promise.resolve({
-                  status: 200,
-                  text: () => Promise.resolve('ok'),
-                  json: () =>
-                    Promise.resolve({
-                      featureFlags: createMockFeatureFlags(),
-                    }),
-                })
-              }
-              return errorAPIResponse
-            })
-            .mockImplementationOnce((url) => {
-              if (url.includes('/decide/?v=3')) {
-                return Promise.resolve({
-                  status: 200,
-                  text: () => Promise.resolve('ok'),
-                  json: () =>
-                    Promise.resolve({
-                      featureFlags: {'x-flag': 'x-value', 'feature-1': false},
-                      errorsWhileComputingFlags: true,
-                    }),
-                })
-              }
+            _mocks.fetch
+              .mockImplementationOnce((url) => {
+                if (url.includes('/decide/?v=3')) {
+                  return Promise.resolve({
+                    status: 200,
+                    text: () => Promise.resolve('ok'),
+                    json: () =>
+                      Promise.resolve({
+                        featureFlags: createMockFeatureFlags(),
+                      }),
+                  })
+                }
+                return errorAPIResponse
+              })
+              .mockImplementationOnce((url) => {
+                if (url.includes('/decide/?v=3')) {
+                  return Promise.resolve({
+                    status: 200,
+                    text: () => Promise.resolve('ok'),
+                    json: () =>
+                      Promise.resolve({
+                        featureFlags: { 'x-flag': 'x-value', 'feature-1': false },
+                        errorsWhileComputingFlags: true,
+                      }),
+                  })
+                }
 
-              return errorAPIResponse
-            })
-            .mockImplementation((url) => {
-              return errorAPIResponse
+                return errorAPIResponse
+              })
+              .mockImplementation(() => {
+                return errorAPIResponse
+              })
           })
+
+          jest.runOnlyPendingTimers() // trigger init setImmediate
         })
-
-        jest.runOnlyPendingTimers() // trigger init setImmediate
-
-      })
 
         it('should return combined results', async () => {
           expect(mocks.fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=3', {
@@ -264,46 +263,46 @@ describe('PostHog Core', () => {
           expect(posthog.isFeatureEnabled('x-flag')).toEqual(true)
         })
       })
-      
+
       describe('when subsequent decide calls return results without errors', () => {
         beforeEach(() => {
           ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1 }, (_mocks) => {
-            _mocks.fetch.mockImplementationOnce((url) => {
-              if (url.includes('/decide/?v=3')) {
-                return Promise.resolve({
-                  status: 200,
-                  text: () => Promise.resolve('ok'),
-                  json: () =>
-                    Promise.resolve({
-                      featureFlags: createMockFeatureFlags(),
-                    }),
-                })
-              }
-              return errorAPIResponse
-            })
-            .mockImplementationOnce((url) => {
-              if (url.includes('/decide/?v=3')) {
-                return Promise.resolve({
-                  status: 200,
-                  text: () => Promise.resolve('ok'),
-                  json: () =>
-                    Promise.resolve({
-                      featureFlags: {'x-flag': 'x-value', 'feature-1': false},
-                      errorsWhileComputingFlags: false,
-                    }),
-                })
-              }
+            _mocks.fetch
+              .mockImplementationOnce((url) => {
+                if (url.includes('/decide/?v=3')) {
+                  return Promise.resolve({
+                    status: 200,
+                    text: () => Promise.resolve('ok'),
+                    json: () =>
+                      Promise.resolve({
+                        featureFlags: createMockFeatureFlags(),
+                      }),
+                  })
+                }
+                return errorAPIResponse
+              })
+              .mockImplementationOnce((url) => {
+                if (url.includes('/decide/?v=3')) {
+                  return Promise.resolve({
+                    status: 200,
+                    text: () => Promise.resolve('ok'),
+                    json: () =>
+                      Promise.resolve({
+                        featureFlags: { 'x-flag': 'x-value', 'feature-1': false },
+                        errorsWhileComputingFlags: false,
+                      }),
+                  })
+                }
 
-              return errorAPIResponse
-            })
-            .mockImplementation((url) => {
-              return errorAPIResponse
+                return errorAPIResponse
+              })
+              .mockImplementation(() => {
+                return errorAPIResponse
+              })
           })
+
+          jest.runOnlyPendingTimers() // trigger init setImmediate
         })
-
-        jest.runOnlyPendingTimers() // trigger init setImmediate
-
-      })
 
         it('should return only latest results', async () => {
           expect(mocks.fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=3', {
