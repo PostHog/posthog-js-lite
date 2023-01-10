@@ -135,9 +135,9 @@ class FeatureFlagsPoller {
     }
 
     if (typeof value == 'boolean') {
-      response = this.featureFlagPayloads[key]?.[value.toString()]
+      response = this.featureFlagPayloads?.[key]?.[value.toString()]
     } else if (typeof value == 'string') {
-      response = this.featureFlagPayloads[key]?.[value]
+      response = this.featureFlagPayloads?.[key]?.[value]
     }
 
     return response
