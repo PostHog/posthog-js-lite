@@ -116,28 +116,20 @@ class FeatureFlagsPoller {
 
   async getFeatureFlagPayload(
     key: string,
-    value: string | boolean
+    matchValue: string | boolean
   ): Promise<JsonType | undefined> {
     await this.loadFeatureFlags()
 
     let response = undefined
-    let featureFlag = undefined
 
     if (!this.loadedSuccessfullyOnce) {
       return undefined
     }
 
-    for (const flag of this.featureFlags) {
-      if (key === flag.key) {
-        featureFlag = flag
-        break
-      }
-    }
-
-    if (typeof value == 'boolean') {
-      response = this.featureFlagPayloads?.[key]?.[value.toString()]
-    } else if (typeof value == 'string') {
-      response = this.featureFlagPayloads?.[key]?.[value]
+    if (typeof matchValue == 'boolean') {
+      response = this.featureFlagPayloads?.[key]?.[matchValue.toString()]
+    } else if (typeof matchValue == 'string') {
+      response = this.featureFlagPayloads?.[key]?.[matchValue]
     }
 
     // Undefined means a loading or missing data issue. Null means evaluation happened and there was no match
