@@ -500,12 +500,9 @@ export abstract class PostHogCore {
 
     let response = payloads[key]
 
-    if (this.sendFeatureFlagEvent && !this.flagPayloadCallReported[key]) {
-      this.flagPayloadCallReported[key] = true
-      this.capture('$feature_flag_payload_called', {
-        $feature_flag: key,
-        $feature_flag_payload: response,
-      })
+    // Undefined means a loading or missing data issue. Null means evaluation happened and there was no match
+    if (response === undefined) {
+      return null
     }
 
     return response
