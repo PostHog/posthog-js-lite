@@ -44,7 +44,7 @@ class FeatureFlagsPoller {
   personalApiKey: string
   projectApiKey: string
   featureFlags: Array<PostHogFeatureFlag>
-  featureFlagPayloads: Record<string, Record<string, JsonType>>
+  featureFlagsByKey: Record<string, PostHogFeatureFlag>
   groupTypeMapping: Record<string, string>
   loadedSuccessfullyOnce: boolean
   timeout?: number
@@ -63,7 +63,7 @@ class FeatureFlagsPoller {
     this.pollingInterval = pollingInterval
     this.personalApiKey = personalApiKey
     this.featureFlags = []
-    this.featureFlagPayloads = {}
+    this.featureFlagsByKey = {}
     this.groupTypeMapping = {}
     this.loadedSuccessfullyOnce = false
     this.timeout = timeout
@@ -127,9 +127,9 @@ class FeatureFlagsPoller {
     }
 
     if (typeof matchValue == 'boolean') {
-      response = this.featureFlagPayloads?.[key]?.[matchValue.toString()]
+      response = this.featureFlagsByKey?.[key]?.filters?.payloads?.[matchValue.toString()]
     } else if (typeof matchValue == 'string') {
-      response = this.featureFlagPayloads?.[key]?.[matchValue]
+      response = this.featureFlagsByKey?.[key]?.filters?.payloads?.[matchValue]
     }
 
     // Undefined means a loading or missing data issue. Null means evaluation happened and there was no match
@@ -349,7 +349,7 @@ class FeatureFlagsPoller {
       }
 
       this.featureFlags = responseJson.flags || []
-      this.featureFlagPayloads = this._extractFeatureFlagVariantPayloads(this.featureFlags)
+      this.featureFlagsByKey = this.featureFlags.reduce((acc, curr)=> (acc[curr.key] = curr, acc),<Record<string, PostHogFeatureFlag>>{})
       this.groupTypeMapping = responseJson.group_type_mapping || {}
       this.loadedSuccessfullyOnce = true
     } catch (err) {
@@ -359,28 +359,6 @@ class FeatureFlagsPoller {
         throw err
       }
     }
-  }
-
-  _extractFeatureFlagVariantPayloads(featureFlags: Array<PostHogFeatureFlag>): Record<string, Record<string, JsonType>> {
-    let response: Record<string, Record<string, JsonType>> = {}
-    
-    featureFlags.forEach(flag => {
-      if (flag.filters?.multivariate) {
-        let multivariate_payloads: Record<string, JsonType> = {}
-        flag.filters.multivariate.variants.forEach(variant => {
-          if(variant.payload) {
-            multivariate_payloads[variant.key] = variant.payload
-          }
-        })
-        response[flag.key] = multivariate_payloads
-      } else {
-        if (flag.filters?.payloads) {
-          response[flag.key] = flag.filters?.payloads
-        }
-      }
-    })
-
-    return response
   }
 
   async _requestFeatureFlagDefinitions(): Promise<PostHogFetchResponse> {

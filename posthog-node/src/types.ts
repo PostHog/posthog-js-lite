@@ -39,13 +39,9 @@ export type PostHogFeatureFlag = {
       variants: {
         key: string
         rollout_percentage: number
-        payload?: JsonType
       }[]
     },
-    payloads?: {
-      'true': JsonType,
-      'false': JsonType
-    }
+    payloads?: Record<string, JsonType>
   }
   deleted: boolean
   active: boolean
