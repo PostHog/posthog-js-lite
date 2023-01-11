@@ -114,10 +114,7 @@ class FeatureFlagsPoller {
     return response
   }
 
-  async getFeatureFlagPayload(
-    key: string,
-    matchValue: string | boolean
-  ): Promise<JsonType | undefined> {
+  async getFeatureFlagPayload(key: string, matchValue: string | boolean): Promise<JsonType | undefined> {
     await this.loadFeatureFlags()
 
     let response = undefined
@@ -349,7 +346,10 @@ class FeatureFlagsPoller {
       }
 
       this.featureFlags = responseJson.flags || []
-      this.featureFlagsByKey = this.featureFlags.reduce((acc, curr)=> (acc[curr.key] = curr, acc),<Record<string, PostHogFeatureFlag>>{})
+      this.featureFlagsByKey = this.featureFlags.reduce(
+        (acc, curr) => ((acc[curr.key] = curr), acc),
+        <Record<string, PostHogFeatureFlag>>{}
+      )
       this.groupTypeMapping = responseJson.group_type_mapping || {}
       this.loadedSuccessfullyOnce = true
     } catch (err) {

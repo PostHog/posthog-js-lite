@@ -204,30 +204,32 @@ export class PostHog implements PostHogNodeV1 {
     return response
   }
 
-  async getFeatureFlagPayload(key: string, distinctId: string, matchValue?: string | boolean, options?: {
-    groups?: Record<string, string>
-    personProperties?: Record<string, string>
-    groupProperties?: Record<string, Record<string, string>>
-    onlyEvaluateLocally?: boolean
-    sendFeatureFlagEvents?: boolean
-  }): Promise<JsonType | undefined> {
+  async getFeatureFlagPayload(
+    key: string,
+    distinctId: string,
+    matchValue?: string | boolean,
+    options?: {
+      groups?: Record<string, string>
+      personProperties?: Record<string, string>
+      groupProperties?: Record<string, Record<string, string>>
+      onlyEvaluateLocally?: boolean
+      sendFeatureFlagEvents?: boolean
+    }
+  ): Promise<JsonType | undefined> {
     const { groups, personProperties, groupProperties } = options || {}
     let { onlyEvaluateLocally, sendFeatureFlagEvents } = options || {}
     let response = undefined
-    
+
     // Try to get match value locally if not provided
     if (!matchValue) {
       matchValue = await this.getFeatureFlag(key, distinctId, {
         ...options,
-        onlyEvaluateLocally: true
+        onlyEvaluateLocally: true,
       })
     }
 
     if (matchValue) {
-      response = await this.featureFlagsPoller?.getFeatureFlagPayload(
-        key,
-        matchValue
-      )
+      response = await this.featureFlagsPoller?.getFeatureFlagPayload(key, matchValue)
     }
 
     // set defaults

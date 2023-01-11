@@ -147,11 +147,13 @@ describe('PostHog Node.js', () => {
       }
 
       const mockFeatureFlagPayloads = {
-        'feature-1': {'color': 'blue'},
-        'feature-variant': 2
+        'feature-1': { color: 'blue' },
+        'feature-variant': 2,
       }
 
-      mockedFetch.mockImplementation(apiImplementation({ decideFlags: mockFeatureFlags, decideFlagPayloads: mockFeatureFlagPayloads }))
+      mockedFetch.mockImplementation(
+        apiImplementation({ decideFlags: mockFeatureFlags, decideFlagPayloads: mockFeatureFlagPayloads })
+      )
 
       posthog = new PostHog('TEST_API_KEY', {
         host: 'http://example.com',
@@ -418,19 +420,18 @@ describe('PostHog Node.js', () => {
 
     it('should do getFeatureFlagPayloads', async () => {
       expect(mockedFetch).toHaveBeenCalledTimes(0)
-      await expect(posthog.getFeatureFlagPayload('feature-variant', '123', 'variant', { groups: { org: '123' } })).resolves.toEqual(
-        2
-      )
+      await expect(
+        posthog.getFeatureFlagPayload('feature-variant', '123', 'variant', { groups: { org: '123' } })
+      ).resolves.toEqual(2)
       expect(mockedFetch).toHaveBeenCalledTimes(1)
     })
 
     it('should do getFeatureFlagPayloads without matchValue', async () => {
       expect(mockedFetch).toHaveBeenCalledTimes(0)
-      await expect(posthog.getFeatureFlagPayload('feature-variant', '123', undefined, { groups: { org: '123' } })).resolves.toEqual(
-        2
-      )
+      await expect(
+        posthog.getFeatureFlagPayload('feature-variant', '123', undefined, { groups: { org: '123' } })
+      ).resolves.toEqual(2)
       expect(mockedFetch).toHaveBeenCalledTimes(1)
     })
-
   })
 })

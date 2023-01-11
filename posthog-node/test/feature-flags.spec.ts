@@ -31,7 +31,7 @@ export const apiImplementation = ({
           } else {
             return Promise.resolve({
               featureFlags: decideFlags,
-              featureFlagPayloads: decideFlagPayloads
+              featureFlagPayloads: decideFlagPayloads,
             })
           }
         },
@@ -1250,10 +1250,10 @@ describe('local evaluation', () => {
               },
             ],
             payloads: {
-              'true': {
-                'log': 'all'
-              }
-            }
+              true: {
+                log: 'all',
+              },
+            },
           },
         },
       ],
@@ -1266,14 +1266,18 @@ describe('local evaluation', () => {
     })
 
     expect(
-      await posthog.getFeatureFlagPayload('person-flag', 'some-distinct-id', true, { personProperties: { region: 'USA' } })
+      await posthog.getFeatureFlagPayload('person-flag', 'some-distinct-id', true, {
+        personProperties: { region: 'USA' },
+      })
     ).toEqual({
-      'log': 'all'
+      log: 'all',
     })
     expect(
-      await posthog.getFeatureFlagPayload('person-flag', 'some-distinct-id', undefined, { personProperties: { region: 'USA' } })
+      await posthog.getFeatureFlagPayload('person-flag', 'some-distinct-id', undefined, {
+        personProperties: { region: 'USA' },
+      })
     ).toEqual({
-      'log': 'all'
+      log: 'all',
     })
     expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
     // decide not called
@@ -1328,8 +1332,8 @@ describe('local evaluation', () => {
               ],
             },
             payloads: {
-              'second-variant': 2500
-            }
+              'second-variant': 2500,
+            },
           },
         },
       ],
@@ -1342,7 +1346,9 @@ describe('local evaluation', () => {
     })
 
     expect(
-      await posthog.getFeatureFlagPayload('beta-feature', 'test_id', 'second-variant', { personProperties: { email: 'test@posthog.com' } })
+      await posthog.getFeatureFlagPayload('beta-feature', 'test_id', 'second-variant', {
+        personProperties: { email: 'test@posthog.com' },
+      })
     ).toEqual(2500)
 
     expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)

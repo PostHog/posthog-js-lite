@@ -1,4 +1,4 @@
-import { JsonType } from "posthog-core/src"
+import { JsonType } from 'posthog-core/src'
 
 export interface IdentifyMessageV1 {
   distinctId: string
@@ -40,7 +40,7 @@ export type PostHogFeatureFlag = {
         key: string
         rollout_percentage: number
       }[]
-    },
+    }
     payloads?: Record<string, JsonType>
   }
   deleted: boolean
@@ -145,10 +145,10 @@ export type PostHogNodeV1 = {
 
   /**
    * @description Retrieves payload associated with the specified flag and matched value that is passed in.
-   * (Expected to be used in conjuction with getFeatureFlag but allows for manual lookup). 
+   * (Expected to be used in conjuction with getFeatureFlag but allows for manual lookup).
    * If matchValue isn't passed, getFeatureFlag is called implicitly.
    * Will try to evaluate for payload locally first otherwise default to network call if allowed
-   * 
+   *
    * @param key the unique key of your feature flag
    * @param distinctId the current unique id
    * @param matchValue optional- the matched flag string or boolean
@@ -157,9 +157,14 @@ export type PostHogNodeV1 = {
    *
    * @returns payload of a json type object
    */
-  getFeatureFlagPayload(key: string, distinctId: string, matchValue?: string | boolean, options?: {
-    onlyEvaluateLocally?: boolean
-  }): Promise<JsonType | undefined>
+  getFeatureFlagPayload(
+    key: string,
+    distinctId: string,
+    matchValue?: string | boolean,
+    options?: {
+      onlyEvaluateLocally?: boolean
+    }
+  ): Promise<JsonType | undefined>
 
   /**
    * @description Sets a groups properties, which allows asking questions like "Who are the most active companies"
