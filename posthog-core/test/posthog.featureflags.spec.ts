@@ -134,7 +134,7 @@ describe('PostHog Core', () => {
           color: 'blue',
         })
 
-        expect(posthog.getFeatureFlagPayload('feature-2')).toEqual(undefined)
+        expect(posthog.getFeatureFlagPayload('feature-2')).toEqual(null)
       })
 
       describe('when errored out', () => {
