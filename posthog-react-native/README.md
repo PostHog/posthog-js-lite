@@ -32,7 +32,7 @@ The best way to use PostHog is via the `PosthogProvider` which enables featues l
 
 ```jsx
 // App.(js|ts)
-import PostHog, { usePostHog, PostHogProvider } from 'posthog-react-native'
+import { usePostHog, PostHogProvider } from 'posthog-react-native'
 ...
 
 export function MyApp() {
