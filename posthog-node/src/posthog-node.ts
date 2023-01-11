@@ -213,13 +213,21 @@ export class PostHog implements PostHogNodeV1 {
   }): Promise<JsonType | undefined> {
     const { groups, personProperties, groupProperties } = options || {}
     let { onlyEvaluateLocally, sendFeatureFlagEvents } = options || {}
+    let response = undefined
     
+    // Try to get match value locally if not provided
     if (!matchValue) {
-      matchValue = await this.getFeatureFlag(key, distinctId, options)
+      matchValue = await this.getFeatureFlag(key, distinctId, {
+        ...options,
+        onlyEvaluateLocally: true
+      })
     }
 
-    if (!matchValue) {
-      return undefined
+    if (matchValue) {
+      response = await this.featureFlagsPoller?.getFeatureFlagPayload(
+        key,
+        matchValue
+      )
     }
 
     // set defaults
@@ -234,11 +242,6 @@ export class PostHog implements PostHogNodeV1 {
     if (onlyEvaluateLocally == undefined) {
       onlyEvaluateLocally = false
     }
-
-    let response = await this.featureFlagsPoller?.getFeatureFlagPayload(
-      key,
-      matchValue
-    )
 
     const payloadWasLocallyEvaluated = response !== undefined
 

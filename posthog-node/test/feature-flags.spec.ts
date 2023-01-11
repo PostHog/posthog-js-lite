@@ -12,10 +12,12 @@ const mockedFetch = jest.mocked(fetch, true)
 export const apiImplementation = ({
   localFlags,
   decideFlags,
+  decideFlagPayloads,
   decideStatus = 200,
 }: {
   localFlags?: any
   decideFlags?: any
+  decideFlagPayloads?: any
   decideStatus?: number
 }) => {
   return (url: any): Promise<any> => {
@@ -29,6 +31,7 @@ export const apiImplementation = ({
           } else {
             return Promise.resolve({
               featureFlags: decideFlags,
+              featureFlagPayloads: decideFlagPayloads
             })
           }
         },
