@@ -92,9 +92,6 @@ const createStorageLike = (store: any): PostHogStorage => {
   }
 }
 
-export const _localStore = createStorageLike(window.localStorage)
-export const _sessionStore = createStorageLike(window.sessionStorage)
-
 const checkStoreIsSupported = (storage: PostHogStorage, key = '__mplssupport__'): boolean => {
   if (!window) {
     return false
@@ -112,8 +109,8 @@ const checkStoreIsSupported = (storage: PostHogStorage, key = '__mplssupport__')
   }
 }
 
-export const localStore = checkStoreIsSupported(_localStore) ? _localStore : undefined
-export const sessionStorage = checkStoreIsSupported(_sessionStore) ? _sessionStore : undefined
+let localStore: PostHogStorage | undefined = undefined
+let sessionStore: PostHogStorage | undefined = undefined
 
 const createMemoryStorage = (): PostHogStorage => {
   const _cache: { [key: string]: any | undefined } = {}
@@ -146,14 +143,27 @@ const createMemoryStorage = (): PostHogStorage => {
   return store
 }
 
-export const getStorage = (type: PostHogOptions['persistence']): PostHogStorage => {
+export const getStorage = (type: PostHogOptions['persistence'], window: Window | undefined): PostHogStorage => {
+
+  if (window) {
+    if (!localStorage) {
+      const _localStore = createStorageLike(window.localStorage)
+      localStore = checkStoreIsSupported(_localStore) ? _localStore : undefined
+    }
+
+    if (!sessionStore) {
+      const _sessionStore = createStorageLike(window.sessionStorage)
+      sessionStore = checkStoreIsSupported(_sessionStore) ? _sessionStore : undefined
+    }
+  }
+
   switch (type) {
     case 'cookie':
-      return cookieStore || localStore || sessionStorage || createMemoryStorage()
+      return cookieStore || localStore || sessionStore || createMemoryStorage()
     case 'localStorage':
-      return localStore || sessionStorage || createMemoryStorage()
+      return localStore || sessionStore || createMemoryStorage()
     case 'sessionStorage':
-      return sessionStorage || createMemoryStorage()
+      return sessionStore || createMemoryStorage()
     case 'memory':
       return createMemoryStorage()
     default:

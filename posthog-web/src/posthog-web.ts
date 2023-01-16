@@ -19,7 +19,7 @@ export class PostHog extends PostHogCore {
 
     // posthog-js stores options in one object on
     this._storageKey = options?.persistence_name ? `ph_${options.persistence_name}` : `ph_${apiKey}_posthog`
-    this._storage = getStorage(options?.persistence || 'localStorage')
+    this._storage = getStorage(options?.persistence || 'localStorage', window)
     this.setupBootstrap(options)
   }
 
@@ -48,12 +48,15 @@ export class PostHog extends PostHogCore {
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
     return window.fetch(url, options)
   }
+
   getLibraryId(): string {
     return 'posthog-js-lite'
   }
+
   getLibraryVersion(): string {
     return version
   }
+  
   getCustomUserAgent(): void {
     return
   }
