@@ -56,7 +56,7 @@ export class PostHog extends PostHogCore {
   getLibraryVersion(): string {
     return version
   }
-  
+
   getCustomUserAgent(): void {
     return
   }
