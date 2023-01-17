@@ -452,10 +452,6 @@ export abstract class PostHogCore {
           this.setKnownFeatureFlagPayloads(newFeatureFlagPayloads)
         }
 
-        if (res.featureFlagPayloads) {
-          this.setKnownFeatureFlagPayloads(res.featureFlagPayloads)
-        }
-
         return res
       })
       .finally(() => {
