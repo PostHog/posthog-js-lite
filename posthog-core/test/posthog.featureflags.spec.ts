@@ -15,10 +15,19 @@ describe('PostHog Core', () => {
     'feature-variant': 'variant',
   })
 
+  const errorAPIResponse = Promise.resolve({
+    status: 400,
+    text: () => Promise.resolve('error'),
+    json: () =>
+      Promise.resolve({
+        status: 'error',
+      }),
+  })
+
   beforeEach(() => {
     ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1 }, (_mocks) => {
       _mocks.fetch.mockImplementation((url) => {
-        if (url.includes('/decide/')) {
+        if (url.includes('/decide/?v=3')) {
           return Promise.resolve({
             status: 200,
             text: () => Promise.resolve('ok'),
@@ -76,7 +85,7 @@ describe('PostHog Core', () => {
       })
 
       it('should load feature flags on init', async () => {
-        expect(mocks.fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=2', {
+        expect(mocks.fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=3', {
           body: JSON.stringify({
             token: 'TEST_API_KEY',
             distinct_id: posthog.getDistinctId(),
@@ -120,19 +129,30 @@ describe('PostHog Core', () => {
                 })
               }
 
-              return Promise.resolve({
-                status: 400,
-                text: () => Promise.resolve('ok'),
-                json: () =>
-                  Promise.resolve({
-                    status: 'ok',
-                  }),
-              })
+              return errorAPIResponse
             })
           })
+
+          jest.runOnlyPendingTimers() // trigger init setImmediate
         })
 
         it('should return undefined', async () => {
+          expect(mocks.fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=3', {
+            body: JSON.stringify({
+              token: 'TEST_API_KEY',
+              distinct_id: posthog.getDistinctId(),
+              $anon_distinct_id: posthog.getAnonymousId(),
+              groups: {},
+              person_properties: {},
+              group_properties: {},
+            }),
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            signal: expect.anything(),
+          })
+
           expect(posthog.getFeatureFlag('feature-1')).toEqual(undefined)
           expect(posthog.getFeatureFlag('feature-variant')).toEqual(undefined)
           expect(posthog.getFeatureFlag('feature-missing')).toEqual(undefined)
@@ -140,6 +160,206 @@ describe('PostHog Core', () => {
           expect(posthog.isFeatureEnabled('feature-1')).toEqual(undefined)
           expect(posthog.isFeatureEnabled('feature-variant')).toEqual(undefined)
           expect(posthog.isFeatureEnabled('feature-missing')).toEqual(undefined)
+        })
+      })
+
+      describe('when subsequent decide calls return partial results', () => {
+        beforeEach(() => {
+          ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1 }, (_mocks) => {
+            _mocks.fetch
+              .mockImplementationOnce((url) => {
+                if (url.includes('/decide/?v=3')) {
+                  return Promise.resolve({
+                    status: 200,
+                    text: () => Promise.resolve('ok'),
+                    json: () =>
+                      Promise.resolve({
+                        featureFlags: createMockFeatureFlags(),
+                      }),
+                  })
+                }
+                return errorAPIResponse
+              })
+              .mockImplementationOnce((url) => {
+                if (url.includes('/decide/?v=3')) {
+                  return Promise.resolve({
+                    status: 200,
+                    text: () => Promise.resolve('ok'),
+                    json: () =>
+                      Promise.resolve({
+                        featureFlags: { 'x-flag': 'x-value', 'feature-1': false },
+                        errorsWhileComputingFlags: true,
+                      }),
+                  })
+                }
+
+                return errorAPIResponse
+              })
+              .mockImplementation(() => {
+                return errorAPIResponse
+              })
+          })
+
+          jest.runOnlyPendingTimers() // trigger init setImmediate
+        })
+
+        it('should return combined results', async () => {
+          expect(mocks.fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=3', {
+            body: JSON.stringify({
+              token: 'TEST_API_KEY',
+              distinct_id: posthog.getDistinctId(),
+              $anon_distinct_id: posthog.getAnonymousId(),
+              groups: {},
+              person_properties: {},
+              group_properties: {},
+            }),
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            signal: expect.anything(),
+          })
+
+          expect(posthog.getFeatureFlags()).toEqual({
+            'feature-1': true,
+            'feature-2': true,
+            'feature-variant': 'variant',
+          })
+
+          // now second call to feature flags
+          await posthog.reloadFeatureFlagsAsync(false)
+
+          expect(mocks.fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=3', {
+            body: JSON.stringify({
+              token: 'TEST_API_KEY',
+              distinct_id: posthog.getDistinctId(),
+              $anon_distinct_id: posthog.getAnonymousId(),
+              groups: {},
+              person_properties: {},
+              group_properties: {},
+            }),
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            signal: expect.anything(),
+          })
+
+          expect(posthog.getFeatureFlags()).toEqual({
+            'feature-1': false,
+            'feature-2': true,
+            'feature-variant': 'variant',
+            'x-flag': 'x-value',
+          })
+
+          expect(posthog.getFeatureFlag('feature-1')).toEqual(false)
+          expect(posthog.getFeatureFlag('feature-variant')).toEqual('variant')
+          expect(posthog.getFeatureFlag('feature-missing')).toEqual(false)
+          expect(posthog.getFeatureFlag('x-flag')).toEqual('x-value')
+
+          expect(posthog.isFeatureEnabled('feature-1')).toEqual(false)
+          expect(posthog.isFeatureEnabled('feature-variant')).toEqual(true)
+          expect(posthog.isFeatureEnabled('feature-missing')).toEqual(false)
+          expect(posthog.isFeatureEnabled('x-flag')).toEqual(true)
+        })
+      })
+
+      describe('when subsequent decide calls return results without errors', () => {
+        beforeEach(() => {
+          ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1 }, (_mocks) => {
+            _mocks.fetch
+              .mockImplementationOnce((url) => {
+                if (url.includes('/decide/?v=3')) {
+                  return Promise.resolve({
+                    status: 200,
+                    text: () => Promise.resolve('ok'),
+                    json: () =>
+                      Promise.resolve({
+                        featureFlags: createMockFeatureFlags(),
+                      }),
+                  })
+                }
+                return errorAPIResponse
+              })
+              .mockImplementationOnce((url) => {
+                if (url.includes('/decide/?v=3')) {
+                  return Promise.resolve({
+                    status: 200,
+                    text: () => Promise.resolve('ok'),
+                    json: () =>
+                      Promise.resolve({
+                        featureFlags: { 'x-flag': 'x-value', 'feature-1': false },
+                        errorsWhileComputingFlags: false,
+                      }),
+                  })
+                }
+
+                return errorAPIResponse
+              })
+              .mockImplementation(() => {
+                return errorAPIResponse
+              })
+          })
+
+          jest.runOnlyPendingTimers() // trigger init setImmediate
+        })
+
+        it('should return only latest results', async () => {
+          expect(mocks.fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=3', {
+            body: JSON.stringify({
+              token: 'TEST_API_KEY',
+              distinct_id: posthog.getDistinctId(),
+              $anon_distinct_id: posthog.getAnonymousId(),
+              groups: {},
+              person_properties: {},
+              group_properties: {},
+            }),
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            signal: expect.anything(),
+          })
+
+          expect(posthog.getFeatureFlags()).toEqual({
+            'feature-1': true,
+            'feature-2': true,
+            'feature-variant': 'variant',
+          })
+
+          // now second call to feature flags
+          await posthog.reloadFeatureFlagsAsync(false)
+
+          expect(mocks.fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=3', {
+            body: JSON.stringify({
+              token: 'TEST_API_KEY',
+              distinct_id: posthog.getDistinctId(),
+              $anon_distinct_id: posthog.getAnonymousId(),
+              groups: {},
+              person_properties: {},
+              group_properties: {},
+            }),
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            signal: expect.anything(),
+          })
+
+          expect(posthog.getFeatureFlags()).toEqual({
+            'feature-1': false,
+            'x-flag': 'x-value',
+          })
+
+          expect(posthog.getFeatureFlag('feature-1')).toEqual(false)
+          expect(posthog.getFeatureFlag('feature-variant')).toEqual(false)
+          expect(posthog.getFeatureFlag('feature-missing')).toEqual(false)
+          expect(posthog.getFeatureFlag('x-flag')).toEqual('x-value')
+
+          expect(posthog.isFeatureEnabled('feature-1')).toEqual(false)
+          expect(posthog.isFeatureEnabled('feature-variant')).toEqual(false)
+          expect(posthog.isFeatureEnabled('feature-missing')).toEqual(false)
+          expect(posthog.isFeatureEnabled('x-flag')).toEqual(true)
         })
       })
 
@@ -280,7 +500,7 @@ describe('PostHog Core', () => {
       })
 
       it('should load new feature flags', async () => {
-        expect(mocks.fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=2', {
+        expect(mocks.fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=3', {
           body: JSON.stringify({
             token: 'TEST_API_KEY',
             distinct_id: posthog.getDistinctId(),
