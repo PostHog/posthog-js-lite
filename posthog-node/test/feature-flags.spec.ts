@@ -12,10 +12,12 @@ const mockedFetch = jest.mocked(fetch, true)
 export const apiImplementation = ({
   localFlags,
   decideFlags,
+  decideFlagPayloads,
   decideStatus = 200,
 }: {
   localFlags?: any
   decideFlags?: any
+  decideFlagPayloads?: any
   decideStatus?: number
 }) => {
   return (url: any): Promise<any> => {
@@ -29,6 +31,7 @@ export const apiImplementation = ({
           } else {
             return Promise.resolve({
               featureFlags: decideFlags,
+              featureFlagPayloads: decideFlagPayloads,
             })
           }
         },
@@ -1217,6 +1220,136 @@ describe('local evaluation', () => {
     ).toEqual('second-variant')
     expect(await posthog.getFeatureFlag('beta-feature', 'example_id')).toEqual('third-variant')
     expect(await posthog.getFeatureFlag('beta-feature', 'another_id')).toEqual('second-variant')
+
+    expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
+    // decide not called
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+  })
+
+  it('get feature flag payload based on boolean flag', async () => {
+    const flags = {
+      flags: [
+        {
+          id: 1,
+          name: 'Beta Feature',
+          key: 'person-flag',
+          is_simple_flag: true,
+          active: true,
+          filters: {
+            groups: [
+              {
+                properties: [
+                  {
+                    key: 'region',
+                    operator: 'exact',
+                    value: ['USA'],
+                    type: 'person',
+                  },
+                ],
+                rollout_percentage: null,
+              },
+            ],
+            payloads: {
+              true: {
+                log: 'all',
+              },
+            },
+          },
+        },
+      ],
+    }
+    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags }))
+
+    posthog = new PostHog('TEST_API_KEY', {
+      host: 'http://example.com',
+      personalApiKey: 'TEST_PERSONAL_API_KEY',
+    })
+
+    expect(
+      await posthog.getFeatureFlagPayload('person-flag', 'some-distinct-id', true, {
+        personProperties: { region: 'USA' },
+      })
+    ).toEqual({
+      log: 'all',
+    })
+    expect(
+      await posthog.getFeatureFlagPayload('person-flag', 'some-distinct-id', undefined, {
+        personProperties: { region: 'USA' },
+      })
+    ).toEqual({
+      log: 'all',
+    })
+    expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
+    // decide not called
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+  })
+
+  it('get feature flag payload on a multivariate', async () => {
+    const flags = {
+      flags: [
+        {
+          id: 1,
+          name: 'Beta Feature',
+          key: 'beta-feature',
+          is_simple_flag: true,
+          active: true,
+          filters: {
+            groups: [
+              {
+                properties: [
+                  {
+                    key: 'email',
+                    operator: 'exact',
+                    value: 'test@posthog.com',
+                    type: 'person',
+                  },
+                ],
+                rollout_percentage: 100,
+                variant: 'second-variant',
+              },
+              {
+                rollout_percentage: 50,
+                variant: 'first-variant',
+              },
+            ],
+            multivariate: {
+              variants: [
+                {
+                  key: 'first-variant',
+                  name: 'First Variant',
+                  rollout_percentage: 50,
+                },
+                {
+                  key: 'second-variant',
+                  name: 'Second Variant',
+                  rollout_percentage: 25,
+                },
+                {
+                  key: 'third-variant',
+                  name: 'Third Variant',
+                  rollout_percentage: 25,
+                },
+              ],
+            },
+            payloads: {
+              'second-variant': 2500,
+            },
+          },
+        },
+      ],
+    }
+    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags }))
+
+    posthog = new PostHog('TEST_API_KEY', {
+      host: 'http://example.com',
+      personalApiKey: 'TEST_PERSONAL_API_KEY',
+    })
+
+    expect(
+      await posthog.getFeatureFlagPayload('beta-feature', 'test_id', 'second-variant', {
+        personProperties: { email: 'test@posthog.com' },
+      })
+    ).toEqual(2500)
 
     expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
     // decide not called

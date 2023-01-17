@@ -1,7 +1,7 @@
 import { createHash } from 'crypto'
 import { FeatureFlagCondition, PostHogFeatureFlag } from './types'
 import { version } from '../package.json'
-import { PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src'
+import { JsonType, PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src'
 import { safeSetTimeout } from 'posthog-core/src/utils'
 import { fetch } from './fetch'
 
@@ -44,6 +44,7 @@ class FeatureFlagsPoller {
   personalApiKey: string
   projectApiKey: string
   featureFlags: Array<PostHogFeatureFlag>
+  featureFlagsByKey: Record<string, PostHogFeatureFlag>
   groupTypeMapping: Record<string, string>
   loadedSuccessfullyOnce: boolean
   timeout?: number
@@ -62,6 +63,7 @@ class FeatureFlagsPoller {
     this.pollingInterval = pollingInterval
     this.personalApiKey = personalApiKey
     this.featureFlags = []
+    this.featureFlagsByKey = {}
     this.groupTypeMapping = {}
     this.loadedSuccessfullyOnce = false
     this.timeout = timeout
@@ -107,6 +109,29 @@ class FeatureFlagsPoller {
           console.error(`Error computing flag locally: ${key}: ${e}`)
         }
       }
+    }
+
+    return response
+  }
+
+  async getFeatureFlagPayload(key: string, matchValue: string | boolean): Promise<JsonType | undefined> {
+    await this.loadFeatureFlags()
+
+    let response = undefined
+
+    if (!this.loadedSuccessfullyOnce) {
+      return undefined
+    }
+
+    if (typeof matchValue == 'boolean') {
+      response = this.featureFlagsByKey?.[key]?.filters?.payloads?.[matchValue.toString()]
+    } else if (typeof matchValue == 'string') {
+      response = this.featureFlagsByKey?.[key]?.filters?.payloads?.[matchValue]
+    }
+
+    // Undefined means a loading or missing data issue. Null means evaluation happened and there was no match
+    if (response === undefined) {
+      return null
     }
 
     return response
@@ -328,6 +353,10 @@ class FeatureFlagsPoller {
       }
 
       this.featureFlags = responseJson.flags || []
+      this.featureFlagsByKey = this.featureFlags.reduce(
+        (acc, curr) => ((acc[curr.key] = curr), acc),
+        <Record<string, PostHogFeatureFlag>>{}
+      )
       this.groupTypeMapping = responseJson.group_type_mapping || {}
       this.loadedSuccessfullyOnce = true
     } catch (err) {
