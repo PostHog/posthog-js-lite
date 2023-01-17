@@ -90,6 +90,7 @@ export type PostHogDecideResponse = {
   featureFlagPayloads: {
     [key: string]: JsonType
   }
+  errorsWhileComputingFlags: boolean
   sessionRecording: boolean
 }
 
