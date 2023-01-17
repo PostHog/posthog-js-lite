@@ -21,7 +21,7 @@ describe('PostHog Core', () => {
     },
     'feature-variant': 5,
   })
-  
+
   const errorAPIResponse = Promise.resolve({
     status: 400,
     text: () => Promise.resolve('error'),
