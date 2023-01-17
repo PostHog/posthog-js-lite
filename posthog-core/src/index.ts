@@ -33,7 +33,6 @@ export abstract class PostHogCore {
   private captureMode: 'form' | 'json'
   private sendFeatureFlagEvent: boolean
   private flagCallReported: { [key: string]: boolean } = {}
-  private flagPayloadCallReported: { [key: string]: boolean } = {}
   private removeDebugCallback?: () => void
 
   // internal
