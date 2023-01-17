@@ -33,7 +33,6 @@ export abstract class PostHogCore {
   private captureMode: 'form' | 'json'
   private sendFeatureFlagEvent: boolean
   private flagCallReported: { [key: string]: boolean } = {}
-  private flagPayloadCallReported: { [key: string]: boolean } = {}
   private removeDebugCallback?: () => void
 
   // internal
@@ -511,11 +510,6 @@ export abstract class PostHogCore {
     }
 
     let response = payloads[key]
-
-    // Undefined means a loading or missing data issue. Null means evaluation happened and there was no match
-    if (response === undefined) {
-      return null
-    }
 
     // Undefined means a loading or missing data issue. Null means evaluation happened and there was no match
     if (response === undefined) {
