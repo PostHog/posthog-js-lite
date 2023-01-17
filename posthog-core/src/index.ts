@@ -7,6 +7,7 @@ import {
   PosthogCoreOptions,
   PostHogEventProperties,
   PostHogPersistedProperty,
+  JsonType,
 } from './types'
 import {
   assert,
@@ -434,15 +435,22 @@ export abstract class PostHogCore {
       .then((res) => {
         if (res.featureFlags) {
           let newFeatureFlags = res.featureFlags
+          let newFeatureFlagPayloads = res.featureFlagPayloads
           if (res.errorsWhileComputingFlags) {
             // if not all flags were computed, we upsert flags instead of replacing them
             const currentFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
               PostHogPersistedProperty.FeatureFlags
             )
+            const currentFlagPayloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
+              PostHogPersistedProperty.FeatureFlagPayloads
+            )
             newFeatureFlags = { ...currentFlags, ...res.featureFlags }
+            newFeatureFlagPayloads = { ...currentFlagPayloads, ...res.featureFlagPayloads }
           }
           this.setKnownFeatureFlags(newFeatureFlags)
+          this.setKnownFeatureFlagPayloads(newFeatureFlagPayloads)
         }
+
         return res
       })
       .finally(() => {
@@ -457,6 +465,13 @@ export abstract class PostHogCore {
       featureFlags
     )
     this._events.emit('featureflags', featureFlags)
+  }
+
+  private setKnownFeatureFlagPayloads(featureFlagPayloads: PostHogDecideResponse['featureFlagPayloads']): void {
+    this.setPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
+      PostHogPersistedProperty.FeatureFlagPayloads,
+      featureFlagPayloads
+    )
   }
 
   getFeatureFlag(key: string): boolean | string | undefined {
@@ -485,6 +500,30 @@ export abstract class PostHogCore {
 
     // If we have flags we either return the value (true or string) or false
     return response
+  }
+
+  getFeatureFlagPayload(key: string): JsonType | undefined {
+    const payloads = this.getFeatureFlagPayloads()
+
+    if (!payloads) {
+      return undefined
+    }
+
+    let response = payloads[key]
+
+    // Undefined means a loading or missing data issue. Null means evaluation happened and there was no match
+    if (response === undefined) {
+      return null
+    }
+
+    return response
+  }
+
+  getFeatureFlagPayloads(): PostHogDecideResponse['featureFlagPayloads'] | undefined {
+    let payloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
+      PostHogPersistedProperty.FeatureFlagPayloads
+    )
+    return payloads
   }
 
   getFeatureFlags(): PostHogDecideResponse['featureFlags'] | undefined {

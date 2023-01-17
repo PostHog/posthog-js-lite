@@ -15,6 +15,13 @@ describe('PostHog Core', () => {
     'feature-variant': 'variant',
   })
 
+  const createMockFeatureFlagPayloads = (): any => ({
+    'feature-1': {
+      color: 'blue',
+    },
+    'feature-variant': 5,
+  })
+
   const errorAPIResponse = Promise.resolve({
     status: 400,
     text: () => Promise.resolve('error'),
@@ -34,6 +41,7 @@ describe('PostHog Core', () => {
             json: () =>
               Promise.resolve({
                 featureFlags: createMockFeatureFlags(),
+                featureFlagPayloads: createMockFeatureFlagPayloads(),
               }),
           })
         }
@@ -55,9 +63,17 @@ describe('PostHog Core', () => {
       expect(posthog.getFeatureFlags()).toEqual(undefined)
     })
 
+    it('getFeatureFlagPayloads should return undefined if not loaded', () => {
+      expect(posthog.getFeatureFlagPayloads()).toEqual(undefined)
+    })
+
     it('getFeatureFlag should return undefined if not loaded', () => {
       expect(posthog.getFeatureFlag('my-flag')).toEqual(undefined)
       expect(posthog.getFeatureFlag('feature-1')).toEqual(undefined)
+    })
+
+    it('getFeatureFlagPayload should return undefined if not loaded', () => {
+      expect(posthog.getFeatureFlagPayload('my-flag')).toEqual(undefined)
     })
 
     it('isFeatureEnabled should return undefined if not loaded', () => {
@@ -106,12 +122,28 @@ describe('PostHog Core', () => {
           'feature-2': true,
           'feature-variant': 'variant',
         })
+
+        expect(posthog.getFeatureFlagPayloads()).toEqual({
+          'feature-1': {
+            color: 'blue',
+          },
+          'feature-variant': 5,
+        })
       })
 
       it('should return the value of a flag', async () => {
         expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
         expect(posthog.getFeatureFlag('feature-variant')).toEqual('variant')
         expect(posthog.getFeatureFlag('feature-missing')).toEqual(false)
+      })
+
+      it('should return payload of matched flags only', async () => {
+        expect(posthog.getFeatureFlagPayload('feature-variant')).toEqual(5)
+        expect(posthog.getFeatureFlagPayload('feature-1')).toEqual({
+          color: 'blue',
+        })
+
+        expect(posthog.getFeatureFlagPayload('feature-2')).toEqual(null)
       })
 
       describe('when errored out', () => {
@@ -160,6 +192,9 @@ describe('PostHog Core', () => {
           expect(posthog.isFeatureEnabled('feature-1')).toEqual(undefined)
           expect(posthog.isFeatureEnabled('feature-variant')).toEqual(undefined)
           expect(posthog.isFeatureEnabled('feature-missing')).toEqual(undefined)
+
+          expect(posthog.getFeatureFlagPayloads()).toEqual(undefined)
+          expect(posthog.getFeatureFlagPayload('feature-1')).toEqual(undefined)
         })
       })
 
