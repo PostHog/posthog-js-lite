@@ -116,6 +116,7 @@ export abstract class PostHogCore {
           {}
         )
       this.setKnownFeatureFlags(activeFlags)
+      options?.bootstrap.featureFlagPayloads && this.setKnownFeatureFlagPayloads(options?.bootstrap.featureFlagPayloads)
     }
   }
 

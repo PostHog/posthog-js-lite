@@ -16,6 +16,7 @@ export type PosthogCoreOptions = {
     distinctId?: string
     isIdentifiedId?: boolean
     featureFlags?: Record<string, boolean | string>
+    featureFlagPayloads?: Record<string, JsonType>
   }
   // How many times we will retry HTTP requests
   fetchRetryCount?: number
