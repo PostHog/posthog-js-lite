@@ -340,6 +340,13 @@ class FeatureFlagsPoller {
           `Your personalApiKey is invalid. Are you sure you're not using your Project API key? More information: https://posthog.com/docs/api/overview`
         )
       }
+
+      if (res && res.status !== 200) {
+        // something else went wrong, or the server is down.
+        // In this case, don't override existing flags
+        return
+      }
+
       const responseJson = await res.json()
       if (!('flags' in responseJson)) {
         console.error(`Invalid response when getting feature flags: ${JSON.stringify(responseJson)}`)

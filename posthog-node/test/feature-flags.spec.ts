@@ -61,7 +61,7 @@ export const anyLocalEvalCall = [
   'http://example.com/api/feature_flag/local_evaluation?token=TEST_API_KEY',
   expect.any(Object),
 ]
-export const anyDecideCall = ['http://example.com/decide/?v=2', expect.any(Object)]
+export const anyDecideCall = ['http://example.com/decide/?v=3', expect.any(Object)]
 
 describe('local evaluation', () => {
   let posthog: PostHog
@@ -328,7 +328,7 @@ describe('local evaluation', () => {
       })
     ).toEqual('decide-fallback-value')
     expect(mockedFetch).toHaveBeenCalledWith(
-      'http://example.com/decide/?v=2',
+      'http://example.com/decide/?v=3',
       expect.objectContaining({
         body: JSON.stringify({
           token: 'TEST_API_KEY',
@@ -346,7 +346,7 @@ describe('local evaluation', () => {
       await posthog.getFeatureFlag('complex-flag', 'some-distinct-id', { personProperties: { doesnt_matter: '1' } })
     ).toEqual('decide-fallback-value')
     expect(mockedFetch).toHaveBeenCalledWith(
-      'http://example.com/decide/?v=2',
+      'http://example.com/decide/?v=3',
       expect.objectContaining({
         body: JSON.stringify({
           token: 'TEST_API_KEY',

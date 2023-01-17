@@ -193,7 +193,7 @@ describe('PostHog Node.js', () => {
       })
 
       expect(mockedFetch).toHaveBeenCalledWith(
-        'http://example.com/decide/?v=2',
+        'http://example.com/decide/?v=3',
         expect.objectContaining({ method: 'POST' })
       )
 
