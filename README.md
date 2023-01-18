@@ -61,4 +61,5 @@ yarn && yarn start
 
 1. Go to the appropriate `package.json` file. For example, for `posthog-node`, this is `posthog-node/package.json`.
 2. Bump the version number in the file.
-3. On merge, a new version is published automatically thanks to the CI pipeline.
+3. Add to `CHANGELOG.md` the relevant changes.
+4. On merge, a new version is published automatically thanks to the CI pipeline.
