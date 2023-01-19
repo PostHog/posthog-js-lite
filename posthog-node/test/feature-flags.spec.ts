@@ -708,8 +708,8 @@ describe('local evaluation', () => {
               },
             ],
             payloads: {
-              "true": "some-payload"
-            }
+              true: 'some-payload',
+            },
           },
         },
         {
@@ -726,8 +726,8 @@ describe('local evaluation', () => {
               },
             ],
             payloads: {
-              "true": "another-payload"
-            }
+              true: 'another-payload',
+            },
           },
         },
         {
@@ -744,8 +744,8 @@ describe('local evaluation', () => {
               },
             ],
             payloads: {
-              "true": "payload-3"
-            }
+              true: 'payload-3',
+            },
           },
         },
       ],
@@ -754,7 +754,7 @@ describe('local evaluation', () => {
       apiImplementation({
         localFlags: flags,
         decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
-        decideFlagPayloads: { 'beta-feature': 100, 'beta-feature2': 300 }
+        decideFlagPayloads: { 'beta-feature': 100, 'beta-feature2': 300 },
       })
     )
 
@@ -766,7 +766,7 @@ describe('local evaluation', () => {
     // # beta-feature value overridden by /decide
     expect(await posthog.getAllPayloads('distinct-id')).toEqual({
       'beta-feature': 100,
-      'beta-feature2': 300
+      'beta-feature2': 300,
     })
     expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
     mockedFetch.mockClear()
@@ -861,8 +861,8 @@ describe('local evaluation', () => {
               },
             ],
             payloads: {
-              "true": "some-payload"
-            }
+              true: 'some-payload',
+            },
           },
         },
         {
@@ -879,8 +879,8 @@ describe('local evaluation', () => {
               },
             ],
             payloads: {
-              "true": "another-payload"
-            }
+              true: 'another-payload',
+            },
           },
         },
         {
@@ -897,8 +897,8 @@ describe('local evaluation', () => {
               },
             ],
             payloads: {
-              "true": "payload-3"
-            }
+              true: 'payload-3',
+            },
           },
         },
       ],
@@ -907,7 +907,7 @@ describe('local evaluation', () => {
       apiImplementation({
         localFlags: flags,
         decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
-        decideFlagPayloads: { 'beta-feature': 100, 'beta-feature2': 300 }
+        decideFlagPayloads: { 'beta-feature': 100, 'beta-feature2': 300 },
       })
     )
 
@@ -917,7 +917,7 @@ describe('local evaluation', () => {
     })
 
     expect(await posthog.getAllPayloads('distinct-id', { onlyEvaluateLocally: true })).toEqual({
-      'beta-feature': "some-payload"
+      'beta-feature': 'some-payload',
     })
     expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
   })
@@ -954,7 +954,7 @@ describe('local evaluation', () => {
       apiImplementation({
         localFlags: flags,
         decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
-        decideFlagPayloads: { 'beta-feature': 100, 'beta-feature2': 300 }
+        decideFlagPayloads: { 'beta-feature': 100, 'beta-feature2': 300 },
       })
     )
 
@@ -1041,8 +1041,8 @@ describe('local evaluation', () => {
               },
             ],
             payloads: {
-              'true': "new"
-            }
+              true: 'new',
+            },
           },
         },
         {
@@ -1059,8 +1059,8 @@ describe('local evaluation', () => {
               },
             ],
             payloads: {
-              'true': 'some-payload'
-            }
+              true: 'some-payload',
+            },
           },
         },
       ],

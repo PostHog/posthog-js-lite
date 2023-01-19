@@ -142,7 +142,11 @@ class FeatureFlagsPoller {
     groups: Record<string, string> = {},
     personProperties: Record<string, string> = {},
     groupProperties: Record<string, Record<string, string>> = {}
-  ): Promise<{ response: Record<string, string | boolean>, payloads: Record<string, JsonType>, fallbackToDecide: boolean }> {
+  ): Promise<{
+    response: Record<string, string | boolean>
+    payloads: Record<string, JsonType>
+    fallbackToDecide: boolean
+  }> {
     await this.loadFeatureFlags()
 
     const response: Record<string, string | boolean> = {}
@@ -157,7 +161,6 @@ class FeatureFlagsPoller {
         if (matchPayload) {
           payloads[flag.key] = matchPayload
         }
-
       } catch (e) {
         if (e instanceof InconclusiveMatchError) {
           // do nothing
