@@ -1,6 +1,7 @@
 import { version } from '../package.json'
 
 import {
+  JsonType,
   PostHogCore,
   PosthogCoreOptions,
   PostHogFetchOptions,
@@ -200,6 +201,69 @@ export class PostHog implements PostHogNodeV1 {
         groups,
       })
     }
+    return response
+  }
+
+  async getFeatureFlagPayload(
+    key: string,
+    distinctId: string,
+    matchValue?: string | boolean,
+    options?: {
+      groups?: Record<string, string>
+      personProperties?: Record<string, string>
+      groupProperties?: Record<string, Record<string, string>>
+      onlyEvaluateLocally?: boolean
+      sendFeatureFlagEvents?: boolean
+    }
+  ): Promise<JsonType | undefined> {
+    const { groups, personProperties, groupProperties } = options || {}
+    let { onlyEvaluateLocally, sendFeatureFlagEvents } = options || {}
+    let response = undefined
+
+    // Try to get match value locally if not provided
+    if (!matchValue) {
+      matchValue = await this.getFeatureFlag(key, distinctId, {
+        ...options,
+        onlyEvaluateLocally: true,
+      })
+    }
+
+    if (matchValue) {
+      response = await this.featureFlagsPoller?.getFeatureFlagPayload(key, matchValue)
+    }
+
+    // set defaults
+    if (onlyEvaluateLocally == undefined) {
+      onlyEvaluateLocally = false
+    }
+    if (sendFeatureFlagEvents == undefined) {
+      sendFeatureFlagEvents = true
+    }
+
+    // set defaults
+    if (onlyEvaluateLocally == undefined) {
+      onlyEvaluateLocally = false
+    }
+
+    const payloadWasLocallyEvaluated = response !== undefined
+
+    if (!payloadWasLocallyEvaluated && !onlyEvaluateLocally) {
+      this.reInit(distinctId)
+      if (groups != undefined) {
+        this._sharedClient.groups(groups)
+      }
+
+      if (personProperties) {
+        this._sharedClient.personProperties(personProperties)
+      }
+
+      if (groupProperties) {
+        this._sharedClient.groupProperties(groupProperties)
+      }
+      await this._sharedClient.reloadFeatureFlagsAsync(false)
+      response = this._sharedClient.getFeatureFlagPayload(key)
+    }
+
     return response
   }
 
