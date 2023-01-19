@@ -7,14 +7,14 @@ Navigation.registerComponent('Home', () => HomeScreen);
 Navigation.registerComponent('Settings', () => SettingsScreen);
 
 Navigation.events().registerAppLaunchedListener(async () => {
-  $posthog.then(ph => {
-    ph.initReactNativeNavigation({
-      navigation: {
-        routeToProperties(name, params) {
-          return params;
-        },
-      },
-    });
+  (await $posthog).initReactNativeNavigation({
+    navigation: {
+      // (Optional) Set the name based on the route. Defaults to the route name.
+      routeToName: (name, properties) => name,
+
+      // (Optional) Tracks all passProps as properties. Defaults to undefined
+      routeToProperties: (name, properties) => properties,
+    },
   });
 
   Navigation.setRoot({
@@ -36,7 +36,6 @@ Navigation.events().registerAppLaunchedListener(async () => {
               options: {
                 bottomTab: {
                   text: 'Home',
-                  //   icon: require('./home.png'),
                 },
               },
             },
@@ -55,7 +54,6 @@ Navigation.events().registerAppLaunchedListener(async () => {
               options: {
                 bottomTab: {
                   text: 'Settings',
-                  //   icon: require('./profile.png'),
                 },
               },
             },
