@@ -498,6 +498,7 @@ describe('PostHog Core', () => {
                 json: () =>
                   Promise.resolve({
                     featureFlags: createMockFeatureFlags(),
+                    featureFlagPayloads: createMockFeatureFlagPayloads()
                   }),
               })
             }
@@ -588,7 +589,6 @@ describe('PostHog Core', () => {
           },
           signal: expect.anything(),
         })
-  
         expect(posthog.getFeatureFlagPayload('feature-1')).toEqual({
           color: 'blue',
         })
