@@ -137,20 +137,27 @@ class FeatureFlagsPoller {
     return response
   }
 
-  async getAllFlags(
+  async getAllFlagsAndPayloads(
     distinctId: string,
     groups: Record<string, string> = {},
     personProperties: Record<string, string> = {},
     groupProperties: Record<string, Record<string, string>> = {}
-  ): Promise<{ response: Record<string, string | boolean>; fallbackToDecide: boolean }> {
+  ): Promise<{ response: Record<string, string | boolean>, payloads: Record<string, JsonType>, fallbackToDecide: boolean }> {
     await this.loadFeatureFlags()
 
     const response: Record<string, string | boolean> = {}
+    const payloads: Record<string, JsonType> = {}
     let fallbackToDecide = this.featureFlags.length == 0
 
-    this.featureFlags.map((flag) => {
+    this.featureFlags.map(async (flag) => {
       try {
-        response[flag.key] = this.computeFlagLocally(flag, distinctId, groups, personProperties, groupProperties)
+        const matchValue = this.computeFlagLocally(flag, distinctId, groups, personProperties, groupProperties)
+        response[flag.key] = matchValue
+        const matchPayload = await this.getFeatureFlagPayload(flag.key, matchValue)
+        if (matchPayload) {
+          payloads[flag.key] = matchPayload
+        }
+
       } catch (e) {
         if (e instanceof InconclusiveMatchError) {
           // do nothing
@@ -161,7 +168,7 @@ class FeatureFlagsPoller {
       }
     })
 
-    return { response, fallbackToDecide }
+    return { response, payloads, fallbackToDecide }
   }
 
   computeFlagLocally(

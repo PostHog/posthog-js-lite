@@ -302,7 +302,7 @@ export class PostHog implements PostHogNodeV1 {
       onlyEvaluateLocally = false
     }
 
-    const localEvaluationResult = await this.featureFlagsPoller?.getAllFlags(
+    const localEvaluationResult = await this.featureFlagsPoller?.getAllFlagsAndPayloads(
       distinctId,
       groups,
       personProperties,
@@ -331,6 +331,59 @@ export class PostHog implements PostHogNodeV1 {
       }
       await this._sharedClient.reloadFeatureFlagsAsync(false)
       const remoteEvaluationResult = this._sharedClient.getFeatureFlags()
+
+      return { ...response, ...remoteEvaluationResult }
+    }
+
+    return response
+  }
+
+  async getAllPayloads(
+    distinctId: string,
+    options?: {
+      groups?: Record<string, string>
+      personProperties?: Record<string, string>
+      groupProperties?: Record<string, Record<string, string>>
+      onlyEvaluateLocally?: boolean
+    }
+  ): Promise<Record<string, JsonType>> {
+    const { groups, personProperties, groupProperties } = options || {}
+    let { onlyEvaluateLocally } = options || {}
+
+    // set defaults
+    if (onlyEvaluateLocally == undefined) {
+      onlyEvaluateLocally = false
+    }
+
+    const localEvaluationResult = await this.featureFlagsPoller?.getAllFlagsAndPayloads(
+      distinctId,
+      groups,
+      personProperties,
+      groupProperties
+    )
+
+    let response = {}
+    let fallbackToDecide = true
+    if (localEvaluationResult) {
+      response = localEvaluationResult.payloads
+      fallbackToDecide = localEvaluationResult.fallbackToDecide
+    }
+
+    if (fallbackToDecide && !onlyEvaluateLocally) {
+      this.reInit(distinctId)
+      if (groups) {
+        this._sharedClient.groups(groups)
+      }
+
+      if (personProperties) {
+        this._sharedClient.personProperties(personProperties)
+      }
+
+      if (groupProperties) {
+        this._sharedClient.groupProperties(groupProperties)
+      }
+      await this._sharedClient.reloadFeatureFlagsAsync(false)
+      const remoteEvaluationResult = this._sharedClient.getFeatureFlagPayloads()
 
       return { ...response, ...remoteEvaluationResult }
     }
