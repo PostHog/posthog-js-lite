@@ -571,29 +571,29 @@ describe('PostHog Core', () => {
           'feature-variant': 'variant',
         })
       })
-    })
 
-    it('should load new feature flag payloads', async () => {
-      expect(mocks.fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=3', {
-        body: JSON.stringify({
-          token: 'TEST_API_KEY',
-          distinct_id: posthog.getDistinctId(),
-          $anon_distinct_id: 'tomato',
-          groups: {},
-          person_properties: {},
-          group_properties: {},
-        }),
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        signal: expect.anything(),
+      it('should load new feature flag payloads', async () => {
+        expect(mocks.fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=3', {
+          body: JSON.stringify({
+            token: 'TEST_API_KEY',
+            distinct_id: posthog.getDistinctId(),
+            $anon_distinct_id: 'tomato',
+            groups: {},
+            person_properties: {},
+            group_properties: {},
+          }),
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          signal: expect.anything(),
+        })
+  
+        expect(posthog.getFeatureFlagPayload('feature-1')).toEqual({
+          color: 'blue',
+        })
+        expect(posthog.getFeatureFlagPayload('feature-variant')).toEqual(5)
       })
-
-      expect(posthog.getFeatureFlagPayload('feature-1')).toEqual({
-        color: 'blue',
-      })
-      expect(posthog.getFeatureFlagPayload('feature-variant')).toEqual(5)
     })
   })
 })
