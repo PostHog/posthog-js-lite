@@ -483,10 +483,10 @@ describe('PostHog Core', () => {
             featureFlags: { 'bootstrap-1': 'variant-1', enabled: true, disabled: false },
             featureFlagPayloads: {
               'bootstrap-1': {
-                "some": "key"
+                some: 'key',
               },
-              'enabled': 200
-            }
+              enabled: 200,
+            },
           },
         },
         (_mocks) => {
@@ -538,7 +538,7 @@ describe('PostHog Core', () => {
     it('getFeatureFlagPayload should return bootstrapped payloads', () => {
       expect(posthog.getFeatureFlagPayload('my-flag')).toEqual(null)
       expect(posthog.getFeatureFlagPayload('bootstrap-1')).toEqual({
-        'some': 'key'
+        some: 'key',
       })
       expect(posthog.getFeatureFlagPayload('enabled')).toEqual(200)
     })
