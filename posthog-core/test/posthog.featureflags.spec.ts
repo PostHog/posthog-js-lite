@@ -481,6 +481,12 @@ describe('PostHog Core', () => {
           bootstrap: {
             distinctId: 'tomato',
             featureFlags: { 'bootstrap-1': 'variant-1', enabled: true, disabled: false },
+            featureFlagPayloads: {
+              'bootstrap-1': {
+                "some": "key"
+              },
+              'enabled': 200
+            }
           },
         },
         (_mocks) => {
@@ -527,6 +533,14 @@ describe('PostHog Core', () => {
       expect(posthog.isFeatureEnabled('bootstrap-1')).toEqual(true)
       expect(posthog.isFeatureEnabled('enabled')).toEqual(true)
       expect(posthog.isFeatureEnabled('disabled')).toEqual(false)
+    })
+
+    it('getFeatureFlagPayload should return bootstrapped payloads', () => {
+      expect(posthog.getFeatureFlagPayload('my-flag')).toEqual(null)
+      expect(posthog.getFeatureFlagPayload('bootstrap-1')).toEqual({
+        'some': 'key'
+      })
+      expect(posthog.getFeatureFlagPayload('enabled')).toEqual(200)
     })
 
     describe('when loaded', () => {
