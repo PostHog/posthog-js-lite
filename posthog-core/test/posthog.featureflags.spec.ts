@@ -498,7 +498,7 @@ describe('PostHog Core', () => {
                 json: () =>
                   Promise.resolve({
                     featureFlags: createMockFeatureFlags(),
-                    featureFlagPayloads: createMockFeatureFlagPayloads()
+                    featureFlagPayloads: createMockFeatureFlagPayloads(),
                   }),
               })
             }
