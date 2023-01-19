@@ -5,11 +5,13 @@ Array [
   "touch",
   Array [
     Object {
+      "$el_text": "I have the property \\"ph-label\\" which means touching me will be autocaptured with a specific label",
       "attr__ph-label": "special-text",
       "attr__testID": "example-ph-label",
       "tag_name": "special-text",
     },
     Object {
+      "$el_text": "I have the property \\"ph-label\\" which means touching me will be autocaptured with a specific label",
       "attr__ph-label": "special-text",
       "attr__testID": "example-ph-label",
       "tag_name": "special-text",
