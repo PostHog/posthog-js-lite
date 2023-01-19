@@ -690,6 +690,88 @@ describe('local evaluation', () => {
     mockedFetch.mockClear()
   })
 
+  it('get all payloads with fallback', async () => {
+    const flags = {
+      flags: [
+        {
+          id: 1,
+          name: 'Beta Feature',
+          key: 'beta-feature',
+          is_simple_flag: false,
+          active: true,
+          rollout_percentage: 100,
+          filters: {
+            groups: [
+              {
+                properties: [],
+                rollout_percentage: 100,
+              },
+            ],
+            payloads: {
+              "true": "some-payload"
+            }
+          },
+        },
+        {
+          id: 2,
+          name: 'Beta Feature',
+          key: 'disabled-feature',
+          is_simple_flag: false,
+          active: true,
+          filters: {
+            groups: [
+              {
+                properties: [],
+                rollout_percentage: 0,
+              },
+            ],
+            payloads: {
+              "true": "another-payload"
+            }
+          },
+        },
+        {
+          id: 3,
+          name: 'Beta Feature',
+          key: 'beta-feature2',
+          is_simple_flag: false,
+          active: true,
+          filters: {
+            groups: [
+              {
+                properties: [{ key: 'country', value: 'US' }],
+                rollout_percentage: 0,
+              },
+            ],
+            payloads: {
+              "true": "payload-3"
+            }
+          },
+        },
+      ],
+    }
+    mockedFetch.mockImplementation(
+      apiImplementation({
+        localFlags: flags,
+        decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
+        decideFlagPayloads: { 'beta-feature': 100, 'beta-feature2': 300 }
+      })
+    )
+
+    posthog = new PostHog('TEST_API_KEY', {
+      host: 'http://example.com',
+      personalApiKey: 'TEST_PERSONAL_API_KEY',
+    })
+
+    // # beta-feature value overridden by /decide
+    expect(await posthog.getAllPayloads('distinct-id')).toEqual({
+      'beta-feature': 100,
+      'beta-feature2': 300
+    })
+    expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
+    mockedFetch.mockClear()
+  })
+
   it('get all flags with fallback but only_locally_evaluated set', async () => {
     const flags = {
       flags: [
@@ -761,6 +843,85 @@ describe('local evaluation', () => {
     expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
   })
 
+  it('get all payloads with fallback but only_evaluate_locally set', async () => {
+    const flags = {
+      flags: [
+        {
+          id: 1,
+          name: 'Beta Feature',
+          key: 'beta-feature',
+          is_simple_flag: false,
+          active: true,
+          rollout_percentage: 100,
+          filters: {
+            groups: [
+              {
+                properties: [],
+                rollout_percentage: 100,
+              },
+            ],
+            payloads: {
+              "true": "some-payload"
+            }
+          },
+        },
+        {
+          id: 2,
+          name: 'Beta Feature',
+          key: 'disabled-feature',
+          is_simple_flag: false,
+          active: true,
+          filters: {
+            groups: [
+              {
+                properties: [],
+                rollout_percentage: 0,
+              },
+            ],
+            payloads: {
+              "true": "another-payload"
+            }
+          },
+        },
+        {
+          id: 3,
+          name: 'Beta Feature',
+          key: 'beta-feature2',
+          is_simple_flag: false,
+          active: true,
+          filters: {
+            groups: [
+              {
+                properties: [{ key: 'country', value: 'US' }],
+                rollout_percentage: 0,
+              },
+            ],
+            payloads: {
+              "true": "payload-3"
+            }
+          },
+        },
+      ],
+    }
+    mockedFetch.mockImplementation(
+      apiImplementation({
+        localFlags: flags,
+        decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
+        decideFlagPayloads: { 'beta-feature': 100, 'beta-feature2': 300 }
+      })
+    )
+
+    posthog = new PostHog('TEST_API_KEY', {
+      host: 'http://example.com',
+      personalApiKey: 'TEST_PERSONAL_API_KEY',
+    })
+
+    expect(await posthog.getAllPayloads('distinct-id', { onlyEvaluateLocally: true })).toEqual({
+      'beta-feature': "some-payload"
+    })
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+  })
+
   it('get all flags with fallback, with no local flags', async () => {
     const flags = {
       flags: [],
@@ -780,6 +941,31 @@ describe('local evaluation', () => {
     expect(await posthog.getAllFlags('distinct-id')).toEqual({
       'beta-feature': 'variant-1',
       'beta-feature2': 'variant-2',
+    })
+    expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
+    mockedFetch.mockClear()
+  })
+
+  it('get all payloads with fallback, with no local payloads', async () => {
+    const flags = {
+      flags: [],
+    }
+    mockedFetch.mockImplementation(
+      apiImplementation({
+        localFlags: flags,
+        decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
+        decideFlagPayloads: { 'beta-feature': 100, 'beta-feature2': 300 }
+      })
+    )
+
+    posthog = new PostHog('TEST_API_KEY', {
+      host: 'http://example.com',
+      personalApiKey: 'TEST_PERSONAL_API_KEY',
+    })
+
+    expect(await posthog.getAllPayloads('distinct-id')).toEqual({
+      'beta-feature': 100,
+      'beta-feature2': 300,
     })
     expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
     mockedFetch.mockClear()
@@ -834,6 +1020,64 @@ describe('local evaluation', () => {
     })
 
     expect(await posthog.getAllFlags('distinct-id')).toEqual({ 'beta-feature': true, 'disabled-feature': false })
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+  })
+
+  it('get all payloads with no fallback', async () => {
+    const flags = {
+      flags: [
+        {
+          id: 1,
+          name: 'Beta Feature',
+          key: 'beta-feature',
+          is_simple_flag: false,
+          active: true,
+          rollout_percentage: 100,
+          filters: {
+            groups: [
+              {
+                properties: [],
+                rollout_percentage: 100,
+              },
+            ],
+            payloads: {
+              'true': "new"
+            }
+          },
+        },
+        {
+          id: 2,
+          name: 'Beta Feature',
+          key: 'disabled-feature',
+          is_simple_flag: false,
+          active: true,
+          filters: {
+            groups: [
+              {
+                properties: [],
+                rollout_percentage: 0,
+              },
+            ],
+            payloads: {
+              'true': 'some-payload'
+            }
+          },
+        },
+      ],
+    }
+    mockedFetch.mockImplementation(
+      apiImplementation({
+        localFlags: flags,
+        decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
+      })
+    )
+
+    posthog = new PostHog('TEST_API_KEY', {
+      host: 'http://example.com',
+      personalApiKey: 'TEST_PERSONAL_API_KEY',
+    })
+
+    expect(await posthog.getAllPayloads('distinct-id')).toEqual({ 'beta-feature': 'new' })
     expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
   })
 
