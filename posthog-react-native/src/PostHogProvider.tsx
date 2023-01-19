@@ -11,8 +11,9 @@ export interface PostHogProviderProps {
   children: React.ReactNode
   options?: PostHogOptions
   apiKey?: string
-  client?: PostHog
+  client?: PostHog | Promise<PostHog>
   autocapture?: boolean | PostHogAutocaptureOptions
+  debug?: boolean
   style?: StyleProp<ViewStyle>
 }
 
@@ -33,14 +34,10 @@ export const PostHogProvider = ({
   apiKey,
   autocapture,
   style,
+  debug = false,
 }: PostHogProviderProps): JSX.Element | null => {
-  const [posthog, setPosthog] = useState<PostHog | undefined>(client)
-
-  useEffect(() => {
-    if (apiKey && !posthog) {
-      PostHog.initAsync(apiKey, options).then(setPosthog)
-    }
-  }, [apiKey])
+  // Check if the client is a promise and resolve it if so
+  const [posthog, setPosthog] = useState<PostHog | undefined>(client instanceof Promise ? undefined : client)
 
   const autocaptureOptions = autocapture && typeof autocapture !== 'boolean' ? autocapture : {}
   const captureAll = autocapture === true
@@ -50,6 +47,31 @@ export const PostHogProvider = ({
   const captureScreens = !captureNone && posthog && (captureAll || (autocaptureOptions?.captureScreens ?? true)) // Default to true if not set
   const captureLifecycle =
     !captureNone && posthog && (captureAll || (autocaptureOptions?.captureLifecycleEvents ?? true)) // Default to true if not set
+
+  // Resolve async client to concrete client
+  useEffect(() => {
+    if (!posthog && client) {
+      if (client instanceof Promise) {
+        client.then(setPosthog)
+      } else {
+        setPosthog(client)
+      }
+    }
+  }, [client])
+
+  useEffect(() => {
+    if (apiKey && !posthog) {
+      PostHog.initAsync(apiKey, options).then(setPosthog)
+    }
+  }, [apiKey])
+
+  useEffect(() => {
+    if (!posthog) {
+      return
+    }
+
+    posthog.debug(debug)
+  }, [debug, posthog])
 
   const onTouch = useCallback(
     (type: 'start' | 'move' | 'end', e: GestureResponderEvent) => {
