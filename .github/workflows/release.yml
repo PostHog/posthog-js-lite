@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - master
+      - feature/rn-wix-navigation
 
 jobs:
   release:
