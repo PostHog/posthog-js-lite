@@ -95,4 +95,9 @@ export type PostHogDecideResponse = {
   sessionRecording: boolean
 }
 
+export type PosthogFlagsAndPayloadsResponse = {
+  featureFlags: PostHogDecideResponse["featureFlags"],
+  featureFlagPayloads: PostHogDecideResponse["featureFlagPayloads"]
+}
+
 export type JsonType = string | number | boolean | null | { [key: string]: JsonType } | Array<JsonType>

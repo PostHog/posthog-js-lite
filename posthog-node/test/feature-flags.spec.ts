@@ -764,7 +764,7 @@ describe('local evaluation', () => {
     })
 
     // # beta-feature value overridden by /decide
-    expect(await posthog.getAllPayloads('distinct-id')).toEqual({
+    expect((await posthog.getAllFlagsAndPayloads('distinct-id')).featureFlagPayloads).toEqual({
       'beta-feature': 100,
       'beta-feature2': 300,
     })
@@ -916,7 +916,7 @@ describe('local evaluation', () => {
       personalApiKey: 'TEST_PERSONAL_API_KEY',
     })
 
-    expect(await posthog.getAllPayloads('distinct-id', { onlyEvaluateLocally: true })).toEqual({
+    expect((await posthog.getAllFlagsAndPayloads('distinct-id', { onlyEvaluateLocally: true })).featureFlagPayloads).toEqual({
       'beta-feature': 'some-payload',
     })
     expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
@@ -963,7 +963,7 @@ describe('local evaluation', () => {
       personalApiKey: 'TEST_PERSONAL_API_KEY',
     })
 
-    expect(await posthog.getAllPayloads('distinct-id')).toEqual({
+    expect((await posthog.getAllFlagsAndPayloads('distinct-id')).featureFlagPayloads).toEqual({
       'beta-feature': 100,
       'beta-feature2': 300,
     })
@@ -1077,7 +1077,7 @@ describe('local evaluation', () => {
       personalApiKey: 'TEST_PERSONAL_API_KEY',
     })
 
-    expect(await posthog.getAllPayloads('distinct-id')).toEqual({ 'beta-feature': 'new' })
+    expect((await posthog.getAllFlagsAndPayloads('distinct-id')).featureFlagPayloads).toEqual({ 'beta-feature': 'new' })
     expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
   })
 
