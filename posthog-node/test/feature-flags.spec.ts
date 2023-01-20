@@ -916,7 +916,9 @@ describe('local evaluation', () => {
       personalApiKey: 'TEST_PERSONAL_API_KEY',
     })
 
-    expect((await posthog.getAllFlagsAndPayloads('distinct-id', { onlyEvaluateLocally: true })).featureFlagPayloads).toEqual({
+    expect(
+      (await posthog.getAllFlagsAndPayloads('distinct-id', { onlyEvaluateLocally: true })).featureFlagPayloads
+    ).toEqual({
       'beta-feature': 'some-payload',
     })
     expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)

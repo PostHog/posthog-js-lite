@@ -550,13 +550,16 @@ export abstract class PostHogCore {
     return flags
   }
 
-  getFeatureFlagsAndPayloads(): {flags: PostHogDecideResponse['featureFlags'] | undefined, payloads: PostHogDecideResponse['featureFlagPayloads'] | undefined} {
+  getFeatureFlagsAndPayloads(): {
+    flags: PostHogDecideResponse['featureFlags'] | undefined
+    payloads: PostHogDecideResponse['featureFlagPayloads'] | undefined
+  } {
     const flags = this.getFeatureFlags()
     const payloads = this.getFeatureFlagPayloads()
 
     return {
       flags,
-      payloads
+      payloads,
     }
   }
 

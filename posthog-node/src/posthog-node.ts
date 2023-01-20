@@ -349,11 +349,11 @@ export class PostHog implements PostHogNodeV1 {
       const remoteEvaluationResult = this._sharedClient.getFeatureFlagsAndPayloads()
       featureFlags = {
         ...featureFlags,
-        ...(remoteEvaluationResult.flags || {})
+        ...(remoteEvaluationResult.flags || {}),
       }
       featureFlagPayloads = {
         ...featureFlagPayloads,
-        ...(remoteEvaluationResult.payloads || {})
+        ...(remoteEvaluationResult.payloads || {}),
       }
     }
 
