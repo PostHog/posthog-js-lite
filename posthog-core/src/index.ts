@@ -116,6 +116,7 @@ export abstract class PostHogCore {
           {}
         )
       this.setKnownFeatureFlags(activeFlags)
+      options?.bootstrap.featureFlagPayloads && this.setKnownFeatureFlagPayloads(options?.bootstrap.featureFlagPayloads)
     }
   }
 
@@ -547,6 +548,19 @@ export abstract class PostHogCore {
     }
 
     return flags
+  }
+
+  getFeatureFlagsAndPayloads(): {
+    flags: PostHogDecideResponse['featureFlags'] | undefined
+    payloads: PostHogDecideResponse['featureFlagPayloads'] | undefined
+  } {
+    const flags = this.getFeatureFlags()
+    const payloads = this.getFeatureFlagPayloads()
+
+    return {
+      flags,
+      payloads,
+    }
   }
 
   isFeatureEnabled(key: string): boolean | undefined {

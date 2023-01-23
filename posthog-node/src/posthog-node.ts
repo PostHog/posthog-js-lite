@@ -6,6 +6,7 @@ import {
   PosthogCoreOptions,
   PostHogFetchOptions,
   PostHogFetchResponse,
+  PosthogFlagsAndPayloadsResponse,
   PostHogPersistedProperty,
 } from '../../posthog-core/src'
 import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
@@ -229,7 +230,7 @@ export class PostHog implements PostHogNodeV1 {
     }
 
     if (matchValue) {
-      response = await this.featureFlagsPoller?.getFeatureFlagPayload(key, matchValue)
+      response = await this.featureFlagsPoller?.computeFeatureFlagPayloadLocally(key, matchValue)
     }
 
     // set defaults
@@ -294,6 +295,19 @@ export class PostHog implements PostHogNodeV1 {
       onlyEvaluateLocally?: boolean
     }
   ): Promise<Record<string, string | boolean>> {
+    const response = await this.getAllFlagsAndPayloads(distinctId, options)
+    return response.featureFlags
+  }
+
+  async getAllFlagsAndPayloads(
+    distinctId: string,
+    options?: {
+      groups?: Record<string, string>
+      personProperties?: Record<string, string>
+      groupProperties?: Record<string, Record<string, string>>
+      onlyEvaluateLocally?: boolean
+    }
+  ): Promise<PosthogFlagsAndPayloadsResponse> {
     const { groups, personProperties, groupProperties } = options || {}
     let { onlyEvaluateLocally } = options || {}
 
@@ -302,17 +316,19 @@ export class PostHog implements PostHogNodeV1 {
       onlyEvaluateLocally = false
     }
 
-    const localEvaluationResult = await this.featureFlagsPoller?.getAllFlags(
+    const localEvaluationResult = await this.featureFlagsPoller?.getAllFlagsAndPayloads(
       distinctId,
       groups,
       personProperties,
       groupProperties
     )
 
-    let response = {}
+    let featureFlags = {}
+    let featureFlagPayloads = {}
     let fallbackToDecide = true
     if (localEvaluationResult) {
-      response = localEvaluationResult.response
+      featureFlags = localEvaluationResult.response
+      featureFlagPayloads = localEvaluationResult.payloads
       fallbackToDecide = localEvaluationResult.fallbackToDecide
     }
 
@@ -330,12 +346,18 @@ export class PostHog implements PostHogNodeV1 {
         this._sharedClient.groupProperties(groupProperties)
       }
       await this._sharedClient.reloadFeatureFlagsAsync(false)
-      const remoteEvaluationResult = this._sharedClient.getFeatureFlags()
-
-      return { ...response, ...remoteEvaluationResult }
+      const remoteEvaluationResult = this._sharedClient.getFeatureFlagsAndPayloads()
+      featureFlags = {
+        ...featureFlags,
+        ...(remoteEvaluationResult.flags || {}),
+      }
+      featureFlagPayloads = {
+        ...featureFlagPayloads,
+        ...(remoteEvaluationResult.payloads || {}),
+      }
     }
 
-    return response
+    return { featureFlags, featureFlagPayloads }
   }
 
   groupIdentify({ groupType, groupKey, properties }: GroupIdentifyMessage): void {

@@ -481,6 +481,12 @@ describe('PostHog Core', () => {
           bootstrap: {
             distinctId: 'tomato',
             featureFlags: { 'bootstrap-1': 'variant-1', enabled: true, disabled: false },
+            featureFlagPayloads: {
+              'bootstrap-1': {
+                some: 'key',
+              },
+              enabled: 200,
+            },
           },
         },
         (_mocks) => {
@@ -492,6 +498,7 @@ describe('PostHog Core', () => {
                 json: () =>
                   Promise.resolve({
                     featureFlags: createMockFeatureFlags(),
+                    featureFlagPayloads: createMockFeatureFlagPayloads(),
                   }),
               })
             }
@@ -529,6 +536,14 @@ describe('PostHog Core', () => {
       expect(posthog.isFeatureEnabled('disabled')).toEqual(false)
     })
 
+    it('getFeatureFlagPayload should return bootstrapped payloads', () => {
+      expect(posthog.getFeatureFlagPayload('my-flag')).toEqual(null)
+      expect(posthog.getFeatureFlagPayload('bootstrap-1')).toEqual({
+        some: 'key',
+      })
+      expect(posthog.getFeatureFlagPayload('enabled')).toEqual(200)
+    })
+
     describe('when loaded', () => {
       beforeEach(() => {
         jest.runOnlyPendingTimers() // trigger init setImmediate
@@ -556,6 +571,28 @@ describe('PostHog Core', () => {
           'feature-2': true,
           'feature-variant': 'variant',
         })
+      })
+
+      it('should load new feature flag payloads', async () => {
+        expect(mocks.fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=3', {
+          body: JSON.stringify({
+            token: 'TEST_API_KEY',
+            distinct_id: posthog.getDistinctId(),
+            $anon_distinct_id: 'tomato',
+            groups: {},
+            person_properties: {},
+            group_properties: {},
+          }),
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          signal: expect.anything(),
+        })
+        expect(posthog.getFeatureFlagPayload('feature-1')).toEqual({
+          color: 'blue',
+        })
+        expect(posthog.getFeatureFlagPayload('feature-variant')).toEqual(5)
       })
     })
   })
