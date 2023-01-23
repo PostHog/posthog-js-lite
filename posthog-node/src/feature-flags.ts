@@ -114,7 +114,7 @@ class FeatureFlagsPoller {
     return response
   }
 
-  async getFeatureFlagPayload(key: string, matchValue: string | boolean): Promise<JsonType | undefined> {
+  async computeFeatureFlagPayloadLocally(key: string, matchValue: string | boolean): Promise<JsonType | undefined> {
     await this.loadFeatureFlags()
 
     let response = undefined
@@ -157,7 +157,7 @@ class FeatureFlagsPoller {
       try {
         const matchValue = this.computeFlagLocally(flag, distinctId, groups, personProperties, groupProperties)
         response[flag.key] = matchValue
-        const matchPayload = await this.getFeatureFlagPayload(flag.key, matchValue)
+        const matchPayload = await this.computeFeatureFlagPayloadLocally(flag.key, matchValue)
         if (matchPayload) {
           payloads[flag.key] = matchPayload
         }

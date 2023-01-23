@@ -230,7 +230,7 @@ export class PostHog implements PostHogNodeV1 {
     }
 
     if (matchValue) {
-      response = await this.featureFlagsPoller?.getFeatureFlagPayload(key, matchValue)
+      response = await this.featureFlagsPoller?.computeFeatureFlagPayloadLocally(key, matchValue)
     }
 
     // set defaults
