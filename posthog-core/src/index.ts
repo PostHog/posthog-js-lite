@@ -510,7 +510,7 @@ export abstract class PostHogCore {
       return undefined
     }
 
-    let response = payloads[key]
+    const response = payloads[key]
 
     // Undefined means a loading or missing data issue. Null means evaluation happened and there was no match
     if (response === undefined) {
@@ -521,7 +521,7 @@ export abstract class PostHogCore {
   }
 
   getFeatureFlagPayloads(): PostHogDecideResponse['featureFlagPayloads'] | undefined {
-    let payloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
+    const payloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
       PostHogPersistedProperty.FeatureFlagPayloads
     )
     if(payloads) {
@@ -530,7 +530,7 @@ export abstract class PostHogCore {
     return payloads
   }
 
-  _parsePayload(response: any) {
+  _parsePayload(response: any): any {
     try {
       return JSON.parse(response)
     } catch {
