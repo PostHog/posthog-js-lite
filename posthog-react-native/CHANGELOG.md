@@ -1,3 +1,9 @@
+# 2.3.0 - 2022-1-24
+
+1. uses v3 decide endpoint 
+2. JSON payloads will be returned with feature flags
+3. Feature flags will gracefully fail and optimistically save evaluated flags if server is down
+
 # 2.2.2 - 2023-01-05
 
 - Fixes an issue with PostHogProvider where autocapture={false} would still capture lifecycle and navigation events.
