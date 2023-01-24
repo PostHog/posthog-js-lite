@@ -13,7 +13,7 @@ describe('PostHog Core', () => {
     'feature-1': true,
     'feature-2': true,
     'feature-variant': 'variant',
-    'json-payload': true
+    'json-payload': true,
   })
 
   const createMockFeatureFlagPayloads = (): any => ({
@@ -21,7 +21,7 @@ describe('PostHog Core', () => {
       color: 'blue',
     },
     'feature-variant': 5,
-    'json-payload': '{"a":"payload"}'
+    'json-payload': '{"a":"payload"}',
   })
 
   const errorAPIResponse = Promise.resolve({
@@ -131,7 +131,7 @@ describe('PostHog Core', () => {
             color: 'blue',
           },
           'json-payload': {
-            a: 'payload'
+            a: 'payload',
           },
           'feature-variant': 5,
         })

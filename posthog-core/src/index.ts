@@ -524,7 +524,7 @@ export abstract class PostHogCore {
     const payloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
       PostHogPersistedProperty.FeatureFlagPayloads
     )
-    if(payloads) {
+    if (payloads) {
       return Object.fromEntries(Object.entries(payloads).map(([k, v]) => [k, this._parsePayload(v)]))
     }
     return payloads
