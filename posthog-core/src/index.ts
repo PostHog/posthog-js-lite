@@ -517,18 +517,25 @@ export abstract class PostHogCore {
       return null
     }
 
-    try {
-      return JSON.parse(response as any)
-    } catch {
-      return response
-    }
+    return this._parsePayload(response)
   }
 
   getFeatureFlagPayloads(): PostHogDecideResponse['featureFlagPayloads'] | undefined {
     let payloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
       PostHogPersistedProperty.FeatureFlagPayloads
     )
+    if(payloads) {
+      return Object.fromEntries(Object.entries(payloads).map(([k, v]) => [k, this._parsePayload(v)]))
+    }
     return payloads
+  }
+
+  _parsePayload(response: any) {
+    try {
+      return JSON.parse(response)
+    } catch {
+      return response
+    }
   }
 
   getFeatureFlags(): PostHogDecideResponse['featureFlags'] | undefined {
