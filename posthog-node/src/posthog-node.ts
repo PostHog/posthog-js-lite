@@ -265,7 +265,11 @@ export class PostHog implements PostHogNodeV1 {
       response = this._sharedClient.getFeatureFlagPayload(key)
     }
 
-    return response
+    try {
+      return JSON.parse(response as any)
+    } catch {
+      return response
+    }
   }
 
   async isFeatureEnabled(

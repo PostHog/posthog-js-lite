@@ -517,7 +517,11 @@ export abstract class PostHogCore {
       return null
     }
 
-    return response
+    try {
+      return JSON.parse(response as any)
+    } catch {
+      return response
+    }
   }
 
   getFeatureFlagPayloads(): PostHogDecideResponse['featureFlagPayloads'] | undefined {
