@@ -1,3 +1,7 @@
+# 2.2.3 - 2023-01-25
+
+- Ensures the distinctId used in `.groupIdentify` is the same as the currently identified user
+
 # 2.2.2 - 2023-01-05
 
 - Fixes an issue with PostHogProvider where autocapture={false} would still capture lifecycle and navigation events.

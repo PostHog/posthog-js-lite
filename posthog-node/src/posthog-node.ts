@@ -365,6 +365,7 @@ export class PostHog implements PostHogNodeV1 {
   }
 
   groupIdentify({ groupType, groupKey, properties }: GroupIdentifyMessage): void {
+    this.reInit(`$${groupType}_${groupKey}`)
     this._sharedClient.groupIdentify(groupType, groupKey, properties)
   }
 
