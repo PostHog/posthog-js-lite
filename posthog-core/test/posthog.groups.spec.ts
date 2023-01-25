@@ -45,7 +45,7 @@ describe('PostHog Core', () => {
         batch: [
           {
             event: '$groupidentify',
-            distinct_id: '$other_team',
+            distinct_id: posthog.getDistinctId(),
             properties: {
               $group_type: 'other',
               $group_key: 'team',
@@ -62,12 +62,12 @@ describe('PostHog Core', () => {
     it('should identify group', () => {
       posthog.groupIdentify('posthog', 'team-1', { analytics: true })
 
-      expect(parseBody(mocks.fetch.mock.calls[0])).toEqual({
+      expect(parseBody(mocks.fetch.mock.calls[0])).toMatchObject({
         api_key: 'TEST_API_KEY',
         batch: [
           {
             event: '$groupidentify',
-            distinct_id: '$posthog_team-1',
+            distinct_id: posthog.getDistinctId(),
             library: 'posthog-core-tests',
             library_version: '2.0.0-alpha',
             properties: {

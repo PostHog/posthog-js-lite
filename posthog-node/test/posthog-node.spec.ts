@@ -138,6 +138,27 @@ describe('PostHog Node.js', () => {
     })
   })
 
+  describe('groupIdentify', () => {
+    it('should identify group with unique id', () => {
+      posthog.groupIdentify({ groupType: 'posthog', groupKey: 'team-1', properties: { analytics: true } })
+      jest.runOnlyPendingTimers()
+      const batchEvents = getLastBatchEvents()
+      console.log(batchEvents)
+      expect(batchEvents).toMatchObject([
+        {
+          distinct_id: '$posthog_team-1',
+          event: '$groupidentify',
+          properties: {
+            $group_type: 'posthog',
+            $group_key: 'team-1',
+            $group_set: { analytics: true },
+            $lib: 'posthog-node',
+          },
+        },
+      ])
+    })
+  })
+
   describe('feature flags', () => {
     beforeEach(() => {
       const mockFeatureFlags = {

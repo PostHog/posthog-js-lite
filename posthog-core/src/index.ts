@@ -345,16 +345,15 @@ export abstract class PostHogCore {
   }
 
   groupIdentify(groupType: string, groupKey: string | number, groupProperties?: PostHogEventProperties): this {
-    const payload = {
+    const payload = this.buildPayload({
       event: '$groupidentify',
-      distinctId: `$${groupType}_${groupKey}`,
       properties: {
         $group_type: groupType,
         $group_key: groupKey,
         $group_set: groupProperties || {},
         ...this.getCommonEventProperties(),
       },
-    }
+    })
 
     this.enqueue('capture', payload)
     return this
