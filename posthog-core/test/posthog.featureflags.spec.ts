@@ -13,6 +13,7 @@ describe('PostHog Core', () => {
     'feature-1': true,
     'feature-2': true,
     'feature-variant': 'variant',
+    'json-payload': true,
   })
 
   const createMockFeatureFlagPayloads = (): any => ({
@@ -20,6 +21,7 @@ describe('PostHog Core', () => {
       color: 'blue',
     },
     'feature-variant': 5,
+    'json-payload': '{"a":"payload"}',
   })
 
   const errorAPIResponse = Promise.resolve({
@@ -120,12 +122,16 @@ describe('PostHog Core', () => {
         expect(posthog.getFeatureFlags()).toEqual({
           'feature-1': true,
           'feature-2': true,
+          'json-payload': true,
           'feature-variant': 'variant',
         })
 
         expect(posthog.getFeatureFlagPayloads()).toEqual({
           'feature-1': {
             color: 'blue',
+          },
+          'json-payload': {
+            a: 'payload',
           },
           'feature-variant': 5,
         })
@@ -258,6 +264,7 @@ describe('PostHog Core', () => {
           expect(posthog.getFeatureFlags()).toEqual({
             'feature-1': true,
             'feature-2': true,
+            'json-payload': true,
             'feature-variant': 'variant',
           })
 
@@ -283,6 +290,7 @@ describe('PostHog Core', () => {
           expect(posthog.getFeatureFlags()).toEqual({
             'feature-1': false,
             'feature-2': true,
+            'json-payload': true,
             'feature-variant': 'variant',
             'x-flag': 'x-value',
           })
@@ -359,6 +367,7 @@ describe('PostHog Core', () => {
           expect(posthog.getFeatureFlags()).toEqual({
             'feature-1': true,
             'feature-2': true,
+            'json-payload': true,
             'feature-variant': 'variant',
           })
 
@@ -448,9 +457,10 @@ describe('PostHog Core', () => {
               event: 'test-event',
               distinct_id: posthog.getDistinctId(),
               properties: {
-                $active_feature_flags: ['feature-1', 'feature-2', 'feature-variant'],
+                $active_feature_flags: ['feature-1', 'feature-2', 'feature-variant', 'json-payload'],
                 '$feature/feature-1': true,
                 '$feature/feature-2': true,
+                '$feature/json-payload': true,
                 '$feature/feature-variant': 'variant',
               },
               type: 'capture',
@@ -465,6 +475,7 @@ describe('PostHog Core', () => {
           'feature-variant': 'control',
         })
         expect(posthog.getFeatureFlags()).toEqual({
+          'json-payload': true,
           'feature-1': true,
           'feature-variant': 'control',
         })
@@ -569,6 +580,7 @@ describe('PostHog Core', () => {
         expect(posthog.getFeatureFlags()).toEqual({
           'feature-1': true,
           'feature-2': true,
+          'json-payload': true,
           'feature-variant': 'variant',
         })
       })

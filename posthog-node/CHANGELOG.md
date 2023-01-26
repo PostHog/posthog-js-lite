@@ -1,4 +1,4 @@
-# 2.3.0 - 2022-1-24
+# 2.3.0 - 2022-1-26
 
 1. uses v3 decide endpoint 
 2. JSON payloads will be returned with feature flags

@@ -265,7 +265,11 @@ export class PostHog implements PostHogNodeV1 {
       response = this._sharedClient.getFeatureFlagPayload(key)
     }
 
-    return response
+    try {
+      return JSON.parse(response as any)
+    } catch {
+      return response
+    }
   }
 
   async isFeatureEnabled(
@@ -361,6 +365,7 @@ export class PostHog implements PostHogNodeV1 {
   }
 
   groupIdentify({ groupType, groupKey, properties }: GroupIdentifyMessage): void {
+    this.reInit(`$${groupType}_${groupKey}`)
     this._sharedClient.groupIdentify(groupType, groupKey, properties)
   }
 
