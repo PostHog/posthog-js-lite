@@ -50,20 +50,22 @@ export const PostHogProvider = ({
 
   // Resolve async client to concrete client
   useEffect(() => {
+    if (client && apiKey) {
+      console.warn(
+        'You have provided both a client and an apiKey to PostHogProvider. The apiKey will be ignored in favour of the client.'
+      )
+    }
+
     if (!posthog && client) {
       if (client instanceof Promise) {
         client.then(setPosthog)
       } else {
         setPosthog(client)
       }
-    }
-  }, [client])
-
-  useEffect(() => {
-    if (apiKey && !posthog) {
+    } else if (!posthog && apiKey) {
       PostHog.initAsync(apiKey, options).then(setPosthog)
     }
-  }, [apiKey])
+  }, [client, apiKey])
 
   useEffect(() => {
     if (!posthog) {

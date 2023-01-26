@@ -59,6 +59,9 @@
     },
     "react-native-device-info": {
       "optional": true
+    },
+    "react-native-navigation": {
+      "optional": true
     }
   }
 }
