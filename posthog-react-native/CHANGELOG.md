@@ -1,8 +1,14 @@
-# 2.3.0 - 2023-01-27
+# 2.4.0 - 2023-01-27
 
 - Adds support for https://github.com/wix/react-native-navigation
 - Allows passing of promise based `PostHog.initAsync` to `<PostHogProvider client={...} />`
 - Captures text content in autocapture (configurable via autocapture option `propsToCapture`)
+
+# 2.3.0 - 2022-1-26
+
+1. uses v3 decide endpoint
+2. JSON payloads will be returned with feature flags
+3. Feature flags will gracefully fail and optimistically save evaluated flags if server is down
 
 # 2.2.3 - 2023-01-25
 
