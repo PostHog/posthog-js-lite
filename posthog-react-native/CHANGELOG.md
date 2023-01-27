@@ -1,3 +1,9 @@
+# 2.3.0 - 2023-01-27
+
+- Adds support for https://github.com/wix/react-native-navigation
+- Allows passing of promise based `PostHog.initAsync` to `<PostHogProvider client={...} />`
+- Captures text content in autocapture (configurable via autocapture option `propsToCapture`)
+
 # 2.2.3 - 2023-01-25
 
 - Ensures the distinctId used in `.groupIdentify` is the same as the currently identified user
