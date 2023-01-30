@@ -1,131 +1,103 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * Generated with the TypeScript template
- * https://github.com/react-native-community/react-native-template-typescript
- *
- * @format
- */
+// In index.js of a new project
+import React from 'react';
+import {View, Text, Button, StyleSheet} from 'react-native';
+import {Navigation} from 'react-native-navigation';
+import {SharedPostHogProvider} from './posthog';
 
-import React, {type PropsWithChildren} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
-
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
-
-import {PostHogProvider} from 'posthog-react-native';
-
-const Section: React.FC<
-  PropsWithChildren<{
-    title: string;
-  }>
-> = ({children, title}) => {
-  const isDarkMode = useColorScheme() === 'dark';
+// Home screen declaration
+export const HomeScreen = (props: any) => {
   return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
+    <SharedPostHogProvider>
+      <View style={styles.root}>
+        <Text>Hello React Native Navigation 👋</Text>
+        <Button
+          title="Push Settings Screen"
+          color="#710ce3"
+          onPress={() =>
+            Navigation.push(props.componentId, {
+              component: {
+                name: 'Settings',
+                passProps: {
+                  id: `${Math.round(Math.random() * 100000)}`,
+                },
+                options: {
+                  topBar: {
+                    title: {
+                      text: 'Settings',
+                    },
+                  },
+                },
+              },
+            })
+          }
+        />
+
+        <Button
+          title="Push Settings Modal"
+          color="#710ce3"
+          onPress={() =>
+            Navigation.showModal({
+              stack: {
+                children: [
+                  {
+                    component: {
+                      name: 'Settings',
+                      passProps: {
+                        id: `${Math.round(Math.random() * 100000)}`,
+                        isModal: true,
+                      },
+                      options: {
+                        topBar: {
+                          title: {
+                            text: 'Settings',
+                          },
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            })
+          }
+        />
+      </View>
+    </SharedPostHogProvider>
   );
 };
+HomeScreen.options = {
+  topBar: {
+    title: {
+      text: 'Home',
+      color: 'white',
+    },
+    background: {
+      color: '#4d089a',
+    },
+  },
+};
 
-const App = () => {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
-
+// Settings screen declaration - this is the screen we'll be pushing into the stack
+export const SettingsScreen = (props: any) => {
   return (
-    <PostHogProvider
-      apiKey="phc_nOqnAZfwTKuERXGzY1Js1shY9mqaPCee4QMXOcT8YPq"
-      options={{
-        host: 'http://localhost:8000',
-        flushAt: 10,
-        flushInterval: 1000, // This is far to low for production but helpful for local testing
-      }}
-      autocapture>
-      <SafeAreaView style={backgroundStyle}>
-        <StatusBar
-          barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-          backgroundColor={backgroundStyle.backgroundColor}
-        />
-        <ScrollView
-          contentInsetAdjustmentBehavior="automatic"
-          style={backgroundStyle}>
-          <Header />
-          <View
-            style={{
-              backgroundColor: isDarkMode ? Colors.black : Colors.white,
-            }}>
-            <Section title="Step One">
-              Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-              screen and then come back to see your edits.
-            </Section>
-            <Section title="See Your Changes">
-              <ReloadInstructions />
-            </Section>
-            <Section title="Debug">
-              <DebugInstructions />
-            </Section>
-            <Section title="Learn More">
-              Read the docs to discover what to do next:
-            </Section>
-            <LearnMoreLinks />
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    </PostHogProvider>
+    <SharedPostHogProvider>
+      <View style={styles.root}>
+        <Text ph-label="special-text">Press me!</Text>
+
+        {props.id && (
+          <Text>
+            This is a screen with id: <Text ph-label="id">{props.id}</Text>
+          </Text>
+        )}
+      </View>
+    </SharedPostHogProvider>
   );
 };
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
+  root: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'whitesmoke',
   },
 });
-
-export default App;
