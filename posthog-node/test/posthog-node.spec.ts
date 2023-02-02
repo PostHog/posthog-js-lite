@@ -152,6 +152,27 @@ describe('PostHog Node.js', () => {
     })
   })
 
+  describe('groupIdentify', () => {
+    it('should identify group with unique id', () => {
+      posthog.groupIdentify({ groupType: 'posthog', groupKey: 'team-1', properties: { analytics: true } })
+      jest.runOnlyPendingTimers()
+      const batchEvents = getLastBatchEvents()
+      console.log(batchEvents)
+      expect(batchEvents).toMatchObject([
+        {
+          distinct_id: '$posthog_team-1',
+          event: '$groupidentify',
+          properties: {
+            $group_type: 'posthog',
+            $group_key: 'team-1',
+            $group_set: { analytics: true },
+            $lib: 'posthog-node',
+          },
+        },
+      ])
+    })
+  })
+
   describe('feature flags', () => {
     beforeEach(() => {
       const mockFeatureFlags = {
@@ -160,7 +181,14 @@ describe('PostHog Node.js', () => {
         'feature-variant': 'variant',
       }
 
-      mockedFetch.mockImplementation(apiImplementation({ decideFlags: mockFeatureFlags }))
+      const mockFeatureFlagPayloads = {
+        'feature-1': { color: 'blue' },
+        'feature-variant': 2,
+      }
+
+      mockedFetch.mockImplementation(
+        apiImplementation({ decideFlags: mockFeatureFlags, decideFlagPayloads: mockFeatureFlagPayloads })
+      )
 
       posthog = new PostHog('TEST_API_KEY', {
         host: 'http://example.com',
@@ -200,7 +228,7 @@ describe('PostHog Node.js', () => {
       })
 
       expect(mockedFetch).toHaveBeenCalledWith(
-        'http://example.com/decide/?v=2',
+        'http://example.com/decide/?v=3',
         expect.objectContaining({ method: 'POST' })
       )
 
@@ -423,6 +451,22 @@ describe('PostHog Node.js', () => {
       // call decide, but not batch
       expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
       expect(mockedFetch).not.toHaveBeenCalledWith('http://example.com/batch/', expect.any(Object))
+    })
+
+    it('should do getFeatureFlagPayloads', async () => {
+      expect(mockedFetch).toHaveBeenCalledTimes(0)
+      await expect(
+        posthog.getFeatureFlagPayload('feature-variant', '123', 'variant', { groups: { org: '123' } })
+      ).resolves.toEqual(2)
+      expect(mockedFetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('should do getFeatureFlagPayloads without matchValue', async () => {
+      expect(mockedFetch).toHaveBeenCalledTimes(0)
+      await expect(
+        posthog.getFeatureFlagPayload('feature-variant', '123', undefined, { groups: { org: '123' } })
+      ).resolves.toEqual(2)
+      expect(mockedFetch).toHaveBeenCalledTimes(1)
     })
   })
 })

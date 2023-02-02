@@ -45,7 +45,7 @@ export const autocaptureFromTouchEvent = (e: any, posthog: PostHog, options: Pos
     customLabelProp = 'ph-label',
     maxElementsCaptured = 20,
     ignoreLabels = [],
-    propsToCapture = ['style', 'testID', 'accessibilityLabel', 'ph-label'],
+    propsToCapture = ['style', 'testID', 'accessibilityLabel', 'ph-label', 'children'],
   } = options
 
   if (!e._targetInst) {

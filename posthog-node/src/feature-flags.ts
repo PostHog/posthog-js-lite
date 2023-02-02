@@ -1,7 +1,7 @@
 import { createHash } from 'crypto'
 import { FeatureFlagCondition, PostHogFeatureFlag } from './types'
 import { version } from '../package.json'
-import { PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src'
+import { JsonType, PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src'
 import { safeSetTimeout } from 'posthog-core/src/utils'
 import { fetch } from './fetch'
 
@@ -44,6 +44,7 @@ class FeatureFlagsPoller {
   personalApiKey: string
   projectApiKey: string
   featureFlags: Array<PostHogFeatureFlag>
+  featureFlagsByKey: Record<string, PostHogFeatureFlag>
   groupTypeMapping: Record<string, string>
   loadedSuccessfullyOnce: boolean
   timeout?: number
@@ -62,6 +63,7 @@ class FeatureFlagsPoller {
     this.pollingInterval = pollingInterval
     this.personalApiKey = personalApiKey
     this.featureFlags = []
+    this.featureFlagsByKey = {}
     this.groupTypeMapping = {}
     this.loadedSuccessfullyOnce = false
     this.timeout = timeout
@@ -100,10 +102,9 @@ class FeatureFlagsPoller {
     if (featureFlag !== undefined) {
       try {
         response = this.computeFlagLocally(featureFlag, distinctId, groups, personProperties, groupProperties)
-        console.debug(`Successfully computed flag locally: ${key} -> ${response}`)
       } catch (e) {
         if (e instanceof InconclusiveMatchError) {
-          console.debug(`Can't compute flag locally: ${key}: ${e}`)
+          console.error(`InconclusiveMatchError when computing flag locally: ${key}: ${e}`)
         } else if (e instanceof Error) {
           console.error(`Error computing flag locally: ${key}: ${e}`)
         }
@@ -113,20 +114,53 @@ class FeatureFlagsPoller {
     return response
   }
 
-  async getAllFlags(
+  async computeFeatureFlagPayloadLocally(key: string, matchValue: string | boolean): Promise<JsonType | undefined> {
+    await this.loadFeatureFlags()
+
+    let response = undefined
+
+    if (!this.loadedSuccessfullyOnce) {
+      return undefined
+    }
+
+    if (typeof matchValue == 'boolean') {
+      response = this.featureFlagsByKey?.[key]?.filters?.payloads?.[matchValue.toString()]
+    } else if (typeof matchValue == 'string') {
+      response = this.featureFlagsByKey?.[key]?.filters?.payloads?.[matchValue]
+    }
+
+    // Undefined means a loading or missing data issue. Null means evaluation happened and there was no match
+    if (response === undefined) {
+      return null
+    }
+
+    return response
+  }
+
+  async getAllFlagsAndPayloads(
     distinctId: string,
     groups: Record<string, string> = {},
     personProperties: Record<string, string> = {},
     groupProperties: Record<string, Record<string, string>> = {}
-  ): Promise<{ response: Record<string, string | boolean>; fallbackToDecide: boolean }> {
+  ): Promise<{
+    response: Record<string, string | boolean>
+    payloads: Record<string, JsonType>
+    fallbackToDecide: boolean
+  }> {
     await this.loadFeatureFlags()
 
     const response: Record<string, string | boolean> = {}
+    const payloads: Record<string, JsonType> = {}
     let fallbackToDecide = this.featureFlags.length == 0
 
-    this.featureFlags.map((flag) => {
+    this.featureFlags.map(async (flag) => {
       try {
-        response[flag.key] = this.computeFlagLocally(flag, distinctId, groups, personProperties, groupProperties)
+        const matchValue = this.computeFlagLocally(flag, distinctId, groups, personProperties, groupProperties)
+        response[flag.key] = matchValue
+        const matchPayload = await this.computeFeatureFlagPayloadLocally(flag.key, matchValue)
+        if (matchPayload) {
+          payloads[flag.key] = matchPayload
+        }
       } catch (e) {
         if (e instanceof InconclusiveMatchError) {
           // do nothing
@@ -137,7 +171,7 @@ class FeatureFlagsPoller {
       }
     })
 
-    return { response, fallbackToDecide }
+    return { response, payloads, fallbackToDecide }
   }
 
   computeFlagLocally(
@@ -316,12 +350,23 @@ class FeatureFlagsPoller {
           `Your personalApiKey is invalid. Are you sure you're not using your Project API key? More information: https://posthog.com/docs/api/overview`
         )
       }
+
+      if (res && res.status !== 200) {
+        // something else went wrong, or the server is down.
+        // In this case, don't override existing flags
+        return
+      }
+
       const responseJson = await res.json()
       if (!('flags' in responseJson)) {
         console.error(`Invalid response when getting feature flags: ${JSON.stringify(responseJson)}`)
       }
 
       this.featureFlags = responseJson.flags || []
+      this.featureFlagsByKey = this.featureFlags.reduce(
+        (acc, curr) => ((acc[curr.key] = curr), acc),
+        <Record<string, PostHogFeatureFlag>>{}
+      )
       this.groupTypeMapping = responseJson.group_type_mapping || {}
       this.loadedSuccessfullyOnce = true
     } catch (err) {

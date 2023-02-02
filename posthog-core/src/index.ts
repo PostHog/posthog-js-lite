@@ -8,6 +8,7 @@ import {
   PostHogEventProperties,
   PostHogPersistedProperty,
   PosthogCaptureOptions,
+  JsonType,
 } from './types'
 import {
   assert,
@@ -116,6 +117,7 @@ export abstract class PostHogCore {
           {}
         )
       this.setKnownFeatureFlags(activeFlags)
+      options?.bootstrap.featureFlagPayloads && this.setKnownFeatureFlagPayloads(options?.bootstrap.featureFlagPayloads)
     }
   }
 
@@ -356,16 +358,15 @@ export abstract class PostHogCore {
     groupProperties?: PostHogEventProperties,
     options?: PosthogCaptureOptions
   ): this {
-    const payload = {
+    const payload = this.buildPayload({
       event: '$groupidentify',
-      distinctId: `$${groupType}_${groupKey}`,
       properties: {
         $group_type: groupType,
         $group_key: groupKey,
         $group_set: groupProperties || {},
         ...this.getCommonEventProperties(),
       },
-    }
+    })
 
     this.enqueue('capture', payload, options)
     return this
@@ -420,7 +421,7 @@ export abstract class PostHogCore {
   }
 
   private async _decideAsync(sendAnonDistinctId: boolean = true): Promise<PostHogDecideResponse> {
-    const url = `${this.host}/decide/?v=2`
+    const url = `${this.host}/decide/?v=3`
 
     const distinctId = this.getDistinctId()
     const groups = this.props.$groups || {}
@@ -446,7 +447,21 @@ export abstract class PostHogCore {
       .then((r) => r.json() as Promise<PostHogDecideResponse>)
       .then((res) => {
         if (res.featureFlags) {
-          this.setKnownFeatureFlags(res.featureFlags)
+          let newFeatureFlags = res.featureFlags
+          let newFeatureFlagPayloads = res.featureFlagPayloads
+          if (res.errorsWhileComputingFlags) {
+            // if not all flags were computed, we upsert flags instead of replacing them
+            const currentFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
+              PostHogPersistedProperty.FeatureFlags
+            )
+            const currentFlagPayloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
+              PostHogPersistedProperty.FeatureFlagPayloads
+            )
+            newFeatureFlags = { ...currentFlags, ...res.featureFlags }
+            newFeatureFlagPayloads = { ...currentFlagPayloads, ...res.featureFlagPayloads }
+          }
+          this.setKnownFeatureFlags(newFeatureFlags)
+          this.setKnownFeatureFlagPayloads(newFeatureFlagPayloads)
         }
 
         return res
@@ -465,6 +480,13 @@ export abstract class PostHogCore {
     this._events.emit('featureflags', featureFlags)
   }
 
+  private setKnownFeatureFlagPayloads(featureFlagPayloads: PostHogDecideResponse['featureFlagPayloads']): void {
+    this.setPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
+      PostHogPersistedProperty.FeatureFlagPayloads,
+      featureFlagPayloads
+    )
+  }
+
   getFeatureFlag(key: string): boolean | string | undefined {
     const featureFlags = this.getFeatureFlags()
 
@@ -474,8 +496,10 @@ export abstract class PostHogCore {
     }
 
     let response = featureFlags[key]
+    // `/decide` v3 returns all flags
+
     if (response === undefined) {
-      // `/decide` returns nothing for flags which are false.
+      // For cases where the flag is unknown, return false
       response = false
     }
 
@@ -489,6 +513,41 @@ export abstract class PostHogCore {
 
     // If we have flags we either return the value (true or string) or false
     return response
+  }
+
+  getFeatureFlagPayload(key: string): JsonType | undefined {
+    const payloads = this.getFeatureFlagPayloads()
+
+    if (!payloads) {
+      return undefined
+    }
+
+    const response = payloads[key]
+
+    // Undefined means a loading or missing data issue. Null means evaluation happened and there was no match
+    if (response === undefined) {
+      return null
+    }
+
+    return this._parsePayload(response)
+  }
+
+  getFeatureFlagPayloads(): PostHogDecideResponse['featureFlagPayloads'] | undefined {
+    const payloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
+      PostHogPersistedProperty.FeatureFlagPayloads
+    )
+    if (payloads) {
+      return Object.fromEntries(Object.entries(payloads).map(([k, v]) => [k, this._parsePayload(v)]))
+    }
+    return payloads
+  }
+
+  _parsePayload(response: any): any {
+    try {
+      return JSON.parse(response)
+    } catch {
+      return response
+    }
   }
 
   getFeatureFlags(): PostHogDecideResponse['featureFlags'] | undefined {
@@ -512,6 +571,19 @@ export abstract class PostHogCore {
     }
 
     return flags
+  }
+
+  getFeatureFlagsAndPayloads(): {
+    flags: PostHogDecideResponse['featureFlags'] | undefined
+    payloads: PostHogDecideResponse['featureFlagPayloads'] | undefined
+  } {
+    const flags = this.getFeatureFlags()
+    const payloads = this.getFeatureFlagPayloads()
+
+    return {
+      flags,
+      payloads,
+    }
   }
 
   isFeatureEnabled(key: string): boolean | undefined {

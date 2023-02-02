@@ -12,7 +12,8 @@ import { getLegacyValues } from './legacy'
 import { SemiAsyncStorage } from './storage'
 import { version } from './version'
 import { buildOptimisiticAsyncStorage, getAppProperties } from './native-deps'
-import { PostHogCustomAppProperties, PostHogCustomAsyncStorage } from './types'
+import { PostHogAutocaptureOptions, PostHogCustomAppProperties, PostHogCustomAsyncStorage } from './types'
+import { withReactNativeNavigation } from './frameworks/wix-navigation'
 
 export type PostHogOptions = PosthogCoreOptions & {
   persistence?: 'memory' | 'file'
@@ -114,5 +115,9 @@ export class PostHog extends PostHogCore {
       ...properties,
       $screen_name: name,
     })
+  }
+
+  initReactNativeNavigation(options: PostHogAutocaptureOptions): boolean {
+    return withReactNativeNavigation(this, options)
   }
 }

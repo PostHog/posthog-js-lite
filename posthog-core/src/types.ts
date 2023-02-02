@@ -16,6 +16,7 @@ export type PosthogCoreOptions = {
     distinctId?: string
     isIdentifiedId?: boolean
     featureFlags?: Record<string, boolean | string>
+    featureFlagPayloads?: Record<string, JsonType>
   }
   // How many times we will retry HTTP requests
   fetchRetryCount?: number
@@ -34,6 +35,7 @@ export enum PostHogPersistedProperty {
   DistinctId = 'distinct_id',
   Props = 'props',
   FeatureFlags = 'feature_flags',
+  FeatureFlagPayloads = 'feature_flag_payloads',
   OverrideFeatureFlags = 'override_feature_flags',
   Queue = 'queue',
   OptedOut = 'opted_out',
@@ -91,5 +93,16 @@ export type PostHogDecideResponse = {
   featureFlags: {
     [key: string]: string | boolean
   }
+  featureFlagPayloads: {
+    [key: string]: JsonType
+  }
+  errorsWhileComputingFlags: boolean
   sessionRecording: boolean
 }
+
+export type PosthogFlagsAndPayloadsResponse = {
+  featureFlags: PostHogDecideResponse['featureFlags']
+  featureFlagPayloads: PostHogDecideResponse['featureFlagPayloads']
+}
+
+export type JsonType = string | number | boolean | null | { [key: string]: JsonType } | Array<JsonType>

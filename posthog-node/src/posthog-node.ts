@@ -1,10 +1,12 @@
 import { version } from '../package.json'
 
 import {
+  JsonType,
   PostHogCore,
   PosthogCoreOptions,
   PostHogFetchOptions,
   PostHogFetchResponse,
+  PosthogFlagsAndPayloadsResponse,
   PostHogPersistedProperty,
 } from '../../posthog-core/src'
 import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
@@ -214,6 +216,73 @@ export class PostHog implements PostHogNodeV1 {
     return response
   }
 
+  async getFeatureFlagPayload(
+    key: string,
+    distinctId: string,
+    matchValue?: string | boolean,
+    options?: {
+      groups?: Record<string, string>
+      personProperties?: Record<string, string>
+      groupProperties?: Record<string, Record<string, string>>
+      onlyEvaluateLocally?: boolean
+      sendFeatureFlagEvents?: boolean
+    }
+  ): Promise<JsonType | undefined> {
+    const { groups, personProperties, groupProperties } = options || {}
+    let { onlyEvaluateLocally, sendFeatureFlagEvents } = options || {}
+    let response = undefined
+
+    // Try to get match value locally if not provided
+    if (!matchValue) {
+      matchValue = await this.getFeatureFlag(key, distinctId, {
+        ...options,
+        onlyEvaluateLocally: true,
+      })
+    }
+
+    if (matchValue) {
+      response = await this.featureFlagsPoller?.computeFeatureFlagPayloadLocally(key, matchValue)
+    }
+
+    // set defaults
+    if (onlyEvaluateLocally == undefined) {
+      onlyEvaluateLocally = false
+    }
+    if (sendFeatureFlagEvents == undefined) {
+      sendFeatureFlagEvents = true
+    }
+
+    // set defaults
+    if (onlyEvaluateLocally == undefined) {
+      onlyEvaluateLocally = false
+    }
+
+    const payloadWasLocallyEvaluated = response !== undefined
+
+    if (!payloadWasLocallyEvaluated && !onlyEvaluateLocally) {
+      this.reInit(distinctId)
+      if (groups != undefined) {
+        this._sharedClient.groups(groups)
+      }
+
+      if (personProperties) {
+        this._sharedClient.personProperties(personProperties)
+      }
+
+      if (groupProperties) {
+        this._sharedClient.groupProperties(groupProperties)
+      }
+      await this._sharedClient.reloadFeatureFlagsAsync(false)
+      response = this._sharedClient.getFeatureFlagPayload(key)
+    }
+
+    try {
+      return JSON.parse(response as any)
+    } catch {
+      return response
+    }
+  }
+
   async isFeatureEnabled(
     key: string,
     distinctId: string,
@@ -241,6 +310,19 @@ export class PostHog implements PostHogNodeV1 {
       onlyEvaluateLocally?: boolean
     }
   ): Promise<Record<string, string | boolean>> {
+    const response = await this.getAllFlagsAndPayloads(distinctId, options)
+    return response.featureFlags
+  }
+
+  async getAllFlagsAndPayloads(
+    distinctId: string,
+    options?: {
+      groups?: Record<string, string>
+      personProperties?: Record<string, string>
+      groupProperties?: Record<string, Record<string, string>>
+      onlyEvaluateLocally?: boolean
+    }
+  ): Promise<PosthogFlagsAndPayloadsResponse> {
     const { groups, personProperties, groupProperties } = options || {}
     let { onlyEvaluateLocally } = options || {}
 
@@ -249,17 +331,19 @@ export class PostHog implements PostHogNodeV1 {
       onlyEvaluateLocally = false
     }
 
-    const localEvaluationResult = await this.featureFlagsPoller?.getAllFlags(
+    const localEvaluationResult = await this.featureFlagsPoller?.getAllFlagsAndPayloads(
       distinctId,
       groups,
       personProperties,
       groupProperties
     )
 
-    let response = {}
+    let featureFlags = {}
+    let featureFlagPayloads = {}
     let fallbackToDecide = true
     if (localEvaluationResult) {
-      response = localEvaluationResult.response
+      featureFlags = localEvaluationResult.response
+      featureFlagPayloads = localEvaluationResult.payloads
       fallbackToDecide = localEvaluationResult.fallbackToDecide
     }
 
@@ -277,15 +361,22 @@ export class PostHog implements PostHogNodeV1 {
         this._sharedClient.groupProperties(groupProperties)
       }
       await this._sharedClient.reloadFeatureFlagsAsync(false)
-      const remoteEvaluationResult = this._sharedClient.getFeatureFlags()
-
-      return { ...response, ...remoteEvaluationResult }
+      const remoteEvaluationResult = this._sharedClient.getFeatureFlagsAndPayloads()
+      featureFlags = {
+        ...featureFlags,
+        ...(remoteEvaluationResult.flags || {}),
+      }
+      featureFlagPayloads = {
+        ...featureFlagPayloads,
+        ...(remoteEvaluationResult.payloads || {}),
+      }
     }
 
-    return response
+    return { featureFlags, featureFlagPayloads }
   }
 
   groupIdentify({ groupType, groupKey, properties }: GroupIdentifyMessage): void {
+    this.reInit(`$${groupType}_${groupKey}`)
     this._sharedClient.groupIdentify(groupType, groupKey, properties)
   }
 
