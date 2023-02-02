@@ -136,6 +136,20 @@ describe('PostHog Node.js', () => {
         },
       ])
     })
+
+    it('should allow overriding timestamp', async () => {
+      expect(mockedFetch).toHaveBeenCalledTimes(0)
+      posthog.capture({ event: 'custom-time', distinctId: '123', timestamp: new Date('2021-02-03') })
+      jest.runOnlyPendingTimers()
+      const batchEvents = getLastBatchEvents()
+      expect(batchEvents).toMatchObject([
+        {
+          distinct_id: '123',
+          timestamp: '2021-02-03T00:00:00.000Z',
+          event: 'custom-time',
+        },
+      ])
+    })
   })
 
   describe('groupIdentify', () => {

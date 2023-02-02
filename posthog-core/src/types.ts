@@ -54,6 +54,11 @@ export type PostHogFetchOptions = {
   signal?: AbortSignal
 }
 
+// Check out posthog-js for these additional options and try to keep them in sync
+export type PosthogCaptureOptions = {
+  timestamp?: Date
+}
+
 export type PostHogFetchResponse = {
   status: number
   text: () => Promise<string>

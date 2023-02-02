@@ -7,6 +7,7 @@ import {
   PosthogCoreOptions,
   PostHogEventProperties,
   PostHogPersistedProperty,
+  PosthogCaptureOptions,
   JsonType,
 } from './types'
 import {
@@ -233,7 +234,7 @@ export abstract class PostHogCore {
   /***
    *** TRACKING
    ***/
-  identify(distinctId?: string, properties?: PostHogEventProperties): this {
+  identify(distinctId?: string, properties?: PostHogEventProperties, options?: PosthogCaptureOptions): this {
     const previousDistinctId = this.getDistinctId()
     distinctId = distinctId || previousDistinctId
 
@@ -263,21 +264,18 @@ export abstract class PostHogCore {
       }
     }
 
-    this.enqueue('identify', payload)
+    this.enqueue('identify', payload, options)
     return this
   }
 
-  capture(event: string, properties?: { [key: string]: any }, forceSendFeatureFlags: boolean = false): this {
+  capture(event: string, properties?: { [key: string]: any }, options?: PosthogCaptureOptions): this {
     if (properties?.$groups) {
       this.groups(properties.$groups)
     }
 
-    if (forceSendFeatureFlags) {
-      this._sendFeatureFlags(event, properties)
-    } else {
-      const payload = this.buildPayload({ event, properties })
-      this.enqueue('capture', payload)
-    }
+    const payload = this.buildPayload({ event, properties })
+    this.enqueue('capture', payload, options)
+
     return this
   }
 
@@ -296,7 +294,12 @@ export abstract class PostHogCore {
     return this
   }
 
-  autocapture(eventType: string, elements: PostHogAutocaptureElement[], properties: PostHogEventProperties = {}): this {
+  autocapture(
+    eventType: string,
+    elements: PostHogAutocaptureElement[],
+    properties: PostHogEventProperties = {},
+    options?: PosthogCaptureOptions
+  ): this {
     const payload = this.buildPayload({
       event: '$autocapture',
       properties: {
@@ -306,7 +309,7 @@ export abstract class PostHogCore {
       },
     })
 
-    this.enqueue('autocapture', payload)
+    this.enqueue('autocapture', payload, options)
     return this
   }
 
@@ -332,19 +335,29 @@ export abstract class PostHogCore {
     return this
   }
 
-  group(groupType: string, groupKey: string | number, groupProperties?: PostHogEventProperties): this {
+  group(
+    groupType: string,
+    groupKey: string | number,
+    groupProperties?: PostHogEventProperties,
+    options?: PosthogCaptureOptions
+  ): this {
     this.groups({
       [groupType]: groupKey,
     })
 
     if (groupProperties) {
-      this.groupIdentify(groupType, groupKey, groupProperties)
+      this.groupIdentify(groupType, groupKey, groupProperties, options)
     }
 
     return this
   }
 
-  groupIdentify(groupType: string, groupKey: string | number, groupProperties?: PostHogEventProperties): this {
+  groupIdentify(
+    groupType: string,
+    groupKey: string | number,
+    groupProperties?: PostHogEventProperties,
+    options?: PosthogCaptureOptions
+  ): this {
     const payload = this.buildPayload({
       event: '$groupidentify',
       properties: {
@@ -355,7 +368,7 @@ export abstract class PostHogCore {
       },
     })
 
-    this.enqueue('capture', payload)
+    this.enqueue('capture', payload, options)
     return this
   }
 
@@ -610,18 +623,10 @@ export abstract class PostHogCore {
     return this.setPersistedProperty(PostHogPersistedProperty.OverrideFeatureFlags, flags)
   }
 
-  _sendFeatureFlags(event: string, properties?: { [key: string]: any }): void {
-    this.reloadFeatureFlagsAsync(false).finally(() => {
-      // Try to enqueue message irrespective of errors during feature flag fetching
-      const payload = this.buildPayload({ event, properties })
-      this.enqueue('capture', payload)
-    })
-  }
-
   /***
    *** QUEUEING AND FLUSHING
    ***/
-  private enqueue(type: string, _message: any): void {
+  private enqueue(type: string, _message: any, options?: PosthogCaptureOptions): void {
     if (this.optedOut) {
       return
     }
@@ -630,7 +635,7 @@ export abstract class PostHogCore {
       type: type,
       library: this.getLibraryId(),
       library_version: this.getLibraryVersion(),
-      timestamp: _message.timestamp ? _message.timestamp : currentISOTime(),
+      timestamp: options?.timestamp ? options?.timestamp : currentISOTime(),
     }
 
     if (message.distinctId) {

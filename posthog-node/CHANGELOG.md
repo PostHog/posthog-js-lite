@@ -1,15 +1,23 @@
+# 2.4.0 - 2023-02-02
+
+1. Adds support for overriding timestamp of capture events
+
 # 2.3.0 - 2022-1-26
 
-1. uses v3 decide endpoint 
+1. uses v3 decide endpoint
 2. JSON payloads will be returned with feature flags
 3. Feature flags will gracefully fail and optimistically save evaluated flags if server is down
 
 # 2.2.3 - 2022-12-01
+
 1. Fix issues with timeouts for local evaluation requests
+
 # 2.2.2 - 2022-11-28
+
 1. Fix issues with timeout
 
 # 2.2.1 - 2022-11-24
+
 1. Add standard 10 second timeout
 
 # 2.2.0 - 2022-11-18

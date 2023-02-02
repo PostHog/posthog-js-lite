@@ -1,3 +1,7 @@
+# 2.5.0 - 2023-02-02
+
+1. Adds support for overriding timestamp of capture events
+
 # 2.4.0 - 2023-01-27
 
 - Adds support for https://github.com/wix/react-native-navigation
