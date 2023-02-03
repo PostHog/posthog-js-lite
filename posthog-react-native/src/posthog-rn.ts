@@ -1,4 +1,4 @@
-import { AppState, Dimensions, Platform } from 'react-native'
+import { AppState, Dimensions } from 'react-native'
 
 import {
   PostHogCore,
@@ -17,7 +17,9 @@ import { withReactNativeNavigation } from './frameworks/wix-navigation'
 
 export type PostHogOptions = PosthogCoreOptions & {
   persistence?: 'memory' | 'file'
-  customAppProperties?: PostHogCustomAppProperties
+  customAppProperties?:
+    | PostHogCustomAppProperties
+    | ((properties: PostHogCustomAppProperties) => PostHogCustomAppProperties)
   customAsyncStorage?: PostHogCustomAsyncStorage
 }
 
@@ -39,7 +41,12 @@ export class PostHog extends PostHogCore {
     super(apiKey, options)
     this._persistence = options?.persistence
 
-    this._appProperties = options?.customAppProperties || getAppProperties()
+    // Either build the app properties from the existing ones
+    this._appProperties =
+      typeof options?.customAppProperties === 'function'
+        ? options.customAppProperties(getAppProperties())
+        : options?.customAppProperties || getAppProperties()
+
     this._semiAsyncStorage =
       storage || new SemiAsyncStorage(options?.customAsyncStorage || buildOptimisiticAsyncStorage())
 
@@ -103,7 +110,6 @@ export class PostHog extends PostHogCore {
     return {
       ...super.getCommonEventProperties(),
       ...this._appProperties,
-      $device_type: Platform.OS,
       $screen_height: Dimensions.get('screen').height,
       $screen_width: Dimensions.get('screen').width,
     }
