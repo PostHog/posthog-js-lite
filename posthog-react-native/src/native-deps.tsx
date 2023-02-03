@@ -1,3 +1,4 @@
+import { Platform } from 'react-native'
 import { OptionalAsyncStorage } from './optional/OptionalAsyncStorage'
 import { OptionalExpoApplication } from './optional/OptionalExpoApplication'
 import { OptionalExpoDevice } from './optional/OptionalExpoDevice'
@@ -7,7 +8,9 @@ import { OptionalReactNativeDeviceInfo } from './optional/OptionalReactNativeDev
 import { PostHogCustomAppProperties, PostHogCustomAsyncStorage } from './types'
 
 export const getAppProperties = (): PostHogCustomAppProperties => {
-  const properties: PostHogCustomAppProperties = {}
+  const properties: PostHogCustomAppProperties = {
+    $device_type: Platform.OS,
+  }
 
   if (OptionalExpoApplication) {
     properties.$app_build = OptionalExpoApplication.nativeBuildVersion

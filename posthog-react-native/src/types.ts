@@ -33,6 +33,8 @@ export interface PostHogCustomAppProperties {
   $device_manufacturer?: string | null
   /** Readable model name like "iPhone 12" */
   $device_name?: string | null
+  /** Same as Platform.OS ("android" | "ios") */
+  $device_type?: string | null
   /** Operating system name like iOS or Android */
   $os_name?: string | null
   /** Operating system version "14.0" */
