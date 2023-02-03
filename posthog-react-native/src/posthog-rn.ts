@@ -17,6 +17,7 @@ import { withReactNativeNavigation } from './frameworks/wix-navigation'
 
 export type PostHogOptions = PosthogCoreOptions & {
   persistence?: 'memory' | 'file'
+  /** Allows you to provide your own implementation of the common information about your App or a function to modify the default App properties generated  */
   customAppProperties?:
     | PostHogCustomAppProperties
     | ((properties: PostHogCustomAppProperties) => PostHogCustomAppProperties)
