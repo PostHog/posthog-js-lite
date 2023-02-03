@@ -1,3 +1,7 @@
+# 2.5.1 - 2023-02-03
+
+1. Added support for customising the default app properties by passing a function to `options.customAppProperties`
+
 # 2.5.0 - 2023-02-02
 
 1. Adds support for overriding timestamp of capture events
