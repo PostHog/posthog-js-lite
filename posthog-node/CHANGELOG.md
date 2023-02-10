@@ -2,7 +2,7 @@
 
 1. Adds support for overriding timestamp of capture events
 
-# 2.3.0 - 2022-1-26
+# 2.3.0 - 2023-1-26
 
 1. uses v3 decide endpoint
 2. JSON payloads will be returned with feature flags
