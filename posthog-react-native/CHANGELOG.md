@@ -1,3 +1,7 @@
+# 2.5.2 - 2023-02-13
+
+1. Fixes an issue where background network errors would trigger unhandled promise warnings
+
 # 2.5.1 - 2023-02-03
 
 1. Added support for customising the default app properties by passing a function to `options.customAppProperties`
