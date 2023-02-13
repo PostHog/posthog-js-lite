@@ -76,7 +76,7 @@ export abstract class PostHogCore {
     // NOTE: It is important we don't initiate anything in the constructor as some async IO may still be underway on the parent
     if (options?.preloadFeatureFlags !== false) {
       safeSetTimeout(() => {
-        void this.reloadFeatureFlagsAsync()
+        this.reloadFeatureFlags()
       }, 1)
     }
   }
@@ -260,7 +260,7 @@ export abstract class PostHogCore {
       this.setPersistedProperty(PostHogPersistedProperty.DistinctId, distinctId)
 
       if (this.getFeatureFlags()) {
-        void this.reloadFeatureFlagsAsync()
+        this.reloadFeatureFlags()
       }
     }
 
@@ -329,7 +329,7 @@ export abstract class PostHogCore {
     })
 
     if (Object.keys(groups).find((type) => existingGroups[type] !== groups[type]) && this.getFeatureFlags()) {
-      void this.reloadFeatureFlagsAsync()
+      this.reloadFeatureFlags()
     }
 
     return this
@@ -596,6 +596,13 @@ export abstract class PostHogCore {
 
   async reloadFeatureFlagsAsync(sendAnonDistinctId: boolean = true): Promise<PostHogDecideResponse['featureFlags']> {
     return (await this.decideAsync(sendAnonDistinctId)).featureFlags
+  }
+
+  // Used when we want to trigger the reload but we don't care about the result
+  reloadFeatureFlags(): void {
+    this.decideAsync().catch((e) => {
+      console.log('[PostHog] Error reloading feature flags', e)
+    })
   }
 
   onFeatureFlags(cb: (flags: PostHogDecideResponse['featureFlags']) => void): () => void {
