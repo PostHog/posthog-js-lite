@@ -37,7 +37,6 @@ export abstract class PostHogCoreStateless {
   // internal
   protected _events = new SimpleEventEmitter()
   protected _flushTimer?: any
-  // protected _decideResponsePromise?: Promise<PostHogDecideResponse>
   protected _retryOptions: RetriableOptions
 
   // Abstract methods to be overridden by implementations
@@ -119,9 +118,6 @@ export abstract class PostHogCoreStateless {
     properties?: { [key: string]: any },
     options?: PosthogCaptureOptions
   ): this {
-    // TODO: consider making $groups a top level param??.
-    console.log('stateless capture call!')
-
     const payload = this.buildPayload({ distinct_id: distinctId, event, properties })
     this.enqueue('capture', payload, options)
 
@@ -155,7 +151,7 @@ export abstract class PostHogCoreStateless {
     eventProperties?: PostHogEventProperties
   ): this {
     const payload = this.buildPayload({
-      distinct_id: distinctId || `${groupType}_${groupKey}`,
+      distinct_id: distinctId || `$${groupType}_${groupKey}`,
       event: '$groupidentify',
       properties: {
         $group_type: groupType,
