@@ -34,6 +34,8 @@ export abstract class PostHogCoreStateless {
   private captureMode: 'form' | 'json'
   private removeDebugCallback?: () => void
 
+  private _optoutOverride: boolean | undefined
+
   // internal
   protected _events = new SimpleEventEmitter()
   protected _flushTimer?: any
@@ -59,6 +61,9 @@ export abstract class PostHogCoreStateless {
     this.flushInterval = options?.flushInterval ?? 10000
     this.captureMode = options?.captureMode || 'form'
 
+    // If enable is explicitly set to false we override the optout
+    this._optoutOverride = options?.enable === false
+
     this._retryOptions = {
       retryCount: options?.fetchRetryCount ?? 3,
       retryDelay: options?.fetchRetryDelay ?? 3000,
@@ -71,6 +76,18 @@ export abstract class PostHogCoreStateless {
       $lib: this.getLibraryId(),
       $lib_version: this.getLibraryVersion(),
     }
+  }
+
+  public get optedOut(): boolean {
+    return this.getPersistedProperty(PostHogPersistedProperty.OptedOut) ?? this._optoutOverride ?? false
+  }
+
+  optIn(): void {
+    this.setPersistedProperty(PostHogPersistedProperty.OptedOut, false)
+  }
+
+  optOut(): void {
+    this.setPersistedProperty(PostHogPersistedProperty.OptedOut, true)
   }
 
   on(event: string, cb: (...args: any[]) => void): () => void {
@@ -119,9 +136,6 @@ export abstract class PostHogCoreStateless {
     properties?: { [key: string]: any },
     options?: PosthogCaptureOptions
   ): this {
-    // TODO: consider making $groups a top level param??.
-    console.log('stateless capture call!')
-
     const payload = this.buildPayload({ distinct_id: distinctId, event, properties })
     this.enqueue('capture', payload, options)
 
@@ -155,7 +169,7 @@ export abstract class PostHogCoreStateless {
     eventProperties?: PostHogEventProperties
   ): this {
     const payload = this.buildPayload({
-      distinct_id: distinctId || `${groupType}_${groupKey}`,
+      distinct_id: distinctId || `$${groupType}_${groupKey}`,
       event: '$groupidentify',
       properties: {
         $group_type: groupType,
@@ -175,7 +189,7 @@ export abstract class PostHogCoreStateless {
 
   protected async getDecide(
     distinctId: string,
-    groups: Record<string, string> = {},
+    groups: Record<string, string | number> = {},
     personProperties: Record<string, string> = {},
     groupProperties: Record<string, Record<string, string>> = {},
     extraPayload: Record<string, any> = {}
@@ -279,7 +293,7 @@ export abstract class PostHogCoreStateless {
 
   async getFeatureFlagsStateless(
     distinctId: string,
-    groups: Record<string, string> = {},
+    groups: Record<string, string | number> = {},
     personProperties: Record<string, string> = {},
     groupProperties: Record<string, Record<string, string>> = {}
   ): Promise<PostHogDecideResponse['featureFlags'] | undefined> {
@@ -288,7 +302,7 @@ export abstract class PostHogCoreStateless {
 
   async getFeatureFlagsAndPayloadsStateless(
     distinctId: string,
-    groups: Record<string, string> = {},
+    groups: Record<string, string | number> = {},
     personProperties: Record<string, string> = {},
     groupProperties: Record<string, Record<string, string>> = {}
   ): Promise<{
@@ -310,6 +324,11 @@ export abstract class PostHogCoreStateless {
    *** QUEUEING AND FLUSHING
    ***/
   protected enqueue(type: string, _message: any, options?: PosthogCaptureOptions): void {
+    if (this.optedOut) {
+      this._events.emit(type, `Library is disabled. Not sending event. To re-enable, call posthog.enable()`)
+      return
+    }
+
     const message = {
       ..._message,
       type: type,
@@ -322,8 +341,6 @@ export abstract class PostHogCoreStateless {
       message.distinct_id = message.distinctId
       delete message.distinctId
     }
-
-    // TODO: check why this isn't flushed properly....
 
     const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
 
@@ -462,14 +479,10 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   protected _decideResponsePromise?: Promise<PostHogDecideResponse | undefined> // TODO: come back to this, fix typing
   protected _sessionExpirationTimeSeconds: number
 
-  private _optoutOverride: boolean | undefined
-
   constructor(apiKey: string, options?: PosthogCoreOptions) {
     super(apiKey, options)
 
     this.sendFeatureFlagEvent = options?.sendFeatureFlagEvent ?? true
-    // If enable is explicitly set to false we override the optout
-    this._optoutOverride = options?.enable === false
     this._sessionExpirationTimeSeconds = options?.sessionExpirationTimeSeconds ?? 1800 // 30 minutes
 
     // NOTE: It is important we don't initiate anything in the constructor as some async IO may still be underway on the parent
@@ -520,18 +533,6 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   }
 
   private _props: PostHogEventProperties | undefined
-
-  public get optedOut(): boolean {
-    return this.getPersistedProperty(PostHogPersistedProperty.OptedOut) ?? this._optoutOverride ?? false
-  }
-
-  optIn(): void {
-    this.setPersistedProperty(PostHogPersistedProperty.OptedOut, false)
-  }
-
-  optOut(): void {
-    this.setPersistedProperty(PostHogPersistedProperty.OptedOut, true)
-  }
 
   on(event: string, cb: (...args: any[]) => void): () => void {
     return this._events.on(event, cb)
