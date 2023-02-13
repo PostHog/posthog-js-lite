@@ -96,7 +96,6 @@ export class PostHog implements PostHogNodeV1 {
   }
 
   capture({ distinctId, event, properties, groups, sendFeatureFlags, timestamp }: EventMessageV1): void {
-    
     const _capture = (props: EventMessageV1['properties']): void => {
       this._sharedClient.captureStateless(distinctId, event, props, { timestamp })
     }
@@ -113,10 +112,10 @@ export class PostHog implements PostHogNodeV1 {
           $active_feature_flags: flags ? Object.keys(flags) : undefined,
           ...featureVariantProperties,
         }
-        _capture({...properties, $groups: groups, ...flagProperties})
+        _capture({ ...properties, $groups: groups, ...flagProperties })
       })
     } else {
-      _capture({...properties, $groups: groups})
+      _capture({ ...properties, $groups: groups })
     }
   }
 
@@ -161,7 +160,13 @@ export class PostHog implements PostHogNodeV1 {
     const flagWasLocallyEvaluated = response !== undefined
 
     if (!flagWasLocallyEvaluated && !onlyEvaluateLocally) {
-      response = await this._sharedClient.getFeatureFlagStateless(key, distinctId, groups, personProperties, groupProperties)
+      response = await this._sharedClient.getFeatureFlagStateless(
+        key,
+        distinctId,
+        groups,
+        personProperties,
+        groupProperties
+      )
     }
 
     const featureFlagReportedKey = `${key}_${response}`
@@ -237,7 +242,13 @@ export class PostHog implements PostHogNodeV1 {
     const payloadWasLocallyEvaluated = response !== undefined
 
     if (!payloadWasLocallyEvaluated && !onlyEvaluateLocally) {
-      response = await this._sharedClient.getFeatureFlagPayloadStateless(key, distinctId, groups, personProperties, groupProperties)
+      response = await this._sharedClient.getFeatureFlagPayloadStateless(
+        key,
+        distinctId,
+        groups,
+        personProperties,
+        groupProperties
+      )
     }
 
     try {
@@ -312,7 +323,12 @@ export class PostHog implements PostHogNodeV1 {
     }
 
     if (fallbackToDecide && !onlyEvaluateLocally) {
-      const remoteEvaluationResult = await this._sharedClient.getFeatureFlagsAndPayloadsStateless(distinctId, groups, personProperties, groupProperties)
+      const remoteEvaluationResult = await this._sharedClient.getFeatureFlagsAndPayloadsStateless(
+        distinctId,
+        groups,
+        personProperties,
+        groupProperties
+      )
       featureFlags = {
         ...featureFlags,
         ...(remoteEvaluationResult.flags || {}),
