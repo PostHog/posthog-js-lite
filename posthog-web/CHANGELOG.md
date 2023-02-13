@@ -1,3 +1,7 @@
+# 2.2.1 - 2023-02-13
+
+1. Fixes an issue where background network errors would trigger unhandled promise warnings
+
 # 2.2.0 - 2023-02-02
 
 1. Adds support for overriding timestamp of capture events
