@@ -107,10 +107,10 @@ describe('PostHog Core', () => {
           body: JSON.stringify({
             token: 'TEST_API_KEY',
             distinct_id: posthog.getDistinctId(),
-            $anon_distinct_id: posthog.getAnonymousId(),
             groups: {},
             person_properties: {},
             group_properties: {},
+            $anon_distinct_id: posthog.getAnonymousId(),
           }),
           method: 'POST',
           headers: {
@@ -179,10 +179,10 @@ describe('PostHog Core', () => {
             body: JSON.stringify({
               token: 'TEST_API_KEY',
               distinct_id: posthog.getDistinctId(),
-              $anon_distinct_id: posthog.getAnonymousId(),
               groups: {},
               person_properties: {},
               group_properties: {},
+              $anon_distinct_id: posthog.getAnonymousId(),
             }),
             method: 'POST',
             headers: {
@@ -249,10 +249,10 @@ describe('PostHog Core', () => {
             body: JSON.stringify({
               token: 'TEST_API_KEY',
               distinct_id: posthog.getDistinctId(),
-              $anon_distinct_id: posthog.getAnonymousId(),
               groups: {},
               person_properties: {},
               group_properties: {},
+              $anon_distinct_id: posthog.getAnonymousId(),
             }),
             method: 'POST',
             headers: {
@@ -275,10 +275,10 @@ describe('PostHog Core', () => {
             body: JSON.stringify({
               token: 'TEST_API_KEY',
               distinct_id: posthog.getDistinctId(),
-              $anon_distinct_id: posthog.getAnonymousId(),
               groups: {},
               person_properties: {},
               group_properties: {},
+              $anon_distinct_id: posthog.getAnonymousId(),
             }),
             method: 'POST',
             headers: {
@@ -352,10 +352,10 @@ describe('PostHog Core', () => {
             body: JSON.stringify({
               token: 'TEST_API_KEY',
               distinct_id: posthog.getDistinctId(),
-              $anon_distinct_id: posthog.getAnonymousId(),
               groups: {},
               person_properties: {},
               group_properties: {},
+              $anon_distinct_id: posthog.getAnonymousId(),
             }),
             method: 'POST',
             headers: {
@@ -378,10 +378,10 @@ describe('PostHog Core', () => {
             body: JSON.stringify({
               token: 'TEST_API_KEY',
               distinct_id: posthog.getDistinctId(),
-              $anon_distinct_id: posthog.getAnonymousId(),
               groups: {},
               person_properties: {},
               group_properties: {},
+              $anon_distinct_id: posthog.getAnonymousId(),
             }),
             method: 'POST',
             headers: {
@@ -565,10 +565,10 @@ describe('PostHog Core', () => {
           body: JSON.stringify({
             token: 'TEST_API_KEY',
             distinct_id: posthog.getDistinctId(),
-            $anon_distinct_id: 'tomato',
             groups: {},
             person_properties: {},
             group_properties: {},
+            $anon_distinct_id: 'tomato',
           }),
           method: 'POST',
           headers: {
@@ -590,10 +590,10 @@ describe('PostHog Core', () => {
           body: JSON.stringify({
             token: 'TEST_API_KEY',
             distinct_id: posthog.getDistinctId(),
-            $anon_distinct_id: 'tomato',
             groups: {},
             person_properties: {},
             group_properties: {},
+            $anon_distinct_id: 'tomato',
           }),
           method: 'POST',
           headers: {
