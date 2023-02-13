@@ -26,15 +26,15 @@ describe('PostHog Core', () => {
             distinct_id: posthog.getDistinctId(),
             library: 'posthog-core-tests',
             library_version: '2.0.0-alpha',
-            $set: {
-              foo: 'bar',
-            },
             properties: {
               $lib: 'posthog-core-tests',
               $lib_version: '2.0.0-alpha',
               foo: 'bar',
               $anon_distinct_id: expect.any(String),
               $session_id: expect.any(String),
+              $set: {
+                foo: 'bar',
+              },
             },
             timestamp: '2022-01-01T00:00:00.000Z',
             type: 'identify',
