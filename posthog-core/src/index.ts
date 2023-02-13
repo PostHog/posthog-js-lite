@@ -50,7 +50,6 @@ export abstract class PostHogCoreStateless {
   abstract getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined
   abstract setPersistedProperty<T>(key: PostHogPersistedProperty, value: T | null): void
 
-
   constructor(apiKey: string, options?: PosthogCoreOptions) {
     assert(apiKey, "You must pass your PostHog project's api key.")
 
@@ -74,11 +73,9 @@ export abstract class PostHogCoreStateless {
     }
   }
 
-
   on(event: string, cb: (...args: any[]) => void): () => void {
     return this._events.on(event, cb)
   }
-
 
   debug(enabled: boolean = true): void {
     this.removeDebugCallback?.()
@@ -88,7 +85,7 @@ export abstract class PostHogCoreStateless {
     }
   }
 
-  private buildPayload(payload: { distinct_id: string; event: string; properties?: PostHogEventProperties; }): any {
+  private buildPayload(payload: { distinct_id: string; event: string; properties?: PostHogEventProperties }): any {
     return {
       distinct_id: payload.distinct_id,
       event: payload.event,
@@ -99,12 +96,10 @@ export abstract class PostHogCoreStateless {
     }
   }
 
-
   /***
    *** TRACKING
    ***/
   identifyStateless(distinctId: string, properties?: PostHogEventProperties, options?: PosthogCaptureOptions): this {
-
     // This identify doesn't add anything to set, you have to do it yourself!
     const payload = {
       ...this.buildPayload({
@@ -118,10 +113,15 @@ export abstract class PostHogCoreStateless {
     return this
   }
 
-  captureStateless(distinctId: string, event: string, properties?: { [key: string]: any }, options?: PosthogCaptureOptions): this {
+  captureStateless(
+    distinctId: string,
+    event: string,
+    properties?: { [key: string]: any },
+    options?: PosthogCaptureOptions
+  ): this {
     // TODO: consider making $groups a top level param??.
     console.log('stateless capture call!')
-    
+
     const payload = this.buildPayload({ distinct_id: distinctId, event, properties })
     this.enqueue('capture', payload, options)
 
@@ -129,7 +129,6 @@ export abstract class PostHogCoreStateless {
   }
 
   aliasStateless(alias: string, distinctId: string, properties?: { [key: string]: any }): this {
-
     const payload = this.buildPayload({
       event: '$create_alias',
       distinct_id: distinctId,
@@ -170,38 +169,48 @@ export abstract class PostHogCoreStateless {
     return this
   }
 
-
   /***
    *** FEATURE FLAGS
    ***/
 
-  protected async getDecide(distinctId: string, groups: Record<string, string> = {}, personProperties: Record<string, string> = {}, groupProperties: Record<string, Record<string, string>> = {},
-    extraPayload: Record<string, any> = {}): Promise<PostHogDecideResponse | undefined> {  
-      const url = `${this.host}/decide/?v=3`
-      const fetchOptions: PostHogFetchOptions = {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          token: this.apiKey,
-          distinct_id: distinctId,
-          groups,
-          person_properties: personProperties,
-          group_properties: groupProperties,
-          ...extraPayload,
-        }),
-      }
-      return this.fetchWithRetry(url, fetchOptions)
-        .then((response) => response.json() as Promise<PostHogDecideResponse>)
-        .catch((error) => {
-          console.error('Error fetching feature flags', error)
-          return undefined
-        })
+  protected async getDecide(
+    distinctId: string,
+    groups: Record<string, string> = {},
+    personProperties: Record<string, string> = {},
+    groupProperties: Record<string, Record<string, string>> = {},
+    extraPayload: Record<string, any> = {}
+  ): Promise<PostHogDecideResponse | undefined> {
+    const url = `${this.host}/decide/?v=3`
+    const fetchOptions: PostHogFetchOptions = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token: this.apiKey,
+        distinct_id: distinctId,
+        groups,
+        person_properties: personProperties,
+        group_properties: groupProperties,
+        ...extraPayload,
+      }),
+    }
+    return this.fetchWithRetry(url, fetchOptions)
+      .then((response) => response.json() as Promise<PostHogDecideResponse>)
+      .catch((error) => {
+        console.error('Error fetching feature flags', error)
+        return undefined
+      })
   }
-  
+
   // Probably the core shouldn't implement getFeatureFlag, because it's a responsibility of the inheritor to determine what to do around this?
   // like sending feature_flag_called events.
   // and async vs non-async in stateful core
-  async getFeatureFlagStateless(key: string, distinctId: string, groups: Record<string, string> = {}, personProperties: Record<string, string> = {}, groupProperties: Record<string, Record<string, string>> = {}): Promise<boolean | string | undefined> {
+  async getFeatureFlagStateless(
+    key: string,
+    distinctId: string,
+    groups: Record<string, string> = {},
+    personProperties: Record<string, string> = {},
+    groupProperties: Record<string, Record<string, string>> = {}
+  ): Promise<boolean | string | undefined> {
     const featureFlags = await this.getFeatureFlagsStateless(distinctId, groups, personProperties, groupProperties)
 
     if (!featureFlags) {
@@ -221,7 +230,13 @@ export abstract class PostHogCoreStateless {
     return response
   }
 
-  async getFeatureFlagPayloadStateless(key: string, distinctId: string, groups: Record<string, string> = {}, personProperties: Record<string, string> = {}, groupProperties: Record<string, Record<string, string>> = {}): Promise<JsonType | undefined> {
+  async getFeatureFlagPayloadStateless(
+    key: string,
+    distinctId: string,
+    groups: Record<string, string> = {},
+    personProperties: Record<string, string> = {},
+    groupProperties: Record<string, Record<string, string>> = {}
+  ): Promise<JsonType | undefined> {
     const payloads = await this.getFeatureFlagPayloadsStateless(distinctId, groups, personProperties, groupProperties)
 
     if (!payloads) {
@@ -238,8 +253,15 @@ export abstract class PostHogCoreStateless {
     return this._parsePayload(response)
   }
 
-  async getFeatureFlagPayloadsStateless(distinctId: string, groups: Record<string, string> = {}, personProperties: Record<string, string> = {}, groupProperties: Record<string, Record<string, string>> = {}): Promise<PostHogDecideResponse['featureFlagPayloads'] | undefined> {
-    const payloads = (await this.getFeatureFlagsAndPayloadsStateless(distinctId, groups, personProperties, groupProperties)).payloads
+  async getFeatureFlagPayloadsStateless(
+    distinctId: string,
+    groups: Record<string, string> = {},
+    personProperties: Record<string, string> = {},
+    groupProperties: Record<string, Record<string, string>> = {}
+  ): Promise<PostHogDecideResponse['featureFlagPayloads'] | undefined> {
+    const payloads = (
+      await this.getFeatureFlagsAndPayloadsStateless(distinctId, groups, personProperties, groupProperties)
+    ).payloads
 
     if (payloads) {
       return Object.fromEntries(Object.entries(payloads).map(([k, v]) => [k, this._parsePayload(v)]))
@@ -255,11 +277,21 @@ export abstract class PostHogCoreStateless {
     }
   }
 
-  async getFeatureFlagsStateless(distinctId: string, groups: Record<string, string> = {}, personProperties: Record<string, string> = {}, groupProperties: Record<string, Record<string, string>> = {}): Promise<PostHogDecideResponse['featureFlags'] | undefined> {
+  async getFeatureFlagsStateless(
+    distinctId: string,
+    groups: Record<string, string> = {},
+    personProperties: Record<string, string> = {},
+    groupProperties: Record<string, Record<string, string>> = {}
+  ): Promise<PostHogDecideResponse['featureFlags'] | undefined> {
     return (await this.getFeatureFlagsAndPayloadsStateless(distinctId, groups, personProperties, groupProperties)).flags
   }
 
-  async getFeatureFlagsAndPayloadsStateless(distinctId: string, groups: Record<string, string> = {}, personProperties: Record<string, string> = {}, groupProperties: Record<string, Record<string, string>> = {}): Promise<{
+  async getFeatureFlagsAndPayloadsStateless(
+    distinctId: string,
+    groups: Record<string, string> = {},
+    personProperties: Record<string, string> = {},
+    groupProperties: Record<string, Record<string, string>> = {}
+  ): Promise<{
     flags: PostHogDecideResponse['featureFlags'] | undefined
     payloads: PostHogDecideResponse['featureFlagPayloads'] | undefined
   }> {
@@ -278,7 +310,6 @@ export abstract class PostHogCoreStateless {
    *** QUEUEING AND FLUSHING
    ***/
   protected enqueue(type: string, _message: any, options?: PosthogCaptureOptions): void {
-
     const message = {
       ..._message,
       type: type,
@@ -320,7 +351,6 @@ export abstract class PostHogCoreStateless {
   }
 
   flush(callback?: (err?: any, data?: any) => void): void {
-
     if (this._flushTimer) {
       clearTimeout(this._flushTimer)
       this._flushTimer = null
@@ -423,9 +453,8 @@ export abstract class PostHogCoreStateless {
   }
 }
 
-
 export abstract class PostHogCore extends PostHogCoreStateless {
-  // options  
+  // options
   private sendFeatureFlagEvent: boolean
   private flagCallReported: { [key: string]: boolean } = {}
 
@@ -521,10 +550,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     }
   }
 
-
-
   protected getCommonEventProperties(): any {
-
     const featureFlags = this.getFeatureFlags()
 
     const featureVariantProperties: Record<string, string | boolean> = {}
@@ -542,10 +568,10 @@ export abstract class PostHogCore extends PostHogCoreStateless {
 
   private enrichProperties(properties?: PostHogEventProperties): any {
     return {
-        ...this.props, // Persisted properties first
-        ...(properties || {}), // Followed by user specified properties
-        ...this.getCommonEventProperties(), // Followed by FF props
-        $session_id: this.getSessionId(),
+      ...this.props, // Persisted properties first
+      ...(properties || {}), // Followed by user specified properties
+      ...this.getCommonEventProperties(), // Followed by FF props
+      $session_id: this.getSessionId(),
     }
   }
 
@@ -599,7 +625,6 @@ export abstract class PostHogCore extends PostHogCoreStateless {
    *** TRACKING
    ***/
   identify(distinctId?: string, properties?: PostHogEventProperties, options?: PosthogCaptureOptions): this {
-
     if (this.checkForOptOut()) {
       return this
     }
@@ -612,9 +637,9 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     }
 
     const allProperties = this.enrichProperties({
-        ...properties,
-        $anon_distinct_id: this.getAnonymousId(),
-        $set: properties,
+      ...properties,
+      $anon_distinct_id: this.getAnonymousId(),
+      $set: properties,
     })
 
     if (distinctId !== previousDistinctId) {
@@ -636,7 +661,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     if (this.checkForOptOut()) {
       return this
     }
-    
+
     const distinctId = this.getDistinctId()
 
     if (properties?.$groups) {
@@ -654,7 +679,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     if (this.checkForOptOut()) {
       return this
     }
-    
+
     const distinctId = this.getDistinctId()
 
     const allProperties = this.enrichProperties({})
@@ -672,7 +697,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     if (this.checkForOptOut()) {
       return this
     }
-    
+
     const distinctId = this.getDistinctId()
     const payload = {
       distinct_id: distinctId,
@@ -736,7 +761,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     if (this.checkForOptOut()) {
       return this
     }
-    
+
     const distinctId = this.getDistinctId()
 
     const eventProperties = this.enrichProperties({})
@@ -805,8 +830,9 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     const extraProperties = {
       $anon_distinct_id: sendAnonDistinctId ? this.getAnonymousId() : undefined,
     }
-    
-    this._decideResponsePromise = super.getDecide(distinctId, groups, personProperties, groupProperties, extraProperties)
+
+    this._decideResponsePromise = super
+      .getDecide(distinctId, groups, personProperties, groupProperties, extraProperties)
       .then((res) => {
         if (res?.featureFlags) {
           let newFeatureFlags = res.featureFlags
@@ -962,7 +988,9 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       })
   }
 
-  async reloadFeatureFlagsAsync(sendAnonDistinctId: boolean = true): Promise<PostHogDecideResponse['featureFlags'] | undefined> {
+  async reloadFeatureFlagsAsync(
+    sendAnonDistinctId: boolean = true
+  ): Promise<PostHogDecideResponse['featureFlags'] | undefined> {
     return (await this.decideAsync(sendAnonDistinctId))?.featureFlags
   }
 
@@ -990,7 +1018,6 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     }
     return this.setPersistedProperty(PostHogPersistedProperty.OverrideFeatureFlags, flags)
   }
-
 }
 
 export * from './types'
