@@ -599,10 +599,17 @@ export abstract class PostHogCore {
   }
 
   // Used when we want to trigger the reload but we don't care about the result
-  reloadFeatureFlags(): void {
-    this.decideAsync().catch((e) => {
-      console.log('[PostHog] Error reloading feature flags', e)
-    })
+  reloadFeatureFlags(cb?: (err?: Error, flags?: PostHogDecideResponse['featureFlags']) => void): void {
+    this.decideAsync()
+      .then((res) => {
+        cb?.(undefined, res.featureFlags)
+      })
+      .catch((e) => {
+        cb?.(e, undefined)
+        if (!cb) {
+          console.log('[PostHog] Error reloading feature flags', e)
+        }
+      })
   }
 
   onFeatureFlags(cb: (flags: PostHogDecideResponse['featureFlags']) => void): () => void {
