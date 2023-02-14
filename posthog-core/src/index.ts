@@ -116,7 +116,11 @@ export abstract class PostHogCoreStateless {
   /***
    *** TRACKING
    ***/
-  identifyStateless(distinctId: string, properties?: PostHogEventProperties, options?: PosthogCaptureOptions): this {
+  protected identifyStateless(
+    distinctId: string,
+    properties?: PostHogEventProperties,
+    options?: PosthogCaptureOptions
+  ): this {
     // This identify doesn't add anything to set, you have to do it yourself!
     const payload = {
       ...this.buildPayload({
@@ -130,7 +134,7 @@ export abstract class PostHogCoreStateless {
     return this
   }
 
-  captureStateless(
+  protected captureStateless(
     distinctId: string,
     event: string,
     properties?: { [key: string]: any },
@@ -142,7 +146,7 @@ export abstract class PostHogCoreStateless {
     return this
   }
 
-  aliasStateless(alias: string, distinctId: string, properties?: { [key: string]: any }): this {
+  protected aliasStateless(alias: string, distinctId: string, properties?: { [key: string]: any }): this {
     const payload = this.buildPayload({
       event: '$create_alias',
       distinct_id: distinctId,
@@ -160,7 +164,7 @@ export abstract class PostHogCoreStateless {
   /***
    *** GROUPS
    ***/
-  groupIdentifyStateless(
+  protected groupIdentifyStateless(
     groupType: string,
     groupKey: string | number,
     groupProperties?: PostHogEventProperties,
@@ -218,7 +222,7 @@ export abstract class PostHogCoreStateless {
   // Probably the core shouldn't implement getFeatureFlag, because it's a responsibility of the inheritor to determine what to do around this?
   // like sending feature_flag_called events.
   // and async vs non-async in stateful core
-  async getFeatureFlagStateless(
+  protected async getFeatureFlagStateless(
     key: string,
     distinctId: string,
     groups: Record<string, string> = {},
@@ -244,7 +248,7 @@ export abstract class PostHogCoreStateless {
     return response
   }
 
-  async getFeatureFlagPayloadStateless(
+  protected async getFeatureFlagPayloadStateless(
     key: string,
     distinctId: string,
     groups: Record<string, string> = {},
@@ -267,7 +271,7 @@ export abstract class PostHogCoreStateless {
     return this._parsePayload(response)
   }
 
-  async getFeatureFlagPayloadsStateless(
+  protected async getFeatureFlagPayloadsStateless(
     distinctId: string,
     groups: Record<string, string> = {},
     personProperties: Record<string, string> = {},
@@ -283,7 +287,7 @@ export abstract class PostHogCoreStateless {
     return payloads
   }
 
-  _parsePayload(response: any): any {
+  protected _parsePayload(response: any): any {
     try {
       return JSON.parse(response)
     } catch {
@@ -291,7 +295,7 @@ export abstract class PostHogCoreStateless {
     }
   }
 
-  async getFeatureFlagsStateless(
+  protected async getFeatureFlagsStateless(
     distinctId: string,
     groups: Record<string, string | number> = {},
     personProperties: Record<string, string> = {},
@@ -300,7 +304,7 @@ export abstract class PostHogCoreStateless {
     return (await this.getFeatureFlagsAndPayloadsStateless(distinctId, groups, personProperties, groupProperties)).flags
   }
 
-  async getFeatureFlagsAndPayloadsStateless(
+  protected async getFeatureFlagsAndPayloadsStateless(
     distinctId: string,
     groups: Record<string, string | number> = {},
     personProperties: Record<string, string> = {},
