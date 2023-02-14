@@ -199,9 +199,6 @@ export abstract class PostHogCoreStateless {
       })
   }
 
-  // Probably the core shouldn't implement getFeatureFlag, because it's a responsibility of the inheritor to determine what to do around this?
-  // like sending feature_flag_called events.
-  // and async vs non-async in stateful core
   async getFeatureFlagStateless(
     key: string,
     distinctId: string,
