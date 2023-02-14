@@ -99,7 +99,9 @@ export abstract class PostHogCoreStateless {
    *** TRACKING
    ***/
   identifyStateless(distinctId: string, properties?: PostHogEventProperties, options?: PosthogCaptureOptions): this {
-    // This identify doesn't add anything to set, you have to do it yourself!
+    // The properties passed to identifyStateless are event properties.
+    // To add person properties, pass in all person properties to the `$set` key.
+
     const payload = {
       ...this.buildPayload({
         distinct_id: distinctId,
@@ -318,8 +320,6 @@ export abstract class PostHogCoreStateless {
       message.distinct_id = message.distinctId
       delete message.distinctId
     }
-
-    // TODO: check why this isn't flushed properly....
 
     const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
 
