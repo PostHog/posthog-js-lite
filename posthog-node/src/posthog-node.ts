@@ -29,37 +29,6 @@ export type PostHogOptions = PosthogCoreOptions & {
 const THIRTY_SECONDS = 30 * 1000
 const MAX_CACHE_SIZE = 50 * 1000
 
-class PostHogClient extends PostHogCoreStateless {
-  private _memoryStorage = new PostHogMemoryStorage()
-
-  constructor(apiKey: string, private options: PostHogOptions = {}) {
-    options.captureMode = options?.captureMode || 'json'
-    super(apiKey, options)
-  }
-
-  getPersistedProperty(key: PostHogPersistedProperty): any | undefined {
-    return this._memoryStorage.getProperty(key)
-  }
-
-  setPersistedProperty(key: PostHogPersistedProperty, value: any | null): void {
-    return this._memoryStorage.setProperty(key, value)
-  }
-
-  fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
-    return this.options.fetch ? this.options.fetch(url, options) : fetch(url, options)
-  }
-
-  getLibraryId(): string {
-    return 'posthog-node'
-  }
-  getLibraryVersion(): string {
-    return version
-  }
-  getCustomUserAgent(): string {
-    return `posthog-node/${version}`
-  }
-}
-
 // The actual exported Nodejs API.
 export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
   private _memoryStorage = new PostHogMemoryStorage()
