@@ -3,7 +3,7 @@ import { PostHog as PostHog } from '../src/posthog-node'
 jest.mock('../src/fetch')
 import { fetch } from '../src/fetch'
 import { anyDecideCall, anyLocalEvalCall, apiImplementation } from './feature-flags.spec'
-import { waitForPromises, wait } from '../../posthog-core/test/test-utils/test-utils'
+import { waitForPromises } from '../../posthog-core/test/test-utils/test-utils'
 
 jest.mock('../package.json', () => ({ version: '1.2.3' }))
 
@@ -27,22 +27,16 @@ describe('PostHog Node.js', () => {
   beforeEach(() => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
-      // flushAt: 2,
-      // flushInterval: 400,
     })
 
-    mockedFetch.mockImplementation(async () => {
-      await wait(500)
-
-      return Promise.resolve({
-        status: 200,
-        text: () => Promise.resolve('ok'),
-        json: () =>
-          Promise.resolve({
-            status: 'ok',
-          }),
-      } as any)
-    })
+    mockedFetch.mockResolvedValue({
+      status: 200,
+      text: () => Promise.resolve('ok'),
+      json: () =>
+        Promise.resolve({
+          status: 'ok',
+        }),
+    } as any)
   })
 
   afterEach(async () => {
@@ -67,21 +61,6 @@ describe('PostHog Node.js', () => {
           },
         },
       ])
-    })
-
-    it('should shutdown cleanly', async () => {
-      // set flushAt, which will trigger flush, and log after shutdown, very wrong/sad.
-      jest.useRealTimers()
-      posthog.debug(true)
-      posthog.capture({ distinctId: '123', event: 'test-event', properties: { foo: 'bar' }, groups: { org: 123 } })
-      posthog.capture({ distinctId: '123', event: 'test-event', properties: { foo: 'bar' }, groups: { org: 123 } })
-
-      console.log('PH: Starting shutdown')
-      await posthog.shutdownAsync()
-      console.log('PH: Shutdown finished')
-      jest.useFakeTimers()
-      posthog.debug(false)
-      // expect(true).toEqual(false)
     })
 
     it('shouldnt muddy subsequent capture calls', async () => {
