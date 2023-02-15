@@ -616,18 +616,10 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.Props, this.props)
   }
 
-  private checkForOptOut(): boolean {
-    return this.optedOut
-  }
-
   /***
    *** TRACKING
    ***/
   identify(distinctId?: string, properties?: PostHogEventProperties, options?: PosthogCaptureOptions): this {
-    if (this.checkForOptOut()) {
-      return this
-    }
-
     const previousDistinctId = this.getDistinctId()
     distinctId = distinctId || previousDistinctId
 
@@ -657,10 +649,6 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   }
 
   capture(event: string, properties?: { [key: string]: any }, options?: PosthogCaptureOptions): this {
-    if (this.checkForOptOut()) {
-      return this
-    }
-
     const distinctId = this.getDistinctId()
 
     if (properties?.$groups) {
@@ -675,10 +663,6 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   }
 
   alias(alias: string): this {
-    if (this.checkForOptOut()) {
-      return this
-    }
-
     const distinctId = this.getDistinctId()
 
     const allProperties = this.enrichProperties({})
@@ -693,10 +677,6 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     properties: PostHogEventProperties = {},
     options?: PosthogCaptureOptions
   ): this {
-    if (this.checkForOptOut()) {
-      return this
-    }
-
     const distinctId = this.getDistinctId()
     const payload = {
       distinct_id: distinctId,
@@ -757,10 +737,6 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     groupProperties?: PostHogEventProperties,
     options?: PosthogCaptureOptions
   ): this {
-    if (this.checkForOptOut()) {
-      return this
-    }
-
     const distinctId = this.getDistinctId()
 
     const eventProperties = this.enrichProperties({})
