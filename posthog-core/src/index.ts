@@ -39,7 +39,6 @@ export abstract class PostHogCoreStateless {
   // internal
   protected _events = new SimpleEventEmitter()
   protected _flushTimer?: any
-  // protected _decideResponsePromise?: Promise<PostHogDecideResponse>
   protected _retryOptions: RetriableOptions
 
   // Abstract methods to be overridden by implementations
@@ -116,12 +115,10 @@ export abstract class PostHogCoreStateless {
   /***
    *** TRACKING
    ***/
-  protected identifyStateless(
-    distinctId: string,
-    properties?: PostHogEventProperties,
-    options?: PosthogCaptureOptions
-  ): this {
-    // This identify doesn't add anything to set, you have to do it yourself!
+  protected identifyStateless(distinctId: string, properties?: PostHogEventProperties, options?: PosthogCaptureOptions): this {
+    // The properties passed to identifyStateless are event properties.
+    // To add person properties, pass in all person properties to the `$set` key.
+
     const payload = {
       ...this.buildPayload({
         distinct_id: distinctId,
@@ -219,9 +216,6 @@ export abstract class PostHogCoreStateless {
       })
   }
 
-  // Probably the core shouldn't implement getFeatureFlag, because it's a responsibility of the inheritor to determine what to do around this?
-  // like sending feature_flag_called events.
-  // and async vs non-async in stateful core
   protected async getFeatureFlagStateless(
     key: string,
     distinctId: string,
