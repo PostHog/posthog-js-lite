@@ -1,6 +1,7 @@
 # 2.5.0 - 2023-02-15
 
 1. Removes shared client from `posthog-node`, getting rid of some race condition bugs when capturing events.
+2. Sets minimum version of node.js to 15
 # 2.4.0 - 2023-02-02
 
 1. Adds support for overriding timestamp of capture events
