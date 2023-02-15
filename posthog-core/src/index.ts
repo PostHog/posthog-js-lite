@@ -115,7 +115,11 @@ export abstract class PostHogCoreStateless {
   /***
    *** TRACKING
    ***/
-  protected identifyStateless(distinctId: string, properties?: PostHogEventProperties, options?: PosthogCaptureOptions): this {
+  protected identifyStateless(
+    distinctId: string,
+    properties?: PostHogEventProperties,
+    options?: PosthogCaptureOptions
+  ): this {
     // The properties passed to identifyStateless are event properties.
     // To add person properties, pass in all person properties to the `$set` key.
 
