@@ -2,8 +2,8 @@ import { version } from '../package.json'
 
 import {
   JsonType,
-  PostHogCore,
   PosthogCoreOptions,
+  PostHogCoreStateless,
   PostHogFetchOptions,
   PostHogFetchResponse,
   PosthogFlagsAndPayloadsResponse,
@@ -29,15 +29,37 @@ export type PostHogOptions = PosthogCoreOptions & {
 const THIRTY_SECONDS = 30 * 1000
 const MAX_CACHE_SIZE = 50 * 1000
 
-class PostHogClient extends PostHogCore {
+// The actual exported Nodejs API.
+export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
   private _memoryStorage = new PostHogMemoryStorage()
 
-  constructor(apiKey: string, private options: PostHogOptions = {}) {
-    options.captureMode = options?.captureMode || 'json'
-    options.preloadFeatureFlags = false // Don't preload as this makes no sense without a distinctId
-    options.sendFeatureFlagEvent = false // Let `posthog-node` handle this on its own, since we're dealing with multiple distinctIDs
+  private featureFlagsPoller?: FeatureFlagsPoller
+  private maxCacheSize: number
+  private options: PostHogOptions
 
+  distinctIdHasSentFlagCalls: Record<string, string[]>
+
+  constructor(apiKey: string, options: PostHogOptions = {}) {
+    options.captureMode = options?.captureMode || 'json'
     super(apiKey, options)
+
+    this.options = options
+
+    if (options.personalApiKey) {
+      this.featureFlagsPoller = new FeatureFlagsPoller({
+        pollingInterval:
+          typeof options.featureFlagsPollingInterval === 'number'
+            ? options.featureFlagsPollingInterval
+            : THIRTY_SECONDS,
+        personalApiKey: options.personalApiKey,
+        projectApiKey: apiKey,
+        timeout: options.requestTimeout ?? 10000, // 10 seconds
+        host: this.host,
+        fetch: options.fetch,
+      })
+    }
+    this.distinctIdHasSentFlagCalls = {}
+    this.maxCacheSize = options.maxCacheSize || MAX_CACHE_SIZE
   }
 
   getPersistedProperty(key: PostHogPersistedProperty): any | undefined {
@@ -46,11 +68,6 @@ class PostHogClient extends PostHogCore {
 
   setPersistedProperty(key: PostHogPersistedProperty, value: any | null): void {
     return this._memoryStorage.setProperty(key, value)
-  }
-
-  getSessionId(): string | undefined {
-    // Sessions don't make sense for Node
-    return undefined
   }
 
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
@@ -66,76 +83,45 @@ class PostHogClient extends PostHogCore {
   getCustomUserAgent(): string {
     return `posthog-node/${version}`
   }
-}
-
-// The actual exported Nodejs API.
-export class PostHog implements PostHogNodeV1 {
-  private _sharedClient: PostHogClient
-  private featureFlagsPoller?: FeatureFlagsPoller
-  private maxCacheSize: number
-
-  distinctIdHasSentFlagCalls: Record<string, string[]>
-
-  constructor(apiKey: string, options: PostHogOptions = {}) {
-    this._sharedClient = new PostHogClient(apiKey, options)
-    if (options.personalApiKey) {
-      this.featureFlagsPoller = new FeatureFlagsPoller({
-        pollingInterval:
-          typeof options.featureFlagsPollingInterval === 'number'
-            ? options.featureFlagsPollingInterval
-            : THIRTY_SECONDS,
-        personalApiKey: options.personalApiKey,
-        projectApiKey: apiKey,
-        timeout: options.requestTimeout ?? 10000, // 10 seconds
-        host: this._sharedClient.host,
-        fetch: options.fetch,
-      })
-    }
-    this.distinctIdHasSentFlagCalls = {}
-    this.maxCacheSize = options.maxCacheSize || MAX_CACHE_SIZE
-  }
-
-  private reInit(distinctId: string): void {
-    // Certain properties we want to persist. Queue is persisted always by default.
-    this._sharedClient.reset([PostHogPersistedProperty.OptedOut])
-    this._sharedClient.setPersistedProperty(PostHogPersistedProperty.DistinctId, distinctId)
-  }
 
   enable(): void {
-    return this._sharedClient.optIn()
+    return super.optIn()
   }
 
   disable(): void {
-    return this._sharedClient.optOut()
+    return super.optOut()
   }
 
   capture({ distinctId, event, properties, groups, sendFeatureFlags, timestamp }: EventMessageV1): void {
-    this.reInit(distinctId)
-    if (groups) {
-      this._sharedClient.groups(groups)
-    }
-
-    const _capture = (): void => {
-      this._sharedClient.capture(event, properties, { timestamp })
+    const _capture = (props: EventMessageV1['properties']): void => {
+      super.captureStateless(distinctId, event, props, { timestamp })
     }
 
     if (sendFeatureFlags) {
-      this._sharedClient.reloadFeatureFlagsAsync(false).finally(() => {
-        _capture()
+      super.getFeatureFlagsStateless(distinctId, groups).then((flags) => {
+        const featureVariantProperties: Record<string, string | boolean> = {}
+        if (flags) {
+          for (const [feature, variant] of Object.entries(flags)) {
+            featureVariantProperties[`$feature/${feature}`] = variant
+          }
+        }
+        const flagProperties = {
+          $active_feature_flags: flags ? Object.keys(flags) : undefined,
+          ...featureVariantProperties,
+        }
+        _capture({ ...properties, $groups: groups, ...flagProperties })
       })
     } else {
-      _capture()
+      _capture({ ...properties, $groups: groups })
     }
   }
 
   identify({ distinctId, properties }: IdentifyMessageV1): void {
-    this.reInit(distinctId)
-    this._sharedClient.identify(distinctId, properties)
+    super.identifyStateless(distinctId, properties)
   }
 
   alias(data: { distinctId: string; alias: string }): void {
-    this.reInit(data.distinctId)
-    this._sharedClient.alias(data.alias)
+    super.aliasStateless(data.alias, data.distinctId)
   }
 
   async getFeatureFlag(
@@ -171,20 +157,7 @@ export class PostHog implements PostHogNodeV1 {
     const flagWasLocallyEvaluated = response !== undefined
 
     if (!flagWasLocallyEvaluated && !onlyEvaluateLocally) {
-      this.reInit(distinctId)
-      if (groups != undefined) {
-        this._sharedClient.groups(groups)
-      }
-
-      if (personProperties) {
-        this._sharedClient.personProperties(personProperties)
-      }
-
-      if (groupProperties) {
-        this._sharedClient.groupProperties(groupProperties)
-      }
-      await this._sharedClient.reloadFeatureFlagsAsync(false)
-      response = this._sharedClient.getFeatureFlag(key)
+      response = await super.getFeatureFlagStateless(key, distinctId, groups, personProperties, groupProperties)
     }
 
     const featureFlagReportedKey = `${key}_${response}`
@@ -260,20 +233,7 @@ export class PostHog implements PostHogNodeV1 {
     const payloadWasLocallyEvaluated = response !== undefined
 
     if (!payloadWasLocallyEvaluated && !onlyEvaluateLocally) {
-      this.reInit(distinctId)
-      if (groups != undefined) {
-        this._sharedClient.groups(groups)
-      }
-
-      if (personProperties) {
-        this._sharedClient.personProperties(personProperties)
-      }
-
-      if (groupProperties) {
-        this._sharedClient.groupProperties(groupProperties)
-      }
-      await this._sharedClient.reloadFeatureFlagsAsync(false)
-      response = this._sharedClient.getFeatureFlagPayload(key)
+      response = await super.getFeatureFlagPayloadStateless(key, distinctId, groups, personProperties, groupProperties)
     }
 
     try {
@@ -348,20 +308,12 @@ export class PostHog implements PostHogNodeV1 {
     }
 
     if (fallbackToDecide && !onlyEvaluateLocally) {
-      this.reInit(distinctId)
-      if (groups) {
-        this._sharedClient.groups(groups)
-      }
-
-      if (personProperties) {
-        this._sharedClient.personProperties(personProperties)
-      }
-
-      if (groupProperties) {
-        this._sharedClient.groupProperties(groupProperties)
-      }
-      await this._sharedClient.reloadFeatureFlagsAsync(false)
-      const remoteEvaluationResult = this._sharedClient.getFeatureFlagsAndPayloads()
+      const remoteEvaluationResult = await super.getFeatureFlagsAndPayloadsStateless(
+        distinctId,
+        groups,
+        personProperties,
+        groupProperties
+      )
       featureFlags = {
         ...featureFlags,
         ...(remoteEvaluationResult.flags || {}),
@@ -376,16 +328,11 @@ export class PostHog implements PostHogNodeV1 {
   }
 
   groupIdentify({ groupType, groupKey, properties }: GroupIdentifyMessage): void {
-    this.reInit(`$${groupType}_${groupKey}`)
-    this._sharedClient.groupIdentify(groupType, groupKey, properties)
+    super.groupIdentifyStateless(groupType, groupKey, properties)
   }
 
   async reloadFeatureFlags(): Promise<void> {
     await this.featureFlagsPoller?.loadFeatureFlags(true)
-  }
-
-  flush(): void {
-    this._sharedClient.flush()
   }
 
   shutdown(): void {
@@ -394,10 +341,6 @@ export class PostHog implements PostHogNodeV1 {
 
   async shutdownAsync(): Promise<void> {
     this.featureFlagsPoller?.stopPoller()
-    return this._sharedClient.shutdownAsync()
-  }
-
-  debug(enabled?: boolean): void {
-    return this._sharedClient.debug(enabled)
+    return super.shutdownAsync()
   }
 }
