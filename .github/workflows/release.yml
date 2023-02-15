@@ -30,11 +30,11 @@ jobs:
         with:
           path: ${{ matrix.package.name }}
 
-      - name: Set up Node 15
+      - name: Set up Node 16
         uses: actions/setup-node@v2
         if: steps.check-package-version.outputs.is-new-version == 'true'
         with:
-          node-version: 15
+          node-version: 16
           registry-url: https://registry.npmjs.org
 
       - name: Install dependencies
