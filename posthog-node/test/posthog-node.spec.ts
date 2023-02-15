@@ -24,21 +24,20 @@ describe('PostHog Node.js', () => {
 
   jest.useFakeTimers()
 
-  // beforeEach(() => {
-  //   posthog = new PostHog('TEST_API_KEY', {
-  //     host: 'http://example.com',
-  //   })
-    
+  beforeEach(() => {
+    posthog = new PostHog('TEST_API_KEY', {
+      host: 'http://example.com',
+    })
 
-  //   mockedFetch.mockResolvedValue({
-  //     status: 200,
-  //     text: () => Promise.resolve('ok'),
-  //     json: () =>
-  //       Promise.resolve({
-  //         status: 'ok',
-  //       }),
-  //   } as any)
-  // })
+    mockedFetch.mockResolvedValue({
+      status: 200,
+      text: () => Promise.resolve('ok'),
+      json: () =>
+        Promise.resolve({
+          status: 'ok',
+        }),
+    } as any)
+  })
 
   afterEach(async () => {
     // ensure clean shutdown & no test interdependencies
@@ -161,11 +160,11 @@ describe('PostHog Node.js', () => {
         flushAt: 1,
         flushInterval: 0,
       })
-    
+
       mockedFetch.mockImplementation(async () => {
         // simulate network delay
         await wait(500)
-    
+
         return Promise.resolve({
           status: 200,
           text: () => Promise.resolve('ok'),
@@ -180,9 +179,9 @@ describe('PostHog Node.js', () => {
     afterEach(() => {
       posthog.debug(false)
     })
-    
+
     it('should shutdown cleanly', async () => {
-      const logSpy = jest.spyOn(global.console, 'log');
+      const logSpy = jest.spyOn(global.console, 'log')
       jest.useRealTimers()
       // using debug mode to check console.log output
       // which tells us when the flush is complete
@@ -200,7 +199,7 @@ describe('PostHog Node.js', () => {
       expect(6).toEqual(logSpy.mock.calls.filter((call) => call[1].includes('flush')).length)
 
       logSpy.mockClear()
-  
+
       await posthog.shutdownAsync()
       // remaining 4 flush calls to debug log
       // happen during shutdown
