@@ -33,6 +33,7 @@ export abstract class PostHogCoreStateless {
   private requestTimeout: number
   private captureMode: 'form' | 'json'
   private removeDebugCallback?: () => void
+  private pendingPromises: Record<string, Promise<any>> = {}
 
   private _optoutOverride: boolean | undefined
 
@@ -392,8 +393,12 @@ export abstract class PostHogCoreStateless {
       sent_at: currentISOTime(),
     }
 
+    const promiseUUID = generateUUID()
+
     const done = (err?: any): void => {
       callback?.(err, messages)
+      // remove promise from pendingPromises
+      delete this.pendingPromises[promiseUUID]
       this._events.emit('flush', messages)
     }
 
@@ -429,7 +434,10 @@ export abstract class PostHogCoreStateless {
             body: payload,
           }
 
-    this.fetchWithRetry(url, fetchOptions)
+    const requestPromise = this.fetchWithRetry(url, fetchOptions)
+    this.pendingPromises[promiseUUID] = requestPromise
+
+    requestPromise
       .then(() => done())
       .catch((err) => {
         if (err.response) {
@@ -465,6 +473,7 @@ export abstract class PostHogCoreStateless {
   async shutdownAsync(): Promise<void> {
     clearTimeout(this._flushTimer)
     await this.flushAsync()
+    await Promise.allSettled(Object.values(this.pendingPromises))
   }
 
   shutdown(): void {
