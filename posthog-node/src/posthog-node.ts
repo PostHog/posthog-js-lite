@@ -9,13 +9,15 @@ import {
   PosthogFlagsAndPayloadsResponse,
   PostHogPersistedProperty,
 } from '../../posthog-core/src'
-import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
+import { PostHogMemoryStorage } from '../../posthog-core/src/storage/storage-memory'
+import { PostHogFsStorage } from '../../posthog-core/src/storage/storage-fs'
 import { EventMessageV1, GroupIdentifyMessage, IdentifyMessageV1, PostHogNodeV1 } from './types'
 import { FeatureFlagsPoller } from './feature-flags'
 import { fetch } from './fetch'
+import { PostHogStorage } from 'posthog-core/src/storage/storage'
 
 export type PostHogOptions = PosthogCoreOptions & {
-  persistence?: 'memory'
+  persistence?: string
   personalApiKey?: string
   // The interval in milliseconds between polls for refreshing feature flag definitions
   featureFlagsPollingInterval?: number
@@ -31,7 +33,7 @@ const MAX_CACHE_SIZE = 50 * 1000
 
 // The actual exported Nodejs API.
 export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
-  private _memoryStorage = new PostHogMemoryStorage()
+  private _storage: PostHogStorage;
 
   private featureFlagsPoller?: FeatureFlagsPoller
   private maxCacheSize: number
@@ -60,14 +62,21 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     }
     this.distinctIdHasSentFlagCalls = {}
     this.maxCacheSize = options.maxCacheSize || MAX_CACHE_SIZE
+    
+    if (options.persistence?.startsWith('file://')) {
+      const filePath = options.persistence.replace(/^file:\/\/(.*)/g, '$1');
+      this._storage = new PostHogFsStorage(filePath);
+    } else {
+      this._storage = new PostHogMemoryStorage();
+    }
   }
 
   getPersistedProperty(key: PostHogPersistedProperty): any | undefined {
-    return this._memoryStorage.getProperty(key)
+    return this._storage.getProperty(key)
   }
 
   setPersistedProperty(key: PostHogPersistedProperty, value: any | null): void {
-    return this._memoryStorage.setProperty(key, value)
+    return this._storage.setProperty(key, value)
   }
 
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {

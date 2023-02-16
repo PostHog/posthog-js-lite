@@ -1,7 +1,8 @@
-import { PostHogPersistedProperty } from './types'
+import { PostHogPersistedProperty } from '../types'
+import { PostHogStorage } from './storage'
 
-export class PostHogMemoryStorage {
-  private _memoryStorage: { [key: string]: any | undefined } = {}
+export class PostHogMemoryStorage implements PostHogStorage {
+  private _memoryStorage: Record<string, any | undefined> = {}
 
   getProperty(key: PostHogPersistedProperty): any | undefined {
     return this._memoryStorage[key]

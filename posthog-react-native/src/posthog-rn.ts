@@ -7,7 +7,7 @@ import {
   PostHogFetchResponse,
   PostHogPersistedProperty,
 } from '../../posthog-core/src'
-import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
+import { PostHogMemoryStorage } from '../../posthog-core/src/storage/storage-memory'
 import { getLegacyValues } from './legacy'
 import { SemiAsyncStorage } from './storage'
 import { version } from './version'
