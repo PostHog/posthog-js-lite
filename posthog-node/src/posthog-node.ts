@@ -17,7 +17,6 @@ import { fetch } from './fetch'
 import { PostHogStorage } from 'posthog-core/src/storage/storage'
 
 export type PostHogOptions = PosthogCoreOptions & {
-  persistence?: string
   personalApiKey?: string
   // The interval in milliseconds between polls for refreshing feature flag definitions
   featureFlagsPollingInterval?: number
@@ -26,14 +25,23 @@ export type PostHogOptions = PosthogCoreOptions & {
   // Maximum size of cache that deduplicates $feature_flag_called calls per user.
   maxCacheSize?: number
   fetch?: (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
-}
+} & (
+    | {
+        persistence: 'memory'
+      }
+    | {
+        persistence: 'file'
+        persistedPropertiesFilePath: string
+      }
+    | Record<string, never>
+  )
 
 const THIRTY_SECONDS = 30 * 1000
 const MAX_CACHE_SIZE = 50 * 1000
 
 // The actual exported Nodejs API.
 export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
-  private _storage: PostHogStorage;
+  private _storage: PostHogStorage
 
   private featureFlagsPoller?: FeatureFlagsPoller
   private maxCacheSize: number
@@ -62,12 +70,11 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     }
     this.distinctIdHasSentFlagCalls = {}
     this.maxCacheSize = options.maxCacheSize || MAX_CACHE_SIZE
-    
-    if (options.persistence?.startsWith('file://')) {
-      const filePath = options.persistence.replace(/^file:\/\/(.*)/g, '$1');
-      this._storage = new PostHogFsStorage(filePath);
+
+    if (options.persistence === 'file') {
+      this._storage = new PostHogFsStorage(options.persistedPropertiesFilePath)
     } else {
-      this._storage = new PostHogMemoryStorage();
+      this._storage = new PostHogMemoryStorage()
     }
   }
 
