@@ -3,7 +3,7 @@ import { PostHog as PostHog } from '../src/posthog-node'
 jest.mock('../src/fetch')
 import { fetch } from '../src/fetch'
 import { anyDecideCall, anyLocalEvalCall, apiImplementation } from './feature-flags.spec'
-import { waitForPromises } from '../../posthog-core/test/test-utils/test-utils'
+import { waitForPromises, wait } from '../../posthog-core/test/test-utils/test-utils'
 
 jest.mock('../package.json', () => ({ version: '1.2.3' }))
 
@@ -149,6 +149,63 @@ describe('PostHog Node.js', () => {
           event: 'custom-time',
         },
       ])
+    })
+  })
+
+  describe('shutdown', () => {
+    beforeEach(() => {
+      // a serverless posthog configuration
+      posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        flushAt: 1,
+        flushInterval: 0,
+      })
+
+      mockedFetch.mockImplementation(async () => {
+        // simulate network delay
+        await wait(500)
+
+        return Promise.resolve({
+          status: 200,
+          text: () => Promise.resolve('ok'),
+          json: () =>
+            Promise.resolve({
+              status: 'ok',
+            }),
+        } as any)
+      })
+    })
+
+    afterEach(() => {
+      posthog.debug(false)
+    })
+
+    it('should shutdown cleanly', async () => {
+      const logSpy = jest.spyOn(global.console, 'log')
+      jest.useRealTimers()
+      // using debug mode to check console.log output
+      // which tells us when the flush is complete
+      posthog.debug(true)
+      for (let i = 0; i < 10; i++) {
+        posthog.capture({ event: 'test-event', distinctId: '123' })
+        // requests come 100ms apart
+        await wait(100)
+      }
+
+      // 10 capture calls to debug log
+      // 6 flush calls to debug log
+      expect(logSpy).toHaveBeenCalledTimes(16)
+      expect(10).toEqual(logSpy.mock.calls.filter((call) => call[1].includes('capture')).length)
+      expect(6).toEqual(logSpy.mock.calls.filter((call) => call[1].includes('flush')).length)
+
+      logSpy.mockClear()
+
+      await posthog.shutdownAsync()
+      // remaining 4 flush calls to debug log
+      // happen during shutdown
+      expect(4).toEqual(logSpy.mock.calls.filter((call) => call[1].includes('flush')).length)
+      jest.useFakeTimers()
+      logSpy.mockRestore()
     })
   })
 
