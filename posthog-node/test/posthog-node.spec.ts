@@ -114,7 +114,27 @@ describe('PostHog Node.js', () => {
           distinct_id: '123',
           event: '$identify',
           properties: {
-            foo: 'bar',
+            $set: {
+              foo: 'bar',
+            },
+          },
+        },
+      ])
+    })
+
+    it('should handle identify mistakenly using $set', async () => {
+      expect(mockedFetch).toHaveBeenCalledTimes(0)
+      posthog.identify({ distinctId: '123', properties: { foo: 'bar', $set: { foo: 'other' } } })
+      jest.runOnlyPendingTimers()
+      const batchEvents = getLastBatchEvents()
+      expect(batchEvents).toMatchObject([
+        {
+          distinct_id: '123',
+          event: '$identify',
+          properties: {
+            $set: {
+              foo: 'other',
+            },
           },
         },
       ])

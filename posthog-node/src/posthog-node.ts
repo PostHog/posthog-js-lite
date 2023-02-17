@@ -117,7 +117,12 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
   }
 
   identify({ distinctId, properties }: IdentifyMessageV1): void {
-    super.identifyStateless(distinctId, properties)
+    // Catch properties passed as $set and move them to the top level
+    const personProperties = properties?.$set || properties
+
+    super.identifyStateless(distinctId, {
+      $set: personProperties,
+    })
   }
 
   alias(data: { distinctId: string; alias: string }): void {

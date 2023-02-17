@@ -1,10 +1,16 @@
+# 2.5.2 - 2023-02-17
+
+1. Fix issue where properties passed to `.identify` were not set correctly
+
 # 2.5.1 - 2023-02-16
 
 1. Make sure shutdown waits for pending promises to resolve. Fixes a problem with using PostHog Node in serverless environments.
+
 # 2.5.0 - 2023-02-15
 
 1. Removes shared client from `posthog-node`, getting rid of some race condition bugs when capturing events.
 2. Sets minimum version of node.js to 15
+
 # 2.4.0 - 2023-02-02
 
 1. Adds support for overriding timestamp of capture events
