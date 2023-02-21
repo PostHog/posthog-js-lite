@@ -102,11 +102,14 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         const featureVariantProperties: Record<string, string | boolean> = {}
         if (flags) {
           for (const [feature, variant] of Object.entries(flags)) {
-            featureVariantProperties[`$feature/${feature}`] = variant
+            if (variant !== false) {
+              featureVariantProperties[`$feature/${feature}`] = variant
+            }
           }
         }
+        const activeFlags = Object.keys(flags || {}).filter((flag) => flags?.[flag] !== false)
         const flagProperties = {
-          $active_feature_flags: flags ? Object.keys(flags) : undefined,
+          $active_feature_flags: activeFlags || undefined,
           ...featureVariantProperties,
         }
         _capture({ ...properties, $groups: groups, ...flagProperties })
@@ -332,8 +335,8 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     return { featureFlags, featureFlagPayloads }
   }
 
-  groupIdentify({ groupType, groupKey, properties }: GroupIdentifyMessage): void {
-    super.groupIdentifyStateless(groupType, groupKey, properties)
+  groupIdentify({ groupType, groupKey, properties, distinctId }: GroupIdentifyMessage): void {
+    super.groupIdentifyStateless(groupType, groupKey, properties, undefined, distinctId)
   }
 
   async reloadFeatureFlags(): Promise<void> {

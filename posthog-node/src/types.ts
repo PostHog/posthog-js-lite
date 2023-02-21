@@ -16,6 +16,7 @@ export interface GroupIdentifyMessage {
   groupType: string
   groupKey: string // Unique identifier for the group
   properties?: Record<string | number, any>
+  distinctId?: string // optional distinctId to associate message with a person
 }
 
 export type FeatureFlagCondition = {
