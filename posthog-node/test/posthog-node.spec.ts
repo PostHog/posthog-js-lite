@@ -249,7 +249,12 @@ describe('PostHog Node.js', () => {
     })
 
     it('should allow passing optional distinctID to identify group', () => {
-      posthog.groupIdentify({ groupType: 'posthog', groupKey: 'team-1', properties: { analytics: true }, 'distinctId': '123' })
+      posthog.groupIdentify({
+        groupType: 'posthog',
+        groupKey: 'team-1',
+        properties: { analytics: true },
+        distinctId: '123',
+      })
       jest.runOnlyPendingTimers()
       const batchEvents = getLastBatchEvents()
       expect(batchEvents).toMatchObject([

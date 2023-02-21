@@ -3,14 +3,14 @@ import { PostHog } from 'posthog-node'
 import wtf from 'wtfnode'
 
 const {
-  PH_API_KEY = 'phc_NUapysGLnFUeUpqQWvF64yuc3pWEJkd1PDfpzruSya5',
-  PH_HOST = 'https://app.dev.posthog.dev/',
-  // PH_PERSONAL_API_KEY = 'YOUR PERSONAL API KEY',
+  PH_API_KEY = 'YOUR API KEY',
+  PH_HOST = 'http://127.0.0.1:8000',
+  PH_PERSONAL_API_KEY = 'YOUR PERSONAL API KEY',
 } = process.env
 
 const posthog = new PostHog(PH_API_KEY, {
   host: PH_HOST,
-  // personalApiKey: PH_PERSONAL_API_KEY,
+  personalApiKey: PH_PERSONAL_API_KEY,
   featureFlagsPollingInterval: 10000,
   // flushAt: 1,
 })
@@ -30,19 +30,8 @@ posthog.capture({
 })
 
 async function testFeatureFlags() {
-
-  // for loop
-  const flagPromises = []
-  for (let i = 0; i < 1000; i++) {
-    flagPromises.push(posthog.getAllFlags(`${i}`))
-  }
-
-  const flags = await Promise.all(flagPromises)
-  console.log(flags)
-
-  return flags
-
-
+  await posthog.shutdownAsync()
+  console.log('flushed')
   console.log(await posthog.isFeatureEnabled('beta-feature', 'distinct_id'))
   console.log(await posthog.isFeatureEnabled('beta-feature', 'new_distinct_id'))
   console.log(await posthog.isFeatureEnabled('beta-feature', 'distinct_id', { groups: { company: 'id:5' } }))
