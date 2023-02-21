@@ -1,3 +1,7 @@
+# 2.5.3 - 2023-02-21
+
+1. Allow passing in a distinctId to `groupIdentify()`.
+2. Fix a bug with active feature flags on capture events, where non-active flags would be added to the list as well.
 # 2.5.2 - 2023-02-17
 
 1. Fix issue where properties passed to `.identify` were not set correctly

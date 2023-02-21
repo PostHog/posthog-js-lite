@@ -234,10 +234,32 @@ describe('PostHog Node.js', () => {
       posthog.groupIdentify({ groupType: 'posthog', groupKey: 'team-1', properties: { analytics: true } })
       jest.runOnlyPendingTimers()
       const batchEvents = getLastBatchEvents()
-      console.log(batchEvents)
       expect(batchEvents).toMatchObject([
         {
           distinct_id: '$posthog_team-1',
+          event: '$groupidentify',
+          properties: {
+            $group_type: 'posthog',
+            $group_key: 'team-1',
+            $group_set: { analytics: true },
+            $lib: 'posthog-node',
+          },
+        },
+      ])
+    })
+
+    it('should allow passing optional distinctID to identify group', () => {
+      posthog.groupIdentify({
+        groupType: 'posthog',
+        groupKey: 'team-1',
+        properties: { analytics: true },
+        distinctId: '123',
+      })
+      jest.runOnlyPendingTimers()
+      const batchEvents = getLastBatchEvents()
+      expect(batchEvents).toMatchObject([
+        {
+          distinct_id: '123',
           event: '$groupidentify',
           properties: {
             $group_type: 'posthog',
@@ -256,6 +278,7 @@ describe('PostHog Node.js', () => {
         'feature-1': true,
         'feature-2': true,
         'feature-variant': 'variant',
+        'disabled-flag': false,
       }
 
       const mockFeatureFlagPayloads = {
