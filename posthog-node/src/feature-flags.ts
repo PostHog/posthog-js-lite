@@ -51,6 +51,7 @@ class FeatureFlagsPoller {
   host: FeatureFlagsPollerOptions['host']
   poller?: NodeJS.Timeout
   fetch: (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
+  debugMode: boolean = false
 
   constructor({
     pollingInterval,
@@ -74,6 +75,10 @@ class FeatureFlagsPoller {
     this.fetch = options.fetch || fetch
 
     void this.loadFeatureFlags()
+  }
+
+  debug(enabled: boolean = true): void {
+    this.debugMode = enabled
   }
 
   async getFeatureFlag(
@@ -102,9 +107,14 @@ class FeatureFlagsPoller {
     if (featureFlag !== undefined) {
       try {
         response = this.computeFlagLocally(featureFlag, distinctId, groups, personProperties, groupProperties)
+        if (this.debugMode) {
+          console.debug(`Successfully computed flag locally: ${key} -> ${response}`)
+        }
       } catch (e) {
         if (e instanceof InconclusiveMatchError) {
-          console.error(`InconclusiveMatchError when computing flag locally: ${key}: ${e}`)
+          if (this.debugMode) {
+            console.debug(`InconclusiveMatchError when computing flag locally: ${key}: ${e}`)
+          }
         } else if (e instanceof Error) {
           console.error(`Error computing flag locally: ${key}: ${e}`)
         }
