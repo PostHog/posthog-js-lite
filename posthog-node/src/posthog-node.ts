@@ -92,6 +92,11 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     return super.optOut()
   }
 
+  debug(enabled: boolean = true): void {
+    super.debug(enabled)
+    this.featureFlagsPoller?.debug(enabled)
+  }
+
   capture({ distinctId, event, properties, groups, sendFeatureFlags, timestamp }: EventMessageV1): void {
     const _capture = (props: EventMessageV1['properties']): void => {
       super.captureStateless(distinctId, event, props, { timestamp })

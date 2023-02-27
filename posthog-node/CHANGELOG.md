@@ -1,3 +1,6 @@
+# 2.5.4 - 2023-02-27
+
+1. Fix error log for local evaluation of feature flags (InconclusiveMatchError(s)) to only show during debug mode.
 # 2.5.3 - 2023-02-21
 
 1. Allow passing in a distinctId to `groupIdentify()`.
