@@ -35,10 +35,9 @@ export abstract class PostHogCoreStateless {
   private removeDebugCallback?: () => void
   private debugMode: boolean = false
   private pendingPromises: Record<string, Promise<any>> = {}
-  
+
   private _optoutOverride: boolean | undefined
-  
-  
+
   // internal
   protected _events = new SimpleEventEmitter()
   protected _flushTimer?: any
