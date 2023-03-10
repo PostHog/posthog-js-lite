@@ -499,7 +499,6 @@ function matchProperty(
   }
 }
 
-
 function matchCohort(
   property: FeatureFlagCondition['properties'][number],
   propertyValues: Record<string, any>,
@@ -557,7 +556,7 @@ function matchPropertyGroup(
         }
       }
     }
-    
+
     if (errorMatchingLocally) {
       throw new InconclusiveMatchError("Can't match cohort without a given cohort property value")
     }
@@ -610,7 +609,6 @@ function matchPropertyGroup(
     return propertyGroupType === 'AND'
   }
 }
-
 
 function isValidRegex(regex: string): boolean {
   try {
