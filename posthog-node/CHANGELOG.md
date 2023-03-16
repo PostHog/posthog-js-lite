@@ -1,3 +1,7 @@
+# 2.6.0 - 2023-03-14
+
+1. Add support for all cohorts local evaluation in feature flags.
+
 # 2.5.4 - 2023-02-27
 
 1. Fix error log for local evaluation of feature flags (InconclusiveMatchError(s)) to only show during debug mode.

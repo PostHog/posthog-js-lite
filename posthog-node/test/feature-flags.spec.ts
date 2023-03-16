@@ -38,7 +38,7 @@ export const apiImplementation = ({
       }) as any
     }
 
-    if ((url as any).includes('api/feature_flag/local_evaluation?token=TEST_API_KEY')) {
+    if ((url as any).includes('api/feature_flag/local_evaluation?token=TEST_API_KEY&send_cohorts')) {
       return Promise.resolve({
         status: 200,
         text: () => Promise.resolve('ok'),
@@ -58,7 +58,7 @@ export const apiImplementation = ({
 }
 
 export const anyLocalEvalCall = [
-  'http://example.com/api/feature_flag/local_evaluation?token=TEST_API_KEY',
+  'http://example.com/api/feature_flag/local_evaluation?token=TEST_API_KEY&send_cohorts',
   expect.any(Object),
 ]
 export const anyDecideCall = ['http://example.com/decide/?v=3', expect.any(Object)]
@@ -1176,6 +1176,177 @@ describe('local evaluation', () => {
     await posthog.reloadFeatureFlags()
 
     expect(await posthog.getAllFlags('distinct-id')).toEqual({ 'beta-feature': false, 'disabled-feature': true })
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+  })
+
+  it('computes complex cohorts locally', async () => {
+    const flags = {
+      flags: [
+        {
+          id: 1,
+          name: 'Beta Feature',
+          key: 'beta-feature',
+          is_simple_flag: false,
+          active: true,
+          rollout_percentage: 100,
+          filters: {
+            groups: [
+              {
+                properties: [
+                  {
+                    key: 'region',
+                    operator: 'exact',
+                    value: ['USA'],
+                    type: 'person',
+                  },
+                  { key: 'id', value: 98, type: 'cohort' },
+                ],
+                rollout_percentage: 100,
+              },
+            ],
+          },
+        },
+      ],
+      cohorts: {
+        '98': {
+          type: 'OR',
+          values: [
+            { key: 'id', value: 1, type: 'cohort' },
+            {
+              key: 'nation',
+              operator: 'exact',
+              value: ['UK'],
+              type: 'person',
+            },
+          ],
+        },
+        '1': {
+          type: 'AND',
+          values: [{ key: 'other', operator: 'exact', value: ['thing'], type: 'person' }],
+        },
+      },
+    }
+    mockedFetch.mockImplementation(
+      apiImplementation({
+        localFlags: flags,
+        decideFlags: {},
+      })
+    )
+
+    posthog = new PostHog('TEST_API_KEY', {
+      host: 'http://example.com',
+      personalApiKey: 'TEST_PERSONAL_API_KEY',
+    })
+
+    expect(
+      await posthog.getFeatureFlag('beta-feature', 'some-distinct-id', { personProperties: { region: 'UK' } })
+    ).toEqual(false)
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+
+    // # even though 'other' property is not present, the cohort should still match since it's an OR condition
+    expect(
+      await posthog.getFeatureFlag('beta-feature', 'some-distinct-id', {
+        personProperties: { region: 'USA', nation: 'UK' },
+      })
+    ).toEqual(true)
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+
+    // # even though 'other' property is not present, the cohort should still match since it's an OR condition
+    expect(
+      await posthog.getFeatureFlag('beta-feature', 'some-distinct-id', {
+        personProperties: { region: 'USA', other: 'thing' },
+      })
+    ).toEqual(true)
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+  })
+
+  it('computes complex cohorts with negation locally', async () => {
+    const flags = {
+      flags: [
+        {
+          id: 1,
+          name: 'Beta Feature',
+          key: 'beta-feature',
+          is_simple_flag: false,
+          active: true,
+          rollout_percentage: 100,
+          filters: {
+            groups: [
+              {
+                properties: [
+                  {
+                    key: 'region',
+                    operator: 'exact',
+                    value: ['USA'],
+                    type: 'person',
+                  },
+                  { key: 'id', value: 98, type: 'cohort' },
+                ],
+                rollout_percentage: 100,
+              },
+            ],
+          },
+        },
+      ],
+      cohorts: {
+        '98': {
+          type: 'OR',
+          values: [
+            { key: 'id', value: 1, type: 'cohort' },
+            {
+              key: 'nation',
+              operator: 'exact',
+              value: ['UK'],
+              type: 'person',
+            },
+          ],
+        },
+        '1': {
+          type: 'AND',
+          values: [{ key: 'other', operator: 'exact', value: ['thing'], type: 'person', negation: true }],
+        },
+      },
+    }
+    mockedFetch.mockImplementation(
+      apiImplementation({
+        localFlags: flags,
+        decideFlags: {},
+      })
+    )
+
+    posthog = new PostHog('TEST_API_KEY', {
+      host: 'http://example.com',
+      personalApiKey: 'TEST_PERSONAL_API_KEY',
+    })
+
+    expect(
+      await posthog.getFeatureFlag('beta-feature', 'some-distinct-id', { personProperties: { region: 'UK' } })
+    ).toEqual(false)
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+
+    // # even though 'other' property is not present, the cohort should still match since it's an OR condition
+    expect(
+      await posthog.getFeatureFlag('beta-feature', 'some-distinct-id', {
+        personProperties: { region: 'USA', nation: 'UK' },
+      })
+    ).toEqual(true)
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+
+    // # since 'other' is negated, we return False. Since 'nation' is not present, we can't tell whether the flag should be true or false, so go to decide
+    expect(
+      await posthog.getFeatureFlag('beta-feature', 'some-distinct-id', {
+        personProperties: { region: 'USA', other: 'thing' },
+      })
+    ).toEqual(false)
+    expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
+
+    mockedFetch.mockClear()
+
+    expect(
+      await posthog.getFeatureFlag('beta-feature', 'some-distinct-id', {
+        personProperties: { region: 'USA', other: 'thing2' },
+      })
+    ).toEqual(true)
     expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
   })
 

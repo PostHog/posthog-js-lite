@@ -1,5 +1,5 @@
 import { createHash } from 'crypto'
-import { FeatureFlagCondition, PostHogFeatureFlag } from './types'
+import { FeatureFlagCondition, FlagProperty, PostHogFeatureFlag, PropertyGroup } from './types'
 import { version } from '../package.json'
 import { JsonType, PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src'
 import { safeSetTimeout } from 'posthog-core/src/utils'
@@ -46,6 +46,7 @@ class FeatureFlagsPoller {
   featureFlags: Array<PostHogFeatureFlag>
   featureFlagsByKey: Record<string, PostHogFeatureFlag>
   groupTypeMapping: Record<string, string>
+  cohorts: Record<string, PropertyGroup>
   loadedSuccessfullyOnce: boolean
   timeout?: number
   host: FeatureFlagsPollerOptions['host']
@@ -66,6 +67,7 @@ class FeatureFlagsPoller {
     this.featureFlags = []
     this.featureFlagsByKey = {}
     this.groupTypeMapping = {}
+    this.cohorts = {}
     this.loadedSuccessfullyOnce = false
     this.timeout = timeout
     this.projectApiKey = projectApiKey
@@ -291,13 +293,22 @@ class FeatureFlagsPoller {
     const rolloutPercentage = condition.rollout_percentage
 
     if ((condition.properties || []).length > 0) {
-      const matchAll = condition.properties.every((property) => {
-        return matchProperty(property, properties)
-      })
-      if (!matchAll) {
-        return false
-      } else if (rolloutPercentage == undefined) {
-        // == to include `null` as a match, not just `undefined`
+      for (const prop of condition.properties) {
+        const propertyType = prop.type
+        let matches = false
+
+        if (propertyType === 'cohort') {
+          matches = matchCohort(prop, properties, this.cohorts)
+        } else {
+          matches = matchProperty(prop, properties)
+        }
+
+        if (!matches) {
+          return false
+        }
+      }
+
+      if (rolloutPercentage == undefined) {
         return true
       }
     }
@@ -378,6 +389,7 @@ class FeatureFlagsPoller {
         <Record<string, PostHogFeatureFlag>>{}
       )
       this.groupTypeMapping = responseJson.group_type_mapping || {}
+      this.cohorts = responseJson.cohorts || []
       this.loadedSuccessfullyOnce = true
     } catch (err) {
       // if an error that is not an instance of ClientError is thrown
@@ -389,7 +401,7 @@ class FeatureFlagsPoller {
   }
 
   async _requestFeatureFlagDefinitions(): Promise<PostHogFetchResponse> {
-    const url = `${this.host}/api/feature_flag/local_evaluation?token=${this.projectApiKey}`
+    const url = `${this.host}/api/feature_flag/local_evaluation?token=${this.projectApiKey}&send_cohorts`
 
     const options: PostHogFetchOptions = {
       method: 'GET',
@@ -484,6 +496,117 @@ function matchProperty(
     default:
       console.error(`Unknown operator: ${operator}`)
       return false
+  }
+}
+
+function matchCohort(
+  property: FeatureFlagCondition['properties'][number],
+  propertyValues: Record<string, any>,
+  cohortProperties: FeatureFlagsPoller['cohorts']
+): boolean {
+  const cohortId = String(property.value)
+  if (!(cohortId in cohortProperties)) {
+    throw new InconclusiveMatchError("can't match cohort without a given cohort property value")
+  }
+
+  const propertyGroup = cohortProperties[cohortId]
+  return matchPropertyGroup(propertyGroup, propertyValues, cohortProperties)
+}
+
+function matchPropertyGroup(
+  propertyGroup: PropertyGroup,
+  propertyValues: Record<string, any>,
+  cohortProperties: FeatureFlagsPoller['cohorts']
+): boolean {
+  if (!propertyGroup) {
+    return true
+  }
+
+  const propertyGroupType = propertyGroup.type
+  const properties = propertyGroup.values
+
+  if (!properties || properties.length === 0) {
+    // empty groups are no-ops, always match
+    return true
+  }
+
+  let errorMatchingLocally = false
+
+  if ('values' in properties[0]) {
+    // a nested property group
+    for (const prop of properties as PropertyGroup[]) {
+      try {
+        const matches = matchPropertyGroup(prop, propertyValues, cohortProperties)
+        if (propertyGroupType === 'AND') {
+          if (!matches) {
+            return false
+          }
+        } else {
+          // OR group
+          if (matches) {
+            return true
+          }
+        }
+      } catch (err) {
+        if (err instanceof InconclusiveMatchError) {
+          console.debug(`Failed to compute property ${prop} locally: ${err}`)
+          errorMatchingLocally = true
+        } else {
+          throw err
+        }
+      }
+    }
+
+    if (errorMatchingLocally) {
+      throw new InconclusiveMatchError("Can't match cohort without a given cohort property value")
+    }
+    // if we get here, all matched in AND case, or none matched in OR case
+    return propertyGroupType === 'AND'
+  } else {
+    for (const prop of properties as FlagProperty[]) {
+      try {
+        let matches: boolean
+        if (prop.type === 'cohort') {
+          matches = matchCohort(prop, propertyValues, cohortProperties)
+        } else {
+          matches = matchProperty(prop, propertyValues)
+        }
+
+        const negation = prop.negation || false
+
+        if (propertyGroupType === 'AND') {
+          // if negated property, do the inverse
+          if (!matches && !negation) {
+            return false
+          }
+          if (matches && negation) {
+            return false
+          }
+        } else {
+          // OR group
+          if (matches && !negation) {
+            return true
+          }
+          if (!matches && negation) {
+            return true
+          }
+        }
+      } catch (err) {
+        if (err instanceof InconclusiveMatchError) {
+          console.debug(`Failed to compute property ${prop} locally: ${err}`)
+          errorMatchingLocally = true
+        } else {
+          throw err
+        }
+      }
+    }
+
+    if (errorMatchingLocally) {
+      throw new InconclusiveMatchError("can't match cohort without a given cohort property value")
+    }
+
+    // if we get here, all matched in AND case, or none matched in OR case
+    return propertyGroupType === 'AND'
   }
 }
 

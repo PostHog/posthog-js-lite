@@ -19,13 +19,21 @@ export interface GroupIdentifyMessage {
   distinctId?: string // optional distinctId to associate message with a person
 }
 
+export type PropertyGroup = {
+  type: 'AND' | 'OR'
+  values: PropertyGroup[] | FlagProperty[]
+}
+
+export type FlagProperty = {
+  key: string
+  type?: string
+  value: string | number | (string | number)[]
+  operator?: string
+  negation?: boolean
+}
+
 export type FeatureFlagCondition = {
-  properties: {
-    key: string
-    type?: string
-    value: string | number | (string | number)[]
-    operator?: string
-  }[]
+  properties: FlagProperty[]
   rollout_percentage?: number
   variant?: string
 }
