@@ -24,6 +24,20 @@ export * as utils from './utils'
 import { LZString } from './lz-string'
 import { SimpleEventEmitter } from './eventemitter'
 
+function hostFromOptions(options: PosthogCoreOptions | undefined): string | undefined {
+  if (!options) {
+    return undefined
+  }
+
+  if ('host' in options) {
+    return options.host
+  } else if ('api_host' in options) {
+    return options.api_host
+  } else {
+    return undefined
+  }
+}
+
 export abstract class PostHogCoreStateless {
   // options
   private apiKey: string
@@ -57,7 +71,7 @@ export abstract class PostHogCoreStateless {
     assert(apiKey, "You must pass your PostHog project's api key.")
 
     this.apiKey = apiKey
-    this.host = removeTrailingSlash(options?.host || 'https://app.posthog.com')
+    this.host = removeTrailingSlash(hostFromOptions(options) || 'https://app.posthog.com')
     this.flushAt = options?.flushAt ? Math.max(options?.flushAt, 1) : 20
     this.flushInterval = options?.flushInterval ?? 10000
     this.captureMode = options?.captureMode || 'form'

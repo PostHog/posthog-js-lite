@@ -44,6 +44,21 @@ describe('PostHog Core', () => {
       })
     })
 
+    it('can use api_host instead of host in options', () => {
+      ;[posthog, mocks] = createTestClient('key', {
+        api_host: 'https://a.com',
+        flushAt: 1,
+        flushInterval: 2,
+      })
+
+      expect(posthog).toMatchObject({
+        apiKey: 'key',
+        host: 'https://a.com',
+        flushAt: 1,
+        flushInterval: 2,
+      })
+    })
+
     it('should keep the flushAt option above zero', () => {
       ;[posthog, mocks] = createTestClient('key', { flushAt: -2 }) as any
       expect((posthog as any).flushAt).toEqual(1)

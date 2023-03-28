@@ -1,6 +1,4 @@
-export type PosthogCoreOptions = {
-  // PostHog API host (https://app.posthog.com by default)
-  host?: string
+type PosthogCommonOptions = {
   // The number of events to queue before sending to Posthog (flushing)
   flushAt?: number
   // The interval in milliseconds between periodic flushes
@@ -29,6 +27,25 @@ export type PosthogCoreOptions = {
   // Whether to post events to PostHog in JSON or compressed format
   captureMode?: 'json' | 'form'
 }
+
+export type PosthogOptionsWithHost = PosthogCommonOptions & {
+  // PostHog API host (https://app.posthog.com by default)
+  host: string
+  api_host?: never
+}
+
+export type PosthogOptionsWithAPIHost = PosthogCommonOptions & {
+  // Alternative name for PostHog API host to mirror posthog-js options
+  api_host: string
+  host?: never
+}
+
+export type PosthogOptionsWithDefaultHost = PosthogCommonOptions & {
+  host?: never
+  api_host?: never
+}
+
+export type PosthogCoreOptions = PosthogOptionsWithHost | PosthogOptionsWithAPIHost | PosthogOptionsWithDefaultHost
 
 export enum PostHogPersistedProperty {
   AnonymousId = 'anonymous_id',
