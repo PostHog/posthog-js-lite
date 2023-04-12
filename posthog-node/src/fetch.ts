@@ -10,11 +10,13 @@ export const fetch = async (url: string, options: PostHogFetchOptions): Promise<
     method: options.method.toLowerCase(),
     data: options.body,
     signal: options.signal,
+    // fetch only throws on network errors, not on HTTP errors
+    validateStatus: () => true,
   })
 
   return {
     status: res.status,
-    text: () => res.data,
-    json: () => res.data,
+    text: async () => res.data,
+    json: async () => res.data,
   }
 }
