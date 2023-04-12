@@ -1,6 +1,6 @@
-// import { PostHog } from '../'
+// import { PostHog, PostHogOptions } from '../'
 // Uncomment below line while developing to not compile code everytime
-import { PostHog as PostHog } from '../src/posthog-node'
+import { PostHog as PostHog, PostHogOptions } from '../src/posthog-node'
 import { matchProperty, InconclusiveMatchError } from '../src/feature-flags'
 jest.mock('../src/fetch')
 import { fetch } from '../src/fetch'
@@ -8,6 +8,10 @@ import { fetch } from '../src/fetch'
 jest.spyOn(global.console, 'debug').mockImplementation()
 
 const mockedFetch = jest.mocked(fetch, true)
+
+const posthogImmediateResolveOptions: PostHogOptions = {
+  fetchRetryCount: 0,
+}
 
 export const apiImplementation = ({
   localFlags,
@@ -105,6 +109,7 @@ describe('local evaluation', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
     })
 
     expect(
@@ -151,6 +156,7 @@ describe('local evaluation', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
     })
 
     // # groups not passed in, hence false
@@ -231,6 +237,7 @@ describe('local evaluation', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
     })
     // # group_type_mappings not present, so fallback to `/decide`
     expect(
@@ -304,6 +311,7 @@ describe('local evaluation', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
     })
 
     expect(
@@ -426,6 +434,7 @@ describe('local evaluation', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
     })
 
     // # beta-feature fallbacks to decide because property type is unknown
@@ -488,6 +497,7 @@ describe('local evaluation', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
     })
 
     // # beta-feature should fallback to decide because property type is unknown
@@ -536,6 +546,7 @@ describe('local evaluation', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
     })
 
     // # beta-feature resolves to False
@@ -576,12 +587,20 @@ describe('local evaluation', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
+    })
+
+    let err: any = null
+    posthog.on('error', (e) => {
+      err = e
     })
 
     // # beta-feature2 falls back to decide, which on error returns undefined
     expect(await posthog.getFeatureFlag('beta-feature2', 'some-distinct-id')).toEqual(undefined)
     expect(await posthog.isFeatureEnabled('beta-feature2', 'some-distinct-id')).toEqual(undefined)
     expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
+    await posthog.shutdownAsync()
+    expect(err).toHaveProperty('name', 'PostHogFetchHttpError')
   })
 
   it('experience continuity flags are not evaluated locally', async () => {
@@ -612,6 +631,7 @@ describe('local evaluation', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
     })
 
     // # beta-feature2 falls back to decide, which on error returns default
@@ -680,6 +700,7 @@ describe('local evaluation', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
     })
 
     // # beta-feature value overridden by /decide
@@ -763,6 +784,7 @@ describe('local evaluation', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
     })
 
     // # beta-feature value overridden by /decide
@@ -835,6 +857,7 @@ describe('local evaluation', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
     })
 
     // # beta-feature2 has no value
@@ -916,6 +939,7 @@ describe('local evaluation', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
     })
 
     expect(
@@ -940,6 +964,7 @@ describe('local evaluation', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
     })
 
     expect(await posthog.getAllFlags('distinct-id')).toEqual({
@@ -965,6 +990,7 @@ describe('local evaluation', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
     })
 
     expect((await posthog.getAllFlagsAndPayloads('distinct-id')).featureFlagPayloads).toEqual({
@@ -1021,6 +1047,7 @@ describe('local evaluation', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
     })
 
     expect(await posthog.getAllFlags('distinct-id')).toEqual({ 'beta-feature': true, 'disabled-feature': false })
@@ -1079,6 +1106,7 @@ describe('local evaluation', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
     })
 
     expect((await posthog.getAllFlagsAndPayloads('distinct-id')).featureFlagPayloads).toEqual({ 'beta-feature': 'new' })
@@ -1131,6 +1159,7 @@ describe('local evaluation', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
     })
 
     expect(await posthog.getAllFlags('distinct-id')).toEqual({ 'beta-feature': true, 'disabled-feature': false })
@@ -1238,6 +1267,7 @@ describe('local evaluation', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
     })
 
     expect(
@@ -1319,6 +1349,7 @@ describe('local evaluation', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
     })
 
     expect(
@@ -1408,6 +1439,7 @@ describe('local evaluation', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
     })
 
     expect(
@@ -1489,6 +1521,7 @@ describe('local evaluation', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
     })
 
     expect(
@@ -1560,6 +1593,7 @@ describe('local evaluation', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
     })
 
     expect(
@@ -1632,6 +1666,7 @@ describe('local evaluation', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
     })
 
     expect(
@@ -1682,6 +1717,7 @@ describe('local evaluation', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
     })
 
     expect(
@@ -1762,6 +1798,7 @@ describe('local evaluation', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
     })
 
     expect(
@@ -1990,10 +2027,6 @@ describe('consistency tests', () => {
   let posthog: PostHog
   jest.useFakeTimers()
 
-  afterEach(async () => {
-    await posthog.shutdownAsync()
-  })
-
   it('is consistent for simple flags', () => {
     const flags = {
       flags: [
@@ -2015,6 +2048,7 @@ describe('consistency tests', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
     })
 
     const results = [
@@ -3057,6 +3091,7 @@ describe('consistency tests', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
     })
 
     const results = [

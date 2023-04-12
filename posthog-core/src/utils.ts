@@ -23,7 +23,7 @@ export async function retriable<T>(fn: () => Promise<T>, props: RetriableOptions
       // don't wait when it's the last try
       await new Promise((r) => setTimeout(r, retryDelay))
     }
-    
+
     try {
       const res = await fn()
       return res

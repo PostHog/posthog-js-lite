@@ -16,7 +16,7 @@
     "strict": true,
     "baseUrl": "./", // this must be specified if "paths" is specified.
     "rootDir": "./",
-    "lib": ["ES2015"],
+    "lib": ["ES2015", "ES2022.Error"],
     "types": ["node", "jest"],
     "jsx": "react"
   },
