@@ -336,6 +336,7 @@ describe('local evaluation', () => {
           groups: {},
           person_properties: { region: 'USA', email: 'a@b.com' },
           group_properties: {},
+          geoip_disable: true,
         }),
       })
     )
@@ -354,6 +355,7 @@ describe('local evaluation', () => {
           groups: {},
           person_properties: { doesnt_matter: '1' },
           group_properties: {},
+          geoip_disable: true,
         }),
       })
     )

@@ -28,6 +28,7 @@ export type PosthogCoreOptions = {
   sessionExpirationTimeSeconds?: number
   // Whether to post events to PostHog in JSON or compressed format
   captureMode?: 'json' | 'form'
+  disableGeoip?: boolean
 }
 
 export enum PostHogPersistedProperty {
@@ -57,6 +58,7 @@ export type PostHogFetchOptions = {
 // Check out posthog-js for these additional options and try to keep them in sync
 export type PosthogCaptureOptions = {
   timestamp?: Date
+  disableGeoip?: boolean
 }
 
 export type PostHogFetchResponse = {

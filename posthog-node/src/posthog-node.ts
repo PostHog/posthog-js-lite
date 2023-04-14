@@ -97,13 +97,13 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     this.featureFlagsPoller?.debug(enabled)
   }
 
-  capture({ distinctId, event, properties, groups, sendFeatureFlags, timestamp }: EventMessageV1): void {
+  capture({ distinctId, event, properties, groups, sendFeatureFlags, timestamp, disableGeoip }: EventMessageV1): void {
     const _capture = (props: EventMessageV1['properties']): void => {
-      super.captureStateless(distinctId, event, props, { timestamp })
+      super.captureStateless(distinctId, event, props, { timestamp, disableGeoip })
     }
 
     if (sendFeatureFlags) {
-      super.getFeatureFlagsStateless(distinctId, groups).then((flags) => {
+      super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip).then((flags) => {
         const featureVariantProperties: Record<string, string | boolean> = {}
         if (flags) {
           for (const [feature, variant] of Object.entries(flags)) {
@@ -124,17 +124,17 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     }
   }
 
-  identify({ distinctId, properties }: IdentifyMessageV1): void {
+  identify({ distinctId, properties, disableGeoip }: IdentifyMessageV1): void {
     // Catch properties passed as $set and move them to the top level
     const personProperties = properties?.$set || properties
 
     super.identifyStateless(distinctId, {
       $set: personProperties,
-    })
+    }, { disableGeoip })
   }
 
-  alias(data: { distinctId: string; alias: string }): void {
-    super.aliasStateless(data.alias, data.distinctId)
+  alias(data: { distinctId: string; alias: string; disableGeoip?: boolean }): void {
+    super.aliasStateless(data.alias, data.distinctId, undefined, { disableGeoip: data.disableGeoip })
   }
 
   async getFeatureFlag(
@@ -146,9 +146,10 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       groupProperties?: Record<string, Record<string, string>>
       onlyEvaluateLocally?: boolean
       sendFeatureFlagEvents?: boolean
+      disableGeoip?: boolean
     }
   ): Promise<string | boolean | undefined> {
-    const { groups, personProperties, groupProperties } = options || {}
+    const { groups, personProperties, groupProperties, disableGeoip } = options || {}
     let { onlyEvaluateLocally, sendFeatureFlagEvents } = options || {}
 
     // set defaults
@@ -170,7 +171,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     const flagWasLocallyEvaluated = response !== undefined
 
     if (!flagWasLocallyEvaluated && !onlyEvaluateLocally) {
-      response = await super.getFeatureFlagStateless(key, distinctId, groups, personProperties, groupProperties)
+      response = await super.getFeatureFlagStateless(key, distinctId, groups, personProperties, groupProperties, disableGeoip)
     }
 
     const featureFlagReportedKey = `${key}_${response}`
@@ -197,6 +198,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
           locally_evaluated: flagWasLocallyEvaluated,
         },
         groups,
+        disableGeoip,
       })
     }
     return response
@@ -212,9 +214,10 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       groupProperties?: Record<string, Record<string, string>>
       onlyEvaluateLocally?: boolean
       sendFeatureFlagEvents?: boolean
+      disableGeoip?: boolean
     }
   ): Promise<JsonType | undefined> {
-    const { groups, personProperties, groupProperties } = options || {}
+    const { groups, personProperties, groupProperties, disableGeoip } = options || {}
     let { onlyEvaluateLocally, sendFeatureFlagEvents } = options || {}
     let response = undefined
 
@@ -246,7 +249,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     const payloadWasLocallyEvaluated = response !== undefined
 
     if (!payloadWasLocallyEvaluated && !onlyEvaluateLocally) {
-      response = await super.getFeatureFlagPayloadStateless(key, distinctId, groups, personProperties, groupProperties)
+      response = await super.getFeatureFlagPayloadStateless(key, distinctId, groups, personProperties, groupProperties, disableGeoip)
     }
 
     try {
@@ -265,6 +268,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       groupProperties?: Record<string, Record<string, string>>
       onlyEvaluateLocally?: boolean
       sendFeatureFlagEvents?: boolean
+      disableGeoip?: boolean
     }
   ): Promise<boolean | undefined> {
     const feat = await this.getFeatureFlag(key, distinctId, options)
@@ -281,6 +285,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       personProperties?: Record<string, string>
       groupProperties?: Record<string, Record<string, string>>
       onlyEvaluateLocally?: boolean
+      disableGeoip?: boolean
     }
   ): Promise<Record<string, string | boolean>> {
     const response = await this.getAllFlagsAndPayloads(distinctId, options)
@@ -294,9 +299,10 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       personProperties?: Record<string, string>
       groupProperties?: Record<string, Record<string, string>>
       onlyEvaluateLocally?: boolean
+      disableGeoip?: boolean
     }
   ): Promise<PosthogFlagsAndPayloadsResponse> {
-    const { groups, personProperties, groupProperties } = options || {}
+    const { groups, personProperties, groupProperties, disableGeoip } = options || {}
     let { onlyEvaluateLocally } = options || {}
 
     // set defaults
@@ -325,7 +331,8 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         distinctId,
         groups,
         personProperties,
-        groupProperties
+        groupProperties,
+        disableGeoip
       )
       featureFlags = {
         ...featureFlags,
@@ -340,8 +347,8 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     return { featureFlags, featureFlagPayloads }
   }
 
-  groupIdentify({ groupType, groupKey, properties, distinctId }: GroupIdentifyMessage): void {
-    super.groupIdentifyStateless(groupType, groupKey, properties, undefined, distinctId)
+  groupIdentify({ groupType, groupKey, properties, distinctId, disableGeoip }: GroupIdentifyMessage): void {
+    super.groupIdentifyStateless(groupType, groupKey, properties, { disableGeoip }, distinctId)
   }
 
   async reloadFeatureFlags(): Promise<void> {

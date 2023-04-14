@@ -12,7 +12,8 @@ const mockedFetch = jest.mocked(fetch, true)
 const getLastBatchEvents = (): any[] | undefined => {
   expect(mockedFetch).toHaveBeenCalledWith('http://example.com/batch/', expect.objectContaining({ method: 'POST' }))
 
-  const call = mockedFetch.mock.calls.find((x) => (x[0] as string).includes('/batch/'))
+  // reverse mock calls array to get the last call
+  const call = mockedFetch.mock.calls.reverse().find((x) => (x[0] as string).includes('/batch/'))
   if (!call) {
     return undefined
   }
@@ -51,14 +52,21 @@ describe('PostHog Node.js', () => {
 
       jest.runOnlyPendingTimers()
       const batchEvents = getLastBatchEvents()
-      expect(batchEvents).toMatchObject([
+      expect(batchEvents).toEqual([
         {
           distinct_id: '123',
           event: 'test-event',
           properties: {
             $groups: { org: 123 },
             foo: 'bar',
+            $geoip_disable: true,
+            $lib: 'posthog-node',
+            $lib_version: '1.2.3',
           },
+          timestamp: expect.any(String),
+          type: 'capture',
+          library: 'posthog-node',
+          library_version: '1.2.3',
         },
       ])
     })
@@ -97,6 +105,7 @@ describe('PostHog Node.js', () => {
           properties: expect.objectContaining({
             $groups: { other_group: 'x' },
             foo: 'bar',
+            $geoip_disable: true,
           }),
           library: 'posthog-node',
           library_version: '1.2.3',
@@ -117,6 +126,7 @@ describe('PostHog Node.js', () => {
             $set: {
               foo: 'bar',
             },
+            $geoip_disable: true,
           },
         },
       ])
@@ -135,6 +145,7 @@ describe('PostHog Node.js', () => {
             $set: {
               foo: 'other',
             },
+            $geoip_disable: true,
           },
         },
       ])
@@ -152,6 +163,7 @@ describe('PostHog Node.js', () => {
           properties: {
             distinct_id: '123',
             alias: '1234',
+            $geoip_disable: true,
           },
         },
       ])
@@ -169,6 +181,65 @@ describe('PostHog Node.js', () => {
           event: 'custom-time',
         },
       ])
+    })
+
+    it('should respect disableGeoip setting if passed in', async () => {
+      expect(mockedFetch).toHaveBeenCalledTimes(0)
+      posthog.capture({ distinctId: '123', event: 'test-event', properties: { foo: 'bar' }, groups: { org: 123 }, disableGeoip: false })
+
+      jest.runOnlyPendingTimers()
+      const batchEvents = getLastBatchEvents()
+      expect(batchEvents?.[0].properties).toEqual({
+        $groups: { org: 123 },
+        foo: 'bar',
+        $lib: 'posthog-node',
+        $lib_version: '1.2.3',
+      })
+    })
+
+    it('should use default is set, and override on specific disableGeoip calls', async () => {
+      expect(mockedFetch).toHaveBeenCalledTimes(0)
+      const client = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        disableGeoip: false,
+      })
+      client.debug()
+      client.capture({ distinctId: '123', event: 'test-event', properties: { foo: 'bar' }, groups: { org: 123 }})
+
+      jest.runOnlyPendingTimers()
+      let batchEvents = getLastBatchEvents()
+      expect(batchEvents?.[0].properties).toEqual({
+        $groups: { org: 123 },
+        foo: 'bar',
+        $lib: 'posthog-node',
+        $lib_version: '1.2.3',
+      })
+
+      client.capture({ distinctId: '123', event: 'test-event', properties: { foo: 'bar' }, groups: { org: 123 }, disableGeoip: true})
+
+      jest.runOnlyPendingTimers()
+      batchEvents = getLastBatchEvents()
+      console.warn(batchEvents)
+      expect(batchEvents?.[0].properties).toEqual({
+        $groups: { org: 123 },
+        foo: 'bar',
+        $lib: 'posthog-node',
+        $lib_version: '1.2.3',
+        $geoip_disable: true,
+      })
+
+      client.capture({ distinctId: '123', event: 'test-event', properties: { foo: 'bar' }, groups: { org: 123 }, disableGeoip: false})
+
+      jest.runOnlyPendingTimers()
+      batchEvents = getLastBatchEvents()
+      expect(batchEvents?.[0].properties).toEqual({
+        $groups: { org: 123 },
+        foo: 'bar',
+        $lib: 'posthog-node',
+        $lib_version: '1.2.3',
+      })
+
+      await client.shutdownAsync()
     })
   })
 
@@ -243,6 +314,7 @@ describe('PostHog Node.js', () => {
             $group_key: 'team-1',
             $group_set: { analytics: true },
             $lib: 'posthog-node',
+            $geoip_disable: true,
           },
         },
       ])
@@ -266,6 +338,7 @@ describe('PostHog Node.js', () => {
             $group_key: 'team-1',
             $group_set: { analytics: true },
             $lib: 'posthog-node',
+            $geoip_disable: true,
           },
         },
       ])
@@ -292,7 +365,6 @@ describe('PostHog Node.js', () => {
 
       posthog = new PostHog('TEST_API_KEY', {
         host: 'http://example.com',
-        // flushAt: 1,
       })
     })
 
@@ -302,6 +374,10 @@ describe('PostHog Node.js', () => {
         'variant'
       )
       expect(mockedFetch).toHaveBeenCalledTimes(1)
+      expect(mockedFetch).toHaveBeenCalledWith(
+        'http://example.com/decide/?v=3',
+        expect.objectContaining({ method: 'POST', body: expect.stringContaining("\"geoip_disable\":true") })
+      )
     })
 
     it('should do isFeatureEnabled', async () => {
@@ -347,9 +423,54 @@ describe('PostHog Node.js', () => {
             '$feature/feature-variant': 'variant',
             $lib: 'posthog-node',
             $lib_version: '1.2.3',
+            $geoip_disable: true,
           }),
         })
       )
+
+      // no calls to `/local_evaluation`
+
+      expect(mockedFetch).not.toHaveBeenCalledWith(...anyLocalEvalCall)
+      expect(mockedFetch).toHaveBeenCalledWith(
+        'http://example.com/decide/?v=3',
+        expect.objectContaining({ method: 'POST', body: expect.stringContaining("\"geoip_disable\":true") })
+      )
+    })
+
+    it('captures feature flags with same geoip setting as capture', async () => {
+      mockedFetch.mockClear()
+      mockedFetch.mockClear()
+      expect(mockedFetch).toHaveBeenCalledTimes(0)
+
+      posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        flushAt: 1,
+      })
+
+      posthog.capture({
+        distinctId: 'distinct_id',
+        event: 'node test event',
+        sendFeatureFlags: true,
+        disableGeoip: false,
+      })
+
+      expect(mockedFetch).toHaveBeenCalledWith(
+        'http://example.com/decide/?v=3',
+        expect.objectContaining({ method: 'POST', body: expect.not.stringContaining("geoip_disable") })
+      )
+
+      jest.runOnlyPendingTimers()
+
+      await waitForPromises()
+
+      expect(getLastBatchEvents()?.[0].properties).toEqual({
+        $active_feature_flags: ['feature-1', 'feature-2', 'feature-variant'],
+        '$feature/feature-1': true,
+        '$feature/feature-2': true,
+        '$feature/feature-variant': 'variant',
+        $lib: 'posthog-node',
+        $lib_version: '1.2.3',
+      })
 
       // no calls to `/local_evaluation`
 
@@ -462,6 +583,7 @@ describe('PostHog Node.js', () => {
             $lib: 'posthog-node',
             $lib_version: '1.2.3',
             locally_evaluated: true,
+            $geoip_disable: true,
           }),
         })
       )
@@ -482,6 +604,7 @@ describe('PostHog Node.js', () => {
         await posthog.getFeatureFlag('beta-feature', 'some-distinct-id2', {
           groups: { x: 'y' },
           personProperties: { region: 'USA', name: 'Aloha' },
+          disableGeoip: false,
         })
       ).toEqual(true)
       jest.runOnlyPendingTimers()
@@ -491,16 +614,16 @@ describe('PostHog Node.js', () => {
         expect.objectContaining({
           distinct_id: 'some-distinct-id2',
           event: '$feature_flag_called',
-          properties: expect.objectContaining({
-            $feature_flag: 'beta-feature',
-            $feature_flag_response: true,
-            $lib: 'posthog-node',
-            $lib_version: '1.2.3',
-            locally_evaluated: true,
-            $groups: { x: 'y' },
-          }),
         })
       )
+      expect(getLastBatchEvents()?.[0].properties).toEqual({
+        $feature_flag: 'beta-feature',
+        $feature_flag_response: true,
+        $lib: 'posthog-node',
+        $lib_version: '1.2.3',
+        locally_evaluated: true,
+        $groups: { x: 'y' },
+      })
       mockedFetch.mockClear()
 
       // # called for different user, but send configuration is false, so should NOT call capture again
@@ -559,6 +682,10 @@ describe('PostHog Node.js', () => {
         posthog.getFeatureFlagPayload('feature-variant', '123', 'variant', { groups: { org: '123' } })
       ).resolves.toEqual(2)
       expect(mockedFetch).toHaveBeenCalledTimes(1)
+      expect(mockedFetch).toHaveBeenCalledWith(
+        'http://example.com/decide/?v=3',
+        expect.objectContaining({ method: 'POST', body: expect.stringContaining("\"geoip_disable\":true") })
+      )
     })
 
     it('should do getFeatureFlagPayloads without matchValue', async () => {
@@ -567,6 +694,27 @@ describe('PostHog Node.js', () => {
         posthog.getFeatureFlagPayload('feature-variant', '123', undefined, { groups: { org: '123' } })
       ).resolves.toEqual(2)
       expect(mockedFetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('should do getFeatureFlags with geoip disabled and enabled', async () => {
+      expect(mockedFetch).toHaveBeenCalledTimes(0)
+      await expect(
+        posthog.getFeatureFlagPayload('feature-variant', '123', 'variant', { groups: { org: '123' } })
+      ).resolves.toEqual(2)
+      expect(mockedFetch).toHaveBeenCalledTimes(1)
+      expect(mockedFetch).toHaveBeenCalledWith(
+        'http://example.com/decide/?v=3',
+        expect.objectContaining({ method: 'POST', body: expect.stringContaining("\"geoip_disable\":true") })
+      )
+
+      mockedFetch.mockClear()
+
+      await expect(posthog.isFeatureEnabled('feature-variant', '123', { disableGeoip: false })).resolves.toEqual(true)
+      expect(mockedFetch).toHaveBeenCalledTimes(1)
+      expect(mockedFetch).toHaveBeenCalledWith(
+        'http://example.com/decide/?v=3',
+        expect.objectContaining({ method: 'POST', body: expect.not.stringContaining("geoip_disable") })
+      )
     })
   })
 })
