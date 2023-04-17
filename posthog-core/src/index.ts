@@ -35,6 +35,7 @@ export abstract class PostHogCoreStateless {
   private removeDebugCallback?: () => void
   private debugMode: boolean = false
   private pendingPromises: Record<string, Promise<any>> = {}
+  private disableGeoip: boolean = true
 
   private _optoutOverride: boolean | undefined
 
@@ -70,6 +71,7 @@ export abstract class PostHogCoreStateless {
       retryDelay: options?.fetchRetryDelay ?? 3000,
     }
     this.requestTimeout = options?.requestTimeout ?? 10000 // 10 seconds
+    this.disableGeoip = options?.disableGeoip ?? true
   }
 
   protected getCommonEventProperties(): any {
@@ -151,7 +153,12 @@ export abstract class PostHogCoreStateless {
     return this
   }
 
-  protected aliasStateless(alias: string, distinctId: string, properties?: { [key: string]: any }): this {
+  protected aliasStateless(
+    alias: string,
+    distinctId: string,
+    properties?: { [key: string]: any },
+    options?: PosthogCaptureOptions
+  ): this {
     const payload = this.buildPayload({
       event: '$create_alias',
       distinct_id: distinctId,
@@ -162,7 +169,7 @@ export abstract class PostHogCoreStateless {
       },
     })
 
-    this.enqueue('alias', payload)
+    this.enqueue('alias', payload, options)
     return this
   }
 
@@ -229,9 +236,16 @@ export abstract class PostHogCoreStateless {
     distinctId: string,
     groups: Record<string, string> = {},
     personProperties: Record<string, string> = {},
-    groupProperties: Record<string, Record<string, string>> = {}
+    groupProperties: Record<string, Record<string, string>> = {},
+    disableGeoip?: boolean
   ): Promise<boolean | string | undefined> {
-    const featureFlags = await this.getFeatureFlagsStateless(distinctId, groups, personProperties, groupProperties)
+    const featureFlags = await this.getFeatureFlagsStateless(
+      distinctId,
+      groups,
+      personProperties,
+      groupProperties,
+      disableGeoip
+    )
 
     if (!featureFlags) {
       // If we haven't loaded flags yet, or errored out, we respond with undefined
@@ -255,9 +269,16 @@ export abstract class PostHogCoreStateless {
     distinctId: string,
     groups: Record<string, string> = {},
     personProperties: Record<string, string> = {},
-    groupProperties: Record<string, Record<string, string>> = {}
+    groupProperties: Record<string, Record<string, string>> = {},
+    disableGeoip?: boolean
   ): Promise<JsonType | undefined> {
-    const payloads = await this.getFeatureFlagPayloadsStateless(distinctId, groups, personProperties, groupProperties)
+    const payloads = await this.getFeatureFlagPayloadsStateless(
+      distinctId,
+      groups,
+      personProperties,
+      groupProperties,
+      disableGeoip
+    )
 
     if (!payloads) {
       return undefined
@@ -277,10 +298,17 @@ export abstract class PostHogCoreStateless {
     distinctId: string,
     groups: Record<string, string> = {},
     personProperties: Record<string, string> = {},
-    groupProperties: Record<string, Record<string, string>> = {}
+    groupProperties: Record<string, Record<string, string>> = {},
+    disableGeoip?: boolean
   ): Promise<PostHogDecideResponse['featureFlagPayloads'] | undefined> {
     const payloads = (
-      await this.getFeatureFlagsAndPayloadsStateless(distinctId, groups, personProperties, groupProperties)
+      await this.getFeatureFlagsAndPayloadsStateless(
+        distinctId,
+        groups,
+        personProperties,
+        groupProperties,
+        disableGeoip
+      )
     ).payloads
 
     if (payloads) {
@@ -301,21 +329,35 @@ export abstract class PostHogCoreStateless {
     distinctId: string,
     groups: Record<string, string | number> = {},
     personProperties: Record<string, string> = {},
-    groupProperties: Record<string, Record<string, string>> = {}
+    groupProperties: Record<string, Record<string, string>> = {},
+    disableGeoip?: boolean
   ): Promise<PostHogDecideResponse['featureFlags'] | undefined> {
-    return (await this.getFeatureFlagsAndPayloadsStateless(distinctId, groups, personProperties, groupProperties)).flags
+    return (
+      await this.getFeatureFlagsAndPayloadsStateless(
+        distinctId,
+        groups,
+        personProperties,
+        groupProperties,
+        disableGeoip
+      )
+    ).flags
   }
 
   protected async getFeatureFlagsAndPayloadsStateless(
     distinctId: string,
     groups: Record<string, string | number> = {},
     personProperties: Record<string, string> = {},
-    groupProperties: Record<string, Record<string, string>> = {}
+    groupProperties: Record<string, Record<string, string>> = {},
+    disableGeoip?: boolean
   ): Promise<{
     flags: PostHogDecideResponse['featureFlags'] | undefined
     payloads: PostHogDecideResponse['featureFlagPayloads'] | undefined
   }> {
-    const decideResponse = await this.getDecide(distinctId, groups, personProperties, groupProperties)
+    const extraPayload: Record<string, any> = {}
+    if (disableGeoip ?? this.disableGeoip) {
+      extraPayload['geoip_disable'] = true
+    }
+    const decideResponse = await this.getDecide(distinctId, groups, personProperties, groupProperties, extraPayload)
 
     const flags = decideResponse?.featureFlags
     const payloads = decideResponse?.featureFlagPayloads
@@ -341,6 +383,14 @@ export abstract class PostHogCoreStateless {
       library: this.getLibraryId(),
       library_version: this.getLibraryVersion(),
       timestamp: options?.timestamp ? options?.timestamp : currentISOTime(),
+    }
+
+    const addGeoipDisableProperty = options?.disableGeoip ?? this.disableGeoip
+    if (addGeoipDisableProperty) {
+      if (!message.properties) {
+        message.properties = {}
+      }
+      message['properties']['$geoip_disable'] = true
     }
 
     if (message.distinctId) {
@@ -494,7 +544,10 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   protected _sessionExpirationTimeSeconds: number
 
   constructor(apiKey: string, options?: PosthogCoreOptions) {
-    super(apiKey, options)
+    // Default for stateful mode is to not disable geoip. Only override if explicitly set
+    const disableGeoipOption = options?.disableGeoip ?? false
+
+    super(apiKey, { ...options, disableGeoip: disableGeoipOption })
 
     this.sendFeatureFlagEvent = options?.sendFeatureFlagEvent ?? true
     this._sessionExpirationTimeSeconds = options?.sessionExpirationTimeSeconds ?? 1800 // 30 minutes

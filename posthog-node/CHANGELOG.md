@@ -1,3 +1,21 @@
+# 3.0.0 - 2023-04-14
+
+Breaking change:
+
+All events by default now send the `$geoip_disable` property to disable geoip lookup in app. This is because usually we don't
+want to update person properties to take the server's location.
+
+The same now happens for feature flag requests, where we discard the IP address of the server for matching on geoip properties like city, country, continent.
+
+To restore previous behaviour, you can set the default to False like so:
+
+```javascript
+const posthog = new PostHog(PH_API_KEY, {
+  host: PH_HOST,
+  disableGeoip: false
+})
+```
+
 # 2.6.0 - 2023-03-14
 
 1. Add support for all cohorts local evaluation in feature flags.

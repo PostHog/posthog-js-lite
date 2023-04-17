@@ -3,6 +3,7 @@ import { JsonType } from '../../posthog-core/src'
 export interface IdentifyMessageV1 {
   distinctId: string
   properties?: Record<string | number, any>
+  disableGeoip?: boolean
 }
 
 export interface EventMessageV1 extends IdentifyMessageV1 {
@@ -17,6 +18,7 @@ export interface GroupIdentifyMessage {
   groupKey: string // Unique identifier for the group
   properties?: Record<string | number, any>
   distinctId?: string // optional distinctId to associate message with a person
+  disableGeoip?: boolean
 }
 
 export type PropertyGroup = {
