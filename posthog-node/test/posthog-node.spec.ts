@@ -185,7 +185,13 @@ describe('PostHog Node.js', () => {
 
     it('should respect disableGeoip setting if passed in', async () => {
       expect(mockedFetch).toHaveBeenCalledTimes(0)
-      posthog.capture({ distinctId: '123', event: 'test-event', properties: { foo: 'bar' }, groups: { org: 123 }, disableGeoip: false })
+      posthog.capture({
+        distinctId: '123',
+        event: 'test-event',
+        properties: { foo: 'bar' },
+        groups: { org: 123 },
+        disableGeoip: false,
+      })
 
       jest.runOnlyPendingTimers()
       const batchEvents = getLastBatchEvents()
@@ -204,7 +210,7 @@ describe('PostHog Node.js', () => {
         disableGeoip: false,
       })
       client.debug()
-      client.capture({ distinctId: '123', event: 'test-event', properties: { foo: 'bar' }, groups: { org: 123 }})
+      client.capture({ distinctId: '123', event: 'test-event', properties: { foo: 'bar' }, groups: { org: 123 } })
 
       jest.runOnlyPendingTimers()
       let batchEvents = getLastBatchEvents()
@@ -215,7 +221,13 @@ describe('PostHog Node.js', () => {
         $lib_version: '1.2.3',
       })
 
-      client.capture({ distinctId: '123', event: 'test-event', properties: { foo: 'bar' }, groups: { org: 123 }, disableGeoip: true})
+      client.capture({
+        distinctId: '123',
+        event: 'test-event',
+        properties: { foo: 'bar' },
+        groups: { org: 123 },
+        disableGeoip: true,
+      })
 
       jest.runOnlyPendingTimers()
       batchEvents = getLastBatchEvents()
@@ -228,7 +240,13 @@ describe('PostHog Node.js', () => {
         $geoip_disable: true,
       })
 
-      client.capture({ distinctId: '123', event: 'test-event', properties: { foo: 'bar' }, groups: { org: 123 }, disableGeoip: false})
+      client.capture({
+        distinctId: '123',
+        event: 'test-event',
+        properties: { foo: 'bar' },
+        groups: { org: 123 },
+        disableGeoip: false,
+      })
 
       jest.runOnlyPendingTimers()
       batchEvents = getLastBatchEvents()
@@ -376,7 +394,7 @@ describe('PostHog Node.js', () => {
       expect(mockedFetch).toHaveBeenCalledTimes(1)
       expect(mockedFetch).toHaveBeenCalledWith(
         'http://example.com/decide/?v=3',
-        expect.objectContaining({ method: 'POST', body: expect.stringContaining("\"geoip_disable\":true") })
+        expect.objectContaining({ method: 'POST', body: expect.stringContaining('"geoip_disable":true') })
       )
     })
 
@@ -433,7 +451,7 @@ describe('PostHog Node.js', () => {
       expect(mockedFetch).not.toHaveBeenCalledWith(...anyLocalEvalCall)
       expect(mockedFetch).toHaveBeenCalledWith(
         'http://example.com/decide/?v=3',
-        expect.objectContaining({ method: 'POST', body: expect.stringContaining("\"geoip_disable\":true") })
+        expect.objectContaining({ method: 'POST', body: expect.stringContaining('"geoip_disable":true') })
       )
     })
 
@@ -456,7 +474,7 @@ describe('PostHog Node.js', () => {
 
       expect(mockedFetch).toHaveBeenCalledWith(
         'http://example.com/decide/?v=3',
-        expect.objectContaining({ method: 'POST', body: expect.not.stringContaining("geoip_disable") })
+        expect.objectContaining({ method: 'POST', body: expect.not.stringContaining('geoip_disable') })
       )
 
       jest.runOnlyPendingTimers()
@@ -684,7 +702,7 @@ describe('PostHog Node.js', () => {
       expect(mockedFetch).toHaveBeenCalledTimes(1)
       expect(mockedFetch).toHaveBeenCalledWith(
         'http://example.com/decide/?v=3',
-        expect.objectContaining({ method: 'POST', body: expect.stringContaining("\"geoip_disable\":true") })
+        expect.objectContaining({ method: 'POST', body: expect.stringContaining('"geoip_disable":true') })
       )
     })
 
@@ -704,7 +722,7 @@ describe('PostHog Node.js', () => {
       expect(mockedFetch).toHaveBeenCalledTimes(1)
       expect(mockedFetch).toHaveBeenCalledWith(
         'http://example.com/decide/?v=3',
-        expect.objectContaining({ method: 'POST', body: expect.stringContaining("\"geoip_disable\":true") })
+        expect.objectContaining({ method: 'POST', body: expect.stringContaining('"geoip_disable":true') })
       )
 
       mockedFetch.mockClear()
@@ -713,7 +731,7 @@ describe('PostHog Node.js', () => {
       expect(mockedFetch).toHaveBeenCalledTimes(1)
       expect(mockedFetch).toHaveBeenCalledWith(
         'http://example.com/decide/?v=3',
-        expect.objectContaining({ method: 'POST', body: expect.not.stringContaining("geoip_disable") })
+        expect.objectContaining({ method: 'POST', body: expect.not.stringContaining('geoip_disable') })
       )
     })
   })

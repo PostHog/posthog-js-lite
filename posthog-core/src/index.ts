@@ -153,7 +153,12 @@ export abstract class PostHogCoreStateless {
     return this
   }
 
-  protected aliasStateless(alias: string, distinctId: string, properties?: { [key: string]: any }, options?: PosthogCaptureOptions): this {
+  protected aliasStateless(
+    alias: string,
+    distinctId: string,
+    properties?: { [key: string]: any },
+    options?: PosthogCaptureOptions
+  ): this {
     const payload = this.buildPayload({
       event: '$create_alias',
       distinct_id: distinctId,
@@ -234,7 +239,13 @@ export abstract class PostHogCoreStateless {
     groupProperties: Record<string, Record<string, string>> = {},
     disableGeoip?: boolean
   ): Promise<boolean | string | undefined> {
-    const featureFlags = await this.getFeatureFlagsStateless(distinctId, groups, personProperties, groupProperties, disableGeoip)
+    const featureFlags = await this.getFeatureFlagsStateless(
+      distinctId,
+      groups,
+      personProperties,
+      groupProperties,
+      disableGeoip
+    )
 
     if (!featureFlags) {
       // If we haven't loaded flags yet, or errored out, we respond with undefined
@@ -261,7 +272,13 @@ export abstract class PostHogCoreStateless {
     groupProperties: Record<string, Record<string, string>> = {},
     disableGeoip?: boolean
   ): Promise<JsonType | undefined> {
-    const payloads = await this.getFeatureFlagPayloadsStateless(distinctId, groups, personProperties, groupProperties, disableGeoip)
+    const payloads = await this.getFeatureFlagPayloadsStateless(
+      distinctId,
+      groups,
+      personProperties,
+      groupProperties,
+      disableGeoip
+    )
 
     if (!payloads) {
       return undefined
@@ -285,7 +302,13 @@ export abstract class PostHogCoreStateless {
     disableGeoip?: boolean
   ): Promise<PostHogDecideResponse['featureFlagPayloads'] | undefined> {
     const payloads = (
-      await this.getFeatureFlagsAndPayloadsStateless(distinctId, groups, personProperties, groupProperties, disableGeoip)
+      await this.getFeatureFlagsAndPayloadsStateless(
+        distinctId,
+        groups,
+        personProperties,
+        groupProperties,
+        disableGeoip
+      )
     ).payloads
 
     if (payloads) {
@@ -309,7 +332,15 @@ export abstract class PostHogCoreStateless {
     groupProperties: Record<string, Record<string, string>> = {},
     disableGeoip?: boolean
   ): Promise<PostHogDecideResponse['featureFlags'] | undefined> {
-    return (await this.getFeatureFlagsAndPayloadsStateless(distinctId, groups, personProperties, groupProperties, disableGeoip)).flags
+    return (
+      await this.getFeatureFlagsAndPayloadsStateless(
+        distinctId,
+        groups,
+        personProperties,
+        groupProperties,
+        disableGeoip
+      )
+    ).flags
   }
 
   protected async getFeatureFlagsAndPayloadsStateless(
@@ -322,7 +353,6 @@ export abstract class PostHogCoreStateless {
     flags: PostHogDecideResponse['featureFlags'] | undefined
     payloads: PostHogDecideResponse['featureFlagPayloads'] | undefined
   }> {
-
     const extraPayload: Record<string, any> = {}
     if (disableGeoip ?? this.disableGeoip) {
       extraPayload['geoip_disable'] = true
@@ -517,7 +547,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     // Default for stateful mode is to not disable geoip. Only override if explicitly set
     const disableGeoipOption = options?.disableGeoip ?? false
 
-    super(apiKey, {...options, disableGeoip: disableGeoipOption})
+    super(apiKey, { ...options, disableGeoip: disableGeoipOption })
 
     this.sendFeatureFlagEvent = options?.sendFeatureFlagEvent ?? true
     this._sessionExpirationTimeSeconds = options?.sessionExpirationTimeSeconds ?? 1800 // 30 minutes

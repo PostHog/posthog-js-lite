@@ -128,9 +128,13 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     // Catch properties passed as $set and move them to the top level
     const personProperties = properties?.$set || properties
 
-    super.identifyStateless(distinctId, {
-      $set: personProperties,
-    }, { disableGeoip })
+    super.identifyStateless(
+      distinctId,
+      {
+        $set: personProperties,
+      },
+      { disableGeoip }
+    )
   }
 
   alias(data: { distinctId: string; alias: string; disableGeoip?: boolean }): void {
@@ -171,7 +175,14 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     const flagWasLocallyEvaluated = response !== undefined
 
     if (!flagWasLocallyEvaluated && !onlyEvaluateLocally) {
-      response = await super.getFeatureFlagStateless(key, distinctId, groups, personProperties, groupProperties, disableGeoip)
+      response = await super.getFeatureFlagStateless(
+        key,
+        distinctId,
+        groups,
+        personProperties,
+        groupProperties,
+        disableGeoip
+      )
     }
 
     const featureFlagReportedKey = `${key}_${response}`
@@ -249,7 +260,14 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     const payloadWasLocallyEvaluated = response !== undefined
 
     if (!payloadWasLocallyEvaluated && !onlyEvaluateLocally) {
-      response = await super.getFeatureFlagPayloadStateless(key, distinctId, groups, personProperties, groupProperties, disableGeoip)
+      response = await super.getFeatureFlagPayloadStateless(
+        key,
+        distinctId,
+        groups,
+        personProperties,
+        groupProperties,
+        disableGeoip
+      )
     }
 
     try {
