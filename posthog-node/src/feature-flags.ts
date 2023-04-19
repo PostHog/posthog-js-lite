@@ -425,7 +425,7 @@ class FeatureFlagsPoller {
     try {
       return await this.fetch(url, options)
     } catch (err) {
-      throw new Error(`Request failed with error: ${err}`)
+      throw err
     } finally {
       clearTimeout(abortTimeout)
     }

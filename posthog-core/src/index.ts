@@ -24,6 +24,26 @@ export * as utils from './utils'
 import { LZString } from './lz-string'
 import { SimpleEventEmitter } from './eventemitter'
 
+class PostHogFetchHttpError extends Error {
+  name = 'PostHogFetchHttpError'
+
+  constructor(public response: PostHogFetchResponse) {
+    super('HTTP error while fetching PostHog: ' + response.status)
+  }
+}
+
+class PostHogFetchNetworkError extends Error {
+  name = 'PostHogFetchNetworkError'
+
+  constructor(public error: unknown) {
+    super('Network error while fetching PostHog', error instanceof Error ? { cause: error } : {})
+  }
+}
+
+function isPostHogFetchError(err: any): boolean {
+  return typeof err === 'object' && (err.name === 'PostHogFetchHttpError' || err.name === 'PostHogFetchNetworkError')
+}
+
 export abstract class PostHogCoreStateless {
   // options
   private apiKey: string
@@ -69,6 +89,7 @@ export abstract class PostHogCoreStateless {
     this._retryOptions = {
       retryCount: options?.fetchRetryCount ?? 3,
       retryDelay: options?.fetchRetryDelay ?? 3000,
+      retryCheck: isPostHogFetchError,
     }
     this.requestTimeout = options?.requestTimeout ?? 10000 // 10 seconds
     this.disableGeoip = options?.disableGeoip ?? true
@@ -449,6 +470,9 @@ export abstract class PostHogCoreStateless {
     const promiseUUID = generateUUID()
 
     const done = (err?: any): void => {
+      if (err) {
+        this._events.emit('error', err)
+      }
       callback?.(err, messages)
       // remove promise from pendingPromises
       delete this.pendingPromises[promiseUUID]
@@ -486,18 +510,12 @@ export abstract class PostHogCoreStateless {
             headers: { 'Content-Type': 'application/json' },
             body: payload,
           }
-
     const requestPromise = this.fetchWithRetry(url, fetchOptions)
     this.pendingPromises[promiseUUID] = requestPromise
 
     requestPromise
       .then(() => done())
       .catch((err) => {
-        if (err.response) {
-          const error = new Error(err.response.statusText)
-          return done(error)
-        }
-
         done(err)
       })
   }
@@ -513,20 +531,38 @@ export abstract class PostHogCoreStateless {
       return ctrl.signal
     }
 
-    return retriable(
-      () =>
-        this.fetch(url, {
-          signal: (AbortSignal as any).timeout(this.requestTimeout),
-          ...options,
-        }),
-      retryOptions || this._retryOptions
+    return await retriable(
+      async () => {
+        let res: PostHogFetchResponse | null = null
+        try {
+          res = await this.fetch(url, {
+            signal: (AbortSignal as any).timeout(this.requestTimeout),
+            ...options,
+          })
+        } catch (e) {
+          // fetch will only throw on network errors or on timeouts
+          throw new PostHogFetchNetworkError(e)
+        }
+        if (res.status < 200 || res.status >= 400) {
+          throw new PostHogFetchHttpError(res)
+        }
+        return res
+      },
+      { ...this._retryOptions, ...retryOptions }
     )
   }
 
   async shutdownAsync(): Promise<void> {
     clearTimeout(this._flushTimer)
-    await this.flushAsync()
-    await Promise.allSettled(Object.values(this.pendingPromises))
+    try {
+      await this.flushAsync()
+      await Promise.allSettled(Object.values(this.pendingPromises))
+    } catch (e) {
+      if (!isPostHogFetchError(e)) {
+        throw e
+      }
+      console.error('Error while shutting down PostHog', e)
+    }
   }
 
   shutdown(): void {

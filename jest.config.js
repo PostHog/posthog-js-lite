@@ -15,7 +15,7 @@ module.exports = {
   globals: {
     'ts-jest': {
       tsconfig: {
-        lib: ['ES2015', 'DOM'], // We need to include DOM for tests
+        lib: ['ES2015', 'ES2022.Error', 'DOM'], // We need to include DOM for tests
       },
     },
   },

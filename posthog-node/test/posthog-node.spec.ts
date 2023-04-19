@@ -28,6 +28,7 @@ describe('PostHog Node.js', () => {
   beforeEach(() => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
+      fetchRetryCount: 0,
     })
 
     mockedFetch.mockResolvedValue({
@@ -266,8 +267,7 @@ describe('PostHog Node.js', () => {
       // a serverless posthog configuration
       posthog = new PostHog('TEST_API_KEY', {
         host: 'http://example.com',
-        flushAt: 1,
-        flushInterval: 0,
+        fetchRetryCount: 0,
       })
 
       mockedFetch.mockImplementation(async () => {
@@ -290,6 +290,12 @@ describe('PostHog Node.js', () => {
     })
 
     it('should shutdown cleanly', async () => {
+      posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        fetchRetryCount: 0,
+        flushAt: 1,
+      })
+
       const logSpy = jest.spyOn(global.console, 'log')
       jest.useRealTimers()
       // using debug mode to check console.log output
@@ -319,9 +325,10 @@ describe('PostHog Node.js', () => {
   })
 
   describe('groupIdentify', () => {
-    it('should identify group with unique id', () => {
+    it('should identify group with unique id', async () => {
       posthog.groupIdentify({ groupType: 'posthog', groupKey: 'team-1', properties: { analytics: true } })
       jest.runOnlyPendingTimers()
+      await posthog.flushAsync()
       const batchEvents = getLastBatchEvents()
       expect(batchEvents).toMatchObject([
         {
@@ -338,7 +345,7 @@ describe('PostHog Node.js', () => {
       ])
     })
 
-    it('should allow passing optional distinctID to identify group', () => {
+    it('should allow passing optional distinctID to identify group', async () => {
       posthog.groupIdentify({
         groupType: 'posthog',
         groupKey: 'team-1',
@@ -346,6 +353,7 @@ describe('PostHog Node.js', () => {
         distinctId: '123',
       })
       jest.runOnlyPendingTimers()
+      await posthog.flushAsync()
       const batchEvents = getLastBatchEvents()
       expect(batchEvents).toMatchObject([
         {
@@ -383,6 +391,7 @@ describe('PostHog Node.js', () => {
 
       posthog = new PostHog('TEST_API_KEY', {
         host: 'http://example.com',
+        fetchRetryCount: 0,
       })
     })
 
@@ -413,6 +422,7 @@ describe('PostHog Node.js', () => {
       posthog = new PostHog('TEST_API_KEY', {
         host: 'http://example.com',
         flushAt: 1,
+        fetchRetryCount: 0,
       })
 
       posthog.capture({
@@ -463,6 +473,7 @@ describe('PostHog Node.js', () => {
       posthog = new PostHog('TEST_API_KEY', {
         host: 'http://example.com',
         flushAt: 1,
+        fetchRetryCount: 0,
       })
 
       posthog.capture({
@@ -523,6 +534,7 @@ describe('PostHog Node.js', () => {
         host: 'http://example.com',
         personalApiKey: 'TEST_PERSONAL_API_KEY',
         maxCacheSize: 10,
+        fetchRetryCount: 0,
       })
 
       expect(Object.keys(posthog.distinctIdHasSentFlagCalls).length).toEqual(0)
@@ -581,6 +593,7 @@ describe('PostHog Node.js', () => {
         host: 'http://example.com',
         personalApiKey: 'TEST_PERSONAL_API_KEY',
         maxCacheSize: 10,
+        fetchRetryCount: 0,
       })
 
       expect(

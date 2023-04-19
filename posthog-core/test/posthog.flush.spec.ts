@@ -34,11 +34,17 @@ describe('PostHog Core', () => {
 
     it('responds with an error after retries', async () => {
       posthog.capture('test-event-1')
-      mocks.fetch.mockRejectedValue('Network error')
+      mocks.fetch.mockImplementation(() => {
+        return Promise.resolve({
+          status: 400,
+          text: async () => 'err',
+          json: async () => ({ status: 'err' }),
+        })
+      })
 
       const time = Date.now()
       jest.useRealTimers()
-      await expect(posthog.flushAsync()).rejects.toEqual('Network error')
+      await expect(posthog.flushAsync()).rejects.toHaveProperty('name', 'PostHogFetchHttpError')
       expect(mocks.fetch).toHaveBeenCalledTimes(4)
       expect(Date.now() - time).toBeGreaterThan(300)
       expect(Date.now() - time).toBeLessThan(500)
