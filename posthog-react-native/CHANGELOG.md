@@ -1,7 +1,10 @@
 # 2.6.0 - 2023-04-19
 
 1. Some small fixes to incorrect types
-2. Improved error handling logic to ensure that API errors are handled the same regardless of underlying fetch mechanism.
+2. Fixed fetch compatibility by aligning error handling
+3. Added two errors: PostHogFetchHttpError (non-2xx status) and PostHogFetchNetworkError (fetch network error)
+4. Added .on('error', (err) => void)
+5. shutdownAsync now ignores fetch errors. They should be handled with .on('error', ...) from now on.
 
 # 2.5.2 - 2023-02-13
 
