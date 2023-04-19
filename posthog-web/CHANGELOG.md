@@ -1,3 +1,11 @@
+# 2.3.0 - 2023-04-19
+
+1. Some small fixes to incorrect types
+2. Fixed fetch compatibility by aligning error handling
+3. Added two errors: PostHogFetchHttpError (non-2xx status) and PostHogFetchNetworkError (fetch network error)
+4. Added .on('error', (err) => void)
+5. shutdownAsync now ignores fetch errors. They should be handled with .on('error', ...) from now on.
+
 # 2.2.1 - 2023-02-13
 
 1. Fixes an issue where background network errors would trigger unhandled promise warnings

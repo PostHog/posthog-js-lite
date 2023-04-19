@@ -1,3 +1,11 @@
+# 3.1.0 - 2023-04-19
+
+1. Some small fixes to incorrect types
+2. Fixed fetch compatibility by aligning error handling
+3. Added two errors: PostHogFetchHttpError (non-2xx status) and PostHogFetchNetworkError (fetch network error)
+4. Added .on('error', (err) => void)
+5. shutdownAsync now ignores fetch errors. They should be handled with .on('error', ...) from now on.
+
 # 3.0.0 - 2023-04-14
 
 Breaking change:
@@ -12,7 +20,7 @@ To restore previous behaviour, you can set the default to False like so:
 ```javascript
 const posthog = new PostHog(PH_API_KEY, {
   host: PH_HOST,
-  disableGeoip: false
+  disableGeoip: false,
 })
 ```
 
@@ -23,10 +31,12 @@ const posthog = new PostHog(PH_API_KEY, {
 # 2.5.4 - 2023-02-27
 
 1. Fix error log for local evaluation of feature flags (InconclusiveMatchError(s)) to only show during debug mode.
+
 # 2.5.3 - 2023-02-21
 
 1. Allow passing in a distinctId to `groupIdentify()`.
 2. Fix a bug with active feature flags on capture events, where non-active flags would be added to the list as well.
+
 # 2.5.2 - 2023-02-17
 
 1. Fix issue where properties passed to `.identify` were not set correctly
