@@ -1,3 +1,8 @@
+# 2.6.0 - 2023-04-19
+
+1. Some small fixes to incorrect types
+2. Improved error handling logic to ensure that API errors are handled the same regardless of underlying fetch mechanism.
+
 # 2.5.2 - 2023-02-13
 
 1. Fixes an issue where background network errors would trigger unhandled promise warnings
