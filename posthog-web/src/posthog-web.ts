@@ -21,6 +21,10 @@ export class PostHog extends PostHogCore {
     this._storageKey = options?.persistence_name ? `ph_${options.persistence_name}` : `ph_${apiKey}_posthog`
     this._storage = getStorage(options?.persistence || 'localStorage', window)
     this.setupBootstrap(options)
+
+    if (options?.preloadFeatureFlags !== false) {
+      this.reloadFeatureFlags()
+    }
   }
 
   getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined {

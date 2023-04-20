@@ -587,10 +587,6 @@ export abstract class PostHogCore extends PostHogCoreStateless {
 
     this.sendFeatureFlagEvent = options?.sendFeatureFlagEvent ?? true
     this._sessionExpirationTimeSeconds = options?.sessionExpirationTimeSeconds ?? 1800 // 30 minutes
-
-    if (options?.preloadFeatureFlags !== false) {
-      this.reloadFeatureFlags()
-    }
   }
 
   protected setupBootstrap(options?: Partial<PosthogCoreOptions>): void {
@@ -740,9 +736,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       this.setPersistedProperty(PostHogPersistedProperty.AnonymousId, previousDistinctId)
       this.setPersistedProperty(PostHogPersistedProperty.DistinctId, distinctId)
 
-      if (this.getFeatureFlags()) {
-        this.reloadFeatureFlags()
-      }
+      this.reloadFeatureFlags()
     }
 
     super.identifyStateless(distinctId, allProperties, options)
@@ -809,7 +803,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       },
     })
 
-    if (Object.keys(groups).find((type) => existingGroups[type] !== groups[type]) && this.getFeatureFlags()) {
+    if (Object.keys(groups).find((type) => existingGroups[type] !== groups[type])) {
       this.reloadFeatureFlags()
     }
 

@@ -1,41 +1,44 @@
 import { PostHog, PostHogCustomAsyncStorage } from '../index'
 
-let posthog: PostHog
-
 describe('PostHog React Native', () => {
   let mockStorage: PostHogCustomAsyncStorage
   let cache: any = {}
 
+  jest.setTimeout(500)
+  jest.useRealTimers()
+
   beforeEach(() => {
     cache = {}
     mockStorage = {
-      getItem: jest.fn(async (key) => {
+      getItem: async (key) => {
         return cache[key] || null
-      }),
-      setItem: jest.fn(async (key, value) => {
+      },
+      setItem: async (key, value) => {
         cache[key] = value
-      }),
+      },
     }
 
     PostHog._resetClientCache()
   })
 
-  it('should initialize properly with bootstrap', () => {
-    posthog = new PostHog('test-token', { bootstrap: { distinctId: 'bar' }, persistence: 'memory' })
-    jest.runOnlyPendingTimers()
+  it('should initialize properly with bootstrap', async () => {
+    const posthog = await PostHog.initAsync('test-token', {
+      bootstrap: { distinctId: 'bar' },
+      persistence: 'memory',
+    })
+
     expect(posthog.getAnonymousId()).toEqual('bar')
     expect(posthog.getDistinctId()).toEqual('bar')
   })
 
-  it('should initialize properly with bootstrap using async storage', () => {
-    posthog = new PostHog('test-token', { bootstrap: { distinctId: 'bar' }, persistence: 'file' })
-    jest.runOnlyPendingTimers()
+  it('should initialize properly with bootstrap using async storage', async () => {
+    const posthog = await PostHog.initAsync('test-token', { bootstrap: { distinctId: 'bar' }, persistence: 'file' })
     expect(posthog.getAnonymousId()).toEqual('bar')
     expect(posthog.getDistinctId()).toEqual('bar')
   })
 
-  it('should allow customising of native app properties', () => {
-    posthog = new PostHog('test-token', { customAppProperties: { $app_name: 'custom' } })
+  it('should allow customising of native app properties', async () => {
+    const posthog = await PostHog.initAsync('test-token', { customAppProperties: { $app_name: 'custom' } })
 
     expect(posthog.getCommonEventProperties()).toEqual({
       $active_feature_flags: undefined,
@@ -47,7 +50,7 @@ describe('PostHog React Native', () => {
       $app_name: 'custom',
     })
 
-    posthog = new PostHog('test-token', {
+    const posthog2 = await PostHog.initAsync('test-token2', {
       customAppProperties: (properties) => {
         properties.$app_name = 'customised!'
         delete properties.$device_name
@@ -55,7 +58,7 @@ describe('PostHog React Native', () => {
       },
     })
 
-    expect(posthog.getCommonEventProperties()).toEqual({
+    expect(posthog2.getCommonEventProperties()).toEqual({
       $active_feature_flags: undefined,
       $lib: 'posthog-react-native',
       $lib_version: expect.any(String),
