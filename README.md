@@ -1,4 +1,3 @@
-**This library is still a work in progress!**
 
 # posthog-js-lite
 
@@ -10,6 +9,15 @@ The short-term goal is to have a dedicated React Native library free from any pl
 
 1. Installation to Expo managed projects without any separate compilation / ejecting
 2. Tighter integration to RN enabling hooks, context, autocapture etc.
+
+
+## Changelog
+
+Find the changelogs for the respective libraries in their folders:
+
+1. [posthog-node](https://github.com/PostHog/posthog-js-lite/blob/master/posthog-node/CHANGELOG.md)
+2. [posthog-react-native](https://github.com/PostHog/posthog-js-lite/blob/master/posthog-react-native/CHANGELOG.md)
+3. [posthog-web](https://github.com/PostHog/posthog-js-lite/blob/master/posthog-web/CHANGELOG.md)
 
 ## Development
 
