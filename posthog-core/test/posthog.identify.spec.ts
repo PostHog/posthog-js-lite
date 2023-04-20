@@ -14,11 +14,12 @@ describe('PostHog Core', () => {
   })
 
   describe('identify', () => {
+    // Identify also triggers a decide call so we should expect 2 calls
     it('should send an $identify event', () => {
       posthog.identify('id-1', { foo: 'bar' })
 
-      expect(mocks.fetch).toHaveBeenCalledTimes(1)
-      expect(parseBody(mocks.fetch.mock.calls[0])).toEqual({
+      expect(mocks.fetch).toHaveBeenCalledTimes(2)
+      expect(parseBody(mocks.fetch.mock.calls[1])).toEqual({
         api_key: 'TEST_API_KEY',
         batch: [
           {
@@ -47,8 +48,8 @@ describe('PostHog Core', () => {
     it('should include anonymous ID if set', () => {
       posthog.identify('id-1', { foo: 'bar' })
 
-      expect(mocks.fetch).toHaveBeenCalledTimes(1)
-      expect(parseBody(mocks.fetch.mock.calls[0])).toMatchObject({
+      expect(mocks.fetch).toHaveBeenCalledTimes(2)
+      expect(parseBody(mocks.fetch.mock.calls[1])).toMatchObject({
         batch: [
           {
             distinct_id: posthog.getDistinctId(),
@@ -74,8 +75,8 @@ describe('PostHog Core', () => {
       posthog.identify('id-1', { foo: 'bar' })
       // One call exists for the queueing, one for persisting distinct id
       expect(mocks.storage.setItem).toHaveBeenCalledWith('distinct_id', 'id-1')
-      expect(mocks.fetch).toHaveBeenCalledTimes(1)
-      expect(parseBody(mocks.fetch.mock.calls[0])).toMatchObject({
+      expect(mocks.fetch).toHaveBeenCalledTimes(2) // Once for reload flags, once for identify
+      expect(parseBody(mocks.fetch.mock.calls[1])).toMatchObject({
         batch: [
           {
             distinct_id: 'id-1',

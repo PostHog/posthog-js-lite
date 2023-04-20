@@ -41,7 +41,8 @@ describe('PostHog Core', () => {
     it('should call groupIdentify if including props', () => {
       posthog.group('other', 'team', { foo: 'bar' })
 
-      expect(parseBody(mocks.fetch.mock.calls[0])).toMatchObject({
+      expect(mocks.fetch).toHaveBeenCalledTimes(2) // 1 for decide, 1 for groupIdentify
+      expect(parseBody(mocks.fetch.mock.calls[1])).toMatchObject({
         batch: [
           {
             event: '$groupidentify',

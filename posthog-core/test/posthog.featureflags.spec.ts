@@ -16,6 +16,7 @@ describe('PostHog Core', () => {
     'json-payload': true,
   })
 
+  // NOTE: Aren't these supposed to be strings?
   const createMockFeatureFlagPayloads = (): any => ({
     'feature-1': {
       color: 'blue',
@@ -99,42 +100,8 @@ describe('PostHog Core', () => {
 
     describe('when loaded', () => {
       beforeEach(() => {
-        jest.runOnlyPendingTimers() // trigger init setImmediate
-      })
-
-      it('should load feature flags on init', async () => {
-        expect(mocks.fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=3', {
-          body: JSON.stringify({
-            token: 'TEST_API_KEY',
-            distinct_id: posthog.getDistinctId(),
-            groups: {},
-            person_properties: {},
-            group_properties: {},
-            $anon_distinct_id: posthog.getAnonymousId(),
-          }),
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          signal: expect.anything(),
-        })
-
-        expect(posthog.getFeatureFlags()).toEqual({
-          'feature-1': true,
-          'feature-2': true,
-          'json-payload': true,
-          'feature-variant': 'variant',
-        })
-
-        expect(posthog.getFeatureFlagPayloads()).toEqual({
-          'feature-1': {
-            color: 'blue',
-          },
-          'json-payload': {
-            a: 'payload',
-          },
-          'feature-variant': 5,
-        })
+        // The core doesn't reload flags by default (this is handled differently by web and RN)
+        posthog.reloadFeatureFlags()
       })
 
       it('should return the value of a flag', async () => {
@@ -171,7 +138,7 @@ describe('PostHog Core', () => {
             })
           })
 
-          jest.runOnlyPendingTimers() // trigger init setImmediate
+          posthog.reloadFeatureFlags()
         })
 
         it('should return undefined', async () => {
@@ -241,7 +208,7 @@ describe('PostHog Core', () => {
               })
           })
 
-          jest.runOnlyPendingTimers() // trigger init setImmediate
+          posthog.reloadFeatureFlags()
         })
 
         it('should return combined results', async () => {
@@ -344,7 +311,7 @@ describe('PostHog Core', () => {
               })
           })
 
-          jest.runOnlyPendingTimers() // trigger init setImmediate
+          posthog.reloadFeatureFlags()
         })
 
         it('should return only latest results', async () => {
@@ -557,7 +524,7 @@ describe('PostHog Core', () => {
 
     describe('when loaded', () => {
       beforeEach(() => {
-        jest.runOnlyPendingTimers() // trigger init setImmediate
+        posthog.reloadFeatureFlags()
       })
 
       it('should load new feature flags', async () => {
