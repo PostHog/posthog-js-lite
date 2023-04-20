@@ -8,6 +8,20 @@ describe('PostHog React Native', () => {
   jest.useRealTimers()
 
   beforeEach(() => {
+    ;(global as any).window.fetch = jest.fn(async (url) => {
+      let res: any = { status: 'ok' }
+      if (url.includes('decide')) {
+        res = {
+          featureFlags: {},
+        }
+      }
+
+      return {
+        status: 200,
+        json: () => Promise.resolve(res),
+      }
+    })
+
     cache = {}
     mockStorage = {
       getItem: async (key) => {
