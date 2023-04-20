@@ -75,31 +75,26 @@ export class PostHog extends PostHogCore {
 
     // Ensure the async storage has been preloaded (this call is cached)
 
-    const setupFromStorage = (): void => {
+    const setupAsync = async (): Promise<void> => {
+      await this._semiAsyncStorage.preloadAsync()
+
       this.setupBootstrap(options)
+
+      // It is possible that the old library was used so we try to get the legacy distinctID
+      if (!this._semiAsyncStorage.getItem(PostHogPersistedProperty.AnonymousId)) {
+        const legacyValues = await getLegacyValues()
+        if (legacyValues?.distinctId) {
+          this._semiAsyncStorage.setItem(PostHogPersistedProperty.DistinctId, legacyValues.distinctId)
+          this._semiAsyncStorage.setItem(PostHogPersistedProperty.AnonymousId, legacyValues.anonymousId)
+        }
+      }
 
       if (options?.preloadFeatureFlags !== false) {
         this.reloadFeatureFlags()
       }
-
-      // It is possible that the old library was used so we try to get the legacy distinctID
-      if (!this._semiAsyncStorage.getItem(PostHogPersistedProperty.AnonymousId)) {
-        getLegacyValues().then((legacyValues) => {
-          if (legacyValues?.distinctId) {
-            this._semiAsyncStorage.setItem(PostHogPersistedProperty.DistinctId, legacyValues.distinctId)
-            this._semiAsyncStorage.setItem(PostHogPersistedProperty.AnonymousId, legacyValues.anonymousId)
-          }
-        })
-      }
     }
 
-    if (this._semiAsyncStorage.isPreloaded) {
-      setupFromStorage()
-    } else {
-      void this._semiAsyncStorage.preloadAsync().then(() => {
-        setupFromStorage()
-      })
-    }
+    void setupAsync()
   }
 
   getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined {
