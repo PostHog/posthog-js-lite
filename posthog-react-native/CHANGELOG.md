@@ -1,3 +1,9 @@
+# 2.7.0 - 2023-04-20
+
+1. Fixes a race condition that could occur when initialising PostHog
+2. Fixes an issue where feature flags would not be reloaded after a reset
+3. PostHog should always be initialized via .initAsync and will now warn if this is not the case
+
 # 2.6.0 - 2023-04-19
 
 1. Some small fixes to incorrect types
