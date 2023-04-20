@@ -24,22 +24,40 @@ export type PostHogOptions = PosthogCoreOptions & {
   customAsyncStorage?: PostHogCustomAsyncStorage
 }
 
+const clientMap = new Map<string, PostHog>()
+
 export class PostHog extends PostHogCore {
   private _persistence: PostHogOptions['persistence']
   private _memoryStorage = new PostHogMemoryStorage()
   private _semiAsyncStorage: SemiAsyncStorage
   private _appProperties: PostHogCustomAppProperties = {}
 
+  static _resetClientCache(): void {
+    // NOTE: this method is intended for testing purposes only
+    clientMap.clear()
+  }
+
   /** Await this method to ensure that all state has been loaded from the async provider */
   static async initAsync(apiKey: string, options?: PostHogOptions): Promise<PostHog> {
-    const storage = new SemiAsyncStorage(options?.customAsyncStorage || buildOptimisiticAsyncStorage())
-    const posthog = new PostHog(apiKey, options, storage)
-    await posthog._semiAsyncStorage.preloadAsync()
+    let posthog = clientMap.get(apiKey)
+
+    if (!posthog) {
+      const storage = new SemiAsyncStorage(options?.customAsyncStorage || buildOptimisiticAsyncStorage())
+      await storage.preloadAsync()
+      posthog = new PostHog(apiKey, options, storage)
+      clientMap.set(apiKey, posthog)
+    } else {
+      console.warn('PostHog.initAsync called twice with the same apiKey. The first instance will be used.')
+    }
+
     return posthog
   }
 
   constructor(apiKey: string, options?: PostHogOptions, storage?: SemiAsyncStorage) {
-    super(apiKey, options)
+    super(apiKey, {
+      ...(options || {}),
+      preloadFeatureFlags: false, // NOTE: We override here as we only want to call this once async storage is ready
+    })
     this._persistence = options?.persistence
 
     // Either build the app properties from the existing ones
@@ -59,6 +77,10 @@ export class PostHog extends PostHogCore {
 
     const setupFromStorage = (): void => {
       this.setupBootstrap(options)
+
+      if (options?.preloadFeatureFlags !== false) {
+        this.reloadFeatureFlags()
+      }
 
       // It is possible that the old library was used so we try to get the legacy distinctID
       if (!this._semiAsyncStorage.getItem(PostHogPersistedProperty.AnonymousId)) {

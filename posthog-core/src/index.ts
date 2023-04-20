@@ -588,11 +588,8 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     this.sendFeatureFlagEvent = options?.sendFeatureFlagEvent ?? true
     this._sessionExpirationTimeSeconds = options?.sessionExpirationTimeSeconds ?? 1800 // 30 minutes
 
-    // NOTE: It is important we don't initiate anything in the constructor as some async IO may still be underway on the parent
     if (options?.preloadFeatureFlags !== false) {
-      safeSetTimeout(() => {
-        this.reloadFeatureFlags()
-      }, 1)
+      this.reloadFeatureFlags()
     }
   }
 

@@ -1,8 +1,25 @@
-import { PostHog } from '../index'
+import { PostHog, PostHogCustomAsyncStorage } from '../index'
 
 let posthog: PostHog
 
 describe('PostHog React Native', () => {
+  let mockStorage: PostHogCustomAsyncStorage
+  let cache: any = {}
+
+  beforeEach(() => {
+    cache = {}
+    mockStorage = {
+      getItem: jest.fn(async (key) => {
+        return cache[key] || null
+      }),
+      setItem: jest.fn(async (key, value) => {
+        cache[key] = value
+      }),
+    }
+
+    PostHog._resetClientCache()
+  })
+
   it('should initialize properly with bootstrap', () => {
     posthog = new PostHog('test-token', { bootstrap: { distinctId: 'bar' }, persistence: 'memory' })
     jest.runOnlyPendingTimers()
@@ -57,5 +74,27 @@ describe('PostHog React Native', () => {
       $locale: 'mock',
       $timezone: 'mock',
     })
+  })
+
+  it("should init async preloading the storage if it's not preloaded", async () => {
+    const posthog = await PostHog.initAsync('test-token', {
+      customAsyncStorage: mockStorage,
+    })
+
+    expect(posthog.getAnonymousId()).toBe(posthog.getDistinctId())
+
+    const otherPostHog = await PostHog.initAsync('test-token')
+
+    expect(otherPostHog).toEqual(posthog)
+  })
+
+  it('should init async to cache posthog', async () => {
+    const posthog = PostHog.initAsync('test-token', {
+      customAsyncStorage: mockStorage,
+    })
+
+    const otherPostHog = PostHog.initAsync('test-token')
+
+    expect(await posthog).toEqual(await otherPostHog)
   })
 })
