@@ -556,7 +556,7 @@ export abstract class PostHogCoreStateless {
     clearTimeout(this._flushTimer)
     try {
       await this.flushAsync()
-      await Promise.allSettled(Object.values(this.pendingPromises))
+      await Promise.all(Object.values(this.pendingPromises))
     } catch (e) {
       if (!isPostHogFetchError(e)) {
         throw e

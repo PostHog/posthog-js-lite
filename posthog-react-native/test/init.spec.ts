@@ -7,6 +7,8 @@ describe('PostHog React Native', () => {
   jest.setTimeout(500)
   jest.useRealTimers()
 
+  let posthog: PostHog
+
   beforeEach(() => {
     ;(global as any).window.fetch = jest.fn(async (url) => {
       let res: any = { status: 'ok' }
@@ -35,10 +37,16 @@ describe('PostHog React Native', () => {
     PostHog._resetClientCache()
   })
 
+  afterEach(async () => {
+    // This ensures there are no open promises / timers
+    await posthog.shutdownAsync()
+  })
+
   it('should initialize properly with bootstrap', async () => {
-    const posthog = await PostHog.initAsync('test-token', {
+    posthog = await PostHog.initAsync('test-token', {
       bootstrap: { distinctId: 'bar' },
       persistence: 'memory',
+      flushInterval: 0,
     })
 
     expect(posthog.getAnonymousId()).toEqual('bar')
@@ -46,13 +54,20 @@ describe('PostHog React Native', () => {
   })
 
   it('should initialize properly with bootstrap using async storage', async () => {
-    const posthog = await PostHog.initAsync('test-token', { bootstrap: { distinctId: 'bar' }, persistence: 'file' })
+    posthog = await PostHog.initAsync('test-token', {
+      bootstrap: { distinctId: 'bar' },
+      persistence: 'file',
+      flushInterval: 0,
+    })
     expect(posthog.getAnonymousId()).toEqual('bar')
     expect(posthog.getDistinctId()).toEqual('bar')
   })
 
   it('should allow customising of native app properties', async () => {
-    const posthog = await PostHog.initAsync('test-token', { customAppProperties: { $app_name: 'custom' } })
+    posthog = await PostHog.initAsync('test-token', {
+      customAppProperties: { $app_name: 'custom' },
+      flushInterval: 0,
+    })
 
     expect(posthog.getCommonEventProperties()).toEqual({
       $active_feature_flags: undefined,
@@ -65,6 +80,7 @@ describe('PostHog React Native', () => {
     })
 
     const posthog2 = await PostHog.initAsync('test-token2', {
+      flushInterval: 0,
       customAppProperties: (properties) => {
         properties.$app_name = 'customised!'
         delete properties.$device_name
@@ -91,11 +107,14 @@ describe('PostHog React Native', () => {
       $locale: 'mock',
       $timezone: 'mock',
     })
+
+    await posthog2.shutdownAsync()
   })
 
   it("should init async preloading the storage if it's not preloaded", async () => {
-    const posthog = await PostHog.initAsync('test-token', {
+    posthog = await PostHog.initAsync('test-token', {
       customAsyncStorage: mockStorage,
+      flushInterval: 0,
     })
 
     expect(posthog.getAnonymousId()).toBe(posthog.getDistinctId())
@@ -106,12 +125,15 @@ describe('PostHog React Native', () => {
   })
 
   it('should init async to cache posthog', async () => {
-    const posthog = PostHog.initAsync('test-token', {
+    posthog = await PostHog.initAsync('test-token', {
       customAsyncStorage: mockStorage,
+      flushInterval: 0,
     })
 
-    const otherPostHog = PostHog.initAsync('test-token')
+    const otherPostHog = await PostHog.initAsync('test-token')
 
-    expect(await posthog).toEqual(await otherPostHog)
+    expect(posthog).toEqual(otherPostHog)
+
+    await otherPostHog.shutdownAsync()
   })
 })
