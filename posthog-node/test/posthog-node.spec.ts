@@ -210,7 +210,6 @@ describe('PostHog Node.js', () => {
         host: 'http://example.com',
         disableGeoip: false,
       })
-      client.debug()
       client.capture({ distinctId: '123', event: 'test-event', properties: { foo: 'bar' }, groups: { org: 123 } })
 
       jest.runOnlyPendingTimers()
@@ -296,7 +295,7 @@ describe('PostHog Node.js', () => {
         flushAt: 1,
       })
 
-      const logSpy = jest.spyOn(global.console, 'log')
+      const logSpy = jest.spyOn(global.console, 'log').mockImplementation(() => {})
       jest.useRealTimers()
       // using debug mode to check console.log output
       // which tells us when the flush is complete

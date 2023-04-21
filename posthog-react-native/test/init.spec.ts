@@ -1,24 +1,73 @@
-import { PostHog } from '../index'
-
-let posthog: PostHog
+import { PostHog, PostHogCustomAsyncStorage } from '../index'
 
 describe('PostHog React Native', () => {
-  it('should initialize properly with bootstrap', () => {
-    posthog = new PostHog('test-token', { bootstrap: { distinctId: 'bar' }, persistence: 'memory' })
-    jest.runOnlyPendingTimers()
+  let mockStorage: PostHogCustomAsyncStorage
+  let cache: any = {}
+
+  jest.setTimeout(500)
+  jest.useRealTimers()
+
+  let posthog: PostHog
+
+  beforeEach(() => {
+    ;(global as any).window.fetch = jest.fn(async (url) => {
+      let res: any = { status: 'ok' }
+      if (url.includes('decide')) {
+        res = {
+          featureFlags: {},
+        }
+      }
+
+      return {
+        status: 200,
+        json: () => Promise.resolve(res),
+      }
+    })
+
+    cache = {}
+    mockStorage = {
+      getItem: async (key) => {
+        return cache[key] || null
+      },
+      setItem: async (key, value) => {
+        cache[key] = value
+      },
+    }
+
+    PostHog._resetClientCache()
+  })
+
+  afterEach(async () => {
+    // This ensures there are no open promises / timers
+    await posthog.shutdownAsync()
+  })
+
+  it('should initialize properly with bootstrap', async () => {
+    posthog = await PostHog.initAsync('test-token', {
+      bootstrap: { distinctId: 'bar' },
+      persistence: 'memory',
+      flushInterval: 0,
+    })
+
     expect(posthog.getAnonymousId()).toEqual('bar')
     expect(posthog.getDistinctId()).toEqual('bar')
   })
 
-  it('should initialize properly with bootstrap using async storage', () => {
-    posthog = new PostHog('test-token', { bootstrap: { distinctId: 'bar' }, persistence: 'file' })
-    jest.runOnlyPendingTimers()
+  it('should initialize properly with bootstrap using async storage', async () => {
+    posthog = await PostHog.initAsync('test-token', {
+      bootstrap: { distinctId: 'bar' },
+      persistence: 'file',
+      flushInterval: 0,
+    })
     expect(posthog.getAnonymousId()).toEqual('bar')
     expect(posthog.getDistinctId()).toEqual('bar')
   })
 
-  it('should allow customising of native app properties', () => {
-    posthog = new PostHog('test-token', { customAppProperties: { $app_name: 'custom' } })
+  it('should allow customising of native app properties', async () => {
+    posthog = await PostHog.initAsync('test-token', {
+      customAppProperties: { $app_name: 'custom' },
+      flushInterval: 0,
+    })
 
     expect(posthog.getCommonEventProperties()).toEqual({
       $active_feature_flags: undefined,
@@ -30,7 +79,8 @@ describe('PostHog React Native', () => {
       $app_name: 'custom',
     })
 
-    posthog = new PostHog('test-token', {
+    const posthog2 = await PostHog.initAsync('test-token2', {
+      flushInterval: 0,
       customAppProperties: (properties) => {
         properties.$app_name = 'customised!'
         delete properties.$device_name
@@ -38,7 +88,7 @@ describe('PostHog React Native', () => {
       },
     })
 
-    expect(posthog.getCommonEventProperties()).toEqual({
+    expect(posthog2.getCommonEventProperties()).toEqual({
       $active_feature_flags: undefined,
       $lib: 'posthog-react-native',
       $lib_version: expect.any(String),
@@ -57,5 +107,33 @@ describe('PostHog React Native', () => {
       $locale: 'mock',
       $timezone: 'mock',
     })
+
+    await posthog2.shutdownAsync()
+  })
+
+  it("should init async preloading the storage if it's not preloaded", async () => {
+    posthog = await PostHog.initAsync('test-token', {
+      customAsyncStorage: mockStorage,
+      flushInterval: 0,
+    })
+
+    expect(posthog.getAnonymousId()).toBe(posthog.getDistinctId())
+
+    const otherPostHog = await PostHog.initAsync('test-token')
+
+    expect(otherPostHog).toEqual(posthog)
+  })
+
+  it('should init async to cache posthog', async () => {
+    posthog = await PostHog.initAsync('test-token', {
+      customAsyncStorage: mockStorage,
+      flushInterval: 0,
+    })
+
+    const otherPostHog = await PostHog.initAsync('test-token')
+
+    expect(posthog).toEqual(otherPostHog)
+
+    await otherPostHog.shutdownAsync()
   })
 })

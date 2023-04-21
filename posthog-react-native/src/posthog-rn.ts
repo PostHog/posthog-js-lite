@@ -24,23 +24,43 @@ export type PostHogOptions = PosthogCoreOptions & {
   customAsyncStorage?: PostHogCustomAsyncStorage
 }
 
+const clientMap = new Map<string, Promise<PostHog>>()
+
 export class PostHog extends PostHogCore {
   private _persistence: PostHogOptions['persistence']
   private _memoryStorage = new PostHogMemoryStorage()
-  private _semiAsyncStorage: SemiAsyncStorage
+  private _semiAsyncStorage?: SemiAsyncStorage
   private _appProperties: PostHogCustomAppProperties = {}
+
+  static _resetClientCache(): void {
+    // NOTE: this method is intended for testing purposes only
+    clientMap.clear()
+  }
 
   /** Await this method to ensure that all state has been loaded from the async provider */
   static async initAsync(apiKey: string, options?: PostHogOptions): Promise<PostHog> {
-    const storage = new SemiAsyncStorage(options?.customAsyncStorage || buildOptimisiticAsyncStorage())
-    const posthog = new PostHog(apiKey, options, storage)
-    await posthog._semiAsyncStorage.preloadAsync()
+    let posthog = clientMap.get(apiKey)
+
+    if (!posthog) {
+      const persistence = options?.persistence ?? 'file'
+      if (persistence === 'file') {
+        const storage = new SemiAsyncStorage(options?.customAsyncStorage || buildOptimisiticAsyncStorage())
+        posthog = storage.preloadAsync().then(() => new PostHog(apiKey, options, storage))
+      } else {
+        posthog = Promise.resolve(new PostHog(apiKey, options))
+      }
+
+      clientMap.set(apiKey, posthog)
+    } else {
+      console.warn('PostHog.initAsync called twice with the same apiKey. The first instance will be used.')
+    }
+
     return posthog
   }
 
   constructor(apiKey: string, options?: PostHogOptions, storage?: SemiAsyncStorage) {
     super(apiKey, options)
-    this._persistence = options?.persistence
+    this._persistence = options?.persistence ?? 'file'
 
     // Either build the app properties from the existing ones
     this._appProperties =
@@ -48,49 +68,57 @@ export class PostHog extends PostHogCore {
         ? options.customAppProperties(getAppProperties())
         : options?.customAppProperties || getAppProperties()
 
-    this._semiAsyncStorage =
-      storage || new SemiAsyncStorage(options?.customAsyncStorage || buildOptimisiticAsyncStorage())
-
     AppState.addEventListener('change', () => {
       this.flush()
     })
 
+    if (this._persistence === 'file') {
+      if (!storage) {
+        console.warn(
+          'PostHog was initialised without using PostHog.initAsync - this can lead to race condition issues.'
+        )
+      }
+
+      this._semiAsyncStorage =
+        storage || new SemiAsyncStorage(options?.customAsyncStorage || buildOptimisiticAsyncStorage())
+    }
+
     // Ensure the async storage has been preloaded (this call is cached)
 
-    const setupFromStorage = (): void => {
+    const setupAsync = async (): Promise<void> => {
+      if (!this._semiAsyncStorage?.isPreloaded) {
+        await this._semiAsyncStorage?.preloadAsync()
+      }
       this.setupBootstrap(options)
 
       // It is possible that the old library was used so we try to get the legacy distinctID
-      if (!this._semiAsyncStorage.getItem(PostHogPersistedProperty.AnonymousId)) {
-        getLegacyValues().then((legacyValues) => {
-          if (legacyValues?.distinctId) {
-            this._semiAsyncStorage.setItem(PostHogPersistedProperty.DistinctId, legacyValues.distinctId)
-            this._semiAsyncStorage.setItem(PostHogPersistedProperty.AnonymousId, legacyValues.anonymousId)
-          }
-        })
+      if (!this._semiAsyncStorage?.getItem(PostHogPersistedProperty.AnonymousId)) {
+        const legacyValues = await getLegacyValues()
+        if (legacyValues?.distinctId) {
+          this._semiAsyncStorage?.setItem(PostHogPersistedProperty.DistinctId, legacyValues.distinctId)
+          this._semiAsyncStorage?.setItem(PostHogPersistedProperty.AnonymousId, legacyValues.anonymousId)
+        }
+      }
+
+      if (options?.preloadFeatureFlags !== false) {
+        this.reloadFeatureFlags()
       }
     }
 
-    if (this._semiAsyncStorage.isPreloaded) {
-      setupFromStorage()
-    } else {
-      void this._semiAsyncStorage.preloadAsync().then(() => {
-        setupFromStorage()
-      })
-    }
+    void setupAsync()
   }
 
   getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined {
-    if (this._persistence === 'memory') {
-      return this._memoryStorage.getProperty(key)
-    }
-    return this._semiAsyncStorage.getItem(key) || undefined
+    return this._semiAsyncStorage
+      ? this._semiAsyncStorage.getItem(key) || undefined
+      : this._memoryStorage.getProperty(key)
   }
   setPersistedProperty<T>(key: PostHogPersistedProperty, value: T | null): void {
-    if (this._persistence === 'memory') {
-      return this._memoryStorage.setProperty(key, value)
-    }
-    return value !== null ? this._semiAsyncStorage.setItem(key, value) : this._semiAsyncStorage.removeItem(key)
+    return this._semiAsyncStorage
+      ? value !== null
+        ? this._semiAsyncStorage.setItem(key, value)
+        : this._semiAsyncStorage.removeItem(key)
+      : this._memoryStorage.setProperty(key, value)
   }
 
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {

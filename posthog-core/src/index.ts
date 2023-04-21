@@ -556,7 +556,13 @@ export abstract class PostHogCoreStateless {
     clearTimeout(this._flushTimer)
     try {
       await this.flushAsync()
-      await Promise.allSettled(Object.values(this.pendingPromises))
+      await Promise.all(
+        Object.values(this.pendingPromises).map((x) =>
+          x.catch(() => {
+            // ignore errors as we are shutting down and can't deal with them anyways.
+          })
+        )
+      )
     } catch (e) {
       if (!isPostHogFetchError(e)) {
         throw e
@@ -587,13 +593,6 @@ export abstract class PostHogCore extends PostHogCoreStateless {
 
     this.sendFeatureFlagEvent = options?.sendFeatureFlagEvent ?? true
     this._sessionExpirationTimeSeconds = options?.sessionExpirationTimeSeconds ?? 1800 // 30 minutes
-
-    // NOTE: It is important we don't initiate anything in the constructor as some async IO may still be underway on the parent
-    if (options?.preloadFeatureFlags !== false) {
-      safeSetTimeout(() => {
-        this.reloadFeatureFlags()
-      }, 1)
-    }
   }
 
   protected setupBootstrap(options?: Partial<PosthogCoreOptions>): void {
@@ -743,9 +742,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       this.setPersistedProperty(PostHogPersistedProperty.AnonymousId, previousDistinctId)
       this.setPersistedProperty(PostHogPersistedProperty.DistinctId, distinctId)
 
-      if (this.getFeatureFlags()) {
-        this.reloadFeatureFlags()
-      }
+      this.reloadFeatureFlags()
     }
 
     super.identifyStateless(distinctId, allProperties, options)
@@ -812,7 +809,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       },
     })
 
-    if (Object.keys(groups).find((type) => existingGroups[type] !== groups[type]) && this.getFeatureFlags()) {
+    if (Object.keys(groups).find((type) => existingGroups[type] !== groups[type])) {
       this.reloadFeatureFlags()
     }
 
