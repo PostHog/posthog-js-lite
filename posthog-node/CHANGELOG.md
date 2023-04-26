@@ -1,3 +1,7 @@
+# 3.1.1 - 2023-04-26
+
+1. Replace crypto library with pure-js rusha library which makes posthog-node work with Cloudflare Workers in Next.js edge runtime.
+
 # 3.1.0 - 2023-04-19
 
 1. Some small fixes to incorrect types
