@@ -584,6 +584,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   // internal
   protected _decideResponsePromise?: Promise<PostHogDecideResponse | undefined> // TODO: come back to this, fix typing
   protected _sessionExpirationTimeSeconds: number
+  protected sessionProps: PostHogEventProperties = {}
 
   constructor(apiKey: string, options?: PosthogCoreOptions) {
     // Default for stateful mode is to not disable geoip. Only override if explicitly set
@@ -632,6 +633,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
 
   private clearProps(): void {
     this.props = undefined
+    this.sessionProps = {}
   }
 
   private _props: PostHogEventProperties | undefined
@@ -669,9 +671,10 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     }
   }
 
-  private enrichProperties(properties?: PostHogEventProperties): any {
+  public enrichProperties(properties?: PostHogEventProperties): any {
     return {
       ...this.props, // Persisted properties first
+      ...this.sessionProps, // Followed by session properties
       ...(properties || {}), // Followed by user specified properties
       ...this.getCommonEventProperties(), // Followed by FF props
       $session_id: this.getSessionId(),
@@ -707,6 +710,11 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     return this.getPersistedProperty<string>(PostHogPersistedProperty.DistinctId) || this.getAnonymousId()
   }
 
+  unregister(property: string): void {
+    delete this.props[property]
+    this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.Props, this.props)
+  }
+
   register(properties: { [key: string]: any }): void {
     this.props = {
       ...this.props,
@@ -715,9 +723,15 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.Props, this.props)
   }
 
-  unregister(property: string): void {
-    delete this.props[property]
-    this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.Props, this.props)
+  registerForSession(properties: { [key: string]: any }): void {
+    this.sessionProps = {
+      ...this.sessionProps,
+      ...properties,
+    }
+  }
+
+  unregisterForSession(property: string): void {
+    delete this.sessionProps[property]
   }
 
   /***

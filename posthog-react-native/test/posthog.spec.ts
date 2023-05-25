@@ -1,3 +1,4 @@
+import { PostHogPersistedProperty } from 'posthog-core'
 import { PostHog, PostHogCustomAsyncStorage } from '../index'
 
 describe('PostHog React Native', () => {
@@ -135,5 +136,22 @@ describe('PostHog React Native', () => {
     expect(posthog).toEqual(otherPostHog)
 
     await otherPostHog.shutdownAsync()
+  })
+
+  describe('screen', () => {
+    it('should set a $screen_name property on screen', async () => {
+      posthog = await PostHog.initAsync('test-token', {
+        customAsyncStorage: mockStorage,
+        flushInterval: 0,
+      })
+
+      posthog.screen('test-screen')
+
+      expect(posthog.enrichProperties()).toMatchObject({
+        $screen_name: 'test-screen',
+      })
+
+      expect(posthog.getPersistedProperty(PostHogPersistedProperty.Props)).toEqual(undefined)
+    })
   })
 })
