@@ -619,7 +619,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   }
 
   // NOTE: Props are lazy loaded from localstorage hence the complex getter setter logic
-  private get props(): PostHogEventProperties {
+  public get props(): PostHogEventProperties {
     if (!this._props) {
       this._props = this.getPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.Props)
     }
@@ -707,12 +707,15 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     return this.getPersistedProperty<string>(PostHogPersistedProperty.DistinctId) || this.getAnonymousId()
   }
 
-  register(properties: { [key: string]: any }): void {
+  register(properties: { [key: string]: any }, options?: { persist: boolean }): void {
+    const persist = options?.persist ?? true
     this.props = {
       ...this.props,
       ...properties,
     }
-    this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.Props, this.props)
+    if (persist) {
+      this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.Props, this.props)
+    }
   }
 
   unregister(property: string): void {
