@@ -13,24 +13,30 @@ describe('PostHog Core', () => {
   describe('register', () => {
     it('should register properties to storage', () => {
       posthog.register({ foo: 'bar' })
-      expect(posthog.props).toEqual({ foo: 'bar' })
+      expect(posthog.enrichProperties()).toMatchObject({ foo: 'bar' })
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.Props)).toEqual({ foo: 'bar' })
       posthog.register({ foo2: 'bar2' })
-      expect(posthog.props).toEqual({ foo: 'bar', foo2: 'bar2' })
+      expect(posthog.enrichProperties()).toMatchObject({ foo: 'bar', foo2: 'bar2' })
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.Props)).toEqual({ foo: 'bar', foo2: 'bar2' })
     })
 
     it('should unregister properties from storage', () => {
       posthog.register({ foo: 'bar', foo2: 'bar2' })
       posthog.unregister('foo')
-      expect(posthog.props).toEqual({ foo2: 'bar2' })
+      expect(posthog.enrichProperties().foo).toBeUndefined()
+      expect(posthog.enrichProperties().foo2).toEqual('bar2')
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.Props)).toEqual({ foo2: 'bar2' })
     })
 
-    it('should register properties with optional persistence', () => {
-      posthog.register({ foo: 'bar' }, { persist: false })
-      expect(posthog.props).toEqual({ foo: 'bar' })
+    it('should register properties only for the session', () => {
+      posthog.registerForSession({ foo: 'bar' })
+      expect(posthog.enrichProperties()).toMatchObject({ foo: 'bar' })
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.Props)).toEqual(undefined)
+
+      posthog.register({ foo: 'bar2' })
+      expect(posthog.enrichProperties()).toMatchObject({ foo: 'bar' })
+      posthog.unregisterForSession('foo')
+      expect(posthog.enrichProperties()).toMatchObject({ foo: 'bar2' })
     })
   })
 })

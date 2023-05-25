@@ -147,14 +147,10 @@ export class PostHog extends PostHogCore {
   // Custom methods
   screen(name: string, properties?: any): this {
     // Screen name is good to know for all other subsequent events
-    this.register(
-      {
-        $screen_name: name,
-      },
-      {
-        persist: false,
-      }
-    )
+    this.registerForSession({
+      $screen_name: name,
+    })
+
     return this.capture('$screen', {
       ...properties,
       $screen_name: name,
