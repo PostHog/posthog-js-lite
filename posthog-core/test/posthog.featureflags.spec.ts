@@ -400,6 +400,7 @@ describe('PostHog Core', () => {
               properties: {
                 $feature_flag: 'feature-1',
                 $feature_flag_response: true,
+                '$feature/feature-1': true,
               },
               type: 'capture',
             },
