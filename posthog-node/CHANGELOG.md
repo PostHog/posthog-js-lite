@@ -1,3 +1,7 @@
+# 3.1.2 - 2023-08-17
+
+1. Returns the current flag property with $feature_flag_called events, to make it easier to use in experiments
+
 # 3.1.1 - 2023-04-26
 
 1. Replace crypto library with pure-js rusha library which makes posthog-node work with Cloudflare Workers in Next.js edge runtime.

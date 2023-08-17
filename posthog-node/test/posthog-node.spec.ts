@@ -555,6 +555,7 @@ describe('PostHog Node.js', () => {
               $lib: 'posthog-node',
               $lib_version: '1.2.3',
               locally_evaluated: true,
+              '$feature/beta-feature': true,
             }),
           },
         ])
@@ -610,6 +611,7 @@ describe('PostHog Node.js', () => {
           properties: expect.objectContaining({
             $feature_flag: 'beta-feature',
             $feature_flag_response: true,
+            '$feature/beta-feature': true,
             $lib: 'posthog-node',
             $lib_version: '1.2.3',
             locally_evaluated: true,
@@ -652,6 +654,7 @@ describe('PostHog Node.js', () => {
         $lib: 'posthog-node',
         $lib_version: '1.2.3',
         locally_evaluated: true,
+        '$feature/beta-feature': true,
         $groups: { x: 'y' },
       })
       mockedFetch.mockClear()
@@ -688,6 +691,7 @@ describe('PostHog Node.js', () => {
             $lib: 'posthog-node',
             $lib_version: '1.2.3',
             locally_evaluated: false,
+            '$feature/decide-flag': 'decide-value',
             $groups: { organization: 'org1' },
           }),
         })
