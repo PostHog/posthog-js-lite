@@ -677,7 +677,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       ...this.sessionProps, // Followed by session properties
       ...(properties || {}), // Followed by user specified properties
       ...this.getCommonEventProperties(), // Followed by FF props
-      $session_id: this.getSessionId(),
+      $session_id: properties?.['$session_id'] || this.getSessionId(),
     }
   }
 
