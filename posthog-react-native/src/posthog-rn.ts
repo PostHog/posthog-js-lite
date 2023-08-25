@@ -1,4 +1,4 @@
-import { AppState, Dimensions } from 'react-native'
+import { AppState, Dimensions, Linking } from 'react-native'
 
 import {
   PostHogCore,
@@ -106,7 +106,7 @@ export class PostHog extends PostHogCore {
       }
 
       if (options?.autoCaptureInstallationEvents) {
-        this.autoCaptureInstallationEvents()
+        this.autoCaptureNativeAppLifecycleEvents()
       }
     }
 
@@ -166,7 +166,12 @@ export class PostHog extends PostHogCore {
     return withReactNativeNavigation(this, options)
   }
 
-  autoCaptureInstallationEvents(): void {
+  async autoCaptureNativeAppLifecycleEvents(): Promise<void> {
+    // See the other implementations for reference:
+    // ios: https://github.com/PostHog/posthog-ios/blob/3a6afc24d6bde730a19470d4e6b713f44d076ad9/PostHog/Classes/PHGPostHog.m#L140
+    // android: https://github.com/PostHog/posthog-android/blob/09940e6921bafa9e01e7d68b8c9032671a21ae73/posthog/src/main/java/com/posthog/android/PostHog.java#L278
+    // android: https://github.com/PostHog/posthog-android/blob/09940e6921bafa9e01e7d68b8c9032671a21ae73/posthog/src/main/java/com/posthog/android/PostHogActivityLifecycleCallbacks.java#L126
+
     const prevAppBuild = this.getPersistedProperty(PostHogPersistedProperty.InstalledAppBuild)
     const prevAppVersion = this.getPersistedProperty(PostHogPersistedProperty.InstalledAppVersion)
     const appBuild = this._appProperties.$app_build
@@ -174,30 +179,50 @@ export class PostHog extends PostHogCore {
 
     if (!appBuild || !appVersion) {
       console.warn(
-        'PostHog could not track installation/update, as the build and version were not set. ' +
+        'PostHog could not track installation/update/open, as the build and version were not set. ' +
           'This can happen if some dependencies are not installed correctly, or if you have provided' +
           'customAppProperties but not included $app_build or $app_version.'
       )
-      return
     }
-    if (prevAppBuild === appBuild && prevAppVersion === appVersion) {
-      return
+    if (appBuild) {
+      if (!prevAppBuild) {
+        // new app install
+        this.capture('Application Installed', {
+          version: appVersion,
+          build: appBuild,
+        })
+      } else if (prevAppBuild !== appBuild) {
+        // app updated
+        this.capture('Application Updated', {
+          previous_version: prevAppVersion,
+          previous_build: prevAppBuild,
+          version: appVersion,
+          build: appBuild,
+        })
+      }
     }
-    if (!prevAppBuild && !prevAppVersion) {
-      // new app install
-      this.capture('Application Installed', {
-        version: appVersion,
-        build: appBuild,
-      })
-    } else {
-      // app updated
-      this.capture('Application Updated', {
-        previous_version: prevAppVersion,
-        previous_build: prevAppBuild,
-        version: appVersion,
-        build: appBuild,
-      })
-    }
+
+    const initialUrl = (await Linking.getInitialURL()) ?? undefined
+
+    this.capture('Application Opened', {
+      version: appVersion,
+      build: appBuild,
+      from_background: false,
+      url: initialUrl,
+    })
+
+    AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        this.capture('Application Opened', {
+          version: appVersion,
+          build: appBuild,
+          from_background: true,
+        })
+      } else if (state === 'background') {
+        this.capture('Application Backgrounded')
+      }
+    })
+
     this.setPersistedProperty(PostHogPersistedProperty.InstalledAppBuild, appBuild)
     this.setPersistedProperty(PostHogPersistedProperty.InstalledAppVersion, appVersion)
   }
