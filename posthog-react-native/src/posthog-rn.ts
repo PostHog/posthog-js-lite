@@ -6,7 +6,7 @@ import {
   PostHogFetchOptions,
   PostHogFetchResponse,
   PostHogPersistedProperty,
-} from '../../posthog-core/src'
+} from '../../posthog-core'
 import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
 import { getLegacyValues } from './legacy'
 import { SemiAsyncStorage } from './storage'
@@ -22,6 +22,7 @@ export type PostHogOptions = PosthogCoreOptions & {
     | PostHogCustomAppProperties
     | ((properties: PostHogCustomAppProperties) => PostHogCustomAppProperties)
   customAsyncStorage?: PostHogCustomAsyncStorage
+  autoCaptureInstallationEvents?: boolean
 }
 
 const clientMap = new Map<string, Promise<PostHog>>()
@@ -103,6 +104,10 @@ export class PostHog extends PostHogCore {
       if (options?.preloadFeatureFlags !== false) {
         this.reloadFeatureFlags()
       }
+
+      if (options?.autoCaptureInstallationEvents) {
+        this.autoCaptureInstallationEvents()
+      }
     }
 
     void setupAsync()
@@ -159,5 +164,41 @@ export class PostHog extends PostHogCore {
 
   initReactNativeNavigation(options: PostHogAutocaptureOptions): boolean {
     return withReactNativeNavigation(this, options)
+  }
+
+  autoCaptureInstallationEvents(): void {
+    const prevAppBuild = this.getPersistedProperty(PostHogPersistedProperty.InstalledAppBuild)
+    const prevAppVersion = this.getPersistedProperty(PostHogPersistedProperty.InstalledAppVersion)
+    const appBuild = this._appProperties.$app_build
+    const appVersion = this._appProperties.$app_version
+
+    if (!appBuild || !appVersion) {
+      console.warn(
+        'PostHog could not track installation/update, as the build and version were not set. ' +
+          'This can happen if some dependencies are not installed correctly, or if you have provided' +
+          'customAppProperties but not included $app_build or $app_version.'
+      )
+      return
+    }
+    if (prevAppBuild === appBuild && prevAppVersion === appVersion) {
+      return
+    }
+    if (!prevAppBuild && !prevAppVersion) {
+      // new app install
+      this.capture('Application Installed', {
+        version: appVersion,
+        build: appBuild,
+      })
+    } else {
+      // app updated
+      this.capture('Application Updated', {
+        previous_version: prevAppVersion,
+        previous_build: prevAppBuild,
+        version: appVersion,
+        build: appBuild,
+      })
+    }
+    this.setPersistedProperty(PostHogPersistedProperty.InstalledAppBuild, appBuild)
+    this.setPersistedProperty(PostHogPersistedProperty.InstalledAppVersion, appVersion)
   }
 }
