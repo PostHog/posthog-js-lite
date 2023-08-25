@@ -22,7 +22,7 @@ export type PostHogOptions = PosthogCoreOptions & {
     | PostHogCustomAppProperties
     | ((properties: PostHogCustomAppProperties) => PostHogCustomAppProperties)
   customAsyncStorage?: PostHogCustomAsyncStorage
-  autoCaptureInstallationEvents?: boolean
+  captureNativeAppLifecycleEvents?: boolean
 }
 
 const clientMap = new Map<string, Promise<PostHog>>()
@@ -105,8 +105,8 @@ export class PostHog extends PostHogCore {
         this.reloadFeatureFlags()
       }
 
-      if (options?.autoCaptureInstallationEvents) {
-        this.autoCaptureNativeAppLifecycleEvents()
+      if (options?.captureNativeAppLifecycleEvents) {
+        await this.captureNativeAppLifecycleEvents()
       }
     }
 
@@ -166,7 +166,7 @@ export class PostHog extends PostHogCore {
     return withReactNativeNavigation(this, options)
   }
 
-  async autoCaptureNativeAppLifecycleEvents(): Promise<void> {
+  async captureNativeAppLifecycleEvents(): Promise<void> {
     // See the other implementations for reference:
     // ios: https://github.com/PostHog/posthog-ios/blob/3a6afc24d6bde730a19470d4e6b713f44d076ad9/PostHog/Classes/PHGPostHog.m#L140
     // android: https://github.com/PostHog/posthog-android/blob/09940e6921bafa9e01e7d68b8c9032671a21ae73/posthog/src/main/java/com/posthog/android/PostHog.java#L278
