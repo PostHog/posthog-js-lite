@@ -32,6 +32,7 @@ export class PostHog extends PostHogCore {
   private _memoryStorage = new PostHogMemoryStorage()
   private _semiAsyncStorage?: SemiAsyncStorage
   private _appProperties: PostHogCustomAppProperties = {}
+  private _setupPromise?: Promise<void>
 
   static _resetClientCache(): void {
     // NOTE: this method is intended for testing purposes only
@@ -56,7 +57,9 @@ export class PostHog extends PostHogCore {
       console.warn('PostHog.initAsync called twice with the same apiKey. The first instance will be used.')
     }
 
-    return posthog
+    const resolved = await posthog
+    await resolved._setupPromise
+    return resolved
   }
 
   constructor(apiKey: string, options?: PostHogOptions, storage?: SemiAsyncStorage) {
@@ -110,7 +113,7 @@ export class PostHog extends PostHogCore {
       }
     }
 
-    void setupAsync()
+    this._setupPromise = setupAsync()
   }
 
   getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined {

@@ -1,3 +1,5 @@
+import type { PostHogCoreStateless } from './index'
+
 export type PosthogCoreOptions = {
   // PostHog API host (https://app.posthog.com by default)
   host?: string
@@ -29,6 +31,9 @@ export type PosthogCoreOptions = {
   // Whether to post events to PostHog in JSON or compressed format
   captureMode?: 'json' | 'form'
   disableGeoip?: boolean
+
+  // For testing purposes only, called at the end of the PostHogCoreStateless constructor
+  __onConstructed?: (posthog: PostHogCoreStateless) => void
 }
 
 export enum PostHogPersistedProperty {

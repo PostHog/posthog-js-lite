@@ -93,6 +93,10 @@ export abstract class PostHogCoreStateless {
     }
     this.requestTimeout = options?.requestTimeout ?? 10000 // 10 seconds
     this.disableGeoip = options?.disableGeoip ?? true
+
+    if (options?.__onConstructed) {
+      options.__onConstructed(this)
+    }
   }
 
   protected getCommonEventProperties(): any {
