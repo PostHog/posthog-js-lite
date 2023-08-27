@@ -1,4 +1,13 @@
-/* global module */
+const extend = [
+  'eslint:recommended',
+  'plugin:@typescript-eslint/recommended',
+  'plugin:react/recommended',
+  'plugin:react-hooks/recommended',
+  'prettier',
+]
+
+const plugins = ['prettier', 'react', '@typescript-eslint', 'eslint-plugin-react-hooks', 'eslint-plugin-jest']
+
 module.exports = {
   ignorePatterns: ['node_modules', 'examples', 'lib'],
   env: {
@@ -10,10 +19,11 @@ module.exports = {
       version: 'detect',
     },
   },
-  extends: ['plugin:@typescript-eslint/recommended', 'plugin:react/recommended', 'prettier'],
+  extends: extend,
   globals: {
     Atomics: 'readonly',
     SharedArrayBuffer: 'readonly',
+    module: 'readonly',
   },
   parser: '@typescript-eslint/parser',
   parserOptions: {
@@ -23,7 +33,7 @@ module.exports = {
     ecmaVersion: 2018,
     sourceType: 'module',
   },
-  plugins: ['prettier', 'react', '@typescript-eslint'],
+  plugins,
   rules: {
     'react/prop-types': [0],
     'react/no-unescaped-entities': [0],
@@ -61,6 +71,8 @@ module.exports = {
         ],
       },
     ],
+    'no-empty': 'off',
+    'no-constant-condition': 'off',
   },
   overrides: [
     {
@@ -94,6 +106,15 @@ module.exports = {
       files: ['*.js'],
       rules: {
         '@typescript-eslint/no-var-requires': 'off',
+      },
+    },
+    {
+      files: ['*.test.ts', '*.test.tsx', '*.spec.ts', '*.spec.tsx'],
+      env: {
+        jest: true,
+        node: true,
+        browser: true,
+        es6: true,
       },
     },
   ],

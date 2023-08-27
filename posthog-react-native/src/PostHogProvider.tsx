@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { GestureResponderEvent, StyleProp, View, ViewStyle } from 'react-native'
 import { PostHog, PostHogOptions } from './posthog-rn'
 import { autocaptureFromTouchEvent } from './autocapture'
@@ -39,7 +39,10 @@ export const PostHogProvider = ({
   // Check if the client is a promise and resolve it if so
   const [posthog, setPosthog] = useState<PostHog | undefined>(client instanceof Promise ? undefined : client)
 
-  const autocaptureOptions = autocapture && typeof autocapture !== 'boolean' ? autocapture : {}
+  const autocaptureOptions = useMemo(
+    () => (autocapture && typeof autocapture !== 'boolean' ? autocapture : {}),
+    [autocapture]
+  )
   const captureAll = autocapture === true
   const captureNone = autocapture === false
 
@@ -65,7 +68,7 @@ export const PostHogProvider = ({
     } else if (!posthog && apiKey) {
       PostHog.initAsync(apiKey, options).then(setPosthog)
     }
-  }, [client, apiKey])
+  }, [client, apiKey, posthog, options])
 
   useEffect(() => {
     if (!posthog) {
@@ -86,7 +89,7 @@ export const PostHogProvider = ({
         autocaptureFromTouchEvent(e, posthog, autocaptureOptions)
       }
     },
-    [posthog, autocapture]
+    [captureTouches, posthog, autocaptureOptions]
   )
 
   return (

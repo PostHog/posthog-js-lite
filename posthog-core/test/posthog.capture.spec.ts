@@ -19,7 +19,7 @@ describe('PostHog Core', () => {
 
       expect(mocks.fetch).toHaveBeenCalledTimes(1)
       const [url, options] = mocks.fetch.mock.calls[0]
-      expect(url).toMatch(/^https:\/\/app\.posthog\.com\/e\/\?ip=1&_=[0-9]+&v=[0-9\.a-z\-]+$/)
+      expect(url).toMatch(/^https:\/\/app\.posthog\.com\/e\/\?ip=1&_=[0-9]+&v=[0-9.a-z-]+$/)
       expect(options.method).toBe('POST')
       const body = parseBody(mocks.fetch.mock.calls[0])
 
