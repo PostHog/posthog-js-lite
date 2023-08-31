@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 import { OptionalReactNativeNavigation } from '../optional/OptionalReactNativeNavigation'
 import type { PostHog } from '../posthog-rn'
 import { PostHogAutocaptureNavigationTrackerOptions } from '../types'
@@ -13,14 +13,14 @@ function _useNavigationTracker(options?: PostHogAutocaptureNavigationTrackerOpti
   const posthog = client || contextClient
 
   if (!OptionalReactNativeNavigation) {
-    // NOTE: This is taken care of by the export but we keep this here for TS
-    return
+    // NOTE: This is taken care of by the export, but we keep this here for TS
+    throw new Error('No OptionalReactNativeNavigation')
   }
 
   const routes = OptionalReactNativeNavigation.useNavigationState((state) => state?.routes)
   const navigation = OptionalReactNativeNavigation.useNavigation()
 
-  const trackRoute = (): void => {
+  const trackRoute = useCallback((): void => {
     if (!posthog) {
       return
     }
@@ -45,7 +45,7 @@ function _useNavigationTracker(options?: PostHogAutocaptureNavigationTrackerOpti
       const properties = options?.routeToProperties?.(currentRouteName, params)
       posthog.screen(currentRouteName, properties)
     }
-  }
+  }, [navigation, options, posthog])
 
   useEffect(() => {
     // NOTE: The navigation stacks may not be fully rendered initially. This means the first route can be missed (it doesn't update useNavigationState)
@@ -55,7 +55,7 @@ function _useNavigationTracker(options?: PostHogAutocaptureNavigationTrackerOpti
       return
     }
     trackRoute()
-  }, [routes])
+  }, [routes, trackRoute])
 }
 
 export const useNavigationTracker = OptionalReactNativeNavigation

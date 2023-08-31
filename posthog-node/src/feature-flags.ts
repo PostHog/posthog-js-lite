@@ -424,8 +424,6 @@ class FeatureFlagsPoller {
 
     try {
       return await this.fetch(url, options)
-    } catch (err) {
-      throw err
     } finally {
       clearTimeout(abortTimeout)
     }
@@ -487,13 +485,14 @@ function matchProperty(
     case 'lte':
       return typeof overrideValue == typeof value && overrideValue <= value
     case 'is_date_after':
-    case 'is_date_before':
+    case 'is_date_before': {
       const parsedDate = convertToDateTime(value)
       const overrideDate = convertToDateTime(overrideValue)
       if (operator === 'is_date_before') {
         return overrideDate < parsedDate
       }
       return overrideDate > parsedDate
+    }
     default:
       console.error(`Unknown operator: ${operator}`)
       return false
