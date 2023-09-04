@@ -117,6 +117,7 @@ export class PostHog extends PostHogCore {
           await this.captureNativeAppLifecycleEvents()
         }
       }
+      await this.persistAppVersion()
     }
 
     this._setupPromise = setupAsync()
@@ -231,7 +232,11 @@ export class PostHog extends PostHogCore {
         this.capture('Application Backgrounded')
       }
     })
+  }
 
+  async persistAppVersion(): Promise<void> {
+    const appBuild = this._appProperties.$app_build
+    const appVersion = this._appProperties.$app_version
     this.setPersistedProperty(PostHogPersistedProperty.InstalledAppBuild, appBuild)
     this.setPersistedProperty(PostHogPersistedProperty.InstalledAppVersion, appVersion)
   }
