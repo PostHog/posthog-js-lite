@@ -109,7 +109,13 @@ export class PostHog extends PostHogCore {
       }
 
       if (options?.captureNativeAppLifecycleEvents) {
-        await this.captureNativeAppLifecycleEvents()
+        if (this._persistence === 'memory') {
+          console.warn(
+            'PostHog was initialised with persistence set to "memory", capturing native app events is not supported.'
+          )
+        } else {
+          await this.captureNativeAppLifecycleEvents()
+        }
       }
     }
 
