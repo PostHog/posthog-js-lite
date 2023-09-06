@@ -1,8 +1,14 @@
 import { PostHogPersistedProperty } from 'posthog-core'
-import { PostHog, PostHogCustomAsyncStorage } from '../index'
+import { PostHog, PostHogCustomAsyncStorage, PostHogOptions } from '../index'
+import { Linking, AppState, AppStateStatus } from 'react-native'
+import { SemiAsyncStorage } from '../src/storage'
+
+Linking.getInitialURL = jest.fn(() => Promise.resolve(null))
+AppState.addEventListener = jest.fn()
 
 describe('PostHog React Native', () => {
   let mockStorage: PostHogCustomAsyncStorage
+  let mockSemiAsyncStorage: SemiAsyncStorage
   let cache: any = {}
 
   jest.setTimeout(500)
@@ -34,6 +40,7 @@ describe('PostHog React Native', () => {
         cache[key] = value
       },
     }
+    mockSemiAsyncStorage = new SemiAsyncStorage(mockStorage)
 
     PostHog._resetClientCache()
   })
@@ -152,6 +159,188 @@ describe('PostHog React Native', () => {
       })
 
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.Props)).toEqual(undefined)
+    })
+  })
+
+  describe('captureNativeAppLifecycleEvents', () => {
+    const createTestClient = async (
+      apiKey: string,
+      options?: Partial<PostHogOptions> | undefined,
+      onCapture?: jest.Mock | undefined
+    ): Promise<PostHog> => {
+      const posthog = new PostHog(
+        apiKey,
+        {
+          ...(options || {}),
+          persistence: 'file',
+          customAsyncStorage: mockStorage,
+          flushInterval: 0,
+        },
+        mockSemiAsyncStorage
+      )
+      if (onCapture) {
+        posthog.on('capture', onCapture)
+      }
+      // @ts-expect-error
+      await posthog._setupPromise
+      return posthog
+    }
+
+    it('should trigger an Application Installed event', async () => {
+      // arrange
+      const onCapture = jest.fn()
+
+      // act
+      posthog = await createTestClient(
+        'test-install',
+        {
+          captureNativeAppLifecycleEvents: true,
+          customAppProperties: {
+            $app_build: '1',
+            $app_version: '1.0.0',
+          },
+        },
+        onCapture
+      )
+
+      // assert
+      expect(onCapture).toHaveBeenCalledTimes(2)
+      expect(onCapture.mock.calls[0][0]).toMatchObject({
+        event: 'Application Installed',
+        properties: {
+          $app_build: '1',
+          $app_version: '1.0.0',
+        },
+      })
+      expect(onCapture.mock.calls[1][0]).toMatchObject({
+        event: 'Application Opened',
+        properties: {
+          $app_build: '1',
+          $app_version: '1.0.0',
+          from_background: false,
+        },
+      })
+    })
+    it('should trigger an Application Updated event', async () => {
+      // arrange
+      const onCapture = jest.fn()
+      posthog = await PostHog.initAsync('1', {
+        customAsyncStorage: mockStorage,
+        captureNativeAppLifecycleEvents: true,
+        customAppProperties: {
+          $app_build: '1',
+          $app_version: '1.0.0',
+        },
+      })
+
+      // act
+      posthog = await createTestClient(
+        '2',
+        {
+          captureNativeAppLifecycleEvents: true,
+          customAppProperties: {
+            $app_build: '2',
+            $app_version: '2.0.0',
+          },
+        },
+        onCapture
+      )
+
+      // assert
+      expect(onCapture).toHaveBeenCalledTimes(2)
+      expect(onCapture.mock.calls[0][0]).toMatchObject({
+        event: 'Application Updated',
+        properties: {
+          $app_build: '2',
+          $app_version: '2.0.0',
+          previous_build: '1',
+          previous_version: '1.0.0',
+        },
+      })
+      expect(onCapture.mock.calls[1][0]).toMatchObject({
+        event: 'Application Opened',
+        properties: {
+          $app_build: '2',
+          $app_version: '2.0.0',
+          from_background: false,
+        },
+      })
+    })
+    it('should include the initial url', async () => {
+      // arrange
+      Linking.getInitialURL = jest.fn(() => Promise.resolve('https://example.com'))
+      const onCapture = jest.fn()
+      posthog = await createTestClient('test-open', {
+        captureNativeAppLifecycleEvents: true,
+        customAppProperties: {
+          $app_build: '1',
+          $app_version: '1.0.0',
+        },
+      })
+
+      // act
+      posthog = await createTestClient(
+        'test-open2',
+        {
+          captureNativeAppLifecycleEvents: true,
+          customAppProperties: {
+            $app_build: '1',
+            $app_version: '1.0.0',
+          },
+        },
+        onCapture
+      )
+
+      // assert
+      expect(onCapture).toHaveBeenCalledTimes(1)
+      expect(onCapture.mock.calls[0][0]).toMatchObject({
+        event: 'Application Opened',
+        properties: {
+          $app_build: '1',
+          $app_version: '1.0.0',
+          from_background: false,
+          url: 'https://example.com',
+        },
+      })
+    })
+
+    it('should track app background and foreground', async () => {
+      // arrange
+      const onCapture = jest.fn()
+      posthog = await createTestClient(
+        'test-change',
+        {
+          captureNativeAppLifecycleEvents: true,
+          customAppProperties: {
+            $app_build: '1',
+            $app_version: '1.0.0',
+          },
+        },
+        onCapture
+      )
+      const cb: (state: AppStateStatus) => void = (AppState.addEventListener as jest.Mock).mock.calls[1][1]
+
+      // act
+      cb('background')
+      cb('active')
+
+      // assert
+      expect(onCapture).toHaveBeenCalledTimes(4)
+      expect(onCapture.mock.calls[2][0]).toMatchObject({
+        event: 'Application Backgrounded',
+        properties: {
+          $app_build: '1',
+          $app_version: '1.0.0',
+        },
+      })
+      expect(onCapture.mock.calls[3][0]).toMatchObject({
+        event: 'Application Opened',
+        properties: {
+          $app_build: '1',
+          $app_version: '1.0.0',
+          from_background: true,
+        },
+      })
     })
   })
 })

@@ -44,6 +44,8 @@ export enum PostHogPersistedProperty {
   SessionLastTimestamp = 'session_timestamp',
   PersonProperties = 'person_properties',
   GroupProperties = 'group_properties',
+  InstalledAppBuild = 'installed_app_build', // only used by posthog-react-native
+  InstalledAppVersion = 'installed_app_version', // only used by posthog-react-native
 }
 
 export type PostHogFetchOptions = {

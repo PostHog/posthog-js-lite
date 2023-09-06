@@ -1,4 +1,4 @@
-import { AppState, Dimensions } from 'react-native'
+import { AppState, Dimensions, Linking } from 'react-native'
 
 import {
   PostHogCore,
@@ -6,7 +6,7 @@ import {
   PostHogFetchOptions,
   PostHogFetchResponse,
   PostHogPersistedProperty,
-} from '../../posthog-core/src'
+} from '../../posthog-core'
 import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
 import { getLegacyValues } from './legacy'
 import { SemiAsyncStorage } from './storage'
@@ -22,6 +22,7 @@ export type PostHogOptions = PosthogCoreOptions & {
     | PostHogCustomAppProperties
     | ((properties: PostHogCustomAppProperties) => PostHogCustomAppProperties)
   customAsyncStorage?: PostHogCustomAsyncStorage
+  captureNativeAppLifecycleEvents?: boolean
 }
 
 const clientMap = new Map<string, Promise<PostHog>>()
@@ -31,6 +32,7 @@ export class PostHog extends PostHogCore {
   private _memoryStorage = new PostHogMemoryStorage()
   private _semiAsyncStorage?: SemiAsyncStorage
   private _appProperties: PostHogCustomAppProperties = {}
+  private _setupPromise?: Promise<void>
 
   static _resetClientCache(): void {
     // NOTE: this method is intended for testing purposes only
@@ -55,7 +57,9 @@ export class PostHog extends PostHogCore {
       console.warn('PostHog.initAsync called twice with the same apiKey. The first instance will be used.')
     }
 
-    return posthog
+    const resolved = await posthog
+    await resolved._setupPromise
+    return resolved
   }
 
   constructor(apiKey: string, options?: PostHogOptions, storage?: SemiAsyncStorage) {
@@ -103,9 +107,20 @@ export class PostHog extends PostHogCore {
       if (options?.preloadFeatureFlags !== false) {
         this.reloadFeatureFlags()
       }
+
+      if (options?.captureNativeAppLifecycleEvents) {
+        if (this._persistence === 'memory') {
+          console.warn(
+            'PostHog was initialised with persistence set to "memory", capturing native app events is not supported.'
+          )
+        } else {
+          await this.captureNativeAppLifecycleEvents()
+        }
+      }
+      await this.persistAppVersion()
     }
 
-    void setupAsync()
+    this._setupPromise = setupAsync()
   }
 
   getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined {
@@ -159,5 +174,70 @@ export class PostHog extends PostHogCore {
 
   initReactNativeNavigation(options: PostHogAutocaptureOptions): boolean {
     return withReactNativeNavigation(this, options)
+  }
+
+  async captureNativeAppLifecycleEvents(): Promise<void> {
+    // See the other implementations for reference:
+    // ios: https://github.com/PostHog/posthog-ios/blob/3a6afc24d6bde730a19470d4e6b713f44d076ad9/PostHog/Classes/PHGPostHog.m#L140
+    // android: https://github.com/PostHog/posthog-android/blob/09940e6921bafa9e01e7d68b8c9032671a21ae73/posthog/src/main/java/com/posthog/android/PostHog.java#L278
+    // android: https://github.com/PostHog/posthog-android/blob/09940e6921bafa9e01e7d68b8c9032671a21ae73/posthog/src/main/java/com/posthog/android/PostHogActivityLifecycleCallbacks.java#L126
+
+    const prevAppBuild = this.getPersistedProperty(PostHogPersistedProperty.InstalledAppBuild)
+    const prevAppVersion = this.getPersistedProperty(PostHogPersistedProperty.InstalledAppVersion)
+    const appBuild = this._appProperties.$app_build
+    const appVersion = this._appProperties.$app_version
+
+    if (!appBuild || !appVersion) {
+      console.warn(
+        'PostHog could not track installation/update/open, as the build and version were not set. ' +
+          'This can happen if some dependencies are not installed correctly, or if you have provided' +
+          'customAppProperties but not included $app_build or $app_version.'
+      )
+    }
+    if (appBuild) {
+      if (!prevAppBuild) {
+        // new app install
+        this.capture('Application Installed', {
+          version: appVersion,
+          build: appBuild,
+        })
+      } else if (prevAppBuild !== appBuild) {
+        // app updated
+        this.capture('Application Updated', {
+          previous_version: prevAppVersion,
+          previous_build: prevAppBuild,
+          version: appVersion,
+          build: appBuild,
+        })
+      }
+    }
+
+    const initialUrl = (await Linking.getInitialURL()) ?? undefined
+
+    this.capture('Application Opened', {
+      version: appVersion,
+      build: appBuild,
+      from_background: false,
+      url: initialUrl,
+    })
+
+    AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        this.capture('Application Opened', {
+          version: appVersion,
+          build: appBuild,
+          from_background: true,
+        })
+      } else if (state === 'background') {
+        this.capture('Application Backgrounded')
+      }
+    })
+  }
+
+  async persistAppVersion(): Promise<void> {
+    const appBuild = this._appProperties.$app_build
+    const appVersion = this._appProperties.$app_version
+    this.setPersistedProperty(PostHogPersistedProperty.InstalledAppBuild, appBuild)
+    this.setPersistedProperty(PostHogPersistedProperty.InstalledAppVersion, appVersion)
   }
 }
