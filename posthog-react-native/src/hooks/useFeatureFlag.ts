@@ -20,13 +20,13 @@ export function useFeatureFlag(flag: string): string | boolean | undefined {
   return featureFlag
 }
 
-export type FeatureFlagWithPayload = [boolean | string | undefined, JsonType | undefined];
+export type FeatureFlagWithPayload = [boolean | string | undefined, JsonType | undefined]
 
 export function useFeatureFlagWithPayload(flag: string): FeatureFlagWithPayload {
   const posthog = usePostHog()
 
   const [featureFlag, setFeatureFlag] = useState<FeatureFlagWithPayload>([undefined, undefined])
-  
+
   useEffect(() => {
     if (!posthog) {
       return
@@ -38,5 +38,5 @@ export function useFeatureFlagWithPayload(flag: string): FeatureFlagWithPayload 
     })
   }, [posthog, flag])
 
-  return featureFlag;
+  return featureFlag
 }
