@@ -1,3 +1,7 @@
+2.7.0 - 2023-10-05
+
+1. Added new `const [flag, payload] = useFeatureFlagWithPayload('my-flag-name')` hook that returns the flag result and it's payload if it has one.
+
 # 2.7.0 - 2023-05-25
 
 1. The `$screen_name` property will be registered for all events whenever `screen` is called
