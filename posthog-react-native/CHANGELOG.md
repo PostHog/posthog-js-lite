@@ -1,12 +1,12 @@
-2.7.0 - 2023-10-05
+# Next
 
 1. Added new `const [flag, payload] = useFeatureFlagWithPayload('my-flag-name')` hook that returns the flag result and it's payload if it has one.
 
-# 2.7.0 - 2023-05-25
+# 2.7.1 - 2023-05-25
 
 1. The `$screen_name` property will be registered for all events whenever `screen` is called
 
-# 2.7.0 - 2023-04-20
+# 2.7.0 - 2023-04-21
 
 1. Fixes a race condition that could occur when initialising PostHog
 2. Fixes an issue where feature flags would not be reloaded after a reset
