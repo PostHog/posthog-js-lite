@@ -45,5 +45,6 @@ jobs:
           node-version: 16
       - run: |
           cd examples/example-expo
+          yarn global add yalc
           yarn
           yarn tsc
