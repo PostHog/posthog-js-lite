@@ -36,6 +36,8 @@ class PostHogFetchNetworkError extends Error {
   name = 'PostHogFetchNetworkError'
 
   constructor(public error: unknown) {
+    // TRICKY: "cause" is a newer property but is just ignored otherwise. Cast to any to ignore the type issue.
+    // @ts-ignore
     super('Network error while fetching PostHog', error instanceof Error ? { cause: error } : {})
   }
 }

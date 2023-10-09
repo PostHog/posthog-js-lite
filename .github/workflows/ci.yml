@@ -34,3 +34,18 @@ jobs:
       - run: yarn compile
       - run: yarn lint
       - run: yarn prettier:check
+
+  type-check:
+    timeout-minutes: 3
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 16
+      - run: |
+          yarn
+          cd examples/example-expo
+          yarn global add yalc
+          yarn
+          yarn tsc

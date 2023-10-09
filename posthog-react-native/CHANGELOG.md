@@ -1,3 +1,7 @@
+# 2.8.1 - 2023-10-09
+
+1. Fixes a type generation issue
+
 # 2.8.0 - 2023-10-06
 
 1. Added new `const [flag, payload] = useFeatureFlagWithPayload('my-flag-name')` hook that returns the flag result and it's payload if it has one.
