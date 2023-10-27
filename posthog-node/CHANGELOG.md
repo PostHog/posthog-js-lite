@@ -1,3 +1,7 @@
+# 3.1.3 - 2023-10-27
+
+1. Updates axios dependency
+
 # 3.1.2 - 2023-08-17
 
 1. Returns the current flag property with $feature_flag_called events, to make it easier to use in experiments
