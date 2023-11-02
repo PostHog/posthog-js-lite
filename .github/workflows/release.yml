@@ -31,7 +31,7 @@ jobs:
           path: ${{ matrix.package.name }}
 
       - name: Set up Node 16
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         if: steps.check-package-version.outputs.is-new-version == 'true'
         with:
           node-version: 16
