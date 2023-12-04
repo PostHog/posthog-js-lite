@@ -1,3 +1,8 @@
+# 2.9.0 - 2023-12-04
+
+1.  Renamed `personProperties` to `setPersonPropertiesForFlags` to match `posthog-js` and more clearly indicated what it does
+2.  Renamed `groupProperties` to `setGroupPropertiesForFlags` to match `posthog-js` and more clearly indicated what it does
+
 # 2.8.1 - 2023-10-09
 
 1. Fixes a type generation issue
