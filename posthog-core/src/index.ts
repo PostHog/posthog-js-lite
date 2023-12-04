@@ -867,7 +867,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   /***
    * PROPERTIES
    ***/
-  personProperties(properties: { [type: string]: string }): this {
+  setPersonPropertiesForFlags(properties: { [type: string]: string }): this {
     // Get persisted person properties
     const existingProperties =
       this.getPersistedProperty<Record<string, string>>(PostHogPersistedProperty.PersonProperties) || {}
@@ -880,7 +880,16 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     return this
   }
 
-  groupProperties(properties: { [type: string]: Record<string, string> }): this {
+  resetPersonPropertiesForFlags(): void {
+    this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.PersonProperties, {})
+  }
+
+  /** @deprecated - Renamed to setPersonPropertiesForFlags */
+  personProperties(properties: { [type: string]: string }): this {
+    return this.setPersonPropertiesForFlags(properties)
+  }
+
+  setGroupPropertiesForFlags(properties: { [type: string]: Record<string, string> }): this {
     // Get persisted group properties
     const existingProperties =
       this.getPersistedProperty<Record<string, Record<string, string>>>(PostHogPersistedProperty.GroupProperties) || {}
@@ -900,6 +909,15 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       ...properties,
     })
     return this
+  }
+
+  resetGroupPropertiesForFlags(): void {
+    this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.GroupProperties, {})
+  }
+
+  /** @deprecated - Renamed to setGroupPropertiesForFlags */
+  groupProperties(properties: { [type: string]: Record<string, string> }): this {
+    return this.setGroupPropertiesForFlags(properties)
   }
 
   /***

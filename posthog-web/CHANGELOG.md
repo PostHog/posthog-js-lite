@@ -1,3 +1,8 @@
+# 2.5.0 - 2023-12-04
+
+1.  Renamed `personProperties` to `setPersonPropertiesForFlags` to match `posthog-js` and more clearly indicated what it does
+2.  Renamed `groupProperties` to `setGroupPropertiesForFlags` to match `posthog-js` and more clearly indicated what it does
+
 # 2.4.0 - 2023-04-20
 
 1. Fixes a race condition that could occur when initialising PostHog
