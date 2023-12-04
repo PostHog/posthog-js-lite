@@ -915,7 +915,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.GroupProperties, {})
   }
 
-  /** @deprecated - Renamed to setPersonPropertiesForFlags */
+  /** @deprecated - Renamed to setGroupPropertiesForFlags */
   groupProperties(properties: { [type: string]: Record<string, string> }): this {
     return this.setGroupPropertiesForFlags(properties)
   }
