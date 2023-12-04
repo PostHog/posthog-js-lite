@@ -3,7 +3,7 @@ import { FeatureFlagCondition, FlagProperty, PostHogFeatureFlag, PropertyGroup }
 import { version } from '../package.json'
 import { JsonType, PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src'
 import { safeSetTimeout } from 'posthog-core/src/utils'
-import { fetch } from './fetch'
+import fetch from './fetch'
 
 // eslint-disable-next-line
 const LONG_SCALE = 0xfffffffffffffff
