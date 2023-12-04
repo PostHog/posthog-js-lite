@@ -295,7 +295,7 @@ describe('PostHog Node.js', () => {
         flushAt: 1,
       })
 
-      const logSpy = jest.spyOn(global.console, 'log').mockImplementation(() => {})
+      const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
       jest.useRealTimers()
       // using debug mode to check console.log output
       // which tells us when the flush is complete
