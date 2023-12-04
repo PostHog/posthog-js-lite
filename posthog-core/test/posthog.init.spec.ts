@@ -71,6 +71,7 @@ describe('PostHog Core', () => {
       ;[posthog, mocks] = createTestClient('TEST_API_KEY', {
         bootstrap: { distinctId: 'new_id', isIdentifiedId: true },
       })
+      jest.runOnlyPendingTimers()
 
       expect((posthog as any).getDistinctId()).toEqual('new_id')
       expect((posthog as any).getAnonymousId()).not.toEqual('new_id')
