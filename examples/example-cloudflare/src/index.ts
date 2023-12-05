@@ -21,10 +21,9 @@ export default {
 			host: env.PH_HOST,
 			personalApiKey: env.PH_PERSONAL_API_KEY,
 			featureFlagsPollingInterval: 10000,
-			// flushAt: 1,
 		});
 
-		posthog.capture({ distinctId: 'test', event: 'test event', properties: { test: 'test' } });
+		posthog.capture({ distinctId: `user-${Date.now()}`, event: 'test event', properties: { test: 'test' } });
 
 		await posthog.shutdownAsync();
 
