@@ -39,4 +39,5 @@ if (!_fetch) {
   }
 }
 
+// NOTE: We have to export this as default, even though we prefer named exports as we are relying on detecting "fetch" in the global scope
 export default _fetch as FetchLike
