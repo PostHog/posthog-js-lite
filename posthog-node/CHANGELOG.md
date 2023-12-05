@@ -1,3 +1,8 @@
+# 3.2.0 - 2023-12-05
+
+1. Fixes issues with Axios imports for non-node environments like Cloudflare workers
+2. Uses the globally defined `fetch` if available, otherwise imports and uses axios as a polyfill
+
 # 3.1.3 - 2023-10-27
 
 1. Updates axios dependency
