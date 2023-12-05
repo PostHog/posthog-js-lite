@@ -12,7 +12,7 @@ import {
 import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
 import { EventMessageV1, GroupIdentifyMessage, IdentifyMessageV1, PostHogNodeV1 } from './types'
 import { FeatureFlagsPoller } from './feature-flags'
-import { fetch } from './fetch'
+import fetch from './fetch'
 
 export type PostHogOptions = PosthogCoreOptions & {
   persistence?: 'memory'

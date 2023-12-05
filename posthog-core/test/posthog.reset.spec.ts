@@ -56,8 +56,8 @@ describe('PostHog Core', () => {
       ])
 
       const newDistinctId = posthog.getDistinctId()
-
       jest.runOnlyPendingTimers()
+
       // message flushed after reset
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.AnonymousId)).toEqual(newDistinctId)
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.Queue)).toEqual([])

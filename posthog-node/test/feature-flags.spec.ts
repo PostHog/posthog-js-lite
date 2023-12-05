@@ -3,9 +3,9 @@
 import { PostHog as PostHog, PostHogOptions } from '../src/posthog-node'
 import { matchProperty, InconclusiveMatchError } from '../src/feature-flags'
 jest.mock('../src/fetch')
-import { fetch } from '../src/fetch'
+import fetch from '../src/fetch'
 
-jest.spyOn(global.console, 'debug').mockImplementation()
+jest.spyOn(console, 'debug').mockImplementation()
 
 const mockedFetch = jest.mocked(fetch, true)
 

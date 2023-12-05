@@ -1,7 +1,7 @@
 // import { PostHog } from '../'
 import { PostHog as PostHog } from '../src/posthog-node'
 jest.mock('../src/fetch')
-import { fetch } from '../src/fetch'
+import fetch from '../src/fetch'
 import { anyDecideCall, anyLocalEvalCall, apiImplementation } from './feature-flags.spec'
 import { waitForPromises, wait } from '../../posthog-core/test/test-utils/test-utils'
 
@@ -295,7 +295,7 @@ describe('PostHog Node.js', () => {
         flushAt: 1,
       })
 
-      const logSpy = jest.spyOn(global.console, 'log').mockImplementation(() => {})
+      const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
       jest.useRealTimers()
       // using debug mode to check console.log output
       // which tells us when the flush is complete
