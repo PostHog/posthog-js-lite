@@ -396,7 +396,7 @@ export abstract class PostHogCoreStateless {
    ***/
   protected enqueue(type: string, _message: any, options?: PosthogCaptureOptions): void {
     if (this.optedOut) {
-      this._events.emit(type, `Library is disabled. Not sending event. To re-enable, call posthog.enable()`)
+      this._events.emit(type, `Library is disabled. Not sending event. To re-enable, call posthog.optIn()`)
       return
     }
 
