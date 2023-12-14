@@ -125,7 +125,7 @@ export class PostHog extends PostHogCore {
 
   getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined {
     return this._semiAsyncStorage
-      ? this._semiAsyncStorage.getItem(key) || undefined
+      ? this._semiAsyncStorage.getItem(key) ?? undefined
       : this._memoryStorage.getProperty(key)
   }
   setPersistedProperty<T>(key: PostHogPersistedProperty, value: T | null): void {
