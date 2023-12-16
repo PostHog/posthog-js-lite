@@ -1,3 +1,7 @@
+# 2.9.1 - 2023-12-14
+
+1. `getPersistedProperty` uses Nullish Coalescing operator to fallback to `undefined` only if the property is not found
+
 # 2.9.0 - 2023-12-04
 
 1.  Renamed `personProperties` to `setPersonPropertiesForFlags` to match `posthog-js` and more clearly indicated what it does
