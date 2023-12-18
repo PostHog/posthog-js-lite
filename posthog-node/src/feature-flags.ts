@@ -37,6 +37,7 @@ type FeatureFlagsPollerOptions = {
   pollingInterval: number
   timeout?: number
   fetch?: (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
+  onError?: (error: Error) => void
 }
 
 class FeatureFlagsPoller {
@@ -53,6 +54,7 @@ class FeatureFlagsPoller {
   poller?: NodeJS.Timeout
   fetch: (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
   debugMode: boolean = false
+  onError?: (error: Error) => void
 
   constructor({
     pollingInterval,
@@ -75,6 +77,7 @@ class FeatureFlagsPoller {
     this.poller = undefined
     // NOTE: as any is required here as the AbortSignal typing is slightly misaligned but works just fine
     this.fetch = options.fetch || fetch
+    this.onError = options.onError
 
     void this.loadFeatureFlags()
   }
@@ -177,7 +180,7 @@ class FeatureFlagsPoller {
         if (e instanceof InconclusiveMatchError) {
           // do nothing
         } else if (e instanceof Error) {
-          console.error(`Error computing flag locally: ${flag.key}: ${e}`)
+          this.onError?.(new Error(`Error computing flag locally: ${flag.key}: ${e}`))
         }
         fallbackToDecide = true
       }
@@ -395,7 +398,7 @@ class FeatureFlagsPoller {
       // if an error that is not an instance of ClientError is thrown
       // we silently ignore the error when reloading feature flags
       if (err instanceof ClientError) {
-        throw err
+        this.onError?.(err)
       }
     }
   }

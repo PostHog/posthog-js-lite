@@ -56,6 +56,9 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         timeout: options.requestTimeout ?? 10000, // 10 seconds
         host: this.host,
         fetch: options.fetch,
+        onError: (err: Error) => {
+          this._events.emit('error', err)
+        },
       })
     }
     this.distinctIdHasSentFlagCalls = {}

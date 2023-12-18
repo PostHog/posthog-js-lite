@@ -1,3 +1,7 @@
+# 3.2.1 - 2023-12-15
+
+1. Fixes issue where a background refresh of feature flags could throw an unhandled error. It now emits to be detected by `.on('error', ...)`
+
 # 3.2.0 - 2023-12-05
 
 1. Fixes issues with Axios imports for non-node environments like Cloudflare workers
