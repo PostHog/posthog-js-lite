@@ -5,6 +5,11 @@
   "files": [
     "lib/"
   ],
+  "repository": {
+    "type" : "git",
+    "url" : "https://github.com/PostHog/posthog-js-lite.git",
+    "directory": "posthog-react-native"
+  },
   "scripts": {
     "pretest": "npm run prebuild",
     "test": "jest -c jest.config.js",
