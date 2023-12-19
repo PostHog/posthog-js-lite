@@ -2,7 +2,11 @@
   "name": "posthog-node",
   "version": "3.2.1",
   "description": "PostHog Node.js integration",
-  "repository": "PostHog/posthog-node",
+  "repository": {
+    "type" : "git",
+    "url" : "https://github.com/PostHog/posthog-js-lite.git",
+    "directory": "posthog-node"
+  },
   "scripts": {
     "prepublishOnly": "cd .. && yarn build"
   },
