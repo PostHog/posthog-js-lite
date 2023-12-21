@@ -46,8 +46,14 @@ export class PostHog extends PostHogCore {
     if (!posthog) {
       const persistence = options?.persistence ?? 'file'
       if (persistence === 'file') {
-        const storage = new SemiAsyncStorage(options?.customAsyncStorage || buildOptimisiticAsyncStorage())
-        posthog = storage.preloadAsync().then(() => new PostHog(apiKey, options, storage))
+        try {
+          const storage = new SemiAsyncStorage(options?.customAsyncStorage || buildOptimisiticAsyncStorage())
+          posthog = storage.preloadAsync().then(() => new PostHog(apiKey, options, storage))
+        } catch (error) {
+          console.error(
+            'PostHog was unable to initialise with persistence set to "file". Falling back to "memory" persistence.', error)
+          posthog = Promise.resolve(new PostHog(apiKey, { ...options, persistence: 'memory' }))
+        }
       } else {
         posthog = Promise.resolve(new PostHog(apiKey, options))
       }
