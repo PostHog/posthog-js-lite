@@ -72,7 +72,7 @@ describe('PostHog React Native', () => {
   })
 
   it('should initialize with in memory storage if no storage available or broken', async () => {
-    // preloadAsync calls getItem
+    // preloadAsync calls getItem, getItem throws an error
     const myBrokenStorageMock = (): PostHogCustomAsyncStorage => {
       return {
         async getItem(key: string) {
