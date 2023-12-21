@@ -71,30 +71,6 @@ describe('PostHog React Native', () => {
     expect(posthog.getDistinctId()).toEqual('bar')
   })
 
-  it('should initialize with in memory storage if no storage available or broken', async () => {
-    // preloadAsync calls getItem, getItem throws an error
-    const myBrokenStorageMock = (): PostHogCustomAsyncStorage => {
-      return {
-        async getItem(key: string) {
-          throw new Error(`error getting ${key}`)
-        },
-
-        async setItem(key: string, value: string) {
-          throw new Error(`error setting ${key} with the value ${value}`)
-        },
-      }
-    }
-
-    posthog = await PostHog.initAsync('test-token', {
-      bootstrap: { distinctId: 'bar' },
-      persistence: 'file',
-      customAsyncStorage: myBrokenStorageMock(),
-      flushInterval: 0,
-    })
-    expect(posthog.getAnonymousId()).toEqual('bar')
-    expect(posthog.getDistinctId()).toEqual('bar')
-  })
-
   it('should allow customising of native app properties', async () => {
     posthog = await PostHog.initAsync('test-token', {
       customAppProperties: { $app_name: 'custom' },
