@@ -51,7 +51,9 @@ export class PostHog extends PostHogCore {
           posthog = storage.preloadAsync().then(() => new PostHog(apiKey, options, storage))
         } catch (error) {
           console.error(
-            'PostHog was unable to initialise with persistence set to "file". Falling back to "memory" persistence.', error)
+            'PostHog was unable to initialise with persistence set to "file". Falling back to "memory" persistence.',
+            error
+          )
           posthog = Promise.resolve(new PostHog(apiKey, { ...options, persistence: 'memory' }))
         }
       } else {
