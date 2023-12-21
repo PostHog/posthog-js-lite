@@ -76,11 +76,11 @@ describe('PostHog React Native', () => {
     const myBrokenStorageMock = (): PostHogCustomAsyncStorage => {
       return {
         async getItem(key: string) {
-          throw new Error('error')
+          throw new Error(`error getting ${key}`)
         },
 
         async setItem(key: string, value: string) {
-          throw new Error('error')
+          throw new Error(`error setting ${key} with the value ${value}`)
         },
       }
     }
