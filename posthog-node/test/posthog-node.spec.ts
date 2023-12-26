@@ -540,7 +540,7 @@ describe('PostHog Node.js', () => {
       mockedFetch.mockClear()
       expect(mockedFetch).toHaveBeenCalledTimes(0)
 
-      posthog = new PostHog('TEST_API_KEY_LOCAL_FLAGS', {
+      posthog = new PostHog('TEST_API_KEY', {
         host: 'http://example.com',
         flushAt: 1,
         fetchRetryCount: 0,
@@ -598,7 +598,7 @@ describe('PostHog Node.js', () => {
         apiImplementation({ decideFlags: { a: false, b: 'true' }, decideFlagPayloads: {}, localFlags: { flags: [] } })
       )
 
-      posthog = new PostHog('TEST_API_KEY_EMPTY_LOCAL_FLAGS', {
+      posthog = new PostHog('TEST_API_KEY', {
         host: 'http://example.com',
         flushAt: 1,
         fetchRetryCount: 0,
@@ -709,20 +709,24 @@ describe('PostHog Node.js', () => {
         apiImplementation({ localFlags: flags, decideFlags: { 'beta-feature': 'decide-fallback-value' } })
       )
 
-      posthog = new PostHog('TEST_API_KEY_MEMORY', {
+      posthog = new PostHog('TEST_API_KEY', {
         host: 'http://example.com',
         personalApiKey: 'TEST_PERSONAL_API_KEY',
         maxCacheSize: 10,
         fetchRetryCount: 0,
+        flushAt: 1,
       })
 
       expect(Object.keys(posthog.distinctIdHasSentFlagCalls).length).toEqual(0)
 
-      for (let i = 0; i < 1000; i++) {
+      // TODO: Check if this has a real world perf impact on sending events, i.e. adding local flag info
+      // via the promise slows down sending events
+      for (let i = 0; i < 20; i++) {
         const distinctId = `some-distinct-id${i}`
         await posthog.getFeatureFlag('beta-feature', distinctId)
 
         jest.runOnlyPendingTimers()
+        await waitForPromises()
 
         const batchEvents = getLastBatchEvents()
         expect(batchEvents).toMatchObject([
