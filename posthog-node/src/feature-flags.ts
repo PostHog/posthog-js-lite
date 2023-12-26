@@ -503,7 +503,7 @@ function matchProperty(
     case 'gt':
     case 'gte':
     case 'lt':
-    case 'lte':
+    case 'lte': {
       // :TRICKY: We adjust comparison based on the override value passed in,
       // to make sure we handle both numeric and string comparisons appropriately.
       let parsedValue = typeof value === 'number' ? value : null
@@ -514,9 +514,10 @@ function matchProperty(
         } catch (err) {
           // pass
         }
-      } 
+      }
 
-      if (parsedValue != null && overrideValue != null) { // check both null and undefined
+      if (parsedValue != null && overrideValue != null) {
+        // check both null and undefined
         if (typeof overrideValue === 'string') {
           return compare(overrideValue, String(value), operator)
         } else {
@@ -525,10 +526,11 @@ function matchProperty(
       } else {
         return compare(String(overrideValue), String(value), operator)
       }
+    }
     case 'is_date_after':
     case 'is_date_before':
     case 'is_relative_date_before':
-    case 'is_relative_date_after':
+    case 'is_relative_date_after': {
       let parsedDate = null
       if (['is_relative_date_before', 'is_relative_date_after'].includes(operator)) {
         parsedDate = relativeDateParseForFeatureFlagMatching(String(value))
@@ -544,7 +546,7 @@ function matchProperty(
         return overrideDate < parsedDate
       }
       return overrideDate > parsedDate
-
+    }
     default:
       console.error(`Unknown operator: ${operator}`)
       return false
@@ -722,4 +724,10 @@ function relativeDateParseForFeatureFlagMatching(value: string): Date | null {
   }
 }
 
-export { FeatureFlagsPoller, matchProperty, relativeDateParseForFeatureFlagMatching, InconclusiveMatchError, ClientError }
+export {
+  FeatureFlagsPoller,
+  matchProperty,
+  relativeDateParseForFeatureFlagMatching,
+  InconclusiveMatchError,
+  ClientError,
+}

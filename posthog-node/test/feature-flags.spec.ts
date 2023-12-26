@@ -1984,7 +1984,7 @@ describe('match properties', () => {
     expect(matchProperty(property_d, { key: '44' })).toBe(false)
     expect(matchProperty(property_d, { key: 44 })).toBe(false)
     expect(matchProperty(property_d, { key: 42 })).toBe(true)
-    
+
     const property_e = { key: 'key', value: '30', operator: 'lt' }
     expect(matchProperty(property_e, { key: '29' })).toBe(true)
 
@@ -1998,7 +1998,6 @@ describe('match properties', () => {
 
     // # this turns into a string comparison
     expect(matchProperty(property_f, { key: 129 })).toBe(true)
-
   })
 
   it('with date operators', () => {
@@ -2043,7 +2042,7 @@ describe('match properties', () => {
     const property_a = { key: 'key', value: '6h', operator: 'is_relative_date_before' }
     expect(matchProperty(property_a, { key: '2022-03-01' })).toBe(true)
     expect(matchProperty(property_a, { key: '2022-04-30' })).toBe(true)
-    
+
     // :TRICKY: MonthIndex is 0 indexed, so 3 is actually the 4th month, April.
     expect(matchProperty(property_a, { key: new Date(Date.UTC(2022, 3, 30, 1, 2, 3)) })).toBe(true)
     // false because date comparison, instead of datetime, so reduces to same date
@@ -2070,7 +2069,6 @@ describe('match properties', () => {
     const property_c = { key: 'key', value: 1234, operator: 'is_relative_date_after' }
     expect(() => matchProperty(property_c, { key: '2022-05-30' })).toThrow(InconclusiveMatchError)
     expect(() => matchProperty(property_c, { key: 1 })).toThrow(InconclusiveMatchError)
-
 
     // # Try all possible relative dates
     const property_e = { key: 'key', value: '1h', operator: 'is_relative_date_before' }
@@ -2117,7 +2115,6 @@ describe('match properties', () => {
     expect(matchProperty(property_n, { key: '2021-05-01 00:00:00 GMT' })).toBe(false)
     expect(matchProperty(property_n, { key: '2021-04-30 00:00:00 GMT' })).toBe(false)
     expect(matchProperty(property_n, { key: '2021-03-01 12:13:00 GMT' })).toBe(false)
-
   })
 
   it('null or undefined property value', () => {
@@ -2170,18 +2167,15 @@ describe('match properties', () => {
 
     const property_k = { key: 'key', value: '2022-05-01', operator: 'is_date_before' }
     expect(() => matchProperty(property_k, { key: null })).toThrow(InconclusiveMatchError)
-
   })
 })
 
-
 describe('relative date parsing', () => {
-
   jest.useFakeTimers()
   beforeEach(() => {
     jest.setSystemTime(new Date('2020-01-01T12:01:20.134Z'))
   })
-  
+
   it('invalid input', () => {
     expect(relativeDateParseForFeatureFlagMatching('1')).toBe(null)
     expect(relativeDateParseForFeatureFlagMatching('1x')).toBe(null)
@@ -2237,11 +2231,10 @@ describe('relative date parsing', () => {
     expect(relativeDateParseForFeatureFlagMatching('1m')).toEqual(new Date('2019-12-01T12:01:20.134Z'))
     expect(relativeDateParseForFeatureFlagMatching('2m')).toEqual(new Date('2019-11-01T12:01:20.134Z'))
 
-    // TRICKY: TODO: For some reason we are losing one hour in this calculation for 4m and 8m
-    expect(relativeDateParseForFeatureFlagMatching('4m')).toEqual(new Date('2019-09-01T11:01:20.134Z'))
-    expect(relativeDateParseForFeatureFlagMatching('5m')).toEqual(new Date('2019-08-01T11:01:20.134Z'))
-    expect(relativeDateParseForFeatureFlagMatching('6m')).toEqual(new Date('2019-07-01T11:01:20.134Z'))
-    expect(relativeDateParseForFeatureFlagMatching('8m')).toEqual(new Date('2019-05-01T11:01:20.134Z'))
+    expect(relativeDateParseForFeatureFlagMatching('4m')).toEqual(new Date('2019-09-01T12:01:20.134Z'))
+    expect(relativeDateParseForFeatureFlagMatching('5m')).toEqual(new Date('2019-08-01T12:01:20.134Z'))
+    expect(relativeDateParseForFeatureFlagMatching('6m')).toEqual(new Date('2019-07-01T12:01:20.134Z'))
+    expect(relativeDateParseForFeatureFlagMatching('8m')).toEqual(new Date('2019-05-01T12:01:20.134Z'))
     expect(relativeDateParseForFeatureFlagMatching('10m')).toEqual(new Date('2019-03-01T12:01:20.134Z'))
 
     expect(relativeDateParseForFeatureFlagMatching('24m')).toEqual(new Date('2018-01-01T12:01:20.134Z'))
