@@ -385,76 +385,78 @@ describe('PostHog Node.js', () => {
       }
 
       const multivariateFlag = {
-        "id": 1,
-        "name": "Beta Feature",
-        "key": "beta-feature-local",
-        "is_simple_flag": false,
-        "active": true,
-        "rollout_percentage": 100,
-        "filters": {
-            "groups": [
-                {
-                    "properties": [
-                        {"key": "email", "type": "person", "value": "test@posthog.com", "operator": "exact"}
-                    ],
-                    "rollout_percentage": 100,
-                },
-                {
-                    "rollout_percentage": 50,
-                },
-            ],
-            "multivariate": {
-                "variants": [
-                    {"key": "first-variant", "name": "First Variant", "rollout_percentage": 50},
-                    {"key": "second-variant", "name": "Second Variant", "rollout_percentage": 25},
-                    {"key": "third-variant", "name": "Third Variant", "rollout_percentage": 25},
-                ]
+        id: 1,
+        name: 'Beta Feature',
+        key: 'beta-feature-local',
+        is_simple_flag: false,
+        active: true,
+        rollout_percentage: 100,
+        filters: {
+          groups: [
+            {
+              properties: [{ key: 'email', type: 'person', value: 'test@posthog.com', operator: 'exact' }],
+              rollout_percentage: 100,
             },
-            "payloads": {"first-variant": "some-payload", "third-variant": {"a": "json"}},
+            {
+              rollout_percentage: 50,
+            },
+          ],
+          multivariate: {
+            variants: [
+              { key: 'first-variant', name: 'First Variant', rollout_percentage: 50 },
+              { key: 'second-variant', name: 'Second Variant', rollout_percentage: 25 },
+              { key: 'third-variant', name: 'Third Variant', rollout_percentage: 25 },
+            ],
+          },
+          payloads: { 'first-variant': 'some-payload', 'third-variant': { a: 'json' } },
         },
-    }
+      }
       const basicFlag = {
-        "id": 1,
-        "name": "Beta Feature",
-        "key": "person-flag",
-        "is_simple_flag": true,
-        "active": true,
-        "filters": {
-            "groups": [
+        id: 1,
+        name: 'Beta Feature',
+        key: 'person-flag',
+        is_simple_flag: true,
+        active: true,
+        filters: {
+          groups: [
+            {
+              properties: [
                 {
-                    "properties": [
-                        {
-                            "key": "region",
-                            "operator": "exact",
-                            "value": ["USA"],
-                            "type": "person",
-                        }
-                    ],
-                    "rollout_percentage": 100,
-                }
-            ],
-            "payloads": {"true": 300},
+                  key: 'region',
+                  operator: 'exact',
+                  value: ['USA'],
+                  type: 'person',
+                },
+              ],
+              rollout_percentage: 100,
+            },
+          ],
+          payloads: { true: 300 },
         },
-    }
+      }
       const falseFlag = {
-        "id": 1,
-        "name": "Beta Feature",
-        "key": "false-flag",
-        "is_simple_flag": true,
-        "active": true,
-        "filters": {
-            "groups": [
-                {
-                    "properties": [],
-                    "rollout_percentage": 0,
-                }
-            ],
-            "payloads": {"true": 300},
+        id: 1,
+        name: 'Beta Feature',
+        key: 'false-flag',
+        is_simple_flag: true,
+        active: true,
+        filters: {
+          groups: [
+            {
+              properties: [],
+              rollout_percentage: 0,
+            },
+          ],
+          payloads: { true: 300 },
         },
-    }
-    
+      }
+
       mockedFetch.mockImplementation(
-        apiImplementation({ decideFlags: mockFeatureFlags, decideFlagPayloads: mockFeatureFlagPayloads, localFlags: {flags: [multivariateFlag, basicFlag, falseFlag]} })
+        apiImplementation({
+          decideFlags: mockFeatureFlags,
+          decideFlagPayloads: mockFeatureFlagPayloads,
+          localFlags: { flags: [multivariateFlag, basicFlag, falseFlag] },
+        })
       )
 
       posthog = new PostHog('TEST_API_KEY', {
@@ -583,16 +585,14 @@ describe('PostHog Node.js', () => {
       expect(getLastBatchEvents()?.[0].properties.hasOwnProperty('$feature/beta-feature')).toBe(false)
 
       await posthog.shutdownAsync()
-
     })
 
     it('doesnt add flag properties when locally evaluated flags are empty', async () => {
       mockedFetch.mockClear()
       expect(mockedFetch).toHaveBeenCalledTimes(0)
       mockedFetch.mockImplementation(
-        apiImplementation({ decideFlags: {'a': false, 'b': 'true'}, decideFlagPayloads: {}, localFlags: {flags: []} })
+        apiImplementation({ decideFlags: { a: false, b: 'true' }, decideFlagPayloads: {}, localFlags: { flags: [] } })
       )
-
 
       posthog = new PostHog('TEST_API_KEY', {
         host: 'http://example.com',

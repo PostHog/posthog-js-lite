@@ -127,21 +127,22 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       for (const [key, value] of Object.entries(groups || {})) {
         groupsWithStringValues[key] = String(value)
       }
-      this.getAllFlags(distinctId, { groups: groupsWithStringValues, disableGeoip, onlyEvaluateLocally: true }).then(flags => {
-        const featureVariantProperties: Record<string, string | boolean> = {}
-        if (flags) {
-          for (const [feature, variant] of Object.entries(flags)) {
-            featureVariantProperties[`$feature/${feature}`] = variant
+      this.getAllFlags(distinctId, { groups: groupsWithStringValues, disableGeoip, onlyEvaluateLocally: true }).then(
+        (flags) => {
+          const featureVariantProperties: Record<string, string | boolean> = {}
+          if (flags) {
+            for (const [feature, variant] of Object.entries(flags)) {
+              featureVariantProperties[`$feature/${feature}`] = variant
+            }
           }
+          const activeFlags = Object.keys(flags || {}).filter((flag) => flags?.[flag] !== false)
+          const flagProperties = {
+            $active_feature_flags: activeFlags || undefined,
+            ...featureVariantProperties,
+          }
+          _capture({ ...properties, $groups: groups, ...flagProperties })
         }
-        const activeFlags = Object.keys(flags || {}).filter((flag) => flags?.[flag] !== false)
-        const flagProperties = {
-          $active_feature_flags: activeFlags || undefined,
-          ...featureVariantProperties,
-        }
-        _capture({ ...properties, $groups: groups, ...flagProperties })
-      })
-      
+      )
     } else {
       _capture({ ...properties, $groups: groups })
     }
@@ -437,7 +438,12 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     return super.shutdownAsync()
   }
 
-  private addLocalPersonAndGroupProperties(distinctId: string, groups?: Record<string, string>, personProperties?: Record<string, string>, groupProperties?: Record<string, Record<string, string>>) {
+  private addLocalPersonAndGroupProperties(
+    distinctId: string,
+    groups?: Record<string, string>,
+    personProperties?: Record<string, string>,
+    groupProperties?: Record<string, Record<string, string>>
+  ) {
     const allPersonProperties = { $current_distinct_id: distinctId, ...(personProperties || {}) }
 
     const allGroupProperties: Record<string, Record<string, string>> = {}
