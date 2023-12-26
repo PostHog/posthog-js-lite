@@ -43,7 +43,7 @@ describe('PostHog Node.js', () => {
 
   afterEach(async () => {
     // ensure clean shutdown & no test interdependencies
-    // await posthog.shutdownAsync()
+    await posthog.shutdownAsync()
   })
 
   describe('core methods', () => {
@@ -642,8 +642,6 @@ describe('PostHog Node.js', () => {
       expect(Object.prototype.hasOwnProperty.call(getLastBatchEvents()?.[0].properties, '$feature/beta-feature')).toBe(
         false
       )
-
-      await posthog.shutdownAsync()
     })
 
     it('captures feature flags with same geoip setting as capture', async () => {
