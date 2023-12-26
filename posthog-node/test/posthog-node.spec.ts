@@ -581,8 +581,12 @@ describe('PostHog Node.js', () => {
           }),
         })
       )
-      expect(getLastBatchEvents()?.[0].properties.hasOwnProperty('$feature/beta-feature-local')).toBe(true)
-      expect(getLastBatchEvents()?.[0].properties.hasOwnProperty('$feature/beta-feature')).toBe(false)
+      expect(
+        Object.prototype.hasOwnProperty.call(getLastBatchEvents()?.[0].properties, '$feature/beta-feature-local')
+      ).toBe(true)
+      expect(Object.prototype.hasOwnProperty.call(getLastBatchEvents()?.[0].properties, '$feature/beta-feature')).toBe(
+        false
+      )
 
       await posthog.shutdownAsync()
     })
@@ -632,8 +636,12 @@ describe('PostHog Node.js', () => {
           }),
         })
       )
-      expect(getLastBatchEvents()?.[0].properties.hasOwnProperty('$feature/beta-feature-local')).toBe(false)
-      expect(getLastBatchEvents()?.[0].properties.hasOwnProperty('$feature/beta-feature')).toBe(false)
+      expect(
+        Object.prototype.hasOwnProperty.call(getLastBatchEvents()?.[0].properties, '$feature/beta-feature-local')
+      ).toBe(false)
+      expect(Object.prototype.hasOwnProperty.call(getLastBatchEvents()?.[0].properties, '$feature/beta-feature')).toBe(
+        false
+      )
 
       await posthog.shutdownAsync()
     })
