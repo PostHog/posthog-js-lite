@@ -384,8 +384,77 @@ describe('PostHog Node.js', () => {
         'feature-variant': 2,
       }
 
+      const multivariateFlag = {
+        "id": 1,
+        "name": "Beta Feature",
+        "key": "beta-feature-local",
+        "is_simple_flag": false,
+        "active": true,
+        "rollout_percentage": 100,
+        "filters": {
+            "groups": [
+                {
+                    "properties": [
+                        {"key": "email", "type": "person", "value": "test@posthog.com", "operator": "exact"}
+                    ],
+                    "rollout_percentage": 100,
+                },
+                {
+                    "rollout_percentage": 50,
+                },
+            ],
+            "multivariate": {
+                "variants": [
+                    {"key": "first-variant", "name": "First Variant", "rollout_percentage": 50},
+                    {"key": "second-variant", "name": "Second Variant", "rollout_percentage": 25},
+                    {"key": "third-variant", "name": "Third Variant", "rollout_percentage": 25},
+                ]
+            },
+            "payloads": {"first-variant": "some-payload", "third-variant": {"a": "json"}},
+        },
+    }
+      const basicFlag = {
+        "id": 1,
+        "name": "Beta Feature",
+        "key": "person-flag",
+        "is_simple_flag": true,
+        "active": true,
+        "filters": {
+            "groups": [
+                {
+                    "properties": [
+                        {
+                            "key": "region",
+                            "operator": "exact",
+                            "value": ["USA"],
+                            "type": "person",
+                        }
+                    ],
+                    "rollout_percentage": 100,
+                }
+            ],
+            "payloads": {"true": 300},
+        },
+    }
+      const falseFlag = {
+        "id": 1,
+        "name": "Beta Feature",
+        "key": "false-flag",
+        "is_simple_flag": true,
+        "active": true,
+        "filters": {
+            "groups": [
+                {
+                    "properties": [],
+                    "rollout_percentage": 0,
+                }
+            ],
+            "payloads": {"true": 300},
+        },
+    }
+    
       mockedFetch.mockImplementation(
-        apiImplementation({ decideFlags: mockFeatureFlags, decideFlagPayloads: mockFeatureFlagPayloads })
+        apiImplementation({ decideFlags: mockFeatureFlags, decideFlagPayloads: mockFeatureFlagPayloads, localFlags: {flags: [multivariateFlag, basicFlag, falseFlag]} })
       )
 
       posthog = new PostHog('TEST_API_KEY', {
@@ -462,6 +531,111 @@ describe('PostHog Node.js', () => {
         'http://example.com/decide/?v=3',
         expect.objectContaining({ method: 'POST', body: expect.stringContaining('"geoip_disable":true') })
       )
+    })
+
+    it('captures feature flags with locally evaluated flags', async () => {
+      mockedFetch.mockClear()
+      mockedFetch.mockClear()
+      expect(mockedFetch).toHaveBeenCalledTimes(0)
+
+      posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        flushAt: 1,
+        fetchRetryCount: 0,
+        personalApiKey: 'TEST_PERSONAL_API_KEY',
+      })
+
+      jest.runOnlyPendingTimers()
+
+      await waitForPromises()
+
+      posthog.capture({
+        distinctId: 'distinct_id',
+        event: 'node test event',
+      })
+
+      expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
+      // no decide call
+      expect(mockedFetch).not.toHaveBeenCalledWith(
+        'http://example.com/decide/?v=3',
+        expect.objectContaining({ method: 'POST' })
+      )
+
+      jest.runOnlyPendingTimers()
+
+      await waitForPromises()
+
+      expect(getLastBatchEvents()?.[0]).toEqual(
+        expect.objectContaining({
+          distinct_id: 'distinct_id',
+          event: 'node test event',
+          properties: expect.objectContaining({
+            $active_feature_flags: ['beta-feature-local'],
+            '$feature/beta-feature-local': 'third-variant',
+            '$feature/false-flag': false,
+            $lib: 'posthog-node',
+            $lib_version: '1.2.3',
+            $geoip_disable: true,
+          }),
+        })
+      )
+      expect(getLastBatchEvents()?.[0].properties.hasOwnProperty('$feature/beta-feature-local')).toBe(true)
+      expect(getLastBatchEvents()?.[0].properties.hasOwnProperty('$feature/beta-feature')).toBe(false)
+
+      await posthog.shutdownAsync()
+
+    })
+
+    it('doesnt add flag properties when locally evaluated flags are empty', async () => {
+      mockedFetch.mockClear()
+      expect(mockedFetch).toHaveBeenCalledTimes(0)
+      mockedFetch.mockImplementation(
+        apiImplementation({ decideFlags: {'a': false, 'b': 'true'}, decideFlagPayloads: {}, localFlags: {flags: []} })
+      )
+
+
+      posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        flushAt: 1,
+        fetchRetryCount: 0,
+        personalApiKey: 'TEST_PERSONAL_API_KEY',
+      })
+
+      jest.runOnlyPendingTimers()
+
+      await waitForPromises()
+
+      posthog.capture({
+        distinctId: 'distinct_id',
+        event: 'node test event',
+      })
+
+      expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
+      // no decide call
+      expect(mockedFetch).not.toHaveBeenCalledWith(
+        'http://example.com/decide/?v=3',
+        expect.objectContaining({ method: 'POST' })
+      )
+
+      jest.runOnlyPendingTimers()
+
+      await waitForPromises()
+
+      expect(getLastBatchEvents()?.[0]).toEqual(
+        expect.objectContaining({
+          distinct_id: 'distinct_id',
+          event: 'node test event',
+          properties: expect.objectContaining({
+            $lib: 'posthog-node',
+            $lib_version: '1.2.3',
+            $geoip_disable: true,
+          }),
+        })
+      )
+      expect(getLastBatchEvents()?.[0].properties.hasOwnProperty('$feature/beta-feature-local')).toBe(false)
+      expect(getLastBatchEvents()?.[0].properties.hasOwnProperty('$feature/beta-feature')).toBe(false)
+
+      await posthog.shutdownAsync()
     })
 
     it('captures feature flags with same geoip setting as capture', async () => {
@@ -566,6 +740,7 @@ describe('PostHog Node.js', () => {
     })
 
     it('$feature_flag_called is called appropriately when querying flags', async () => {
+      mockedFetch.mockClear()
       const flags = {
         flags: [
           {
