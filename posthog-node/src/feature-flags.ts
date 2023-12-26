@@ -121,7 +121,7 @@ class FeatureFlagsPoller {
             console.debug(`InconclusiveMatchError when computing flag locally: ${key}: ${e}`)
           }
         } else if (e instanceof Error) {
-          console.error(`Error computing flag locally: ${key}: ${e}`)
+          this.onError?.(new Error(`Error computing flag locally: ${key}: ${e}`))
         }
       }
     }
@@ -383,7 +383,7 @@ class FeatureFlagsPoller {
 
       const responseJson = await res.json()
       if (!('flags' in responseJson)) {
-        console.error(`Invalid response when getting feature flags: ${JSON.stringify(responseJson)}`)
+        this.onError?.(new Error(`Invalid response when getting feature flags: ${JSON.stringify(responseJson)}`))
       }
 
       this.featureFlags = responseJson.flags || []

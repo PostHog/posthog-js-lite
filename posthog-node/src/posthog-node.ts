@@ -136,11 +136,16 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
             }
           }
           const activeFlags = Object.keys(flags || {}).filter((flag) => flags?.[flag] !== false)
-          const flagProperties = {
-            $active_feature_flags: activeFlags || undefined,
+          let flagProperties: Record<string, any> = {
             ...featureVariantProperties,
           }
-          _capture({ ...properties, $groups: groups, ...flagProperties })
+          if (activeFlags.length > 0) {
+            flagProperties = {
+              ...flagProperties,
+              $active_feature_flags: activeFlags,
+            }
+          }
+          _capture({ ...flagProperties, ...properties, $groups: groups })
         }
       )
     } else {

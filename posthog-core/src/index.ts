@@ -249,7 +249,7 @@ export abstract class PostHogCoreStateless {
     return this.fetchWithRetry(url, fetchOptions)
       .then((response) => response.json() as Promise<PostHogDecideResponse>)
       .catch((error) => {
-        console.error('Error fetching feature flags', error)
+        this._events.emit('error', error)
         return undefined
       })
   }
