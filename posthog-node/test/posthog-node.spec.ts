@@ -455,7 +455,7 @@ describe('PostHog Node.js', () => {
         apiImplementation({
           decideFlags: mockFeatureFlags,
           decideFlagPayloads: mockFeatureFlagPayloads,
-          // localFlags: { flags: [multivariateFlag, basicFlag, falseFlag] },
+          localFlags: { flags: [multivariateFlag, basicFlag, falseFlag] },
         })
       )
 
@@ -484,7 +484,7 @@ describe('PostHog Node.js', () => {
       expect(mockedFetch).toHaveBeenCalledTimes(2)
     })
 
-    it.skip('captures feature flags when no personal API key is present', async () => {
+    it('captures feature flags when no personal API key is present', async () => {
       mockedFetch.mockClear()
       mockedFetch.mockClear()
       expect(mockedFetch).toHaveBeenCalledTimes(0)
@@ -535,7 +535,7 @@ describe('PostHog Node.js', () => {
       )
     })
 
-    it.skip('captures feature flags with locally evaluated flags', async () => {
+    it('captures feature flags with locally evaluated flags', async () => {
       mockedFetch.mockClear()
       mockedFetch.mockClear()
       expect(mockedFetch).toHaveBeenCalledTimes(0)
@@ -591,7 +591,7 @@ describe('PostHog Node.js', () => {
       await posthog.shutdownAsync()
     })
 
-    it.skip('doesnt add flag properties when locally evaluated flags are empty', async () => {
+    it('doesnt add flag properties when locally evaluated flags are empty', async () => {
       mockedFetch.mockClear()
       expect(mockedFetch).toHaveBeenCalledTimes(0)
       mockedFetch.mockImplementation(
@@ -685,7 +685,7 @@ describe('PostHog Node.js', () => {
       expect(mockedFetch).not.toHaveBeenCalledWith(...anyLocalEvalCall)
     })
 
-    it.skip('manages memory well when sending feature flags', async () => {
+    it('manages memory well when sending feature flags', async () => {
       const flags = {
         flags: [
           {
