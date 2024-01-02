@@ -48,11 +48,11 @@ interface PostHogSentryExceptionProperties {
  *     Sentry.init({
  *          dsn: 'https://example',
  *          integrations: [
- *              new posthog.SentryIntegration(posthog)
+ *              new PostHogSentryIntegration(posthog)
  *          ]
  *     })
  *
- *     Sentry.setTag(posthog.POSTHOG_ID_TAG, 'some distinct id');
+ *     Sentry.setTag(PostHogSentryIntegration.POSTHOG_ID_TAG, 'some distinct id');
  *
  * @param {Object} [posthog] The posthog object
  * @param {string} [organization] Optional: The Sentry organization, used to send a direct link from PostHog to Sentry
