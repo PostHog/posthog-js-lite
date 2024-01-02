@@ -1,3 +1,7 @@
+# 3.3.0 - 2024-01-02
+
+1. Adds PostHogSentryIntegration to allow automatic capturing of exceptions reported via the @sentry/node package
+
 # 3.2.1 - 2023-12-15
 
 1. Fixes issue where a background refresh of feature flags could throw an unhandled error. It now emits to be detected by `.on('error', ...)`
