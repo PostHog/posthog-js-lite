@@ -1,6 +1,8 @@
 import express from 'express'
-import { PostHog } from 'posthog-node'
+import { PostHog, PostHogSentryIntegration } from 'posthog-node'
 import undici from 'undici'
+
+import * as Sentry from '@sentry/node'
 
 const app = express()
 
@@ -23,9 +25,27 @@ const posthog = new PostHog(PH_API_KEY, {
 
 posthog.debug()
 
+Sentry.init({
+  dsn: 'https://examplePublicKey@o0.ingest.sentry.io/0',
+
+  // We recommend adjusting this value in production, or using tracesSampler
+  // for finer control
+  tracesSampleRate: 1.0,
+  integrations: [new PostHogSentryIntegration(posthog)],
+})
+
 app.get('/', (req, res) => {
   posthog.capture({ distinctId: 'EXAMPLE_APP_GLOBAL', event: 'legacy capture' })
   res.send({ hello: 'world' })
+})
+
+app.get('/error', (req, res) => {
+  Sentry.captureException(new Error('example error'), {
+    tags: {
+      [PostHogSentryIntegration.POSTHOG_ID_TAG]: 'EXAMPLE_APP_GLOBAL',
+    },
+  })
+  res.send({ status: 'error!!' })
 })
 
 app.get('/user/:userId/action', (req, res) => {

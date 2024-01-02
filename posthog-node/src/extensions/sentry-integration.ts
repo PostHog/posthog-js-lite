@@ -3,8 +3,6 @@
  */
 import { type PostHog } from '../posthog-node'
 
-export const POSTHOG_ID_TAG = 'posthog_distinct_id'
-
 // NOTE - we can't import from @sentry/types because it changes frequently and causes clashes
 // We only use a small subset of the types, so we can just define the integration overall and use any for the rest
 
@@ -61,15 +59,19 @@ interface PostHogSentryExceptionProperties {
  * @param {Number} [projectId] Optional: The Sentry project id, used to send a direct link from PostHog to Sentry
  * @param {string} [prefix] Optional: Url of a self-hosted sentry instance (default: https://sentry.io/organizations/)
  */
-export class SentryIntegration implements _SentryIntegration {
+export class PostHogSentryIntegration implements _SentryIntegration {
   public readonly name = 'posthog-node'
+
+  public static readonly POSTHOG_ID_TAG = 'posthog_distinct_id'
 
   public constructor(
     private readonly posthog: PostHog,
-    private readonly posthogHost: string,
+    private readonly posthogHost?: string,
     private readonly organization?: string,
     private readonly prefix?: string
-  ) {}
+  ) {
+    this.posthogHost = posthog.options.host ?? 'https://app.posthog.com'
+  }
 
   public setupOnce(
     addGlobalEventProcessor: (callback: _SentryEventProcessor) => void,
@@ -87,7 +89,7 @@ export class SentryIntegration implements _SentryIntegration {
       const sentry = getCurrentHub()
 
       // Get the PostHog user ID from a specific tag, which users can set on their Sentry scope as they need.
-      const userId = event.tags[POSTHOG_ID_TAG]
+      const userId = event.tags[PostHogSentryIntegration.POSTHOG_ID_TAG]
       if (userId === undefined) {
         // If we can't find a user ID, don't bother linking the event. We won't be able to send anything meaningful to PostHog without it.
         return event
