@@ -1,3 +1,7 @@
+# 2.9.2 - 2023-12-21
+
+1. If `async-storage` or `expo-file-system` is not installed, the SDK will fallback to `persistence: memory` and log a warning
+
 # 2.9.1 - 2023-12-14
 
 1. `getPersistedProperty` uses Nullish Coalescing operator to fallback to `undefined` only if the property is not found

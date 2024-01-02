@@ -1,5 +1,10 @@
 {
   "name": "posthog-core",
   "version": "2.1.0",
-  "main": "src/index.ts"
+  "main": "src/index.ts",
+  "repository": {
+    "type" : "git",
+    "url" : "https://github.com/PostHog/posthog-js-lite.git",
+    "directory": "posthog-core"
+  }
 }
