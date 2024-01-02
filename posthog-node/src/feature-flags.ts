@@ -690,7 +690,7 @@ function convertToDateTime(value: string | number | (string | number)[] | Date):
 function relativeDateParseForFeatureFlagMatching(value: string): Date | null {
   const regex = /^(?<number>[0-9]+)(?<interval>[a-z])$/
   const match = value.match(regex)
-  const parsedDt = new Date()
+  const parsedDt = new Date(new Date().toISOString())
 
   if (match) {
     if (!match.groups) {
