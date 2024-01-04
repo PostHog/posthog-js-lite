@@ -342,23 +342,21 @@ describe('PostHog Node.js', () => {
       // all capture calls happen during shutdown
       const batchEvents = getLastBatchEvents()
       expect(batchEvents?.length).toEqual(2)
-      expect(batchEvents?.[batchEvents?.length - 1]).toMatchObject(
-        {
-          // last event in batch
-          distinct_id: '9',
-          event: 'test-event',
-          library: 'posthog-node',
-          library_version: '1.2.3',
-          properties: {
-            $lib: 'posthog-node',
-            $lib_version: '1.2.3',
-            $geoip_disable: true,
-            $active_feature_flags: [],
-          },
-          timestamp: expect.any(String),
-          type: 'capture',
+      expect(batchEvents?.[batchEvents?.length - 1]).toMatchObject({
+        // last event in batch
+        distinct_id: '9',
+        event: 'test-event',
+        library: 'posthog-node',
+        library_version: '1.2.3',
+        properties: {
+          $lib: 'posthog-node',
+          $lib_version: '1.2.3',
+          $geoip_disable: true,
+          $active_feature_flags: [],
         },
-      )
+        timestamp: expect.any(String),
+        type: 'capture',
+      })
       expect(10).toEqual(logSpy.mock.calls.filter((call) => call[1].includes('capture')).length)
       expect(3).toEqual(logSpy.mock.calls.filter((call) => call[1].includes('flush')).length)
       jest.useFakeTimers()
