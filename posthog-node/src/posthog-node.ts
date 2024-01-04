@@ -132,6 +132,9 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         .catch(() => {
           _capture({ ...properties, $groups: groups })
         })
+        .finally(() => {
+          delete this.pendingPromises[promiseUUID]
+        })
     } else if ((this.featureFlagsPoller?.featureFlags?.length || 0) > 0) {
       const groupsWithStringValues: Record<string, string> = {}
       for (const [key, value] of Object.entries(groups || {})) {
@@ -168,6 +171,9 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         })
         .catch(() => {
           _capture({ ...properties, $groups: groups })
+        })
+        .finally(() => {
+          delete this.pendingPromises[promiseUUID]
         })
     } else {
       _capture({ ...properties, $groups: groups })
