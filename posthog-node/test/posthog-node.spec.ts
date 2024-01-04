@@ -4,6 +4,7 @@ jest.mock('../src/fetch')
 import fetch from '../src/fetch'
 import { anyDecideCall, anyLocalEvalCall, apiImplementation } from './feature-flags.spec'
 import { waitForPromises, wait } from '../../posthog-core/test/test-utils/test-utils'
+import exp from 'constants'
 
 jest.mock('../package.json', () => ({ version: '1.2.3' }))
 
@@ -777,10 +778,9 @@ describe('PostHog Node.js', () => {
 
       posthog = new PostHog('TEST_API_KEY', {
         host: 'http://example.com',
-        personalApiKey: 'TEST_PERSONAL_API_KEY_FFC',
+        personalApiKey: 'TEST_PERSONAL_API_KEY',
         maxCacheSize: 10,
         fetchRetryCount: 0,
-        featureFlagsPollingInterval: 20000,
       })
 
       jest.runOnlyPendingTimers()
@@ -952,6 +952,154 @@ describe('PostHog Node.js', () => {
       expect(mockedFetch).toHaveBeenCalledWith(
         'http://example.com/decide/?v=3',
         expect.objectContaining({ method: 'POST', body: expect.not.stringContaining('geoip_disable') })
+      )
+    })
+
+    it('should add default person & group properties for feature flags', async () => {
+      await posthog.getFeatureFlag('random_key', 'some_id', {
+        groups: { company: 'id:5', instance: 'app.posthog.com' },
+        personProperties: { x1: 'y1' },
+        groupProperties: { company: { x: 'y' } },
+        })
+      jest.runOnlyPendingTimers()
+
+      expect(mockedFetch).toHaveBeenCalledWith(
+        'http://example.com/decide/?v=3',
+        expect.objectContaining({
+          body: JSON.stringify({
+            token: 'TEST_API_KEY',
+            distinct_id: 'some_id',
+            groups: { company: 'id:5', instance: 'app.posthog.com' },
+            person_properties: {
+              $current_distinct_id: 'some_id',
+              x1: 'y1',
+            },
+            group_properties: {
+              company: { $group_key: 'id:5', x: 'y' },
+              instance: { $group_key: 'app.posthog.com' },
+            },
+            geoip_disable: true,
+          }),
+        })
+      )
+
+      mockedFetch.mockClear()
+
+      await posthog.getFeatureFlag('random_key', 'some_id', {
+        groups: {company: 'id:5', instance: 'app.posthog.com'},
+        personProperties: { $current_distinct_id: 'override' },
+        groupProperties: { company: { $group_key: 'group_override' } },
+      })
+      jest.runOnlyPendingTimers()
+
+      expect(mockedFetch).toHaveBeenCalledWith(
+        'http://example.com/decide/?v=3',
+        expect.objectContaining({
+          body: JSON.stringify({
+            token: 'TEST_API_KEY',
+            distinct_id: 'some_id',
+            groups: { company: 'id:5', instance: 'app.posthog.com' },
+            person_properties: {
+              $current_distinct_id: 'override',
+            },
+            group_properties: {
+              company: { $group_key: 'group_override' },
+              instance: { $group_key: 'app.posthog.com' },
+            },
+            geoip_disable: true,
+        })
+      }))
+
+      mockedFetch.mockClear()
+
+      // test nones
+      await posthog.getAllFlagsAndPayloads('some_id', {
+        groups: undefined,
+        personProperties: undefined,
+        groupProperties: undefined,
+      })
+
+      jest.runOnlyPendingTimers()
+
+      expect(mockedFetch).toHaveBeenCalledWith(
+        'http://example.com/decide/?v=3',
+        expect.objectContaining({
+          body: JSON.stringify({
+            token: 'TEST_API_KEY',
+            distinct_id: 'some_id',
+            groups: {},
+            person_properties: {
+              $current_distinct_id: 'some_id',
+            },
+            group_properties: {},
+            geoip_disable: true,
+          }),
+        })
+      )
+
+      mockedFetch.mockClear()
+      await posthog.getAllFlags('some_id', {
+        groups: { company: 'id:5'},
+        personProperties: undefined,
+        groupProperties: undefined,
+      })
+      jest.runOnlyPendingTimers()
+
+      expect(mockedFetch).toHaveBeenCalledWith(
+        'http://example.com/decide/?v=3',
+        expect.objectContaining({
+          body: JSON.stringify({
+            token: 'TEST_API_KEY',
+            distinct_id: 'some_id',
+            groups: { company: 'id:5'},
+            person_properties: {
+              $current_distinct_id: 'some_id',
+            },
+            group_properties: { company: { $group_key: 'id:5' }},
+            geoip_disable: true
+          }),
+        })
+      )
+
+      mockedFetch.mockClear()
+      await posthog.getFeatureFlagPayload('random_key', 'some_id', undefined)
+      jest.runOnlyPendingTimers()
+
+      expect(mockedFetch).toHaveBeenCalledWith(
+        'http://example.com/decide/?v=3',
+        expect.objectContaining({
+          body: JSON.stringify({
+            token: 'TEST_API_KEY',
+            distinct_id: 'some_id',
+            groups: {},
+            person_properties: {
+              $current_distinct_id: 'some_id',
+            },
+            group_properties: {},
+            geoip_disable: true,
+          }),
+        })
+      )
+
+      mockedFetch.mockClear()
+
+      await posthog.isFeatureEnabled('random_key', 'some_id')
+      jest.runOnlyPendingTimers()
+
+      expect(mockedFetch).toHaveBeenCalledWith(
+        'http://example.com/decide/?v=3',
+        expect.objectContaining({
+          body: JSON.stringify({
+            token: 'TEST_API_KEY',
+            distinct_id: 'some_id',
+            groups: {},
+            person_properties: {
+              $current_distinct_id: 'some_id',
+            },
+            group_properties: {},
+            geoip_disable: true,
+          }),
+        })
       )
     })
   })
