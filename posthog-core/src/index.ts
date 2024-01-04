@@ -56,7 +56,6 @@ export abstract class PostHogCoreStateless {
   private captureMode: 'form' | 'json'
   private removeDebugCallback?: () => void
   private debugMode: boolean = false
-  private pendingPromises: Record<string, Promise<any>> = {}
   private disableGeoip: boolean = true
 
   private _optoutOverride: boolean | undefined
@@ -65,6 +64,7 @@ export abstract class PostHogCoreStateless {
   protected _events = new SimpleEventEmitter()
   protected _flushTimer?: any
   protected _retryOptions: RetriableOptions
+  protected pendingPromises: Record<string, Promise<any>> = {}
 
   // Abstract methods to be overridden by implementations
   abstract fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse>
@@ -565,6 +565,10 @@ export abstract class PostHogCoreStateless {
           })
         )
       )
+      // flush again to make sure we send all events, some of which might've been added
+      // while we were waiting for the pending promises to resolve
+      // For example, see sendFeatureFlags in posthog-node/src/posthog-node.ts::capture
+      await this.flushAsync()
     } catch (e) {
       if (!isPostHogFetchError(e)) {
         throw e

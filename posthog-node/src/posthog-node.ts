@@ -13,6 +13,7 @@ import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
 import { EventMessageV1, GroupIdentifyMessage, IdentifyMessageV1, PostHogNodeV1 } from './types'
 import { FeatureFlagsPoller } from './feature-flags'
 import fetch from './fetch'
+import { generateUUID } from 'posthog-core/src/utils'
 
 export type PostHogOptions = PosthogCoreOptions & {
   persistence?: 'memory'
@@ -106,7 +107,12 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     }
 
     if (sendFeatureFlags) {
-      super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip).then((flags) => {
+      const promiseUUID = generateUUID()
+      // :TRICKY: If we flush, or need to shut down, to not lose events we want this promise to resolve before we flush
+      const promise = super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)
+      this.pendingPromises[promiseUUID] = promise
+
+      promise.then((flags) => {
         const featureVariantProperties: Record<string, string | boolean> = {}
         if (flags) {
           for (const [feature, variant] of Object.entries(flags)) {
@@ -121,13 +127,20 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
           ...featureVariantProperties,
         }
         _capture({ ...properties, $groups: groups, ...flagProperties })
+      }).catch(() => {
+        _capture({ ...properties, $groups: groups })
       })
-    } else if (this.featureFlagsPoller?.featureFlags) {
+    } else if ((this.featureFlagsPoller?.featureFlags?.length || 0) > 0) {
       const groupsWithStringValues: Record<string, string> = {}
       for (const [key, value] of Object.entries(groups || {})) {
         groupsWithStringValues[key] = String(value)
       }
-      this.getAllFlags(distinctId, { groups: groupsWithStringValues, disableGeoip, onlyEvaluateLocally: true }).then(
+
+      const promiseUUID = generateUUID()
+      // :TRICKY: If we flush, or need to shut down, to not lose events we want this promise to resolve before we flush
+      const promise = this.getAllFlags(distinctId, { groups: groupsWithStringValues, disableGeoip, onlyEvaluateLocally: true })
+      this.pendingPromises[promiseUUID] = promise
+      promise.then(
         (flags) => {
           const featureVariantProperties: Record<string, string | boolean> = {}
           if (flags) {
@@ -147,7 +160,9 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
           }
           _capture({ ...flagProperties, ...properties, $groups: groups })
         }
-      )
+      ).catch(() => {
+        _capture({ ...properties, $groups: groups })
+      })
     } else {
       _capture({ ...properties, $groups: groups })
     }

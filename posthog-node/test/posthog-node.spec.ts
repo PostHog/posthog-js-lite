@@ -286,6 +286,7 @@ describe('PostHog Node.js', () => {
 
     afterEach(() => {
       posthog.debug(false)
+      jest.useFakeTimers()
     })
 
     it('should shutdown cleanly', async () => {
@@ -318,6 +319,48 @@ describe('PostHog Node.js', () => {
       // remaining 4 flush calls to debug log
       // happen during shutdown
       expect(4).toEqual(logSpy.mock.calls.filter((call) => call[1].includes('flush')).length)
+      jest.useFakeTimers()
+      logSpy.mockRestore()
+    })
+
+    it('should shutdown cleanly with pending capture flag promises', async () => {
+      posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        fetchRetryCount: 0,
+        flushAt: 4,
+      })
+
+      const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
+      jest.useRealTimers()
+      posthog.debug(true)
+
+      for (let i = 0; i < 10; i++) {
+        posthog.capture({ event: 'test-event', distinctId: `${i}`, sendFeatureFlags: true })
+      }
+
+      await posthog.shutdownAsync()
+      // all capture calls happen during shutdown
+      const batchEvents = getLastBatchEvents()
+      expect(batchEvents?.length).toEqual(2)
+      expect(batchEvents?.[batchEvents?.length - 1]).toMatchObject(
+        {
+          // last event in batch
+          distinct_id: '9',
+          event: 'test-event',
+          library: 'posthog-node',
+          library_version: '1.2.3',
+          properties: {
+            $lib: 'posthog-node',
+            $lib_version: '1.2.3',
+            $geoip_disable: true,
+            $active_feature_flags: [],
+          },
+          timestamp: expect.any(String),
+          type: 'capture',
+        },
+      )
+      expect(10).toEqual(logSpy.mock.calls.filter((call) => call[1].includes('capture')).length)
+      expect(3).toEqual(logSpy.mock.calls.filter((call) => call[1].includes('flush')).length)
       jest.useFakeTimers()
       logSpy.mockRestore()
     })
