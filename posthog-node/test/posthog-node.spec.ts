@@ -960,7 +960,7 @@ describe('PostHog Node.js', () => {
         groups: { company: 'id:5', instance: 'app.posthog.com' },
         personProperties: { x1: 'y1' },
         groupProperties: { company: { x: 'y' } },
-        })
+      })
       jest.runOnlyPendingTimers()
 
       expect(mockedFetch).toHaveBeenCalledWith(
@@ -986,7 +986,7 @@ describe('PostHog Node.js', () => {
       mockedFetch.mockClear()
 
       await posthog.getFeatureFlag('random_key', 'some_id', {
-        groups: {company: 'id:5', instance: 'app.posthog.com'},
+        groups: { company: 'id:5', instance: 'app.posthog.com' },
         personProperties: { $current_distinct_id: 'override' },
         groupProperties: { company: { $group_key: 'group_override' } },
       })
@@ -1007,8 +1007,9 @@ describe('PostHog Node.js', () => {
               instance: { $group_key: 'app.posthog.com' },
             },
             geoip_disable: true,
+          }),
         })
-      }))
+      )
 
       mockedFetch.mockClear()
 
@@ -1039,7 +1040,7 @@ describe('PostHog Node.js', () => {
 
       mockedFetch.mockClear()
       await posthog.getAllFlags('some_id', {
-        groups: { company: 'id:5'},
+        groups: { company: 'id:5' },
         personProperties: undefined,
         groupProperties: undefined,
       })
@@ -1051,12 +1052,12 @@ describe('PostHog Node.js', () => {
           body: JSON.stringify({
             token: 'TEST_API_KEY',
             distinct_id: 'some_id',
-            groups: { company: 'id:5'},
+            groups: { company: 'id:5' },
             person_properties: {
               $current_distinct_id: 'some_id',
             },
-            group_properties: { company: { $group_key: 'id:5' }},
-            geoip_disable: true
+            group_properties: { company: { $group_key: 'id:5' } },
+            geoip_disable: true,
           }),
         })
       )
