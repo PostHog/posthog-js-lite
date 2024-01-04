@@ -4,7 +4,6 @@ jest.mock('../src/fetch')
 import fetch from '../src/fetch'
 import { anyDecideCall, anyLocalEvalCall, apiImplementation } from './feature-flags.spec'
 import { waitForPromises, wait } from '../../posthog-core/test/test-utils/test-utils'
-import exp from 'constants'
 
 jest.mock('../package.json', () => ({ version: '1.2.3' }))
 
