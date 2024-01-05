@@ -13,7 +13,6 @@ import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
 import { EventMessageV1, GroupIdentifyMessage, IdentifyMessageV1, PostHogNodeV1 } from './types'
 import { FeatureFlagsPoller } from './feature-flags'
 import fetch from './fetch'
-import { generateUUID } from 'posthog-core/src/utils'
 
 export type PostHogOptions = PosthogCoreOptions & {
   persistence?: 'memory'
@@ -107,10 +106,9 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     }
 
     if (sendFeatureFlags) {
-      const promiseUUID = generateUUID()
       // :TRICKY: If we flush, or need to shut down, to not lose events we want this promise to resolve before we flush
       const promise = super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)
-      this.pendingPromises[promiseUUID] = promise
+      this.addPendingPromise(promise)
 
       promise
         .then((flags) => {
@@ -132,23 +130,19 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         .catch(() => {
           _capture({ ...properties, $groups: groups })
         })
-        .finally(() => {
-          delete this.pendingPromises[promiseUUID]
-        })
     } else if ((this.featureFlagsPoller?.featureFlags?.length || 0) > 0) {
       const groupsWithStringValues: Record<string, string> = {}
       for (const [key, value] of Object.entries(groups || {})) {
         groupsWithStringValues[key] = String(value)
       }
 
-      const promiseUUID = generateUUID()
       // :TRICKY: If we flush, or need to shut down, to not lose events we want this promise to resolve before we flush
       const promise = this.getAllFlags(distinctId, {
         groups: groupsWithStringValues,
         disableGeoip,
         onlyEvaluateLocally: true,
       })
-      this.pendingPromises[promiseUUID] = promise
+      this.addPendingPromise(promise)
       promise
         .then((flags) => {
           const featureVariantProperties: Record<string, string | boolean> = {}
@@ -171,9 +165,6 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         })
         .catch(() => {
           _capture({ ...properties, $groups: groups })
-        })
-        .finally(() => {
-          delete this.pendingPromises[promiseUUID]
         })
     } else {
       _capture({ ...properties, $groups: groups })
