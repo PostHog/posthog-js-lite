@@ -78,6 +78,7 @@ describe('PostHog Node.js', () => {
       expect(mockedFetch).toHaveBeenCalledTimes(0)
       posthog.capture({ distinctId: '123', event: 'test-event', properties: { foo: 'bar' }, groups: { org: 123 } })
 
+      await waitForPromises()
       jest.runOnlyPendingTimers()
       expect(getLastBatchEvents()?.[0]).toEqual(
         expect.objectContaining({
@@ -100,6 +101,7 @@ describe('PostHog Node.js', () => {
         groups: { other_group: 'x' },
       })
 
+      await waitForPromises()
       jest.runOnlyPendingTimers()
       expect(getLastBatchEvents()?.[0]).toEqual(
         expect.objectContaining({
@@ -175,6 +177,7 @@ describe('PostHog Node.js', () => {
     it('should allow overriding timestamp', async () => {
       expect(mockedFetch).toHaveBeenCalledTimes(0)
       posthog.capture({ event: 'custom-time', distinctId: '123', timestamp: new Date('2021-02-03') })
+      await waitForPromises()
       jest.runOnlyPendingTimers()
       const batchEvents = getLastBatchEvents()
       expect(batchEvents).toMatchObject([
@@ -196,6 +199,7 @@ describe('PostHog Node.js', () => {
         disableGeoip: false,
       })
 
+      await waitForPromises()
       jest.runOnlyPendingTimers()
       const batchEvents = getLastBatchEvents()
       expect(batchEvents?.[0].properties).toEqual({
@@ -214,7 +218,9 @@ describe('PostHog Node.js', () => {
       })
       client.capture({ distinctId: '123', event: 'test-event', properties: { foo: 'bar' }, groups: { org: 123 } })
 
+      await waitForPromises()
       jest.runOnlyPendingTimers()
+
       let batchEvents = getLastBatchEvents()
       expect(batchEvents?.[0].properties).toEqual({
         $groups: { org: 123 },
@@ -231,6 +237,7 @@ describe('PostHog Node.js', () => {
         disableGeoip: true,
       })
 
+      await waitForPromises()
       jest.runOnlyPendingTimers()
       batchEvents = getLastBatchEvents()
       console.warn(batchEvents)
@@ -250,6 +257,7 @@ describe('PostHog Node.js', () => {
         disableGeoip: false,
       })
 
+      await waitForPromises()
       jest.runOnlyPendingTimers()
       batchEvents = getLastBatchEvents()
       expect(batchEvents?.[0].properties).toEqual({
@@ -543,14 +551,13 @@ describe('PostHog Node.js', () => {
         sendFeatureFlags: true,
       })
 
+      jest.runOnlyPendingTimers()
+      await waitForPromises()
+
       expect(mockedFetch).toHaveBeenCalledWith(
         'http://example.com/decide/?v=3',
         expect.objectContaining({ method: 'POST' })
       )
-
-      jest.runOnlyPendingTimers()
-
-      await waitForPromises()
 
       expect(getLastBatchEvents()?.[0]).toEqual(
         expect.objectContaining({
@@ -590,7 +597,6 @@ describe('PostHog Node.js', () => {
       })
 
       jest.runOnlyPendingTimers()
-
       await waitForPromises()
 
       posthog.capture({
@@ -647,14 +653,13 @@ describe('PostHog Node.js', () => {
         personalApiKey: 'TEST_PERSONAL_API_KEY',
       })
 
-      jest.runOnlyPendingTimers()
-
-      await waitForPromises()
-
       posthog.capture({
         distinctId: 'distinct_id',
         event: 'node test event',
       })
+
+      jest.runOnlyPendingTimers()
+      await waitForPromises()
 
       expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
       // no decide call
