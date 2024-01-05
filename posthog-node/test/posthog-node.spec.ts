@@ -352,7 +352,6 @@ describe('PostHog Node.js', () => {
           $lib: 'posthog-node',
           $lib_version: '1.2.3',
           $geoip_disable: true,
-          $active_feature_flags: [],
         },
         timestamp: expect.any(String),
         type: 'capture',

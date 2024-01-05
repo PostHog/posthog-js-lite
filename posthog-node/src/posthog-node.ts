@@ -130,19 +130,20 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       })
       .then((flags) => {
         // Derive the relevant flag properties to add
-        const featureVariantProperties: Record<string, string | boolean> = {}
+        const additionalProperties: Record<string, any> = {}
         if (flags) {
           for (const [feature, variant] of Object.entries(flags)) {
             if (variant !== false) {
-              featureVariantProperties[`$feature/${feature}`] = variant
+              additionalProperties[`$feature/${feature}`] = variant
             }
           }
         }
         const activeFlags = Object.keys(flags || {}).filter((flag) => flags?.[flag] !== false)
-        return {
-          $active_feature_flags: activeFlags || undefined,
-          ...featureVariantProperties,
+        if (activeFlags.length > 0) {
+          additionalProperties['$active_feature_flags'] = activeFlags
         }
+
+        return additionalProperties
       })
       .catch(() => {
         // Something went wrong getting the flag info - we should capture the event anyways
