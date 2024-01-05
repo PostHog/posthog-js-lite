@@ -133,9 +133,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         const additionalProperties: Record<string, any> = {}
         if (flags) {
           for (const [feature, variant] of Object.entries(flags)) {
-            if (variant !== false) {
-              additionalProperties[`$feature/${feature}`] = variant
-            }
+            additionalProperties[`$feature/${feature}`] = variant
           }
         }
         const activeFlags = Object.keys(flags || {}).filter((flag) => flags?.[flag] !== false)
