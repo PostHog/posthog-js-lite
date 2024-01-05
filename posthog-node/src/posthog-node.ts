@@ -105,70 +105,49 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       super.captureStateless(distinctId, event, props, { timestamp, disableGeoip })
     }
 
-    if (sendFeatureFlags) {
-      // :TRICKY: If we flush, or need to shut down, to not lose events we want this promise to resolve before we flush
-      const promise = super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)
-      this.addPendingPromise(promise)
-
-      promise
-        .then((flags) => {
-          const featureVariantProperties: Record<string, string | boolean> = {}
-          if (flags) {
-            for (const [feature, variant] of Object.entries(flags)) {
-              if (variant !== false) {
-                featureVariantProperties[`$feature/${feature}`] = variant
-              }
-            }
+    const capturePromise = Promise.resolve()
+      .then(async () => {
+        // :TRICKY: If we flush, or need to shut down, to not lose events we want this promise to resolve before we flush
+        if (sendFeatureFlags) {
+          return await super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)
+        } else if ((this.featureFlagsPoller?.featureFlags?.length || 0) > 0) {
+          const groupsWithStringValues: Record<string, string> = {}
+          for (const [key, value] of Object.entries(groups || {})) {
+            groupsWithStringValues[key] = String(value)
           }
-          const activeFlags = Object.keys(flags || {}).filter((flag) => flags?.[flag] !== false)
-          const flagProperties = {
-            $active_feature_flags: activeFlags || undefined,
-            ...featureVariantProperties,
-          }
-          _capture({ ...properties, $groups: groups, ...flagProperties })
-        })
-        .catch(() => {
-          _capture({ ...properties, $groups: groups })
-        })
-    } else if ((this.featureFlagsPoller?.featureFlags?.length || 0) > 0) {
-      const groupsWithStringValues: Record<string, string> = {}
-      for (const [key, value] of Object.entries(groups || {})) {
-        groupsWithStringValues[key] = String(value)
-      }
 
-      // :TRICKY: If we flush, or need to shut down, to not lose events we want this promise to resolve before we flush
-      const promise = this.getAllFlags(distinctId, {
-        groups: groupsWithStringValues,
-        disableGeoip,
-        onlyEvaluateLocally: true,
+          return await this.getAllFlags(distinctId, {
+            groups: groupsWithStringValues,
+            disableGeoip,
+            onlyEvaluateLocally: true,
+          })
+        }
+        return {}
       })
-      this.addPendingPromise(promise)
-      promise
-        .then((flags) => {
-          const featureVariantProperties: Record<string, string | boolean> = {}
-          if (flags) {
-            for (const [feature, variant] of Object.entries(flags)) {
+      .then((flags) => {
+        const featureVariantProperties: Record<string, string | boolean> = {}
+        if (flags) {
+          for (const [feature, variant] of Object.entries(flags)) {
+            if (variant !== false) {
               featureVariantProperties[`$feature/${feature}`] = variant
             }
           }
-          const activeFlags = Object.keys(flags || {}).filter((flag) => flags?.[flag] !== false)
-          let flagProperties: Record<string, any> = {
-            ...featureVariantProperties,
-          }
-          if (activeFlags.length > 0) {
-            flagProperties = {
-              ...flagProperties,
-              $active_feature_flags: activeFlags,
-            }
-          }
-          _capture({ ...flagProperties, ...properties, $groups: groups })
-        })
-        .catch(() => {
-          _capture({ ...properties, $groups: groups })
-        })
-    } else {
-      _capture({ ...properties, $groups: groups })
-    }
+        }
+        const activeFlags = Object.keys(flags || {}).filter((flag) => flags?.[flag] !== false)
+        return {
+          $active_feature_flags: activeFlags || undefined,
+          ...featureVariantProperties,
+        }
+      })
+      .catch(() => {
+        // Something went wrong getting the flag info - we should capture the event anyways
+        return {}
+      })
+      .then((additionalProperties) => {
+        _capture({ ...additionalProperties, ...properties, $groups: groups })
+      })
+
+    this.addPendingPromise(capturePromise)
   }
 
   identify({ distinctId, properties, disableGeoip }: IdentifyMessageV1): void {
