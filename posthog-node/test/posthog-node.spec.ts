@@ -704,19 +704,19 @@ describe('PostHog Node.js', () => {
         disableGeoip: false,
       })
 
+      await waitForPromises()
+      jest.runOnlyPendingTimers()
+
       expect(mockedFetch).toHaveBeenCalledWith(
         'http://example.com/decide/?v=3',
         expect.objectContaining({ method: 'POST', body: expect.not.stringContaining('geoip_disable') })
       )
 
-      jest.runOnlyPendingTimers()
-
-      await waitForPromises()
-
       expect(getLastBatchEvents()?.[0].properties).toEqual({
         $active_feature_flags: ['feature-1', 'feature-2', 'feature-variant'],
         '$feature/feature-1': true,
         '$feature/feature-2': true,
+        '$feature/disabled-flag': false,
         '$feature/feature-variant': 'variant',
         $lib: 'posthog-node',
         $lib_version: '1.2.3',
