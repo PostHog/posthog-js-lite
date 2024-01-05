@@ -59,12 +59,12 @@ export abstract class PostHogCoreStateless {
   private disableGeoip: boolean = true
 
   private _optoutOverride: boolean | undefined
+  private pendingPromises: Record<string, Promise<any>> = {}
 
   // internal
   protected _events = new SimpleEventEmitter()
   protected _flushTimer?: any
   protected _retryOptions: RetriableOptions
-  protected pendingPromises: Record<string, Promise<any>> = {}
 
   // Abstract methods to be overridden by implementations
   abstract fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse>
@@ -139,6 +139,14 @@ export abstract class PostHogCoreStateless {
         ...this.getCommonEventProperties(), // Common PH props
       },
     }
+  }
+
+  protected addPendingPromise(promise: Promise<any>): void {
+    const promiseUUID = generateUUID()
+    this.pendingPromises[promiseUUID] = promise
+    promise.finally(() => {
+      delete this.pendingPromises[promiseUUID]
+    })
   }
 
   /***
@@ -476,8 +484,6 @@ export abstract class PostHogCoreStateless {
         this._events.emit('error', err)
       }
       callback?.(err, messages)
-      // remove promise from pendingPromises
-      delete this.pendingPromises[promiseUUID]
       this._events.emit('flush', messages)
     }
 
@@ -513,7 +519,7 @@ export abstract class PostHogCoreStateless {
             body: payload,
           }
     const requestPromise = this.fetchWithRetry(url, fetchOptions)
-    this.pendingPromises[promiseUUID] = requestPromise
+    this.addPendingPromise(requestPromise)
 
     requestPromise
       .then(() => done())
