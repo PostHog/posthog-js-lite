@@ -105,12 +105,16 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       super.captureStateless(distinctId, event, props, { timestamp, disableGeoip })
     }
 
+    // :TRICKY: If we flush, or need to shut down, to not lose events we want this promise to resolve before we flush
     const capturePromise = Promise.resolve()
       .then(async () => {
-        // :TRICKY: If we flush, or need to shut down, to not lose events we want this promise to resolve before we flush
         if (sendFeatureFlags) {
+          // If we are sending feature flags, we need to make sure we have the latest flags
           return await super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)
-        } else if ((this.featureFlagsPoller?.featureFlags?.length || 0) > 0) {
+        }
+
+        if ((this.featureFlagsPoller?.featureFlags?.length || 0) > 0) {
+          // Otherwise we may as well check for the flags locally and include them if there
           const groupsWithStringValues: Record<string, string> = {}
           for (const [key, value] of Object.entries(groups || {})) {
             groupsWithStringValues[key] = String(value)
@@ -125,6 +129,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         return {}
       })
       .then((flags) => {
+        // Derive the relevant flag properties to add
         const featureVariantProperties: Record<string, string | boolean> = {}
         if (flags) {
           for (const [feature, variant] of Object.entries(flags)) {
@@ -144,6 +149,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         return {}
       })
       .then((additionalProperties) => {
+        // No matter what - capture the event
         _capture({ ...additionalProperties, ...properties, $groups: groups })
       })
 
