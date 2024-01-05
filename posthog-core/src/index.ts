@@ -477,8 +477,6 @@ export abstract class PostHogCoreStateless {
       sent_at: currentISOTime(),
     }
 
-    const promiseUUID = generateUUID()
-
     const done = (err?: any): void => {
       if (err) {
         this._events.emit('error', err)
