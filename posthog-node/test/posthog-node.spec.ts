@@ -51,7 +51,9 @@ describe('PostHog Node.js', () => {
       expect(mockedFetch).toHaveBeenCalledTimes(0)
       posthog.capture({ distinctId: '123', event: 'test-event', properties: { foo: 'bar' }, groups: { org: 123 } })
 
+      await waitForPromises()
       jest.runOnlyPendingTimers()
+
       const batchEvents = getLastBatchEvents()
       expect(batchEvents).toEqual([
         {
