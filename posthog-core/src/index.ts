@@ -519,13 +519,13 @@ export abstract class PostHogCoreStateless {
             body: payload,
           }
     const requestPromise = this.fetchWithRetry(url, fetchOptions)
-    this.addPendingPromise(requestPromise)
-
-    requestPromise
-      .then(() => done())
-      .catch((err) => {
-        done(err)
-      })
+    this.addPendingPromise(
+      requestPromise
+        .then(() => done())
+        .catch((err) => {
+          done(err)
+        })
+    )
   }
 
   private async fetchWithRetry(
