@@ -10,7 +10,7 @@ import { PostHogCustomAppProperties, PostHogCustomAsyncStorage } from './types'
 export const getAppProperties = (): PostHogCustomAppProperties => {
   var deviceType = 'Mobile'
 
-  if (Platform.OS === 'macos' || Platform.OS === 'windows' ) {
+  if (Platform.OS === 'macos' || Platform.OS === 'windows') {
     deviceType = 'Desktop'
   } else if (Platform.OS === 'web') {
     deviceType = 'Web'
