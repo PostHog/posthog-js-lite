@@ -1,7 +1,7 @@
 // import { PostHog, PostHogOptions } from '../'
 // Uncomment below line while developing to not compile code everytime
 import { PostHog as PostHog, PostHogOptions } from '../src/posthog-node'
-import { matchProperty, InconclusiveMatchError } from '../src/feature-flags'
+import { matchProperty, InconclusiveMatchError, relativeDateParseForFeatureFlagMatching } from '../src/feature-flags'
 jest.mock('../src/fetch')
 import fetch from '../src/fetch'
 
@@ -1829,6 +1829,8 @@ describe('local evaluation', () => {
 })
 
 describe('match properties', () => {
+  jest.useFakeTimers()
+
   it('with operator exact', () => {
     const property_a = { key: 'key', value: 'value' }
 
@@ -1968,7 +1970,8 @@ describe('match properties', () => {
 
     expect(matchProperty(property_a, { key: 0 })).toBe(false)
     expect(matchProperty(property_a, { key: -1 })).toBe(false)
-    expect(matchProperty(property_a, { key: '23' })).toBe(false)
+    // # now we handle type mismatches so this should be true
+    expect(matchProperty(property_a, { key: '23' })).toBe(true)
 
     const property_b = { key: 'key', value: 1, operator: 'lt' }
     expect(matchProperty(property_b, { key: 0 })).toBe(true)
@@ -1986,7 +1989,8 @@ describe('match properties', () => {
     expect(matchProperty(property_c, { key: 0 })).toBe(false)
     expect(matchProperty(property_c, { key: -1 })).toBe(false)
     expect(matchProperty(property_c, { key: -3 })).toBe(false)
-    expect(matchProperty(property_c, { key: '3' })).toBe(false)
+    // # now we handle type mismatches so this should be true
+    expect(matchProperty(property_c, { key: '3' })).toBe(true)
 
     const property_d = { key: 'key', value: '43', operator: 'lte' }
     expect(matchProperty(property_d, { key: '43' })).toBe(true)
@@ -1994,6 +1998,21 @@ describe('match properties', () => {
 
     expect(matchProperty(property_d, { key: '44' })).toBe(false)
     expect(matchProperty(property_d, { key: 44 })).toBe(false)
+    expect(matchProperty(property_d, { key: 42 })).toBe(true)
+
+    const property_e = { key: 'key', value: '30', operator: 'lt' }
+    expect(matchProperty(property_e, { key: '29' })).toBe(true)
+
+    // # depending on the type of override, we adjust type comparison
+    expect(matchProperty(property_e, { key: '100' })).toBe(true)
+    expect(matchProperty(property_e, { key: 100 })).toBe(false)
+
+    const property_f = { key: 'key', value: '123aloha', operator: 'gt' }
+    expect(matchProperty(property_f, { key: '123' })).toBe(false)
+    expect(matchProperty(property_f, { key: 122 })).toBe(false)
+
+    // # this turns into a string comparison
+    expect(matchProperty(property_f, { key: 129 })).toBe(true)
   })
 
   it('with date operators', () => {
@@ -2030,6 +2049,240 @@ describe('match properties', () => {
     expect(matchProperty(property_d, { key: '2022-04-05 12:34:11+01:00' })).toBe(true)
     expect(matchProperty(property_d, { key: '2022-04-05 11:34:11 +00:00' })).toBe(true)
     expect(matchProperty(property_d, { key: '2022-04-05 11:34:13 +00:00' })).toBe(false)
+  })
+
+  it('with relative date operators', () => {
+    jest.setSystemTime(new Date('2022-05-01'))
+
+    const property_a = { key: 'key', value: '6h', operator: 'is_relative_date_before' }
+    expect(matchProperty(property_a, { key: '2022-03-01' })).toBe(true)
+    expect(matchProperty(property_a, { key: '2022-04-30' })).toBe(true)
+
+    // :TRICKY: MonthIndex is 0 indexed, so 3 is actually the 4th month, April.
+    expect(matchProperty(property_a, { key: new Date(Date.UTC(2022, 3, 30, 1, 2, 3)) })).toBe(true)
+    // false because date comparison, instead of datetime, so reduces to same date
+    expect(matchProperty(property_a, { key: new Date(2022, 3, 30, 19, 2, 3) })).toBe(false)
+    expect(matchProperty(property_a, { key: new Date('2022-04-30T01:02:03+02:00') })).toBe(true) // europe/madrid
+    expect(matchProperty(property_a, { key: new Date('2022-04-30T20:02:03+02:00') })).toBe(false) // europe/madrid
+    expect(matchProperty(property_a, { key: new Date('2022-04-30T19:59:03+02:00') })).toBe(true) // europe/madrid
+    expect(matchProperty(property_a, { key: new Date('2022-04-30') })).toBe(true)
+    expect(matchProperty(property_a, { key: '2022-05-30' })).toBe(false)
+
+    // # can't be an invalid string
+    expect(() => matchProperty(property_a, { key: 'abcdef' })).toThrow(InconclusiveMatchError)
+    // however js understands numbers as date offsets from utc epoch
+    expect(() => matchProperty(property_a, { key: 1 })).not.toThrow(InconclusiveMatchError)
+
+    const property_b = { key: 'key', value: '1h', operator: 'is_relative_date_after' }
+    expect(matchProperty(property_b, { key: '2022-05-02' })).toBe(true)
+    expect(matchProperty(property_b, { key: '2022-05-30' })).toBe(true)
+    expect(matchProperty(property_b, { key: new Date(2022, 4, 30) })).toBe(true)
+    expect(matchProperty(property_b, { key: new Date('2022-05-30') })).toBe(true)
+    expect(matchProperty(property_b, { key: '2022-04-30' })).toBe(false)
+
+    // # Invalid flag property
+    const property_c = { key: 'key', value: 1234, operator: 'is_relative_date_after' }
+    expect(() => matchProperty(property_c, { key: '2022-05-30' })).toThrow(InconclusiveMatchError)
+    expect(() => matchProperty(property_c, { key: 1 })).toThrow(InconclusiveMatchError)
+
+    // # Try all possible relative dates
+    const property_e = { key: 'key', value: '1h', operator: 'is_relative_date_before' }
+    expect(matchProperty(property_e, { key: '2022-05-01 00:00:00' })).toBe(false)
+    expect(matchProperty(property_e, { key: '2022-04-30 22:00:00' })).toBe(true)
+
+    const property_f = { key: 'key', value: '1d', operator: 'is_relative_date_before' }
+    expect(matchProperty(property_f, { key: '2022-04-29 23:59:00 GMT' })).toBe(true)
+    expect(matchProperty(property_f, { key: '2022-04-30 00:00:01 GMT' })).toBe(false)
+
+    const property_g = { key: 'key', value: '1w', operator: 'is_relative_date_before' }
+    expect(matchProperty(property_g, { key: '2022-04-23 00:00:00 GMT' })).toBe(true)
+    expect(matchProperty(property_g, { key: '2022-04-24 00:00:00 GMT' })).toBe(false)
+    expect(matchProperty(property_g, { key: '2022-04-24 00:00:01 GMT' })).toBe(false)
+
+    const property_h = { key: 'key', value: '1m', operator: 'is_relative_date_before' }
+    expect(matchProperty(property_h, { key: '2022-03-01 00:00:00 GMT' })).toBe(true)
+    expect(matchProperty(property_h, { key: '2022-04-05 00:00:00 GMT' })).toBe(false)
+
+    const property_i = { key: 'key', value: '1y', operator: 'is_relative_date_before' }
+    expect(matchProperty(property_i, { key: '2021-04-28 00:00:00 GMT' })).toBe(true)
+    expect(matchProperty(property_i, { key: '2021-05-01 00:00:01 GMT' })).toBe(false)
+
+    const property_j = { key: 'key', value: '122h', operator: 'is_relative_date_after' }
+    expect(matchProperty(property_j, { key: '2022-05-01 00:00:00 GMT' })).toBe(true)
+    expect(matchProperty(property_j, { key: '2022-04-23 01:00:00 GMT' })).toBe(false)
+
+    const property_k = { key: 'key', value: '2d', operator: 'is_relative_date_after' }
+    expect(matchProperty(property_k, { key: '2022-05-01 00:00:00 GMT' })).toBe(true)
+    expect(matchProperty(property_k, { key: '2022-04-29 00:00:01 GMT' })).toBe(true)
+    expect(matchProperty(property_k, { key: '2022-04-29 00:00:00 GMT' })).toBe(false)
+
+    const property_l = { key: 'key', value: '02w', operator: 'is_relative_date_after' }
+    expect(matchProperty(property_l, { key: '2022-05-01 00:00:00 GMT' })).toBe(true)
+    expect(matchProperty(property_l, { key: '2022-04-16 00:00:00 GMT' })).toBe(false)
+
+    const property_m = { key: 'key', value: '1m', operator: 'is_relative_date_after' }
+    expect(matchProperty(property_m, { key: '2022-04-01 00:00:01 GMT' })).toBe(true)
+    expect(matchProperty(property_m, { key: '2022-04-01 00:00:00 GMT' })).toBe(false)
+
+    const property_n = { key: 'key', value: '1y', operator: 'is_relative_date_after' }
+    expect(matchProperty(property_n, { key: '2022-05-01 00:00:00 GMT' })).toBe(true)
+    expect(matchProperty(property_n, { key: '2021-05-01 00:00:01 GMT' })).toBe(true)
+    expect(matchProperty(property_n, { key: '2021-05-01 00:00:00 GMT' })).toBe(false)
+    expect(matchProperty(property_n, { key: '2021-04-30 00:00:00 GMT' })).toBe(false)
+    expect(matchProperty(property_n, { key: '2021-03-01 12:13:00 GMT' })).toBe(false)
+  })
+
+  it('null or undefined property value', () => {
+    const property_a = { key: 'key', value: 'null', operator: 'is_not' }
+    expect(matchProperty(property_a, { key: null })).toBe(false)
+    expect(matchProperty(property_a, { key: undefined })).toBe(true)
+    expect(matchProperty(property_a, { key: 'null' })).toBe(false)
+    expect(matchProperty(property_a, { key: 'nul' })).toBe(true)
+
+    const property_b = { key: 'key', value: 'null', operator: 'is_set' }
+    expect(matchProperty(property_b, { key: null })).toBe(true)
+    expect(matchProperty(property_b, { key: undefined })).toBe(true)
+    expect(matchProperty(property_b, { key: 'null' })).toBe(true)
+
+    const property_c = { key: 'key', value: 'undefined', operator: 'icontains' }
+    expect(matchProperty(property_c, { key: null })).toBe(false)
+    expect(matchProperty(property_c, { key: undefined })).toBe(true)
+    expect(matchProperty(property_c, { key: 'lol' })).toBe(false)
+
+    const property_d = { key: 'key', value: 'undefined', operator: 'regex' }
+    expect(matchProperty(property_d, { key: null })).toBe(false)
+    expect(matchProperty(property_d, { key: undefined })).toBe(true)
+
+    const property_e = { key: 'key', value: 1, operator: 'gt' }
+    expect(matchProperty(property_e, { key: null })).toBe(true)
+    expect(matchProperty(property_e, { key: undefined })).toBe(true)
+
+    const property_f = { key: 'key', value: 1, operator: 'lt' }
+    expect(matchProperty(property_f, { key: null })).toBe(false)
+    expect(matchProperty(property_f, { key: undefined })).toBe(false)
+
+    const property_g = { key: 'key', value: 'xyz', operator: 'gte' }
+    expect(matchProperty(property_g, { key: null })).toBe(false)
+    expect(matchProperty(property_g, { key: undefined })).toBe(false)
+
+    const property_h = { key: 'key', value: 'Oo', operator: 'lte' }
+    expect(matchProperty(property_h, { key: null })).toBe(false)
+    expect(matchProperty(property_h, { key: undefined })).toBe(false)
+
+    const property_h_lower = { key: 'key', value: 'oo', operator: 'lte' }
+    expect(matchProperty(property_h_lower, { key: null })).toBe(true)
+    expect(matchProperty(property_h_lower, { key: undefined })).toBe(false)
+
+    const property_i = { key: 'key', value: '2022-05-01', operator: 'is_date_before' }
+    expect(() => matchProperty(property_i, { key: null })).toThrow(InconclusiveMatchError)
+    expect(() => matchProperty(property_i, { key: undefined })).toThrow(InconclusiveMatchError)
+
+    const property_j = { key: 'key', value: '2022-05-01', operator: 'is_date_after' }
+    expect(() => matchProperty(property_j, { key: null })).toThrow(InconclusiveMatchError)
+
+    const property_k = { key: 'key', value: '2022-05-01', operator: 'is_date_before' }
+    expect(() => matchProperty(property_k, { key: null })).toThrow(InconclusiveMatchError)
+  })
+
+  it('with invalid operator', () => {
+    const property_a = { key: 'key', value: '2022-05-01', operator: 'is_unknown' }
+
+    expect(() => matchProperty(property_a, { key: 'random' })).toThrow(
+      new InconclusiveMatchError('Unknown operator: is_unknown')
+    )
+  })
+})
+
+describe('relative date parsing', () => {
+  jest.useFakeTimers()
+  beforeEach(() => {
+    jest.setSystemTime(new Date('2020-01-01T12:01:20.134Z'))
+  })
+
+  it('invalid input', () => {
+    expect(relativeDateParseForFeatureFlagMatching('1')).toBe(null)
+    expect(relativeDateParseForFeatureFlagMatching('1x')).toBe(null)
+    expect(relativeDateParseForFeatureFlagMatching('1.2y')).toBe(null)
+    expect(relativeDateParseForFeatureFlagMatching('1z')).toBe(null)
+    expect(relativeDateParseForFeatureFlagMatching('1s')).toBe(null)
+    expect(relativeDateParseForFeatureFlagMatching('123344000.134m')).toBe(null)
+    expect(relativeDateParseForFeatureFlagMatching('bazinga')).toBe(null)
+    expect(relativeDateParseForFeatureFlagMatching('000bello')).toBe(null)
+    expect(relativeDateParseForFeatureFlagMatching('000hello')).toBe(null)
+
+    expect(relativeDateParseForFeatureFlagMatching('000h')).not.toBe(null)
+    expect(relativeDateParseForFeatureFlagMatching('1000h')).not.toBe(null)
+  })
+
+  it('overflow', () => {
+    expect(relativeDateParseForFeatureFlagMatching('1000000h')).toBe(null)
+    expect(relativeDateParseForFeatureFlagMatching('100000000000000000y')).toBe(null)
+  })
+
+  it('hour parsing', () => {
+    expect(relativeDateParseForFeatureFlagMatching('1h')).toEqual(new Date('2020-01-01T11:01:20.134Z'))
+    expect(relativeDateParseForFeatureFlagMatching('2h')).toEqual(new Date('2020-01-01T10:01:20.134Z'))
+    expect(relativeDateParseForFeatureFlagMatching('24h')).toEqual(new Date('2019-12-31T12:01:20.134Z'))
+    expect(relativeDateParseForFeatureFlagMatching('30h')).toEqual(new Date('2019-12-31T06:01:20.134Z'))
+    expect(relativeDateParseForFeatureFlagMatching('48h')).toEqual(new Date('2019-12-30T12:01:20.134Z'))
+
+    expect(relativeDateParseForFeatureFlagMatching('24h')).toEqual(relativeDateParseForFeatureFlagMatching('1d'))
+    expect(relativeDateParseForFeatureFlagMatching('48h')).toEqual(relativeDateParseForFeatureFlagMatching('2d'))
+  })
+
+  it('day parsing', () => {
+    expect(relativeDateParseForFeatureFlagMatching('1d')).toEqual(new Date('2019-12-31T12:01:20.134Z'))
+    expect(relativeDateParseForFeatureFlagMatching('2d')).toEqual(new Date('2019-12-30T12:01:20.134Z'))
+    expect(relativeDateParseForFeatureFlagMatching('7d')).toEqual(new Date('2019-12-25T12:01:20.134Z'))
+    expect(relativeDateParseForFeatureFlagMatching('14d')).toEqual(new Date('2019-12-18T12:01:20.134Z'))
+    expect(relativeDateParseForFeatureFlagMatching('30d')).toEqual(new Date('2019-12-02T12:01:20.134Z'))
+
+    expect(relativeDateParseForFeatureFlagMatching('7d')).toEqual(relativeDateParseForFeatureFlagMatching('1w'))
+  })
+
+  it('week parsing', () => {
+    expect(relativeDateParseForFeatureFlagMatching('1w')).toEqual(new Date('2019-12-25T12:01:20.134Z'))
+    expect(relativeDateParseForFeatureFlagMatching('2w')).toEqual(new Date('2019-12-18T12:01:20.134Z'))
+    expect(relativeDateParseForFeatureFlagMatching('4w')).toEqual(new Date('2019-12-04T12:01:20.134Z'))
+    expect(relativeDateParseForFeatureFlagMatching('8w')).toEqual(new Date('2019-11-06T12:01:20.134Z'))
+
+    expect(relativeDateParseForFeatureFlagMatching('1m')).toEqual(new Date('2019-12-01T12:01:20.134Z'))
+    expect(relativeDateParseForFeatureFlagMatching('4w')).not.toEqual(relativeDateParseForFeatureFlagMatching('1m'))
+  })
+
+  it('month parsing', () => {
+    expect(relativeDateParseForFeatureFlagMatching('1m')).toEqual(new Date('2019-12-01T12:01:20.134Z'))
+    expect(relativeDateParseForFeatureFlagMatching('2m')).toEqual(new Date('2019-11-01T12:01:20.134Z'))
+
+    expect(relativeDateParseForFeatureFlagMatching('4m')).toEqual(new Date('2019-09-01T12:01:20.134Z'))
+    expect(relativeDateParseForFeatureFlagMatching('5m')).toEqual(new Date('2019-08-01T12:01:20.134Z'))
+    expect(relativeDateParseForFeatureFlagMatching('6m')).toEqual(new Date('2019-07-01T12:01:20.134Z'))
+    expect(relativeDateParseForFeatureFlagMatching('8m')).toEqual(new Date('2019-05-01T12:01:20.134Z'))
+    expect(relativeDateParseForFeatureFlagMatching('10m')).toEqual(new Date('2019-03-01T12:01:20.134Z'))
+
+    expect(relativeDateParseForFeatureFlagMatching('24m')).toEqual(new Date('2018-01-01T12:01:20.134Z'))
+
+    expect(relativeDateParseForFeatureFlagMatching('1y')).toEqual(new Date('2019-01-01T12:01:20.134Z'))
+    expect(relativeDateParseForFeatureFlagMatching('12m')).toEqual(relativeDateParseForFeatureFlagMatching('1y'))
+
+    jest.setSystemTime(new Date('2020-04-03T00:00:00Z'))
+    expect(relativeDateParseForFeatureFlagMatching('1m')).toEqual(new Date('2020-03-03T00:00:00Z'))
+    expect(relativeDateParseForFeatureFlagMatching('2m')).toEqual(new Date('2020-02-03T00:00:00Z'))
+    expect(relativeDateParseForFeatureFlagMatching('4m')).toEqual(new Date('2019-12-03T00:00:00Z'))
+    expect(relativeDateParseForFeatureFlagMatching('8m')).toEqual(new Date('2019-08-03T00:00:00Z'))
+
+    expect(relativeDateParseForFeatureFlagMatching('1y')).toEqual(new Date('2019-04-03T00:00:00Z'))
+    expect(relativeDateParseForFeatureFlagMatching('12m')).toEqual(relativeDateParseForFeatureFlagMatching('1y'))
+  })
+
+  it('year parsing', () => {
+    expect(relativeDateParseForFeatureFlagMatching('1y')).toEqual(new Date('2019-01-01T12:01:20.134Z'))
+    expect(relativeDateParseForFeatureFlagMatching('2y')).toEqual(new Date('2018-01-01T12:01:20.134Z'))
+    expect(relativeDateParseForFeatureFlagMatching('4y')).toEqual(new Date('2016-01-01T12:01:20.134Z'))
+    expect(relativeDateParseForFeatureFlagMatching('8y')).toEqual(new Date('2012-01-01T12:01:20.134Z'))
+
+    expect(relativeDateParseForFeatureFlagMatching('1y')).toEqual(new Date('2019-01-01T12:01:20.134Z'))
+    expect(relativeDateParseForFeatureFlagMatching('12m')).toEqual(relativeDateParseForFeatureFlagMatching('1y'))
   })
 })
 
