@@ -1,3 +1,7 @@
+# 2.10.0 - 2024-01-08
+
+1. `$device_type` is now set to `Mobile`, `Desktop`, or `Web` for all events
+
 # 2.9.2 - 2023-12-21
 
 1. If `async-storage` or `expo-file-system` is not installed, the SDK will fallback to `persistence: memory` and log a warning

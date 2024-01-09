@@ -35,7 +35,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
 
   private featureFlagsPoller?: FeatureFlagsPoller
   private maxCacheSize: number
-  private options: PostHogOptions
+  public readonly options: PostHogOptions
 
   distinctIdHasSentFlagCalls: Record<string, string[]>
 
