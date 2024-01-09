@@ -51,7 +51,9 @@ describe('PostHog Node.js', () => {
       expect(mockedFetch).toHaveBeenCalledTimes(0)
       posthog.capture({ distinctId: '123', event: 'test-event', properties: { foo: 'bar' }, groups: { org: 123 } })
 
+      await waitForPromises()
       jest.runOnlyPendingTimers()
+
       const batchEvents = getLastBatchEvents()
       expect(batchEvents).toEqual([
         {
@@ -76,6 +78,7 @@ describe('PostHog Node.js', () => {
       expect(mockedFetch).toHaveBeenCalledTimes(0)
       posthog.capture({ distinctId: '123', event: 'test-event', properties: { foo: 'bar' }, groups: { org: 123 } })
 
+      await waitForPromises()
       jest.runOnlyPendingTimers()
       expect(getLastBatchEvents()?.[0]).toEqual(
         expect.objectContaining({
@@ -98,6 +101,7 @@ describe('PostHog Node.js', () => {
         groups: { other_group: 'x' },
       })
 
+      await waitForPromises()
       jest.runOnlyPendingTimers()
       expect(getLastBatchEvents()?.[0]).toEqual(
         expect.objectContaining({
@@ -173,6 +177,7 @@ describe('PostHog Node.js', () => {
     it('should allow overriding timestamp', async () => {
       expect(mockedFetch).toHaveBeenCalledTimes(0)
       posthog.capture({ event: 'custom-time', distinctId: '123', timestamp: new Date('2021-02-03') })
+      await waitForPromises()
       jest.runOnlyPendingTimers()
       const batchEvents = getLastBatchEvents()
       expect(batchEvents).toMatchObject([
@@ -194,6 +199,7 @@ describe('PostHog Node.js', () => {
         disableGeoip: false,
       })
 
+      await waitForPromises()
       jest.runOnlyPendingTimers()
       const batchEvents = getLastBatchEvents()
       expect(batchEvents?.[0].properties).toEqual({
@@ -212,7 +218,9 @@ describe('PostHog Node.js', () => {
       })
       client.capture({ distinctId: '123', event: 'test-event', properties: { foo: 'bar' }, groups: { org: 123 } })
 
+      await waitForPromises()
       jest.runOnlyPendingTimers()
+
       let batchEvents = getLastBatchEvents()
       expect(batchEvents?.[0].properties).toEqual({
         $groups: { org: 123 },
@@ -229,6 +237,7 @@ describe('PostHog Node.js', () => {
         disableGeoip: true,
       })
 
+      await waitForPromises()
       jest.runOnlyPendingTimers()
       batchEvents = getLastBatchEvents()
       console.warn(batchEvents)
@@ -248,6 +257,7 @@ describe('PostHog Node.js', () => {
         disableGeoip: false,
       })
 
+      await waitForPromises()
       jest.runOnlyPendingTimers()
       batchEvents = getLastBatchEvents()
       expect(batchEvents?.[0].properties).toEqual({
@@ -352,7 +362,6 @@ describe('PostHog Node.js', () => {
           $lib: 'posthog-node',
           $lib_version: '1.2.3',
           $geoip_disable: true,
-          $active_feature_flags: [],
         },
         timestamp: expect.any(String),
         type: 'capture',
@@ -542,14 +551,13 @@ describe('PostHog Node.js', () => {
         sendFeatureFlags: true,
       })
 
+      jest.runOnlyPendingTimers()
+      await waitForPromises()
+
       expect(mockedFetch).toHaveBeenCalledWith(
         'http://example.com/decide/?v=3',
         expect.objectContaining({ method: 'POST' })
       )
-
-      jest.runOnlyPendingTimers()
-
-      await waitForPromises()
 
       expect(getLastBatchEvents()?.[0]).toEqual(
         expect.objectContaining({
@@ -589,7 +597,6 @@ describe('PostHog Node.js', () => {
       })
 
       jest.runOnlyPendingTimers()
-
       await waitForPromises()
 
       posthog.capture({
@@ -646,14 +653,13 @@ describe('PostHog Node.js', () => {
         personalApiKey: 'TEST_PERSONAL_API_KEY',
       })
 
-      jest.runOnlyPendingTimers()
-
-      await waitForPromises()
-
       posthog.capture({
         distinctId: 'distinct_id',
         event: 'node test event',
       })
+
+      jest.runOnlyPendingTimers()
+      await waitForPromises()
 
       expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
       // no decide call
@@ -703,19 +709,19 @@ describe('PostHog Node.js', () => {
         disableGeoip: false,
       })
 
+      await waitForPromises()
+      jest.runOnlyPendingTimers()
+
       expect(mockedFetch).toHaveBeenCalledWith(
         'http://example.com/decide/?v=3',
         expect.objectContaining({ method: 'POST', body: expect.not.stringContaining('geoip_disable') })
       )
 
-      jest.runOnlyPendingTimers()
-
-      await waitForPromises()
-
       expect(getLastBatchEvents()?.[0].properties).toEqual({
         $active_feature_flags: ['feature-1', 'feature-2', 'feature-variant'],
         '$feature/feature-1': true,
         '$feature/feature-2': true,
+        '$feature/disabled-flag': false,
         '$feature/feature-variant': 'variant',
         $lib: 'posthog-node',
         $lib_version: '1.2.3',
@@ -760,14 +766,12 @@ describe('PostHog Node.js', () => {
 
       expect(Object.keys(posthog.distinctIdHasSentFlagCalls).length).toEqual(0)
 
-      // TODO: Check if this has a real world perf impact on sending events, i.e. adding local flag info
-      // via the promise slows down sending events
-      for (let i = 0; i < 20; i++) {
+      for (let i = 0; i < 100; i++) {
         const distinctId = `some-distinct-id${i}`
         await posthog.getFeatureFlag('beta-feature', distinctId)
 
-        jest.runOnlyPendingTimers()
         await waitForPromises()
+        jest.runOnlyPendingTimers()
 
         const batchEvents = getLastBatchEvents()
         expect(batchEvents).toMatchObject([
