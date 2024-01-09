@@ -1,3 +1,8 @@
+# 3.4.0 - 2024-01-09
+
+1. Numeric property handling for feature flags now does the expected: When passed in a number, we do a numeric comparison. When passed in a string, we do a string comparison. Previously, we always did a string comparison.
+2. Add support for relative date operators for local evaluation.
+
 # 3.3.0 - 2024-01-02
 
 1. Adds PostHogSentryIntegration to allow automatic capturing of exceptions reported via the @sentry/node package
