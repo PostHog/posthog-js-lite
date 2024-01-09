@@ -464,11 +464,32 @@ function matchProperty(
 
   const overrideValue = propertyValues[key]
 
+  function computeExactMatch(value: any, overrideValue: any): boolean {
+    if (Array.isArray(value)) {
+      return value.map((val) => String(val).toLowerCase()).includes(String(overrideValue).toLowerCase())
+    }
+    return String(value).toLowerCase() === String(overrideValue).toLowerCase()
+  }
+
+  function compare(lhs: any, rhs: any, operator: string): boolean {
+    if (operator === 'gt') {
+      return lhs > rhs
+    } else if (operator === 'gte') {
+      return lhs >= rhs
+    } else if (operator === 'lt') {
+      return lhs < rhs
+    } else if (operator === 'lte') {
+      return lhs <= rhs
+    } else {
+      throw new Error(`Invalid operator: ${operator}`)
+    }
+  }
+
   switch (operator) {
     case 'exact':
-      return Array.isArray(value) ? value.indexOf(overrideValue) !== -1 : value === overrideValue
+      return computeExactMatch(value, overrideValue)
     case 'is_not':
-      return Array.isArray(value) ? value.indexOf(overrideValue) === -1 : value !== overrideValue
+      return !computeExactMatch(value, overrideValue)
     case 'is_set':
       return key in propertyValues
     case 'icontains':
@@ -480,25 +501,54 @@ function matchProperty(
     case 'not_regex':
       return isValidRegex(String(value)) && String(overrideValue).match(String(value)) === null
     case 'gt':
-      return typeof overrideValue == typeof value && overrideValue > value
     case 'gte':
-      return typeof overrideValue == typeof value && overrideValue >= value
     case 'lt':
-      return typeof overrideValue == typeof value && overrideValue < value
-    case 'lte':
-      return typeof overrideValue == typeof value && overrideValue <= value
+    case 'lte': {
+      // :TRICKY: We adjust comparison based on the override value passed in,
+      // to make sure we handle both numeric and string comparisons appropriately.
+      let parsedValue = typeof value === 'number' ? value : null
+
+      if (typeof value === 'string') {
+        try {
+          parsedValue = parseFloat(value)
+        } catch (err) {
+          // pass
+        }
+      }
+
+      if (parsedValue != null && overrideValue != null) {
+        // check both null and undefined
+        if (typeof overrideValue === 'string') {
+          return compare(overrideValue, String(value), operator)
+        } else {
+          return compare(overrideValue, parsedValue, operator)
+        }
+      } else {
+        return compare(String(overrideValue), String(value), operator)
+      }
+    }
     case 'is_date_after':
-    case 'is_date_before': {
-      const parsedDate = convertToDateTime(value)
+    case 'is_date_before':
+    case 'is_relative_date_before':
+    case 'is_relative_date_after': {
+      let parsedDate = null
+      if (['is_relative_date_before', 'is_relative_date_after'].includes(operator)) {
+        parsedDate = relativeDateParseForFeatureFlagMatching(String(value))
+      } else {
+        parsedDate = convertToDateTime(value)
+      }
+
+      if (parsedDate == null) {
+        throw new InconclusiveMatchError(`Invalid date: ${value}`)
+      }
       const overrideDate = convertToDateTime(overrideValue)
-      if (operator === 'is_date_before') {
+      if (['is_date_before', 'is_relative_date_before'].includes(operator)) {
         return overrideDate < parsedDate
       }
       return overrideDate > parsedDate
     }
     default:
-      console.error(`Unknown operator: ${operator}`)
-      return false
+      throw new InconclusiveMatchError(`Unknown operator: ${operator}`)
   }
 }
 
@@ -636,4 +686,47 @@ function convertToDateTime(value: string | number | (string | number)[] | Date):
   }
 }
 
-export { FeatureFlagsPoller, matchProperty, InconclusiveMatchError, ClientError }
+function relativeDateParseForFeatureFlagMatching(value: string): Date | null {
+  const regex = /^(?<number>[0-9]+)(?<interval>[a-z])$/
+  const match = value.match(regex)
+  const parsedDt = new Date(new Date().toISOString())
+
+  if (match) {
+    if (!match.groups) {
+      return null
+    }
+
+    const number = parseInt(match.groups['number'])
+
+    if (number >= 10000) {
+      // Guard against overflow, disallow numbers greater than 10_000
+      return null
+    }
+    const interval = match.groups['interval']
+    if (interval == 'h') {
+      parsedDt.setUTCHours(parsedDt.getUTCHours() - number)
+    } else if (interval == 'd') {
+      parsedDt.setUTCDate(parsedDt.getUTCDate() - number)
+    } else if (interval == 'w') {
+      parsedDt.setUTCDate(parsedDt.getUTCDate() - number * 7)
+    } else if (interval == 'm') {
+      parsedDt.setUTCMonth(parsedDt.getUTCMonth() - number)
+    } else if (interval == 'y') {
+      parsedDt.setUTCFullYear(parsedDt.getUTCFullYear() - number)
+    } else {
+      return null
+    }
+
+    return parsedDt
+  } else {
+    return null
+  }
+}
+
+export {
+  FeatureFlagsPoller,
+  matchProperty,
+  relativeDateParseForFeatureFlagMatching,
+  InconclusiveMatchError,
+  ClientError,
+}
