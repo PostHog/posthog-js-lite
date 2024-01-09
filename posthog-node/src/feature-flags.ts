@@ -704,15 +704,15 @@ function relativeDateParseForFeatureFlagMatching(value: string): Date | null {
     }
     const interval = match.groups['interval']
     if (interval == 'h') {
-      parsedDt.setHours(parsedDt.getHours() - number)
+      parsedDt.setUTCHours(parsedDt.getUTCHours() - number)
     } else if (interval == 'd') {
-      parsedDt.setDate(parsedDt.getDate() - number)
+      parsedDt.setUTCDate(parsedDt.getUTCDate() - number)
     } else if (interval == 'w') {
-      parsedDt.setDate(parsedDt.getDate() - number * 7)
+      parsedDt.setUTCDate(parsedDt.getUTCDate() - number * 7)
     } else if (interval == 'm') {
-      parsedDt.setMonth(parsedDt.getMonth() - number)
+      parsedDt.setUTCMonth(parsedDt.getUTCMonth() - number)
     } else if (interval == 'y') {
-      parsedDt.setFullYear(parsedDt.getFullYear() - number)
+      parsedDt.setUTCFullYear(parsedDt.getUTCFullYear() - number)
     } else {
       return null
     }

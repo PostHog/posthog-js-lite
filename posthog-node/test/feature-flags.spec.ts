@@ -2250,13 +2250,13 @@ describe('relative date parsing', () => {
     expect(relativeDateParseForFeatureFlagMatching('1y')).toEqual(new Date('2019-01-01T12:01:20.134Z'))
     expect(relativeDateParseForFeatureFlagMatching('12m')).toEqual(relativeDateParseForFeatureFlagMatching('1y'))
 
-    jest.setSystemTime(new Date('2020-04-03T00:00:00'))
-    expect(relativeDateParseForFeatureFlagMatching('1m')).toEqual(new Date('2020-03-03T00:00:00'))
-    expect(relativeDateParseForFeatureFlagMatching('2m')).toEqual(new Date('2020-02-03T00:00:00'))
-    expect(relativeDateParseForFeatureFlagMatching('4m')).toEqual(new Date('2019-12-03T00:00:00'))
-    expect(relativeDateParseForFeatureFlagMatching('8m')).toEqual(new Date('2019-08-03T00:00:00'))
+    jest.setSystemTime(new Date('2020-04-03T00:00:00Z'))
+    expect(relativeDateParseForFeatureFlagMatching('1m')).toEqual(new Date('2020-03-03T00:00:00Z'))
+    expect(relativeDateParseForFeatureFlagMatching('2m')).toEqual(new Date('2020-02-03T00:00:00Z'))
+    expect(relativeDateParseForFeatureFlagMatching('4m')).toEqual(new Date('2019-12-03T00:00:00Z'))
+    expect(relativeDateParseForFeatureFlagMatching('8m')).toEqual(new Date('2019-08-03T00:00:00Z'))
 
-    expect(relativeDateParseForFeatureFlagMatching('1y')).toEqual(new Date('2019-04-03T00:00:00'))
+    expect(relativeDateParseForFeatureFlagMatching('1y')).toEqual(new Date('2019-04-03T00:00:00Z'))
     expect(relativeDateParseForFeatureFlagMatching('12m')).toEqual(relativeDateParseForFeatureFlagMatching('1y'))
   })
 
