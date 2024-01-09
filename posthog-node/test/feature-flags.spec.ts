@@ -2168,6 +2168,14 @@ describe('match properties', () => {
     const property_k = { key: 'key', value: '2022-05-01', operator: 'is_date_before' }
     expect(() => matchProperty(property_k, { key: null })).toThrow(InconclusiveMatchError)
   })
+
+  it('with invalid operator', () => {
+    const property_a = { key: 'key', value: '2022-05-01', operator: 'is_unknown' }
+
+    expect(() => matchProperty(property_a, { key: 'random' })).toThrow(
+      new InconclusiveMatchError('Unknown operator: is_unknown')
+    )
+  })
 })
 
 describe('relative date parsing', () => {

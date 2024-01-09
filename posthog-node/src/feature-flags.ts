@@ -548,8 +548,7 @@ function matchProperty(
       return overrideDate > parsedDate
     }
     default:
-      console.error(`Unknown operator: ${operator}`)
-      return false
+      throw new InconclusiveMatchError(`Unknown operator: ${operator}`)
   }
 }
 
