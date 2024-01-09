@@ -8,8 +8,16 @@ import { OptionalReactNativeDeviceInfo } from './optional/OptionalReactNativeDev
 import { PostHogCustomAppProperties, PostHogCustomAsyncStorage } from './types'
 
 export const getAppProperties = (): PostHogCustomAppProperties => {
+  var deviceType = 'Mobile'
+
+  if (Platform.OS === 'macos' || Platform.OS === 'windows') {
+    deviceType = 'Desktop'
+  } else if (Platform.OS === 'web') {
+    deviceType = 'Web'
+  }
+
   const properties: PostHogCustomAppProperties = {
-    $device_type: Platform.OS,
+    $device_type: deviceType,
   }
 
   if (OptionalExpoApplication) {
