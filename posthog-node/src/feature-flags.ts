@@ -211,14 +211,18 @@ class FeatureFlagsPoller {
       const groupName = this.groupTypeMapping[String(aggregation_group_type_index)]
 
       if (!groupName) {
-        console.warn(
-          `[FEATURE FLAGS] Unknown group type index ${aggregation_group_type_index} for feature flag ${flag.key}`
-        )
+        if (this.debugMode) {
+          console.warn(
+            `[FEATURE FLAGS] Unknown group type index ${aggregation_group_type_index} for feature flag ${flag.key}`
+          )
+        }
         throw new InconclusiveMatchError('Flag has unknown group type index')
       }
 
       if (!(groupName in groups)) {
-        console.warn(`[FEATURE FLAGS] Can't compute group feature flag: ${flag.key} without group names passed in`)
+        if (this.debugMode) {
+          console.warn(`[FEATURE FLAGS] Can't compute group feature flag: ${flag.key} without group names passed in`)
+        }
         return false
       }
 

@@ -766,14 +766,12 @@ describe('PostHog Node.js', () => {
 
       expect(Object.keys(posthog.distinctIdHasSentFlagCalls).length).toEqual(0)
 
-      // TODO: Check if this has a real world perf impact on sending events, i.e. adding local flag info
-      // via the promise slows down sending events
-      for (let i = 0; i < 20; i++) {
+      for (let i = 0; i < 100; i++) {
         const distinctId = `some-distinct-id${i}`
         await posthog.getFeatureFlag('beta-feature', distinctId)
 
-        jest.runOnlyPendingTimers()
         await waitForPromises()
+        jest.runOnlyPendingTimers()
 
         const batchEvents = getLastBatchEvents()
         expect(batchEvents).toMatchObject([

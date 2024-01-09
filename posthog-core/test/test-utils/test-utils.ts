@@ -9,7 +9,7 @@ export const waitForPromises = async (): Promise<void> => {
     // IMPORTANT: Only enable real timers for this promise - allows us to pass a short amount of ticks
     // whilst keeping any timers made during other promises as fake timers
     jest.useRealTimers()
-    setTimeout(resolve, 100)
+    setTimeout(resolve, 10)
     jest.useFakeTimers()
   })
 }
