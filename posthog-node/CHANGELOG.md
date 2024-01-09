@@ -1,3 +1,8 @@
+# 3.5.0 - 2024-01-09
+
+1. When local evaluation is enabled, we automatically add flag information to all events sent to PostHog, whenever possible. This makes it easier to use these events in experiments.
+2. Fixes a bug where in some rare cases we may drop events when send_feature_flags is enabled on capture.
+
 # 3.4.0 - 2024-01-09
 
 1. Numeric property handling for feature flags now does the expected: When passed in a number, we do a numeric comparison. When passed in a string, we do a string comparison. Previously, we always did a string comparison.
