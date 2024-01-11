@@ -12,16 +12,16 @@ Array [
     },
     Object {
       "$el_text": "I have the property \\"ph-label\\" which means touching me will be autocaptured with a specific label",
-      "attr__ph-label": "special-text",
       "attr__testID": "example-ph-label",
-      "tag_name": "special-text",
+      "tag_name": "higher-level-element",
     },
     Object {
       "attr__style": "backgroundColor:rgba(0,0,0,.1);padding:15;borderRadius:10;marginBottom:10",
-      "tag_name": "View",
+      "tag_name": "higher-level-element",
     },
     Object {
-      "tag_name": "View",
+      "attr__ph-label": "higher-level-element",
+      "tag_name": "higher-level-element",
     },
     Object {
       "attr__style": "flex:1",

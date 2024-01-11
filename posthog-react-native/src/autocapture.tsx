@@ -105,6 +105,24 @@ export const autocaptureFromTouchEvent = (e: any, posthog: PostHog, options: Pos
   }
 
   if (elements.length) {
+    // The element that was tapped, may be a child (or grandchild of an element with a ph-label)
+    // In this case, the current labels applied obscure the ph-label
+    // To correct this, loop over the elements in reverse, and promote the ph-label
+    const elAttrLabelKey = `attr__${customLabelProp}`
+    let lastLabel: string | undefined = undefined
+
+    for (let i = elements.length - 1; i >= 0; i--) {
+      const element = elements[i]
+      if (element[elAttrLabelKey]) {
+        // this element had a ph-label set, promote it to the lastLabel
+        lastLabel = element[elAttrLabelKey]
+      }
+      
+      // if lastLabel is set, update this elements tag_name
+      if (lastLabel) {
+        element['tag_name'] = lastLabel
+      }
+    }
     posthog.autocapture('touch', elements, {
       $touch_x: e.nativeEvent.pageX,
       $touch_y: e.nativeEvent.pageY,
