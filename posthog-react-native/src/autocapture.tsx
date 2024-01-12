@@ -117,7 +117,7 @@ export const autocaptureFromTouchEvent = (e: any, posthog: PostHog, options: Pos
         // this element had a ph-label set, promote it to the lastLabel
         lastLabel = element[elAttrLabelKey]
       }
-      
+
       // if lastLabel is set, update this elements tag_name
       if (lastLabel) {
         element['tag_name'] = lastLabel
