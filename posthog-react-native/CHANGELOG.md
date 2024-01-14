@@ -1,3 +1,7 @@
+# 2.10.1 - 2024-01-12
+
+1. The `tag_name` property of auto-captured events now uses the nearest `ph-label` from parent elements, if present.
+
 # 2.10.0 - 2024-01-08
 
 1. `$device_type` is now set to `Mobile`, `Desktop`, or `Web` for all events
