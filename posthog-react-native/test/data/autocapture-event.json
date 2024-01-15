@@ -16,7 +16,6 @@
       "elementType": { "displayName": "Text" },
       "memoizedProps": {
         "testID": "example-ph-label",
-        "ph-label": "special-text",
         "children": "I have the property \"ph-label\" which means touching me will be autocaptured with a specific label"
       },
       "return": {
@@ -40,7 +39,9 @@
                 "memoizedProps": { "value": false },
                 "return": {
                   "elementType": { "displayName": "View" },
-                  "memoizedProps": {},
+                  "memoizedProps": {
+                    "ph-label": "higher-level-element"
+                  },
                   "return": {
                     "elementType": {},
                     "memoizedProps": {},
