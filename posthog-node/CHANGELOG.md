@@ -1,3 +1,7 @@
+# 3.6.0 - 2024-01-18
+
+1. Adds support for overriding the event `uuid`
+
 # 3.5.0 - 2024-01-09
 
 1. When local evaluation is enabled, we automatically add flag information to all events sent to PostHog, whenever possible. This makes it easier to use these events in experiments.
