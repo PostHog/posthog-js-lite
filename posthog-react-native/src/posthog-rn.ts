@@ -1,7 +1,7 @@
 import { AppState, Dimensions, Linking } from 'react-native'
 
 import {
-  PosthogCaptureOptions,
+  PostHogCaptureOptions,
   PostHogCore,
   PosthogCoreOptions,
   PostHogFetchOptions,
@@ -171,7 +171,7 @@ export class PostHog extends PostHogCore {
   }
 
   // Custom methods
-  screen(name: string, properties: { [key: string]: any }, options?: PosthogCaptureOptions): this {
+  screen(name: string, properties?: { [key: string]: any }, options?: PostHogCaptureOptions): this {
     // Screen name is good to know for all other subsequent events
     this.registerForSession({
       $screen_name: name,
