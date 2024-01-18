@@ -60,7 +60,7 @@ export type PostHogFetchOptions = {
 // Check out posthog-js for these additional options and try to keep them in sync
 export type PosthogCaptureOptions = {
   /** If provided overrides the auto-generated event ID */
-  eventId?: string
+  uuid?: string
   /** If provided overrides the auto-generated timestamp */
   timestamp?: Date
   disableGeoip?: boolean

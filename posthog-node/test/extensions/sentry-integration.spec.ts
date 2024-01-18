@@ -146,6 +146,7 @@ describe('PostHogSentryIntegration', () => {
         library: 'posthog-node',
         library_version: '1.2.3',
         timestamp: expect.any(String),
+        uuid: expect.any(String),
       },
     ])
   })

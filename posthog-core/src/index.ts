@@ -414,7 +414,7 @@ export abstract class PostHogCoreStateless {
       library: this.getLibraryId(),
       library_version: this.getLibraryVersion(),
       timestamp: options?.timestamp ? options?.timestamp : currentISOTime(),
-      uuid: options?.eventId ? options.eventId : generateUUID(globalThis),
+      uuid: options?.uuid ? options.uuid : generateUUID(globalThis),
     }
 
     const addGeoipDisableProperty = options?.disableGeoip ?? this.disableGeoip
