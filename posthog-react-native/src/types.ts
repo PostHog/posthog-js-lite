@@ -1,6 +1,6 @@
 export type PostHogAutocaptureNavigationTrackerOptions = {
   routeToName?: (name: string, params: any) => string
-  routeToProperties?: (name: string, params: any) => string
+  routeToProperties?: (name: string, params: any) => Record<string, any>
 }
 
 export type PostHogAutocaptureOptions = {
