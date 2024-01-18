@@ -416,6 +416,10 @@ export abstract class PostHogCoreStateless {
       timestamp: options?.timestamp ? options?.timestamp : currentISOTime(),
     }
 
+    if (options?.eventId) {
+      message['event_id'] = options.eventId
+    }
+
     const addGeoipDisableProperty = options?.disableGeoip ?? this.disableGeoip
     if (addGeoipDisableProperty) {
       if (!message.properties) {
