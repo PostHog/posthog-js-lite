@@ -1,3 +1,7 @@
+## Next
+
+1. if `react-native-device-info` is available for the Web target, do not set `unknown` for all properties.
+
 # 2.10.0 - 2024-01-08
 
 1. `$device_type` is now set to `Mobile`, `Desktop`, or `Web` for all events
