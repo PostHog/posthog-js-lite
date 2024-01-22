@@ -1,3 +1,7 @@
+## Next
+
+1. Do not try to load the `expo-file-system` package on the Web target since it's not supported.
+
 # 2.10.1 - 2024-01-15
 
 1. The `tag_name` property of auto-captured events now uses the nearest `ph-label` from parent elements, if present.
