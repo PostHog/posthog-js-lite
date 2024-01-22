@@ -121,7 +121,7 @@ class FeatureFlagsPoller {
             console.debug(`InconclusiveMatchError when computing flag locally: ${key}: ${e}`)
           }
         } else if (e instanceof Error) {
-          console.error(`Error computing flag locally: ${key}: ${e}`)
+          this.onError?.(new Error(`Error computing flag locally: ${key}: ${e}`))
         }
       }
     }
@@ -211,14 +211,18 @@ class FeatureFlagsPoller {
       const groupName = this.groupTypeMapping[String(aggregation_group_type_index)]
 
       if (!groupName) {
-        console.warn(
-          `[FEATURE FLAGS] Unknown group type index ${aggregation_group_type_index} for feature flag ${flag.key}`
-        )
+        if (this.debugMode) {
+          console.warn(
+            `[FEATURE FLAGS] Unknown group type index ${aggregation_group_type_index} for feature flag ${flag.key}`
+          )
+        }
         throw new InconclusiveMatchError('Flag has unknown group type index')
       }
 
       if (!(groupName in groups)) {
-        console.warn(`[FEATURE FLAGS] Can't compute group feature flag: ${flag.key} without group names passed in`)
+        if (this.debugMode) {
+          console.warn(`[FEATURE FLAGS] Can't compute group feature flag: ${flag.key} without group names passed in`)
+        }
         return false
       }
 
@@ -383,7 +387,7 @@ class FeatureFlagsPoller {
 
       const responseJson = await res.json()
       if (!('flags' in responseJson)) {
-        console.error(`Invalid response when getting feature flags: ${JSON.stringify(responseJson)}`)
+        this.onError?.(new Error(`Invalid response when getting feature flags: ${JSON.stringify(responseJson)}`))
       }
 
       this.featureFlags = responseJson.flags || []

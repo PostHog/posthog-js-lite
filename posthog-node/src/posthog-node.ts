@@ -105,26 +105,54 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       super.captureStateless(distinctId, event, props, { timestamp, disableGeoip })
     }
 
-    if (sendFeatureFlags) {
-      super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip).then((flags) => {
-        const featureVariantProperties: Record<string, string | boolean> = {}
+    // :TRICKY: If we flush, or need to shut down, to not lose events we want this promise to resolve before we flush
+    const capturePromise = Promise.resolve()
+      .then(async () => {
+        if (sendFeatureFlags) {
+          // If we are sending feature flags, we need to make sure we have the latest flags
+          return await super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)
+        }
+
+        if ((this.featureFlagsPoller?.featureFlags?.length || 0) > 0) {
+          // Otherwise we may as well check for the flags locally and include them if there
+          const groupsWithStringValues: Record<string, string> = {}
+          for (const [key, value] of Object.entries(groups || {})) {
+            groupsWithStringValues[key] = String(value)
+          }
+
+          return await this.getAllFlags(distinctId, {
+            groups: groupsWithStringValues,
+            disableGeoip,
+            onlyEvaluateLocally: true,
+          })
+        }
+        return {}
+      })
+      .then((flags) => {
+        // Derive the relevant flag properties to add
+        const additionalProperties: Record<string, any> = {}
         if (flags) {
           for (const [feature, variant] of Object.entries(flags)) {
-            if (variant !== false) {
-              featureVariantProperties[`$feature/${feature}`] = variant
-            }
+            additionalProperties[`$feature/${feature}`] = variant
           }
         }
         const activeFlags = Object.keys(flags || {}).filter((flag) => flags?.[flag] !== false)
-        const flagProperties = {
-          $active_feature_flags: activeFlags || undefined,
-          ...featureVariantProperties,
+        if (activeFlags.length > 0) {
+          additionalProperties['$active_feature_flags'] = activeFlags
         }
-        _capture({ ...properties, $groups: groups, ...flagProperties })
+
+        return additionalProperties
       })
-    } else {
-      _capture({ ...properties, $groups: groups })
-    }
+      .catch(() => {
+        // Something went wrong getting the flag info - we should capture the event anyways
+        return {}
+      })
+      .then((additionalProperties) => {
+        // No matter what - capture the event
+        _capture({ ...additionalProperties, ...properties, $groups: groups })
+      })
+
+    this.addPendingPromise(capturePromise)
   }
 
   identify({ distinctId, properties, disableGeoip }: IdentifyMessageV1): void {
@@ -156,8 +184,18 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       disableGeoip?: boolean
     }
   ): Promise<string | boolean | undefined> {
-    const { groups, personProperties, groupProperties, disableGeoip } = options || {}
-    let { onlyEvaluateLocally, sendFeatureFlagEvents } = options || {}
+    const { groups, disableGeoip } = options || {}
+    let { onlyEvaluateLocally, sendFeatureFlagEvents, personProperties, groupProperties } = options || {}
+
+    const adjustedProperties = this.addLocalPersonAndGroupProperties(
+      distinctId,
+      groups,
+      personProperties,
+      groupProperties
+    )
+
+    personProperties = adjustedProperties.allPersonProperties
+    groupProperties = adjustedProperties.allGroupProperties
 
     // set defaults
     if (onlyEvaluateLocally == undefined) {
@@ -232,8 +270,19 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       disableGeoip?: boolean
     }
   ): Promise<JsonType | undefined> {
-    const { groups, personProperties, groupProperties, disableGeoip } = options || {}
-    let { onlyEvaluateLocally, sendFeatureFlagEvents } = options || {}
+    const { groups, disableGeoip } = options || {}
+    let { onlyEvaluateLocally, sendFeatureFlagEvents, personProperties, groupProperties } = options || {}
+
+    const adjustedProperties = this.addLocalPersonAndGroupProperties(
+      distinctId,
+      groups,
+      personProperties,
+      groupProperties
+    )
+
+    personProperties = adjustedProperties.allPersonProperties
+    groupProperties = adjustedProperties.allGroupProperties
+
     let response = undefined
 
     // Try to get match value locally if not provided
@@ -324,8 +373,18 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       disableGeoip?: boolean
     }
   ): Promise<PosthogFlagsAndPayloadsResponse> {
-    const { groups, personProperties, groupProperties, disableGeoip } = options || {}
-    let { onlyEvaluateLocally } = options || {}
+    const { groups, disableGeoip } = options || {}
+    let { onlyEvaluateLocally, personProperties, groupProperties } = options || {}
+
+    const adjustedProperties = this.addLocalPersonAndGroupProperties(
+      distinctId,
+      groups,
+      personProperties,
+      groupProperties
+    )
+
+    personProperties = adjustedProperties.allPersonProperties
+    groupProperties = adjustedProperties.allGroupProperties
 
     // set defaults
     if (onlyEvaluateLocally == undefined) {
@@ -384,5 +443,26 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
   async shutdownAsync(): Promise<void> {
     this.featureFlagsPoller?.stopPoller()
     return super.shutdownAsync()
+  }
+
+  private addLocalPersonAndGroupProperties(
+    distinctId: string,
+    groups?: Record<string, string>,
+    personProperties?: Record<string, string>,
+    groupProperties?: Record<string, Record<string, string>>
+  ): { allPersonProperties: Record<string, string>; allGroupProperties: Record<string, Record<string, string>> } {
+    const allPersonProperties = { $current_distinct_id: distinctId, ...(personProperties || {}) }
+
+    const allGroupProperties: Record<string, Record<string, string>> = {}
+    if (groups) {
+      for (const groupName of Object.keys(groups)) {
+        allGroupProperties[groupName] = {
+          $group_key: groups[groupName],
+          ...(groupProperties?.[groupName] || {}),
+        }
+      }
+    }
+
+    return { allPersonProperties, allGroupProperties }
   }
 }

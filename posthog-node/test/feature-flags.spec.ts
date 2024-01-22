@@ -50,6 +50,17 @@ export const apiImplementation = ({
       }) as any
     }
 
+    if ((url as any).includes('batch/')) {
+      return Promise.resolve({
+        status: 200,
+        text: () => Promise.resolve('ok'),
+        json: () =>
+          Promise.resolve({
+            status: 'ok',
+          }),
+      }) as any
+    }
+
     return Promise.resolve({
       status: 400,
       text: () => Promise.resolve('ok'),
@@ -342,7 +353,11 @@ describe('local evaluation', () => {
           token: 'TEST_API_KEY',
           distinct_id: 'some-distinct-id_outside_rollout?',
           groups: {},
-          person_properties: { region: 'USA', email: 'a@b.com' },
+          person_properties: {
+            $current_distinct_id: 'some-distinct-id_outside_rollout?',
+            region: 'USA',
+            email: 'a@b.com',
+          },
           group_properties: {},
           geoip_disable: true,
         }),
@@ -361,7 +376,7 @@ describe('local evaluation', () => {
           token: 'TEST_API_KEY',
           distinct_id: 'some-distinct-id',
           groups: {},
-          person_properties: { doesnt_matter: '1' },
+          person_properties: { $current_distinct_id: 'some-distinct-id', doesnt_matter: '1' },
           group_properties: {},
           geoip_disable: true,
         }),

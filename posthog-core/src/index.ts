@@ -56,10 +56,10 @@ export abstract class PostHogCoreStateless {
   private captureMode: 'form' | 'json'
   private removeDebugCallback?: () => void
   private debugMode: boolean = false
-  private pendingPromises: Record<string, Promise<any>> = {}
   private disableGeoip: boolean = true
 
   private _optoutOverride: boolean | undefined
+  private pendingPromises: Record<string, Promise<any>> = {}
 
   // internal
   protected _events = new SimpleEventEmitter()
@@ -139,6 +139,14 @@ export abstract class PostHogCoreStateless {
         ...this.getCommonEventProperties(), // Common PH props
       },
     }
+  }
+
+  protected addPendingPromise(promise: Promise<any>): void {
+    const promiseUUID = generateUUID()
+    this.pendingPromises[promiseUUID] = promise
+    promise.finally(() => {
+      delete this.pendingPromises[promiseUUID]
+    })
   }
 
   /***
@@ -249,7 +257,7 @@ export abstract class PostHogCoreStateless {
     return this.fetchWithRetry(url, fetchOptions)
       .then((response) => response.json() as Promise<PostHogDecideResponse>)
       .catch((error) => {
-        console.error('Error fetching feature flags', error)
+        this._events.emit('error', error)
         return undefined
       })
   }
@@ -469,15 +477,11 @@ export abstract class PostHogCoreStateless {
       sent_at: currentISOTime(),
     }
 
-    const promiseUUID = generateUUID()
-
     const done = (err?: any): void => {
       if (err) {
         this._events.emit('error', err)
       }
       callback?.(err, messages)
-      // remove promise from pendingPromises
-      delete this.pendingPromises[promiseUUID]
       this._events.emit('flush', messages)
     }
 
@@ -513,13 +517,13 @@ export abstract class PostHogCoreStateless {
             body: payload,
           }
     const requestPromise = this.fetchWithRetry(url, fetchOptions)
-    this.pendingPromises[promiseUUID] = requestPromise
-
-    requestPromise
-      .then(() => done())
-      .catch((err) => {
-        done(err)
-      })
+    this.addPendingPromise(
+      requestPromise
+        .then(() => done())
+        .catch((err) => {
+          done(err)
+        })
+    )
   }
 
   private async fetchWithRetry(
@@ -565,6 +569,10 @@ export abstract class PostHogCoreStateless {
           })
         )
       )
+      // flush again to make sure we send all events, some of which might've been added
+      // while we were waiting for the pending promises to resolve
+      // For example, see sendFeatureFlags in posthog-node/src/posthog-node.ts::capture
+      await this.flushAsync()
     } catch (e) {
       if (!isPostHogFetchError(e)) {
         throw e
