@@ -1,3 +1,7 @@
+## Next
+
+1. if `react-native-device-info` is available for the Web target, do not set `unknown` for all properties.
+
 # 2.10.1 - 2024-01-15
 
 1. The `tag_name` property of auto-captured events now uses the nearest `ph-label` from parent elements, if present.

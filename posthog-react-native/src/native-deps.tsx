@@ -40,17 +40,25 @@ export const getAppProperties = (): PostHogCustomAppProperties => {
   }
 
   if (OptionalReactNativeDeviceInfo) {
-    properties.$app_build = OptionalReactNativeDeviceInfo.getBuildIdSync()
-    properties.$app_name = OptionalReactNativeDeviceInfo.getApplicationName()
-    properties.$app_namespace = OptionalReactNativeDeviceInfo.getBundleId()
-    properties.$app_version = OptionalReactNativeDeviceInfo.getVersion()
-    properties.$device_manufacturer = OptionalReactNativeDeviceInfo.getManufacturerSync()
-    properties.$device_name = OptionalReactNativeDeviceInfo.getDeviceNameSync()
-    properties.$os_name = OptionalReactNativeDeviceInfo.getSystemName()
-    properties.$os_version = OptionalReactNativeDeviceInfo.getSystemVersion()
+    properties.$app_build = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getBuildIdSync())
+    properties.$app_name = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getApplicationName())
+    properties.$app_namespace = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getBundleId())
+    properties.$app_version = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getVersion())
+    properties.$device_manufacturer = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getManufacturerSync())
+    properties.$device_name = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getDeviceNameSync())
+    properties.$os_name = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getSystemName())
+    properties.$os_version = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getSystemVersion())
   }
 
   return properties
+}
+
+// react-native-device-info returns 'unknown' if the property is not available (Web target)
+const returnPropertyIfNotUnknown = (value: string | null): string | null => {
+  if (value !== 'unknown') {
+    return value
+  }
+  return null
 }
 
 export const buildOptimisiticAsyncStorage = (): PostHogCustomAsyncStorage => {
