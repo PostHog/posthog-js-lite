@@ -1,6 +1,11 @@
-# 2.11.0 - 2024-01-18
+# 2.11.0 - 2024-01-23
 
 1. Adds support for overriding the event `uuid` via capture options
+
+# 2.10.2 - 2024-01-22
+
+1. Do not try to load the `expo-file-system` package on the Web target since it's not supported.
+2. if `react-native-device-info` is available for the Web target, do not set `unknown` for all properties.
 
 # 2.10.1 - 2024-01-15
 
