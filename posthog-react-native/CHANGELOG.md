@@ -1,3 +1,7 @@
+# 2.11.0 - 2024-01-23
+
+1. Adds support for overriding the event `uuid` via capture options
+
 # 2.10.2 - 2024-01-22
 
 1. Do not try to load the `expo-file-system` package on the Web target since it's not supported.

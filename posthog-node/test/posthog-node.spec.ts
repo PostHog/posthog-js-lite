@@ -4,6 +4,7 @@ jest.mock('../src/fetch')
 import fetch from '../src/fetch'
 import { anyDecideCall, anyLocalEvalCall, apiImplementation } from './feature-flags.spec'
 import { waitForPromises, wait } from '../../posthog-core/test/test-utils/test-utils'
+import { generateUUID } from 'posthog-core/src/utils'
 
 jest.mock('../package.json', () => ({ version: '1.2.3' }))
 
@@ -66,6 +67,7 @@ describe('PostHog Node.js', () => {
             $lib: 'posthog-node',
             $lib_version: '1.2.3',
           },
+          uuid: expect.any(String),
           timestamp: expect.any(String),
           type: 'capture',
           library: 'posthog-node',
@@ -185,6 +187,24 @@ describe('PostHog Node.js', () => {
           distinct_id: '123',
           timestamp: '2021-02-03T00:00:00.000Z',
           event: 'custom-time',
+          uuid: expect.any(String),
+        },
+      ])
+    })
+
+    it('should allow overriding uuid', async () => {
+      expect(mockedFetch).toHaveBeenCalledTimes(0)
+      const uuid = generateUUID()
+      posthog.capture({ event: 'custom-time', distinctId: '123', uuid })
+      await waitForPromises()
+      jest.runOnlyPendingTimers()
+      const batchEvents = getLastBatchEvents()
+      expect(batchEvents).toMatchObject([
+        {
+          distinct_id: '123',
+          timestamp: expect.any(String),
+          event: 'custom-time',
+          uuid: uuid,
         },
       ])
     })

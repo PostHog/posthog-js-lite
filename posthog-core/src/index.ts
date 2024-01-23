@@ -7,7 +7,7 @@ import {
   PosthogCoreOptions,
   PostHogEventProperties,
   PostHogPersistedProperty,
-  PosthogCaptureOptions,
+  PostHogCaptureOptions,
   JsonType,
 } from './types'
 import {
@@ -155,7 +155,7 @@ export abstract class PostHogCoreStateless {
   protected identifyStateless(
     distinctId: string,
     properties?: PostHogEventProperties,
-    options?: PosthogCaptureOptions
+    options?: PostHogCaptureOptions
   ): this {
     // The properties passed to identifyStateless are event properties.
     // To add person properties, pass in all person properties to the `$set` key.
@@ -176,7 +176,7 @@ export abstract class PostHogCoreStateless {
     distinctId: string,
     event: string,
     properties?: { [key: string]: any },
-    options?: PosthogCaptureOptions
+    options?: PostHogCaptureOptions
   ): this {
     const payload = this.buildPayload({ distinct_id: distinctId, event, properties })
     this.enqueue('capture', payload, options)
@@ -188,7 +188,7 @@ export abstract class PostHogCoreStateless {
     alias: string,
     distinctId: string,
     properties?: { [key: string]: any },
-    options?: PosthogCaptureOptions
+    options?: PostHogCaptureOptions
   ): this {
     const payload = this.buildPayload({
       event: '$create_alias',
@@ -211,7 +211,7 @@ export abstract class PostHogCoreStateless {
     groupType: string,
     groupKey: string | number,
     groupProperties?: PostHogEventProperties,
-    options?: PosthogCaptureOptions,
+    options?: PostHogCaptureOptions,
     distinctId?: string,
     eventProperties?: PostHogEventProperties
   ): this {
@@ -402,7 +402,7 @@ export abstract class PostHogCoreStateless {
   /***
    *** QUEUEING AND FLUSHING
    ***/
-  protected enqueue(type: string, _message: any, options?: PosthogCaptureOptions): void {
+  protected enqueue(type: string, _message: any, options?: PostHogCaptureOptions): void {
     if (this.optedOut) {
       this._events.emit(type, `Library is disabled. Not sending event. To re-enable, call posthog.optIn()`)
       return
@@ -414,6 +414,7 @@ export abstract class PostHogCoreStateless {
       library: this.getLibraryId(),
       library_version: this.getLibraryVersion(),
       timestamp: options?.timestamp ? options?.timestamp : currentISOTime(),
+      uuid: options?.uuid ? options.uuid : generateUUID(globalThis),
     }
 
     const addGeoipDisableProperty = options?.disableGeoip ?? this.disableGeoip
@@ -747,7 +748,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   /***
    *** TRACKING
    ***/
-  identify(distinctId?: string, properties?: PostHogEventProperties, options?: PosthogCaptureOptions): this {
+  identify(distinctId?: string, properties?: PostHogEventProperties, options?: PostHogCaptureOptions): this {
     const previousDistinctId = this.getDistinctId()
     distinctId = distinctId || previousDistinctId
 
@@ -774,7 +775,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     return this
   }
 
-  capture(event: string, properties?: { [key: string]: any }, options?: PosthogCaptureOptions): this {
+  capture(event: string, properties?: { [key: string]: any }, options?: PostHogCaptureOptions): this {
     const distinctId = this.getDistinctId()
 
     if (properties?.$groups) {
@@ -801,7 +802,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     eventType: string,
     elements: PostHogAutocaptureElement[],
     properties: PostHogEventProperties = {},
-    options?: PosthogCaptureOptions
+    options?: PostHogCaptureOptions
   ): this {
     const distinctId = this.getDistinctId()
     const payload = {
@@ -844,7 +845,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     groupType: string,
     groupKey: string | number,
     groupProperties?: PostHogEventProperties,
-    options?: PosthogCaptureOptions
+    options?: PostHogCaptureOptions
   ): this {
     this.groups({
       [groupType]: groupKey,
@@ -861,7 +862,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     groupType: string,
     groupKey: string | number,
     groupProperties?: PostHogEventProperties,
-    options?: PosthogCaptureOptions
+    options?: PostHogCaptureOptions
   ): this {
     const distinctId = this.getDistinctId()
 

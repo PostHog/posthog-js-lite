@@ -1,3 +1,7 @@
+# 2.6.0 - 2024-01-18
+
+1. Adds support for overriding the event `uuid` via capture options
+
 # 2.5.0 - 2023-12-04
 
 1.  Renamed `personProperties` to `setPersonPropertiesForFlags` to match `posthog-js` and more clearly indicated what it does
