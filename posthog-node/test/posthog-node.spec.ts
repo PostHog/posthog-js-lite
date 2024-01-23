@@ -4,7 +4,7 @@ jest.mock('../src/fetch')
 import fetch from '../src/fetch'
 import { anyDecideCall, anyLocalEvalCall, apiImplementation } from './feature-flags.spec'
 import { waitForPromises, wait } from '../../posthog-core/test/test-utils/test-utils'
-import { generateUUID } from 'posthog-core/src/utils'
+import { uuidv7 } from '../../posthog-core/src/utils/uuidv7'
 
 jest.mock('../package.json', () => ({ version: '1.2.3' }))
 
@@ -194,7 +194,7 @@ describe('PostHog Node.js', () => {
 
     it('should allow overriding uuid', async () => {
       expect(mockedFetch).toHaveBeenCalledTimes(0)
-      const uuid = generateUUID()
+      const uuid = uuidv7()
       posthog.capture({ event: 'custom-time', distinctId: '123', uuid })
       await waitForPromises()
       jest.runOnlyPendingTimers()
