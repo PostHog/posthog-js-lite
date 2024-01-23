@@ -1,3 +1,7 @@
+# 3.6.1 - 2024-01-18
+
+1. Swapped to `uuidv7` for unique ID generation
+
 # 3.6.0 - 2024-01-18
 
 1. Adds support for overriding the event `uuid`
