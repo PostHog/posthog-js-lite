@@ -532,13 +532,9 @@ function matchProperty(
       }
     }
     case 'is_date_after':
-    case 'is_date_before':
-    case 'is_date_before':
-    case 'is_date_after': {
-      let parsedDate = null
-      if (['is_date_before', 'is_date_after'].includes(operator)) {
-        parsedDate = relativeDateParseForFeatureFlagMatching(String(value))
-      } else {
+    case 'is_date_before': {
+      let parsedDate = relativeDateParseForFeatureFlagMatching(String(value))
+      if (parsedDate == null) {
         parsedDate = convertToDateTime(value)
       }
 
@@ -546,7 +542,7 @@ function matchProperty(
         throw new InconclusiveMatchError(`Invalid date: ${value}`)
       }
       const overrideDate = convertToDateTime(overrideValue)
-      if (['is_date_before', 'is_date_before'].includes(operator)) {
+      if (['is_date_before'].includes(operator)) {
         return overrideDate < parsedDate
       }
       return overrideDate > parsedDate
