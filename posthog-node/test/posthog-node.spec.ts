@@ -1015,7 +1015,7 @@ describe('PostHog Node.js', () => {
             distinct_id: 'some_id',
             groups: { company: 'id:5', instance: 'app.posthog.com' },
             person_properties: {
-              $current_distinct_id: 'some_id',
+              distinct_id: 'some_id',
               x1: 'y1',
             },
             group_properties: {
@@ -1031,7 +1031,7 @@ describe('PostHog Node.js', () => {
 
       await posthog.getFeatureFlag('random_key', 'some_id', {
         groups: { company: 'id:5', instance: 'app.posthog.com' },
-        personProperties: { $current_distinct_id: 'override' },
+        personProperties: { distinct_id: 'override' },
         groupProperties: { company: { $group_key: 'group_override' } },
       })
       jest.runOnlyPendingTimers()
@@ -1044,7 +1044,7 @@ describe('PostHog Node.js', () => {
             distinct_id: 'some_id',
             groups: { company: 'id:5', instance: 'app.posthog.com' },
             person_properties: {
-              $current_distinct_id: 'override',
+              distinct_id: 'override',
             },
             group_properties: {
               company: { $group_key: 'group_override' },
@@ -1074,7 +1074,7 @@ describe('PostHog Node.js', () => {
             distinct_id: 'some_id',
             groups: {},
             person_properties: {
-              $current_distinct_id: 'some_id',
+              distinct_id: 'some_id',
             },
             group_properties: {},
             geoip_disable: true,
@@ -1098,7 +1098,7 @@ describe('PostHog Node.js', () => {
             distinct_id: 'some_id',
             groups: { company: 'id:5' },
             person_properties: {
-              $current_distinct_id: 'some_id',
+              distinct_id: 'some_id',
             },
             group_properties: { company: { $group_key: 'id:5' } },
             geoip_disable: true,
@@ -1118,7 +1118,7 @@ describe('PostHog Node.js', () => {
             distinct_id: 'some_id',
             groups: {},
             person_properties: {
-              $current_distinct_id: 'some_id',
+              distinct_id: 'some_id',
             },
             group_properties: {},
             geoip_disable: true,
@@ -1139,7 +1139,7 @@ describe('PostHog Node.js', () => {
             distinct_id: 'some_id',
             groups: {},
             person_properties: {
-              $current_distinct_id: 'some_id',
+              distinct_id: 'some_id',
             },
             group_properties: {},
             geoip_disable: true,

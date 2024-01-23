@@ -451,7 +451,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     personProperties?: Record<string, string>,
     groupProperties?: Record<string, Record<string, string>>
   ): { allPersonProperties: Record<string, string>; allGroupProperties: Record<string, Record<string, string>> } {
-    const allPersonProperties = { $current_distinct_id: distinctId, ...(personProperties || {}) }
+    const allPersonProperties = { distinct_id: distinctId, ...(personProperties || {}) }
 
     const allGroupProperties: Record<string, Record<string, string>> = {}
     if (groups) {

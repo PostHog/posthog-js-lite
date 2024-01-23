@@ -354,7 +354,7 @@ describe('local evaluation', () => {
           distinct_id: 'some-distinct-id_outside_rollout?',
           groups: {},
           person_properties: {
-            $current_distinct_id: 'some-distinct-id_outside_rollout?',
+            distinct_id: 'some-distinct-id_outside_rollout?',
             region: 'USA',
             email: 'a@b.com',
           },
@@ -376,7 +376,7 @@ describe('local evaluation', () => {
           token: 'TEST_API_KEY',
           distinct_id: 'some-distinct-id',
           groups: {},
-          person_properties: { $current_distinct_id: 'some-distinct-id', doesnt_matter: '1' },
+          person_properties: { distinct_id: 'some-distinct-id', doesnt_matter: '1' },
           group_properties: {},
           geoip_disable: true,
         }),
@@ -2054,7 +2054,7 @@ describe('match properties', () => {
   it('with relative date operators', () => {
     jest.setSystemTime(new Date('2022-05-01'))
 
-    const property_a = { key: 'key', value: '6h', operator: 'is_relative_date_before' }
+    const property_a = { key: 'key', value: '-6h', operator: 'is_date_before' }
     expect(matchProperty(property_a, { key: '2022-03-01' })).toBe(true)
     expect(matchProperty(property_a, { key: '2022-04-30' })).toBe(true)
 
@@ -2073,7 +2073,7 @@ describe('match properties', () => {
     // however js understands numbers as date offsets from utc epoch
     expect(() => matchProperty(property_a, { key: 1 })).not.toThrow(InconclusiveMatchError)
 
-    const property_b = { key: 'key', value: '1h', operator: 'is_relative_date_after' }
+    const property_b = { key: 'key', value: '1h', operator: 'is_date_after' }
     expect(matchProperty(property_b, { key: '2022-05-02' })).toBe(true)
     expect(matchProperty(property_b, { key: '2022-05-30' })).toBe(true)
     expect(matchProperty(property_b, { key: new Date(2022, 4, 30) })).toBe(true)
@@ -2081,50 +2081,50 @@ describe('match properties', () => {
     expect(matchProperty(property_b, { key: '2022-04-30' })).toBe(false)
 
     // # Invalid flag property
-    const property_c = { key: 'key', value: 1234, operator: 'is_relative_date_after' }
+    const property_c = { key: 'key', value: 1234, operator: 'is_date_after' }
     expect(() => matchProperty(property_c, { key: '2022-05-30' })).toThrow(InconclusiveMatchError)
     expect(() => matchProperty(property_c, { key: 1 })).toThrow(InconclusiveMatchError)
 
     // # Try all possible relative dates
-    const property_e = { key: 'key', value: '1h', operator: 'is_relative_date_before' }
+    const property_e = { key: 'key', value: '1h', operator: 'is_date_before' }
     expect(matchProperty(property_e, { key: '2022-05-01 00:00:00' })).toBe(false)
     expect(matchProperty(property_e, { key: '2022-04-30 22:00:00' })).toBe(true)
 
-    const property_f = { key: 'key', value: '1d', operator: 'is_relative_date_before' }
+    const property_f = { key: 'key', value: '-1d', operator: 'is_date_before' }
     expect(matchProperty(property_f, { key: '2022-04-29 23:59:00 GMT' })).toBe(true)
     expect(matchProperty(property_f, { key: '2022-04-30 00:00:01 GMT' })).toBe(false)
 
-    const property_g = { key: 'key', value: '1w', operator: 'is_relative_date_before' }
+    const property_g = { key: 'key', value: '1w', operator: 'is_date_before' }
     expect(matchProperty(property_g, { key: '2022-04-23 00:00:00 GMT' })).toBe(true)
     expect(matchProperty(property_g, { key: '2022-04-24 00:00:00 GMT' })).toBe(false)
     expect(matchProperty(property_g, { key: '2022-04-24 00:00:01 GMT' })).toBe(false)
 
-    const property_h = { key: 'key', value: '1m', operator: 'is_relative_date_before' }
+    const property_h = { key: 'key', value: '1m', operator: 'is_date_before' }
     expect(matchProperty(property_h, { key: '2022-03-01 00:00:00 GMT' })).toBe(true)
     expect(matchProperty(property_h, { key: '2022-04-05 00:00:00 GMT' })).toBe(false)
 
-    const property_i = { key: 'key', value: '1y', operator: 'is_relative_date_before' }
+    const property_i = { key: 'key', value: '-1y', operator: 'is_date_before' }
     expect(matchProperty(property_i, { key: '2021-04-28 00:00:00 GMT' })).toBe(true)
     expect(matchProperty(property_i, { key: '2021-05-01 00:00:01 GMT' })).toBe(false)
 
-    const property_j = { key: 'key', value: '122h', operator: 'is_relative_date_after' }
+    const property_j = { key: 'key', value: '122h', operator: 'is_date_after' }
     expect(matchProperty(property_j, { key: '2022-05-01 00:00:00 GMT' })).toBe(true)
     expect(matchProperty(property_j, { key: '2022-04-23 01:00:00 GMT' })).toBe(false)
 
-    const property_k = { key: 'key', value: '2d', operator: 'is_relative_date_after' }
+    const property_k = { key: 'key', value: '2d', operator: 'is_date_after' }
     expect(matchProperty(property_k, { key: '2022-05-01 00:00:00 GMT' })).toBe(true)
     expect(matchProperty(property_k, { key: '2022-04-29 00:00:01 GMT' })).toBe(true)
     expect(matchProperty(property_k, { key: '2022-04-29 00:00:00 GMT' })).toBe(false)
 
-    const property_l = { key: 'key', value: '02w', operator: 'is_relative_date_after' }
+    const property_l = { key: 'key', value: '02w', operator: 'is_date_after' }
     expect(matchProperty(property_l, { key: '2022-05-01 00:00:00 GMT' })).toBe(true)
     expect(matchProperty(property_l, { key: '2022-04-16 00:00:00 GMT' })).toBe(false)
 
-    const property_m = { key: 'key', value: '1m', operator: 'is_relative_date_after' }
+    const property_m = { key: 'key', value: '-1m', operator: 'is_date_after' }
     expect(matchProperty(property_m, { key: '2022-04-01 00:00:01 GMT' })).toBe(true)
     expect(matchProperty(property_m, { key: '2022-04-01 00:00:00 GMT' })).toBe(false)
 
-    const property_n = { key: 'key', value: '1y', operator: 'is_relative_date_after' }
+    const property_n = { key: 'key', value: '1y', operator: 'is_date_after' }
     expect(matchProperty(property_n, { key: '2022-05-01 00:00:00 GMT' })).toBe(true)
     expect(matchProperty(property_n, { key: '2021-05-01 00:00:01 GMT' })).toBe(true)
     expect(matchProperty(property_n, { key: '2021-05-01 00:00:00 GMT' })).toBe(false)
