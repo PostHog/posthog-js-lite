@@ -1,3 +1,7 @@
+#
+
+1. Do not try to load packages on the macOS target that are not supported.
+
 # 2.11.0 - 2024-01-23
 
 1. Adds support for overriding the event `uuid` via capture options
