@@ -62,3 +62,6 @@ yarn-error.log
 .metro-health-check*
 
 yarn.lock
+yalc.lock
+package-lock.json
+Gemfile.lock
