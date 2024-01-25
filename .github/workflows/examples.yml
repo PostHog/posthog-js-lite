@@ -8,7 +8,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  tests:
+  build-macos:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,6 +20,7 @@ jobs:
         run: |
             cd examples/example_rn_macos
             yarn global add yalc
+            yarn install
             npx react-native-macos-init
             make install
             make build
