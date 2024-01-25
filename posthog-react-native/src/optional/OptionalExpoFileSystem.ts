@@ -9,7 +9,9 @@ try {
   // See https://github.com/PostHog/posthog-js-lite/issues/140
   // Once expo-file-system is supported on web/macos, we can remove this try/catch block
   // For now, use the react-native-async-storage/async-storage package instead
-  if (Platform.OS !== 'web' && Platform.OS !== 'macos') {
-    OptionalExpoFileSystem = require('expo-file-system')
-  }
+  OptionalExpoFileSystem = Platform.select({
+    web: undefined,
+    macos: undefined,
+    default: require('expo-file-system'),
+  })
 } catch (e) {}
