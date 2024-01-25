@@ -56,11 +56,15 @@ yarn-error.log
 *.jsbundle
 
 # Ruby / CocoaPods
-macos/Podfile.lock
+/ios/Pods/
+/ios/Podfile.lock
 /vendor/bundle/
 
 # Temporary files created by Metro to check the health of the file watcher
 .metro-health-check*
+
+# testing
+/coverage
 
 yarn.lock
 yalc.lock
