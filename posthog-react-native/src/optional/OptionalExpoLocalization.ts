@@ -5,7 +5,8 @@ export let OptionalExpoLocalization: typeof ExpoLocalization | undefined = undef
 
 try {
   // macos not supported
-  if (Platform.OS !== 'macos') {
-    OptionalExpoLocalization = require('expo-localization')
-  }
+  OptionalExpoLocalization = Platform.select({
+    macos: undefined,
+    default: require('expo-localization'),
+  })
 } catch (e) {}

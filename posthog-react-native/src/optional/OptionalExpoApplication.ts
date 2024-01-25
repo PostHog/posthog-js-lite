@@ -5,7 +5,8 @@ export let OptionalExpoApplication: typeof ExpoApplication | undefined = undefin
 
 try {
   // macos not supported
-  if (Platform.OS !== 'macos') {
-    OptionalExpoApplication = require('expo-application')
-  }
+  OptionalExpoApplication = Platform.select({
+    macos: undefined,
+    default: require('expo-application'),
+  })
 } catch (e) {}
