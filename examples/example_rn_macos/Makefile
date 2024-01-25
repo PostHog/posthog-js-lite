@@ -1,4 +1,4 @@
-.PHONY: clean
+.PHONY: clean install run
 
 # Xcode build fails with 'butter/map.h' file not found
 # https://github.com/facebook/react-native/issues/38520#issuecomment-1764167506
