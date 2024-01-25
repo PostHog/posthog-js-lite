@@ -5,7 +5,9 @@ export let OptionalReactNativeNavigationWix: typeof ReactNativeNavigationWix | u
 
 try {
   // macos/web not supported
-  if (Platform.OS !== 'web' && Platform.OS !== 'macos') {
-    OptionalReactNativeNavigationWix = require('react-native-navigation')
-  }
+  OptionalReactNativeNavigationWix = Platform.select({
+    macos: undefined,
+    web: undefined,
+    default: require('react-native-navigation'),
+  })
 } catch (e) {}

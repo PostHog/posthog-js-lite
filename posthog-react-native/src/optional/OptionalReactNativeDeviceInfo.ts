@@ -5,7 +5,8 @@ export let OptionalReactNativeDeviceInfo: typeof ReactNativeDeviceInfo | undefin
 
 try {
   // macos not supported
-  if (Platform.OS !== 'macos') {
-    OptionalReactNativeDeviceInfo = require('react-native-device-info') // No Web support, returns unknown
-  }
+  OptionalReactNativeDeviceInfo = Platform.select({
+    macos: undefined,
+    default: require('react-native-device-info'), // No Web support, returns unknown
+  })
 } catch (e) {}

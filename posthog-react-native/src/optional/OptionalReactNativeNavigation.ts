@@ -5,8 +5,9 @@ export let OptionalReactNativeNavigation: typeof ReactNativeNavigation | undefin
 
 try {
   // macos not supported
-  if (Platform.OS !== 'macos') {
+  OptionalReactNativeNavigation = Platform.select({
+    macos: undefined,
     // experimental support for web https://reactnavigation.org/docs/web-support/
-    OptionalReactNativeNavigation = require('@react-navigation/native')
-  }
+    default: require('@react-navigation/native'),
+  })
 } catch (e) {}
