@@ -1,4 +1,4 @@
-.PHONY: clean install run
+.PHONY: clean install run build
 
 # Xcode build fails with 'butter/map.h' file not found
 # https://github.com/facebook/react-native/issues/38520#issuecomment-1764167506
@@ -10,3 +10,6 @@ install:
 
 run:
 	yarn macos
+
+build:
+	xcodebuild -workspace macos/example_rn_macos.xcworkspace -configuration Debug -scheme example_rn_macos-macOS
