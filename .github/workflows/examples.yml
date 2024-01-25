@@ -20,5 +20,6 @@ jobs:
         run: |
             cd examples/example_rn_macos
             yarn global add yalc
+            npx react-native-macos-init
             make install
             make build
