@@ -1,6 +1,11 @@
-# 2.11.1 - 2024-01-18
+# 2.11.2 - 2024-01-18
 
 1. Swapped to `uuidv7` for unique ID generation
+
+# 2.11.1 - 2024-01-25
+
+1. Do not try to load packages on the macOS target that are not supported.
+2. Use `Platform.select` instead `Platform.OS` for conditional imports which avoids issues such as `Unable to resolve module`.
 
 # 2.11.0 - 2024-01-23
 
