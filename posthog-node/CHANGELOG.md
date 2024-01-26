@@ -1,3 +1,7 @@
+## 3.5.1 - 2024-01-26
+
+1. Remove new relative date operators, combine into regular date operators
+
 # 3.5.0 - 2024-01-09
 
 1. When local evaluation is enabled, we automatically add flag information to all events sent to PostHog, whenever possible. This makes it easier to use these events in experiments.
