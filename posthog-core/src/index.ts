@@ -18,11 +18,11 @@ import {
   retriable,
   RetriableOptions,
   safeSetTimeout,
-} from './utils/utils'
-export * as utils from './utils/utils'
+} from './utils'
+export * as utils from './utils'
 import { LZString } from './lz-string'
 import { SimpleEventEmitter } from './eventemitter'
-import { uuidv7 } from './utils/uuidv7'
+import { uuidv7 } from 'uuidv7'
 
 class PostHogFetchHttpError extends Error {
   name = 'PostHogFetchHttpError'

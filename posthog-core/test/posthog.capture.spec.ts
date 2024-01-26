@@ -1,6 +1,6 @@
 import { parseBody } from './test-utils/test-utils'
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
-import { uuidv7 } from '../src/utils/uuidv7'
+import { uuidv7 } from 'uuidv7'
 
 describe('PostHog Core', () => {
   let posthog: PostHogCoreTestClient
