@@ -1,6 +1,10 @@
-## 3.5.1 - 2024-01-26
+## 3.6.1 - 2024-01-26
 
 1. Remove new relative date operators, combine into regular date operators
+
+# 3.6.0 - 2024-01-18
+
+1. Adds support for overriding the event `uuid`
 
 # 3.5.0 - 2024-01-09
 

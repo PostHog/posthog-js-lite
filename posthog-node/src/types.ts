@@ -1,16 +1,17 @@
 import { JsonType } from '../../posthog-core/src'
 
-export interface IdentifyMessageV1 {
+export interface IdentifyMessage {
   distinctId: string
   properties?: Record<string | number, any>
   disableGeoip?: boolean
 }
 
-export interface EventMessageV1 extends IdentifyMessageV1 {
+export interface EventMessage extends IdentifyMessage {
   event: string
   groups?: Record<string, string | number> // Mapping of group type to group id
   sendFeatureFlags?: boolean
   timestamp?: Date
+  uuid?: string
 }
 
 export interface GroupIdentifyMessage {
@@ -75,7 +76,7 @@ export type PostHogNodeV1 = {
    * @param groups OPTIONAL | object of what groups are related to this event, example: { company: 'id:5' }. Can be used to analyze companies instead of users.
    * @param sendFeatureFlags OPTIONAL | Used with experiments. Determines whether to send feature flag values with the event.
    */
-  capture({ distinctId, event, properties, groups, sendFeatureFlags }: EventMessageV1): void
+  capture({ distinctId, event, properties, groups, sendFeatureFlags }: EventMessage): void
 
   /**
    * @description Identify lets you add metadata on your users so you can more easily identify who they are in PostHog,
@@ -84,7 +85,7 @@ export type PostHogNodeV1 = {
    * @param distinctId which uniquely identifies your user
    * @param properties with a dict with any key: value pairs
    */
-  identify({ distinctId, properties }: IdentifyMessageV1): void
+  identify({ distinctId, properties }: IdentifyMessage): void
 
   /**
    * @description To marry up whatever a user does before they sign up or log in with what they do after you need to make an alias call.

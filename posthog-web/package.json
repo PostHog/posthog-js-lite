@@ -1,12 +1,12 @@
 {
   "name": "posthog-js-lite",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "main": "lib/index.cjs.js",
   "module": "lib/index.esm.js",
   "types": "lib/index.d.ts",
   "repository": {
-    "type" : "git",
-    "url" : "https://github.com/PostHog/posthog-js-lite.git",
+    "type": "git",
+    "url": "https://github.com/PostHog/posthog-js-lite.git",
     "directory": "posthog-web"
   },
   "scripts": {

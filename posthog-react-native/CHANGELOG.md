@@ -1,3 +1,12 @@
+# 2.11.1 - 2024-01-25
+
+1. Do not try to load packages on the macOS target that are not supported.
+2. Use `Platform.select` instead `Platform.OS` for conditional imports which avoids issues such as `Unable to resolve module`.
+
+# 2.11.0 - 2024-01-23
+
+1. Adds support for overriding the event `uuid` via capture options
+
 # 2.10.2 - 2024-01-22
 
 1. Do not try to load the `expo-file-system` package on the Web target since it's not supported.

@@ -10,6 +10,7 @@ export const getLegacyValues = async (): Promise<{ distinctId?: string; anonymou
     return
   }
 
+  // legacy didn't support macos, no need to check it
   if (Platform.OS === 'ios') {
     const posthogFileDirectory = `${OptionalExpoFileSystem.documentDirectory}../Library/Application%20Support/${OptionalExpoApplication.applicationId}/`
     const posthogDistinctIdFile = posthogFileDirectory + 'posthog.distinctId'

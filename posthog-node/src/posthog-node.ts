@@ -10,7 +10,7 @@ import {
   PostHogPersistedProperty,
 } from '../../posthog-core/src'
 import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
-import { EventMessageV1, GroupIdentifyMessage, IdentifyMessageV1, PostHogNodeV1 } from './types'
+import { EventMessage, GroupIdentifyMessage, IdentifyMessage, PostHogNodeV1 } from './types'
 import { FeatureFlagsPoller } from './feature-flags'
 import fetch from './fetch'
 
@@ -100,9 +100,18 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     this.featureFlagsPoller?.debug(enabled)
   }
 
-  capture({ distinctId, event, properties, groups, sendFeatureFlags, timestamp, disableGeoip }: EventMessageV1): void {
-    const _capture = (props: EventMessageV1['properties']): void => {
-      super.captureStateless(distinctId, event, props, { timestamp, disableGeoip })
+  capture({
+    distinctId,
+    event,
+    properties,
+    groups,
+    sendFeatureFlags,
+    timestamp,
+    disableGeoip,
+    uuid,
+  }: EventMessage): void {
+    const _capture = (props: EventMessage['properties']): void => {
+      super.captureStateless(distinctId, event, props, { timestamp, disableGeoip, uuid })
     }
 
     // :TRICKY: If we flush, or need to shut down, to not lose events we want this promise to resolve before we flush
@@ -155,7 +164,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     this.addPendingPromise(capturePromise)
   }
 
-  identify({ distinctId, properties, disableGeoip }: IdentifyMessageV1): void {
+  identify({ distinctId, properties, disableGeoip }: IdentifyMessage): void {
     // Catch properties passed as $set and move them to the top level
     const personProperties = properties?.$set || properties
 
