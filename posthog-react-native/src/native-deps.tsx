@@ -1,92 +1,108 @@
-import { Platform } from 'react-native'
-import { OptionalAsyncStorage } from './optional/OptionalAsyncStorage'
-import { OptionalExpoApplication } from './optional/OptionalExpoApplication'
-import { OptionalExpoDevice } from './optional/OptionalExpoDevice'
-import { OptionalExpoFileSystem } from './optional/OptionalExpoFileSystem'
-import { OptionalExpoLocalization } from './optional/OptionalExpoLocalization'
-import { OptionalReactNativeDeviceInfo } from './optional/OptionalReactNativeDeviceInfo'
-import { PostHogCustomAppProperties, PostHogCustomAsyncStorage } from './types'
+import { Platform } from "react-native";
+import { OptionalAsyncStorage } from "./optional/OptionalAsyncStorage";
+import { OptionalExpoApplication } from "./optional/OptionalExpoApplication";
+import { OptionalExpoDevice } from "./optional/OptionalExpoDevice";
+import { OptionalExpoFileSystem } from "./optional/OptionalExpoFileSystem";
+import { OptionalExpoLocalization } from "./optional/OptionalExpoLocalization";
+import { OptionalReactNativeDeviceInfo } from "./optional/OptionalReactNativeDeviceInfo";
+import { PostHogCustomAppProperties, PostHogStorage } from "./types";
 
 export const getAppProperties = (): PostHogCustomAppProperties => {
-  var deviceType = 'Mobile'
+  var deviceType = "Mobile";
 
-  if (Platform.OS === 'macos' || Platform.OS === 'windows') {
-    deviceType = 'Desktop'
-  } else if (Platform.OS === 'web') {
-    deviceType = 'Web'
+  if (Platform.OS === "macos" || Platform.OS === "windows") {
+    deviceType = "Desktop";
+  } else if (Platform.OS === "web") {
+    deviceType = "Web";
   }
 
   const properties: PostHogCustomAppProperties = {
     $device_type: deviceType,
-  }
+  };
 
   if (OptionalExpoApplication) {
-    properties.$app_build = OptionalExpoApplication.nativeBuildVersion
-    properties.$app_name = OptionalExpoApplication.applicationName
-    properties.$app_namespace = OptionalExpoApplication.applicationId
-    properties.$app_version = OptionalExpoApplication.nativeApplicationVersion
+    properties.$app_build = OptionalExpoApplication.nativeBuildVersion;
+    properties.$app_name = OptionalExpoApplication.applicationName;
+    properties.$app_namespace = OptionalExpoApplication.applicationId;
+    properties.$app_version = OptionalExpoApplication.nativeApplicationVersion;
   }
 
   if (OptionalExpoDevice) {
-    properties.$device_manufacturer = OptionalExpoDevice.manufacturer
-    properties.$device_name = OptionalExpoDevice.modelName
-    properties.$os_name = OptionalExpoDevice.osName
-    properties.$os_version = OptionalExpoDevice.osVersion
+    properties.$device_manufacturer = OptionalExpoDevice.manufacturer;
+    properties.$device_name = OptionalExpoDevice.modelName;
+    properties.$os_name = OptionalExpoDevice.osName;
+    properties.$os_version = OptionalExpoDevice.osVersion;
   }
 
   if (OptionalExpoLocalization) {
-    properties.$locale = OptionalExpoLocalization.locale
-    properties.$timezone = OptionalExpoLocalization.timezone
+    properties.$locale = OptionalExpoLocalization.locale;
+    properties.$timezone = OptionalExpoLocalization.timezone;
   }
 
   if (OptionalReactNativeDeviceInfo) {
-    properties.$app_build = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getBuildIdSync())
-    properties.$app_name = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getApplicationName())
-    properties.$app_namespace = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getBundleId())
-    properties.$app_version = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getVersion())
-    properties.$device_manufacturer = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getManufacturerSync())
-    properties.$device_name = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getDeviceNameSync())
-    properties.$os_name = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getSystemName())
-    properties.$os_version = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getSystemVersion())
+    properties.$app_build = returnPropertyIfNotUnknown(
+      OptionalReactNativeDeviceInfo.getBuildIdSync()
+    );
+    properties.$app_name = returnPropertyIfNotUnknown(
+      OptionalReactNativeDeviceInfo.getApplicationName()
+    );
+    properties.$app_namespace = returnPropertyIfNotUnknown(
+      OptionalReactNativeDeviceInfo.getBundleId()
+    );
+    properties.$app_version = returnPropertyIfNotUnknown(
+      OptionalReactNativeDeviceInfo.getVersion()
+    );
+    properties.$device_manufacturer = returnPropertyIfNotUnknown(
+      OptionalReactNativeDeviceInfo.getManufacturerSync()
+    );
+    properties.$device_name = returnPropertyIfNotUnknown(
+      OptionalReactNativeDeviceInfo.getDeviceNameSync()
+    );
+    properties.$os_name = returnPropertyIfNotUnknown(
+      OptionalReactNativeDeviceInfo.getSystemName()
+    );
+    properties.$os_version = returnPropertyIfNotUnknown(
+      OptionalReactNativeDeviceInfo.getSystemVersion()
+    );
   }
 
-  return properties
-}
+  return properties;
+};
 
 // react-native-device-info returns 'unknown' if the property is not available (Web target)
 const returnPropertyIfNotUnknown = (value: string | null): string | null => {
-  if (value !== 'unknown') {
-    return value
+  if (value !== "unknown") {
+    return value;
   }
-  return null
-}
+  return null;
+};
 
-export const buildOptimisiticAsyncStorage = (): PostHogCustomAsyncStorage => {
+export const buildOptimisiticAsyncStorage = (): PostHogStorage => {
   if (OptionalExpoFileSystem) {
-    const filesystem = OptionalExpoFileSystem
+    const filesystem = OptionalExpoFileSystem;
     return {
       async getItem(key: string) {
-        const uri = (filesystem.documentDirectory || '') + key
+        const uri = (filesystem.documentDirectory || "") + key;
         try {
-          const stringContent = await filesystem.readAsStringAsync(uri)
-          return stringContent
+          const stringContent = await filesystem.readAsStringAsync(uri);
+          return stringContent;
         } catch (e) {
-          return null
+          return null;
         }
       },
 
       async setItem(key: string, value: string) {
-        const uri = (filesystem.documentDirectory || '') + key
-        await filesystem.writeAsStringAsync(uri, value)
+        const uri = (filesystem.documentDirectory || "") + key;
+        await filesystem.writeAsStringAsync(uri, value);
       },
-    }
+    };
   }
 
   if (OptionalAsyncStorage) {
-    return OptionalAsyncStorage
+    return OptionalAsyncStorage;
   }
 
   throw new Error(
-    'PostHog: No storage available. Please install expo-filesystem or react-native-async-storage OR implement a custom storage provider.'
-  )
-}
+    "PostHog: No storage available. Please install expo-filesystem or react-native-async-storage OR implement a custom storage provider."
+  );
+};
