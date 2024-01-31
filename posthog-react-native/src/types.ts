@@ -1,51 +1,51 @@
 export type PostHogAutocaptureNavigationTrackerOptions = {
-  routeToName?: (name: string, params: any) => string;
-  routeToProperties?: (name: string, params: any) => Record<string, any>;
-};
+  routeToName?: (name: string, params: any) => string
+  routeToProperties?: (name: string, params: any) => Record<string, any>
+}
 
 export type PostHogAutocaptureOptions = {
   // Touches
-  captureTouches?: boolean;
-  customLabelProp?: string;
-  noCaptureProp?: string;
-  maxElementsCaptured?: number;
-  ignoreLabels?: string[];
-  propsToCapture?: string[];
+  captureTouches?: boolean
+  customLabelProp?: string
+  noCaptureProp?: string
+  maxElementsCaptured?: number
+  ignoreLabels?: string[]
+  propsToCapture?: string[]
 
   // Navigation
-  captureScreens?: boolean;
-  navigation?: PostHogAutocaptureNavigationTrackerOptions;
+  captureScreens?: boolean
+  navigation?: PostHogAutocaptureNavigationTrackerOptions
 
   // LifecycleEvents
-  captureLifecycleEvents?: boolean;
-};
+  captureLifecycleEvents?: boolean
+}
 
 export interface PostHogCustomAppProperties {
   /** Build number like "1.2.2" or "122" */
-  $app_build?: string | null;
+  $app_build?: string | null
   /** Name of the app as displayed below the icon like "PostHog" */
-  $app_name?: string | null;
+  $app_name?: string | null
   /** Namespace of the app usually like "com.posthog.app" */
-  $app_namespace?: string | null;
+  $app_namespace?: string | null
   /** Human friendly app version like what a user would see in the app store like "1.2.2" */
-  $app_version?: string | null;
+  $app_version?: string | null
   /** Manufacturer like "Apple", "Samsung" or "Android" */
-  $device_manufacturer?: string | null;
+  $device_manufacturer?: string | null
   /** Readable model name like "iPhone 12" */
-  $device_name?: string | null;
+  $device_name?: string | null
   /** Device type ("Mobile" | "Desktop" | "Web") */
-  $device_type?: string | null;
+  $device_type?: string | null
   /** Operating system name like iOS or Android */
-  $os_name?: string | null;
+  $os_name?: string | null
   /** Operating system version "14.0" */
-  $os_version?: string | null;
+  $os_version?: string | null
   /** Locale (language) of the device like "en-US" */
-  $locale?: string | null;
+  $locale?: string | null
   /** Timezone of the device like "Europe/Berlin" */
-  $timezone?: string | null;
+  $timezone?: string | null
 }
 
 export interface PostHogStorage {
-  getItem: (key: string) => Promise<string | null>;
-  setItem: (key: string, value: string) => Promise<void>;
+  getItem: (key: string) => Promise<string | null>
+  setItem: (key: string, value: string) => Promise<void>
 }
