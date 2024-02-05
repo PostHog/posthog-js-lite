@@ -1,3 +1,5 @@
-/posthog-react-native/              @marandaneto
-/examples/example-react-native/     @marandaneto
-/posthog-core/                      @marandaneto
+/posthog-react-native/                 @marandaneto
+/examples/example_rn/                  @marandaneto
+/examples/example_rn_macos/            @marandaneto
+/examples/example_rn_new_architecture/ @marandaneto
+/posthog-core/                         @marandaneto

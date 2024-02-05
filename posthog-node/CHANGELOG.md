@@ -1,6 +1,10 @@
-# 3.6.1 - 2024-01-18
+# 3.6.2 - 2024-02-05
 
 1. Swapped to `uuidv7` for unique ID generation
+
+## 3.6.1 - 2024-01-26
+
+1. Remove new relative date operators, combine into regular date operators
 
 # 3.6.0 - 2024-01-18
 
