@@ -31,7 +31,7 @@ jobs:
           node-version: 16
 
       - run: yarn install
-      - run: yarn compile
+      - run: yarn build
       - run: yarn lint
       - run: yarn prettier:check
 

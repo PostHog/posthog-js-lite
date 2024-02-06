@@ -14,7 +14,6 @@ import {
   assert,
   currentISOTime,
   currentTimestamp,
-  generateUUID,
   removeTrailingSlash,
   retriable,
   RetriableOptions,
@@ -23,6 +22,7 @@ import {
 export * as utils from './utils'
 import { LZString } from './lz-string'
 import { SimpleEventEmitter } from './eventemitter'
+import { uuidv7 } from 'uuidv7'
 
 class PostHogFetchHttpError extends Error {
   name = 'PostHogFetchHttpError'
@@ -142,7 +142,7 @@ export abstract class PostHogCoreStateless {
   }
 
   protected addPendingPromise(promise: Promise<any>): void {
-    const promiseUUID = generateUUID()
+    const promiseUUID = uuidv7()
     this.pendingPromises[promiseUUID] = promise
     promise.finally(() => {
       delete this.pendingPromises[promiseUUID]
@@ -414,7 +414,7 @@ export abstract class PostHogCoreStateless {
       library: this.getLibraryId(),
       library_version: this.getLibraryVersion(),
       timestamp: options?.timestamp ? options?.timestamp : currentISOTime(),
-      uuid: options?.uuid ? options.uuid : generateUUID(globalThis),
+      uuid: options?.uuid ? options.uuid : uuidv7(),
     }
 
     const addGeoipDisableProperty = options?.disableGeoip ?? this.disableGeoip
@@ -696,7 +696,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     let sessionId = this.getPersistedProperty<string>(PostHogPersistedProperty.SessionId)
     const sessionTimestamp = this.getPersistedProperty<number>(PostHogPersistedProperty.SessionLastTimestamp) || 0
     if (!sessionId || Date.now() - sessionTimestamp > this._sessionExpirationTimeSeconds * 1000) {
-      sessionId = generateUUID(globalThis)
+      sessionId = uuidv7()
       this.setPersistedProperty(PostHogPersistedProperty.SessionId, sessionId)
     }
     this.setPersistedProperty(PostHogPersistedProperty.SessionLastTimestamp, Date.now())
@@ -711,7 +711,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   getAnonymousId(): string {
     let anonId = this.getPersistedProperty<string>(PostHogPersistedProperty.AnonymousId)
     if (!anonId) {
-      anonId = generateUUID(globalThis)
+      anonId = uuidv7()
       this.setPersistedProperty(PostHogPersistedProperty.AnonymousId, anonId)
     }
     return anonId

@@ -1,3 +1,7 @@
+# 2.6.1 - 2024-02-06
+
+1. Swapped to `uuidv7` for unique ID generation
+
 # 2.6.0 - 2024-01-18
 
 1. Adds support for overriding the event `uuid` via capture options

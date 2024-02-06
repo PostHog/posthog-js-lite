@@ -1,3 +1,7 @@
+# 2.11.2 - 2024-02-06
+
+1. Swapped to `uuidv7` for unique ID generation
+
 # 2.11.1 - 2024-01-25
 
 1. Do not try to load packages on the macOS target that are not supported.

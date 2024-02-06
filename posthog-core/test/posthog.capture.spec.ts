@@ -1,6 +1,6 @@
 import { parseBody } from './test-utils/test-utils'
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
-import { generateUUID } from '../src/utils'
+import { uuidv7 } from 'uuidv7'
 
 describe('PostHog Core', () => {
   let posthog: PostHogCoreTestClient
@@ -67,7 +67,7 @@ describe('PostHog Core', () => {
     it('should allow overriding the uuid', async () => {
       jest.setSystemTime(new Date('2022-01-01'))
 
-      const id = generateUUID()
+      const id = uuidv7()
 
       posthog.capture('custom-event', { foo: 'bar' }, { uuid: id })
       const body = parseBody(mocks.fetch.mock.calls[0])
