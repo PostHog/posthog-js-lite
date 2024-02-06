@@ -1,4 +1,4 @@
-# 3.6.21 - 2024-02-06
+# 3.6.2 - 2024-02-06
 
 1. Swapped to `uuidv7` for unique ID generation
 
