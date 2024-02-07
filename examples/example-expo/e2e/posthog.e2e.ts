@@ -14,7 +14,7 @@ const commonProperties = {
   $app_namespace: 'host.exp.Exponent',
   $app_version: '2.24.3',
   $device_manufacturer: 'Apple',
-  $device_name: 'my iPhone',
+  $device_name: 'Max iPhone',
   $device_model: 'iPhone 12 Pro',
   $lib: 'posthog-react-native',
   $lib_version: jestExpect.any(String),
