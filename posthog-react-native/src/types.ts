@@ -21,7 +21,7 @@ export type PostHogAutocaptureOptions = {
 }
 
 export interface PostHogCustomAppProperties {
-  /** Build number like "122" */
+  /** Build number like "1.2.2" or "122" */
   $app_build?: string | null
   /** Name of the app as displayed below the icon like "PostHog" */
   $app_name?: string | null
