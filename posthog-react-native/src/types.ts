@@ -31,9 +31,9 @@ export interface PostHogCustomAppProperties {
   $app_version?: string | null
   /** Manufacturer like "Apple", "Samsung" or "Android" */
   $device_manufacturer?: string | null
-  /** Readable device name like "my iPhone" */
+  /** Readable device name like "Max iPhone" */
   $device_name?: string | null
-  /** Readable model name like "iPhone 12" */
+  /** Device model like "iPhone 12" */
   $device_model?: string | null
   /** Device type ("Mobile" | "Desktop" | "Web") */
   $device_type?: string | null

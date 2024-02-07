@@ -46,7 +46,7 @@ export const getAppProperties = (): PostHogCustomAppProperties => {
     properties.$app_namespace = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getBundleId())
     properties.$app_version = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getVersion())
     properties.$device_manufacturer = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getManufacturerSync())
-    properties.$device_name = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getDeviceSync()) // industrial design?
+    properties.$device_name = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getDeviceSync())
     properties.$device_model = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getModel())
     properties.$os_name = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getSystemName())
     properties.$os_version = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getSystemVersion())

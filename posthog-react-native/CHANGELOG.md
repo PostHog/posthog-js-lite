@@ -1,3 +1,7 @@
+# 2.11.3 - 2024-02-07
+
+1. Add `$device_model` property and set it to the device model for all events
+
 # 2.11.2 - 2024-02-06
 
 1. Swapped to `uuidv7` for unique ID generation
