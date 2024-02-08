@@ -1,3 +1,6 @@
+// fix: Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+
 // vendor from: https://github.com/LiosK/uuidv7/blob/f30b7a7faff73afbce0b27a46c638310f96912ba/src/index.ts
 // https://github.com/LiosK/uuidv7#license
 
