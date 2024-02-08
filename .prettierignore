@@ -1,4 +1,4 @@
 lib
 
 posthog-react-native/src/version.ts
-posthog-core/src/vendor/uuidv7.ts
+posthog-core/src/vendor/*
