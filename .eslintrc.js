@@ -9,7 +9,7 @@ const extend = [
 const plugins = ['prettier', 'react', '@typescript-eslint', 'eslint-plugin-react-hooks', 'eslint-plugin-jest']
 
 module.exports = {
-  ignorePatterns: ['node_modules', 'examples', 'lib'],
+  ignorePatterns: ['node_modules', 'examples', 'lib', "vendor"],
   env: {
     browser: true,
     es6: true,
