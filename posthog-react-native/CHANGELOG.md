@@ -1,3 +1,8 @@
+# Next
+
+1. `$app_build` was returning the OS internal build number instead of the app's build number.
+  1. This flag was used to track app versions, you might experience a sudden increase of `Application Updated` events, but only if you're using the `react-native-device-info` library.
+
 # 2.11.3 - 2024-02-08
 
 1. Vendor `uuidv7` instead of using peer dependency to avoid the missing crypto issue
