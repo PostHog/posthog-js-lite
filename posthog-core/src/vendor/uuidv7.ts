@@ -1,4 +1,5 @@
 // vendor from: https://github.com/LiosK/uuidv7/blob/f30b7a7faff73afbce0b27a46c638310f96912ba/src/index.ts
+// https://github.com/LiosK/uuidv7#license
 
 /**
  * uuidv7: An experimental implementation of the proposed UUID Version 7
