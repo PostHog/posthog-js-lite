@@ -1,6 +1,8 @@
-# 2.11.3 - 2024-02-07
+# 2.11.3 - 2024-02-08
 
-1. Add `$device_model` property and set it to the device model for all events
+1. Vendor `uuidv7` instead of using peer dependency to avoid the missing crypto issue
+2. Add `$device_model` property and set it to the device model for all events
+  1. `$device_name` was set to the device model for all events wrongly, it's now set to the device name for all events
 
 # 2.11.2 - 2024-02-06
 
