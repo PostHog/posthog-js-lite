@@ -22,7 +22,7 @@ import {
 export * as utils from './utils'
 import { LZString } from './lz-string'
 import { SimpleEventEmitter } from './eventemitter'
-import { uuidv7 } from 'uuidv7'
+import { uuidv7 } from './vendor/uuidv7'
 
 class PostHogFetchHttpError extends Error {
   name = 'PostHogFetchHttpError'

@@ -1,3 +1,7 @@
+# 2.11.3 - 2024-02-08
+
+1. Vendor `uuidv7` instead of using peer dependency to avoid the missing crypto issue
+
 # 2.11.2 - 2024-02-06
 
 1. Swapped to `uuidv7` for unique ID generation
