@@ -533,6 +533,16 @@ export abstract class PostHogCoreStateless {
         })
     )
   }
+  private removeItemsFromQueue(length: number): void {
+    const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
+
+    if (!queue.length) {
+      return
+    }
+
+    queue.splice(0, length)
+    this.setPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue, queue)
+  }
 
   private async fetchWithRetry(
     url: string,
