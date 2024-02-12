@@ -57,6 +57,7 @@ export abstract class PostHogCoreStateless {
   private removeDebugCallback?: () => void
   private debugMode: boolean = false
   private disableGeoip: boolean = true
+  private isFlushing: boolean = false
 
   private _optoutOverride: boolean | undefined
   private pendingPromises: Record<string, Promise<any>> = {}
@@ -456,6 +457,12 @@ export abstract class PostHogCoreStateless {
   }
 
   flush(callback?: (err?: any, data?: any) => void): void {
+    if (this.isFlushing) {
+      console.log('[PostHog] The Queue is already flushing.')
+      return
+    }
+    this.isFlushing = true
+
     if (this._flushTimer) {
       clearTimeout(this._flushTimer)
       this._flushTimer = null
@@ -464,6 +471,8 @@ export abstract class PostHogCoreStateless {
     const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
 
     if (!queue.length) {
+      console.log('[PostHog] The Queue is empty.')
+      this.isFlushing = false
       return callback?.()
     }
 
@@ -482,15 +491,22 @@ export abstract class PostHogCoreStateless {
         // depending on the error type, eg a malformed JSON or broken queue, it'll always return an error
         // and this will be an endless loop, in this case, if the error isn't a network issue, we always remove the items from the queue
         if (!(err instanceof PostHogFetchNetworkError)) {
+          console.log('[PostHog] There was an issue while flushing the Queue.', err)
           this.removeItemsFromQueue(items.length)
+        } else {
+          console.log('[PostHog] There was a network issue while flushing the Queue, will try again.', err)
         }
 
         this._events.emit('error', err)
       } else {
         this.removeItemsFromQueue(items.length)
+        console.log(`[PostHog] The Queue flushed ${items.length} items.`)
       }
+
       callback?.(err, messages)
       this._events.emit('flush', messages)
+
+      this.isFlushing = false
     }
 
     // Don't set the user agent if we're not on a browser. The latest spec allows
