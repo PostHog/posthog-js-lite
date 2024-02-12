@@ -468,7 +468,6 @@ export abstract class PostHogCoreStateless {
     }
 
     const items = queue.splice(0, this.flushAt)
-    this.setPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue, queue)
 
     const messages = items.map((item) => item.message)
 
@@ -480,7 +479,15 @@ export abstract class PostHogCoreStateless {
 
     const done = (err?: any): void => {
       if (err) {
+        // depending on the error type, eg a malformed JSON or broken queue, it'll always return an error
+        // and this will be an endless loop, in this case, if the error isn't a network issue, we always remove the items from the queue
+        if (!(err instanceof PostHogFetchNetworkError)) {
+          this.removeItemsFromQueue(items.length)
+        }
+
         this._events.emit('error', err)
+      } else {
+        this.removeItemsFromQueue(items.length)
       }
       callback?.(err, messages)
       this._events.emit('flush', messages)
