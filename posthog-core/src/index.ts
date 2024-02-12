@@ -459,6 +459,7 @@ export abstract class PostHogCoreStateless {
   flush(callback?: (err?: any, data?: any) => void): void {
     if (this.isFlushing) {
       console.log('[PostHog] The Queue is already flushing.')
+      callback?.()
       return
     }
     this.isFlushing = true
@@ -473,7 +474,8 @@ export abstract class PostHogCoreStateless {
     if (!queue.length) {
       console.log('[PostHog] The Queue is empty.')
       this.isFlushing = false
-      return callback?.()
+      callback?.()
+      return
     }
 
     const items = queue.splice(0, this.flushAt)
