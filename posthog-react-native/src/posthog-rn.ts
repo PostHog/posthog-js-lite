@@ -64,8 +64,6 @@ export class PostHog extends PostHogCore {
       }
 
       clientMap.set(apiKey, posthog)
-    } else {
-      console.warn('PostHog.initAsync called twice with the same apiKey. The first instance will be used.')
     }
 
     const resolved = await posthog
