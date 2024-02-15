@@ -12,6 +12,7 @@ describe('PostHog Core', () => {
         fetchRetryCount: 3,
         fetchRetryDelay: 100,
         preloadFeatureFlags: false,
+        captureMode: 'json',
       })
     })
     it("doesn't fail when queue is empty", async () => {
