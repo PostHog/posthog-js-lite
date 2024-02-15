@@ -2,6 +2,10 @@
 
 1. Swapped to `uuidv7` for unique ID generation
 
+# 2.6.1 - 2024-02-15
+
+1. fix: using `captureMode=form` won't throw an error and retry unnecessarily
+
 # 2.6.0 - 2024-01-18
 
 1. Adds support for overriding the event `uuid` via capture options
