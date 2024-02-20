@@ -1,3 +1,7 @@
+# 2.11.5 - 2024-02-20
+
+1. fix: undefined posthog in hooks
+
 # 2.11.4 - 2024-02-15
 
 1. fix: using `captureMode=form` won't throw an error and retry unnecessarily
