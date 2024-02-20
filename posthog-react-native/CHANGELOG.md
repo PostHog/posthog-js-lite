@@ -1,3 +1,7 @@
+# Next
+
+1. `$device_name` was set to the device's user name (eg Max's iPhone) for all events wrongly, it's now set to the device's name (eg iPhone 12), this happened only if using `react-native-device-info` library.
+
 # 2.11.5 - 2024-02-20
 
 1. fix: undefined posthog in hooks

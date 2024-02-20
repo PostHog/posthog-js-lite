@@ -29,6 +29,7 @@ export const getAppProperties = (): PostHogCustomAppProperties => {
 
   if (OptionalExpoDevice) {
     properties.$device_manufacturer = OptionalExpoDevice.manufacturer
+    // expo-device already maps the device model identifier to a human readable name
     properties.$device_name = OptionalExpoDevice.modelName
     properties.$os_name = OptionalExpoDevice.osName
     properties.$os_version = OptionalExpoDevice.osVersion
@@ -45,7 +46,8 @@ export const getAppProperties = (): PostHogCustomAppProperties => {
     properties.$app_namespace = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getBundleId())
     properties.$app_version = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getVersion())
     properties.$device_manufacturer = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getManufacturerSync())
-    properties.$device_name = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getDeviceNameSync())
+    // react-native-device-info already maps the device model identifier to a human readable name
+    properties.$device_name = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getModel())
     properties.$os_name = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getSystemName())
     properties.$os_version = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getSystemVersion())
   }
