@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "android": "react-native run-android",
+    "androidProd": "react-native run-android --mode release",
     "ios": "react-native run-ios",
+    "iosProd": "react-native run-ios --mode Release",
     "lint": "eslint .",
     "start": "react-native start",
     "test": "jest",

@@ -14,8 +14,8 @@ export const SharedPostHogProvider = (props: any) => {
     <PostHogProvider
       client={$posthog}
       autocapture={{
-        captureLifecycleEvents: false,
-        captureScreens: false,
+        captureLifecycleEvents: true,
+        captureScreens: true,
         captureTouches: true,
       }}
       debug>

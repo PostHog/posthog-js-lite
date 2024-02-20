@@ -1,7 +1,17 @@
-# 2.11.4 - 2024-02-08
+# 2.11.6 - 2024-02-20
 
 1. Add `$device_model` property and set it to the device model for all events
   1. `$device_name` was set to the device model for all events wrongly, it's now set to the device name for all events
+
+# 2.11.5 - 2024-02-20
+
+1. fix: undefined posthog in hooks
+
+# 2.11.4 - 2024-02-15
+
+1. fix: using `captureMode=form` won't throw an error and retry unnecessarily
+2. `$app_build` was returning the OS internal build number instead of the app's build number.
+  1. This flag was used to track app versions, you might experience a sudden increase of `Application Updated` events, but only if you're using the `react-native-device-info` library.
 
 # 2.11.3 - 2024-02-08
 
