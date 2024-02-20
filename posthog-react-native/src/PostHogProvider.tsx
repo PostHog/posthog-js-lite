@@ -17,13 +17,13 @@ export interface PostHogProviderProps {
   style?: StyleProp<ViewStyle>
 }
 
-function PostHogNavigationHook({ options }: { options?: PostHogAutocaptureOptions }): JSX.Element | null {
-  useNavigationTracker(options?.navigation)
+function PostHogNavigationHook({ options, client }: { options?: PostHogAutocaptureOptions, client?: PostHog }): JSX.Element | null {
+  useNavigationTracker(options?.navigation, client)
   return null
 }
 
-function PostHogLifecycleHook(): JSX.Element | null {
-  useLifecycleTracker()
+function PostHogLifecycleHook({ client }: { client?: PostHog }): JSX.Element | null {
+  useLifecycleTracker(client)
   return null
 }
 
@@ -100,8 +100,8 @@ export const PostHogProvider = ({
     >
       <PostHogContext.Provider value={{ client: posthog }}>
         <>
-          {captureScreens ? <PostHogNavigationHook options={autocaptureOptions} /> : null}
-          {captureLifecycle ? <PostHogLifecycleHook /> : null}
+          {captureScreens ? <PostHogNavigationHook options={autocaptureOptions} client={posthog} /> : null}
+          {captureLifecycle ? <PostHogLifecycleHook client={posthog} /> : null}
         </>
         {children}
       </PostHogContext.Provider>
