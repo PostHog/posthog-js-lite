@@ -17,7 +17,13 @@ export interface PostHogProviderProps {
   style?: StyleProp<ViewStyle>
 }
 
-function PostHogNavigationHook({ options, client }: { options?: PostHogAutocaptureOptions, client?: PostHog }): JSX.Element | null {
+function PostHogNavigationHook({
+  options,
+  client,
+}: {
+  options?: PostHogAutocaptureOptions
+  client?: PostHog
+}): JSX.Element | null {
   useNavigationTracker(options?.navigation, client)
   return null
 }
