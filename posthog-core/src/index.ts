@@ -550,7 +550,11 @@ export abstract class PostHogCoreStateless {
           // fetch will only throw on network errors or on timeouts
           throw new PostHogFetchNetworkError(e)
         }
-        if (res.status < 200 || res.status >= 400) {
+        // If we're in no-cors mode, we can't access the response status
+        // We only throw on HTTP errors if we're not in no-cors mode
+        // https://developer.mozilla.org/en-US/docs/Web/API/Request/mode#no-cors
+        const isNoCors = options.mode === 'no-cors'
+        if (!isNoCors && (res.status < 200 || res.status >= 400)) {
           throw new PostHogFetchHttpError(res)
         }
         return res

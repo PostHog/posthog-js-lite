@@ -1,3 +1,7 @@
+# 3.6.3 - 2024-02-15
+
+1. fix: using `captureMode=form` won't throw an error and retry unnecessarily
+
 # 3.6.2 - 2024-02-06
 
 1. Swapped to `uuidv7` for unique ID generation
