@@ -33,6 +33,12 @@ function PostHogLifecycleHook({ client }: { client?: PostHog }): JSX.Element | n
   return null
 }
 
+const isPromise = (value: any): value is Promise<PostHog> => {
+  // NOTE: We don't use `instanceof Promise` because we found that some SDKs patch the global Promise object
+  // See https://github.com/PostHog/posthog-js-lite/issues/182
+  return value && typeof value.then === 'function'
+}
+
 export const PostHogProvider = ({
   children,
   client,
@@ -43,7 +49,7 @@ export const PostHogProvider = ({
   debug = false,
 }: PostHogProviderProps): JSX.Element | null => {
   // Check if the client is a promise and resolve it if so
-  const [posthog, setPosthog] = useState<PostHog | undefined>(client instanceof Promise ? undefined : client)
+  const [posthog, setPosthog] = useState<PostHog | undefined>(isPromise(client) ? undefined : client)
 
   const autocaptureOptions = useMemo(
     () => (autocapture && typeof autocapture !== 'boolean' ? autocapture : {}),
@@ -66,7 +72,7 @@ export const PostHogProvider = ({
     }
 
     if (!posthog && client) {
-      if (client instanceof Promise) {
+      if (isPromise(client)) {
         client.then(setPosthog)
       } else {
         setPosthog(client)
