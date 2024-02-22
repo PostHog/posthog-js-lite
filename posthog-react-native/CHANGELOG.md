@@ -1,5 +1,7 @@
 # Next
 
+# 2.11.6 - 2024-02-22
+
 1. `$device_name` was set to the device's user name (eg Max's iPhone) for all events wrongly, it's now set to the device's name (eg iPhone 12), this happened only if using `react-native-device-info` library.
 2. Fixes an issue related to other dependencies patching the global Promise object that could lead to crashes
 
