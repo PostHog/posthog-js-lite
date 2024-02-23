@@ -42,9 +42,10 @@ export const PostHogProvider = ({
   style,
   debug = false,
 }: PostHogProviderProps): JSX.Element | null => {
-  // TODO: Provide an option for providing posthog in a disabled way
   if (!client || !apiKey) {
-    throw new Error('Either a PostHog client or an apiKey is required!')
+    throw new Error(
+      'Either a PostHog client or an apiKey is required. If want to use the PostHogProvider without a client, please provide an apiKey and the options={ disabled: true }.'
+    )
   }
 
   const posthog = useMemo(() => {
