@@ -1,6 +1,6 @@
 import { PostHogPersistedProperty } from '../src'
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
-import { parseBody } from './test-utils/test-utils'
+import { parseBody, waitForPromises } from './test-utils/test-utils'
 
 describe('PostHog Core', () => {
   let posthog: PostHogCoreTestClient
@@ -382,6 +382,7 @@ describe('PostHog Core', () => {
 
       it('should reload if groups are set', async () => {
         posthog.group('my-group', 'is-great')
+        await waitForPromises()
         expect(mocks.fetch).toHaveBeenCalledTimes(2)
         expect(JSON.parse(mocks.fetch.mock.calls[1][1].body || '')).toMatchObject({
           groups: { 'my-group': 'is-great' },

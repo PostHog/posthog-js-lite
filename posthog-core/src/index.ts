@@ -833,7 +833,6 @@ export abstract class PostHogCore extends PostHogCoreStateless {
         // We keep the AnonymousId to be used by decide calls and identify to link the previousId
         this.setPersistedProperty(PostHogPersistedProperty.AnonymousId, previousDistinctId)
         this.setPersistedProperty(PostHogPersistedProperty.DistinctId, distinctId)
-
         this.reloadFeatureFlags()
       }
 
@@ -1005,7 +1004,8 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   /***
    *** FEATURE FLAGS
    ***/
-  private decideAsync(sendAnonDistinctId: boolean = true): Promise<PostHogDecideResponse | undefined> {
+  private async decideAsync(sendAnonDistinctId: boolean = true): Promise<PostHogDecideResponse | undefined> {
+    await this._initPromise
     if (this._decideResponsePromise) {
       return this._decideResponsePromise
     }
@@ -1013,41 +1013,41 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   }
 
   private async _decideAsync(sendAnonDistinctId: boolean = true): Promise<PostHogDecideResponse | undefined> {
-    await this._initPromise
+    this._decideResponsePromise = this._initPromise
+      .then(() => {
+        const distinctId = this.getDistinctId()
+        const groups = this.props.$groups || {}
+        const personProperties =
+          this.getPersistedProperty<Record<string, string>>(PostHogPersistedProperty.PersonProperties) || {}
+        const groupProperties =
+          this.getPersistedProperty<Record<string, Record<string, string>>>(PostHogPersistedProperty.GroupProperties) ||
+          {}
 
-    const distinctId = this.getDistinctId()
-    const groups = this.props.$groups || {}
-    const personProperties =
-      this.getPersistedProperty<Record<string, string>>(PostHogPersistedProperty.PersonProperties) || {}
-    const groupProperties =
-      this.getPersistedProperty<Record<string, Record<string, string>>>(PostHogPersistedProperty.GroupProperties) || {}
-
-    const extraProperties = {
-      $anon_distinct_id: sendAnonDistinctId ? this.getAnonymousId() : undefined,
-    }
-
-    this._decideResponsePromise = super
-      .getDecide(distinctId, groups, personProperties, groupProperties, extraProperties)
-      .then((res) => {
-        if (res?.featureFlags) {
-          let newFeatureFlags = res.featureFlags
-          let newFeatureFlagPayloads = res.featureFlagPayloads
-          if (res.errorsWhileComputingFlags) {
-            // if not all flags were computed, we upsert flags instead of replacing them
-            const currentFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
-              PostHogPersistedProperty.FeatureFlags
-            )
-            const currentFlagPayloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
-              PostHogPersistedProperty.FeatureFlagPayloads
-            )
-            newFeatureFlags = { ...currentFlags, ...res.featureFlags }
-            newFeatureFlagPayloads = { ...currentFlagPayloads, ...res.featureFlagPayloads }
-          }
-          this.setKnownFeatureFlags(newFeatureFlags)
-          this.setKnownFeatureFlagPayloads(newFeatureFlagPayloads)
+        const extraProperties = {
+          $anon_distinct_id: sendAnonDistinctId ? this.getAnonymousId() : undefined,
         }
 
-        return res
+        return super.getDecide(distinctId, groups, personProperties, groupProperties, extraProperties).then((res) => {
+          if (res?.featureFlags) {
+            let newFeatureFlags = res.featureFlags
+            let newFeatureFlagPayloads = res.featureFlagPayloads
+            if (res.errorsWhileComputingFlags) {
+              // if not all flags were computed, we upsert flags instead of replacing them
+              const currentFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
+                PostHogPersistedProperty.FeatureFlags
+              )
+              const currentFlagPayloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
+                PostHogPersistedProperty.FeatureFlagPayloads
+              )
+              newFeatureFlags = { ...currentFlags, ...res.featureFlags }
+              newFeatureFlagPayloads = { ...currentFlagPayloads, ...res.featureFlagPayloads }
+            }
+            this.setKnownFeatureFlags(newFeatureFlags)
+            this.setKnownFeatureFlagPayloads(newFeatureFlagPayloads)
+          }
+
+          return res
+        })
       })
       .finally(() => {
         this._decideResponsePromise = undefined

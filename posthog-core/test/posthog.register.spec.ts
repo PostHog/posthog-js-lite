@@ -34,9 +34,7 @@ describe('PostHog Core', () => {
     })
 
     it('should register properties only for the session', () => {
-      console.log('ACT')
       posthog.registerForSession({ foo: 'bar' })
-      console.log('ASSERT')
       expect(getEnrichedProperties()).toMatchObject({ foo: 'bar' })
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.Props)).toEqual(undefined)
 
