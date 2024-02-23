@@ -10,7 +10,6 @@ export const usePosthogDebugEvents = () => {
   const [localEvents, setLocalEvents] = useState(GLOBAL_EVENTS)
 
   useEffect(() => {
-    if (!posthog) return
     const onEvent = (event: string, payload: any) => {
       // console.log('On event', event, payload)
       GLOBAL_EVENTS.push({

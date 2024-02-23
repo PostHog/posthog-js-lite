@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo } from 'react'
 import { GestureResponderEvent, StyleProp, View, ViewStyle } from 'react-native'
 import { PostHog, PostHogOptions } from './posthog-rn'
 import { autocaptureFromTouchEvent } from './autocapture'
@@ -11,7 +11,7 @@ export interface PostHogProviderProps {
   children: React.ReactNode
   options?: PostHogOptions
   apiKey?: string
-  client?: PostHog | Promise<PostHog>
+  client?: PostHog
   autocapture?: boolean | PostHogAutocaptureOptions
   debug?: boolean
   style?: StyleProp<ViewStyle>
@@ -33,12 +33,6 @@ function PostHogLifecycleHook({ client }: { client?: PostHog }): JSX.Element | n
   return null
 }
 
-const isPromise = (value: any): value is Promise<PostHog> => {
-  // NOTE: We don't use `instanceof Promise` because we found that some SDKs patch the global Promise object
-  // See https://github.com/PostHog/posthog-js-lite/issues/182
-  return value && typeof value.then === 'function'
-}
-
 export const PostHogProvider = ({
   children,
   client,
@@ -48,8 +42,20 @@ export const PostHogProvider = ({
   style,
   debug = false,
 }: PostHogProviderProps): JSX.Element | null => {
-  // Check if the client is a promise and resolve it if so
-  const [posthog, setPosthog] = useState<PostHog | undefined>(isPromise(client) ? undefined : client)
+  // TODO: Provide an option for providing posthog in a disabled way
+  if (!client || !apiKey) {
+    throw new Error('Either a PostHog client or an apiKey is required!')
+  }
+
+  const posthog = useMemo(() => {
+    if (client && apiKey) {
+      console.warn(
+        'You have provided both a client and an apiKey to PostHogProvider. The apiKey will be ignored in favour of the client.'
+      )
+    }
+
+    return client ?? new PostHog(apiKey, options)
+  }, [client, apiKey])
 
   const autocaptureOptions = useMemo(
     () => (autocapture && typeof autocapture !== 'boolean' ? autocapture : {}),
@@ -63,30 +69,7 @@ export const PostHogProvider = ({
   const captureLifecycle =
     !captureNone && posthog && (captureAll || (autocaptureOptions?.captureLifecycleEvents ?? true)) // Default to true if not set
 
-  // Resolve async client to concrete client
   useEffect(() => {
-    if (client && apiKey) {
-      console.warn(
-        'You have provided both a client and an apiKey to PostHogProvider. The apiKey will be ignored in favour of the client.'
-      )
-    }
-
-    if (!posthog && client) {
-      if (isPromise(client)) {
-        client.then(setPosthog)
-      } else {
-        setPosthog(client)
-      }
-    } else if (!posthog && apiKey) {
-      PostHog.initAsync(apiKey, options).then(setPosthog)
-    }
-  }, [client, apiKey, posthog, options])
-
-  useEffect(() => {
-    if (!posthog) {
-      return
-    }
-
     posthog.debug(debug)
   }, [debug, posthog])
 

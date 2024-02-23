@@ -1050,10 +1050,8 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     )
   }
 
-  async getFeatureFlag(key: string): Promise<boolean | string | undefined> {
-    await this._initPromise
-
-    const featureFlags = await this.getFeatureFlags()
+  getFeatureFlag(key: string): boolean | string | undefined {
+    const featureFlags = this.getFeatureFlags()
 
     if (!featureFlags) {
       // If we haven't loaded flags yet, or errored out, we respond with undefined
@@ -1080,10 +1078,8 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     return response
   }
 
-  async getFeatureFlagPayload(key: string): Promise<JsonType | undefined> {
-    await this._initPromise
-
-    const payloads = await this.getFeatureFlagPayloads()
+  getFeatureFlagPayload(key: string): JsonType | undefined {
+    const payloads = this.getFeatureFlagPayloads()
 
     if (!payloads) {
       return undefined
@@ -1099,9 +1095,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     return this._parsePayload(response)
   }
 
-  async getFeatureFlagPayloads(): Promise<PostHogDecideResponse['featureFlagPayloads'] | undefined> {
-    await this._initPromise
-
+  getFeatureFlagPayloads(): PostHogDecideResponse['featureFlagPayloads'] | undefined {
     const payloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
       PostHogPersistedProperty.FeatureFlagPayloads
     )
@@ -1111,9 +1105,9 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     return payloads
   }
 
-  async getFeatureFlags(): Promise<PostHogDecideResponse['featureFlags'] | undefined> {
-    await this._initPromise
-
+  getFeatureFlags(): PostHogDecideResponse['featureFlags'] | undefined {
+    // NOTE: We don't check for _initPromise here as the function is designed to be
+    // callable before the state being loaded anyways
     let flags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(PostHogPersistedProperty.FeatureFlags)
     const overriddenFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
       PostHogPersistedProperty.OverrideFeatureFlags
@@ -1136,14 +1130,12 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     return flags
   }
 
-  async getFeatureFlagsAndPayloads(): Promise<{
+  getFeatureFlagsAndPayloads(): {
     flags: PostHogDecideResponse['featureFlags'] | undefined
     payloads: PostHogDecideResponse['featureFlagPayloads'] | undefined
-  }> {
-    await this._initPromise
-
-    const flags = await this.getFeatureFlags()
-    const payloads = await this.getFeatureFlagPayloads()
+  } {
+    const flags = this.getFeatureFlags()
+    const payloads = this.getFeatureFlagPayloads()
 
     return {
       flags,
@@ -1151,9 +1143,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     }
   }
 
-  async isFeatureEnabled(key: string): Promise<boolean | undefined> {
-    await this._initPromise
-
+  isFeatureEnabled(key: string): boolean | undefined {
     const response = this.getFeatureFlag(key)
     if (response === undefined) {
       return undefined
@@ -1184,7 +1174,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
 
   onFeatureFlags(cb: (flags: PostHogDecideResponse['featureFlags']) => void): () => void {
     return this.on('featureflags', async () => {
-      const flags = await this.getFeatureFlags()
+      const flags = this.getFeatureFlags()
       if (flags) {
         cb(flags)
       }

@@ -10,14 +10,14 @@ export default function PosthogDemoScreen(props: any) {
   const title = props.route.name
 
   const trackRandomEvent = () => {
-    posthog?.capture('random event', {
+    posthog.capture('random event', {
       random: Math.random(),
     })
   }
 
   const identifyUser = () => {
     const id = Math.round(Math.random() * 1000)
-    posthog?.identify(`user-${id}`, {
+    posthog.identify(`user-${id}`, {
       email: `user-${id}@posthog.com`,
     })
   }

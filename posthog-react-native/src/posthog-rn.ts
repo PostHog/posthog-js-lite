@@ -26,18 +26,11 @@ export type PostHogOptions = PosthogCoreOptions & {
   captureNativeAppLifecycleEvents?: boolean
 }
 
-const clientMap = new Map<string, Promise<PostHog>>()
-
 export class PostHog extends PostHogCore {
   private _persistence: PostHogOptions['persistence']
   private _memoryStorage = new PostHogMemoryStorage()
   private _semiAsyncStorage?: SemiAsyncStorage
   private _appProperties: PostHogCustomAppProperties = {}
-
-  static _resetClientCache(): void {
-    // NOTE: this method is intended for testing purposes only
-    clientMap.clear()
-  }
 
   constructor(apiKey: string, options?: PostHogOptions) {
     super(apiKey, options)
@@ -78,6 +71,7 @@ export class PostHog extends PostHogCore {
 
     // Not everything needs to be in the init promise
     this._initPromise.then(async () => {
+      this._isInitialized = true
       if (options?.preloadFeatureFlags !== false) {
         this.reloadFeatureFlags()
       }
@@ -94,6 +88,11 @@ export class PostHog extends PostHogCore {
 
       await this.persistAppVersion()
     })
+  }
+
+  // NOTE: This is purely a helper method for testing purposes or those who wish to be certain the SDK is fully initialised
+  public async ready(): Promise<void> {
+    await this._initPromise
   }
 
   getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined {
