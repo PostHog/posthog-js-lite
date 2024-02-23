@@ -1,7 +1,7 @@
 export type PosthogCoreOptions = {
   /** PostHog API host, usually 'https://app.posthog.com' or 'https://eu.posthog.com' */
   host?: string
-  /** The number of events to queue before sending to Posthog (flushing) */
+  /** The number of events to queue before sending to PostHog (flushing) */
   flushAt?: number
   /** The interval in milliseconds between periodic flushes */
   flushInterval?: number
@@ -11,7 +11,7 @@ export type PosthogCoreOptions = {
   defaultOptIn?: boolean
   /** Whether to track that `getFeatureFlag` was called (used by Experiments) */
   sendFeatureFlagEvent?: boolean
-  /** Whether to load feature flags when initialised or not */
+  /** Whether to load feature flags when initialized or not */
   preloadFeatureFlags?: boolean
   /** Option to bootstrap the library with given distinctId and feature flags */
   bootstrap?: {
