@@ -97,7 +97,7 @@ export abstract class PostHogCoreStateless {
     }
     this.requestTimeout = options?.requestTimeout ?? 10000 // 10 seconds
     this.disableGeoip = options?.disableGeoip ?? true
-    this.disabled = options?.disable ?? false
+    this.disabled = options?.disabled ?? false
     // Init promise allows the derived class to block calls until it is ready
     this._initPromise = Promise.resolve()
     this._isInitialized = true

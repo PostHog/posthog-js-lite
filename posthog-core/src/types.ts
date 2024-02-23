@@ -6,7 +6,7 @@ export type PosthogCoreOptions = {
   /** The interval in milliseconds between periodic flushes */
   flushInterval?: number
   /** If set to true the SDK is essentially disabled (useful for local environments where you don't want to track anything) */
-  disable?: boolean
+  disabled?: boolean
   /** If set to false the SDK will not track until the `optIn` function is called. */
   defaultOptIn?: boolean
   /** Whether to track that `getFeatureFlag` was called (used by Expriements) */

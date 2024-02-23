@@ -87,7 +87,7 @@ describe('PostHog Core', () => {
   describe('disabled', () => {
     it('should not send events when disabled', async () => {
       ;[posthog, mocks] = createTestClient('TEST_API_KEY', {
-        disable: true,
+        disabled: true,
         flushAt: 1,
       })
       jest.runOnlyPendingTimers()
