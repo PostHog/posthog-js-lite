@@ -99,8 +99,6 @@ export abstract class PostHogCoreStateless {
     // Init promise allows the derived class to block calls until it is ready
     this._initPromise = Promise.resolve()
     this._isInitialized = true
-
-    // TODO: Should we add the initPromise to the promises list?
   }
 
   protected ensureInitialized(fn: () => void): void {
