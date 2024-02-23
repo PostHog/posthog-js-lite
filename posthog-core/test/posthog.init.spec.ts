@@ -3,7 +3,6 @@ import { waitForPromises } from './test-utils/test-utils'
 
 describe('PostHog Core', () => {
   let posthog: PostHogCoreTestClient
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let mocks: PostHogCoreTestClientMocks
 
   beforeEach(() => {
