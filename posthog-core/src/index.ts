@@ -55,7 +55,6 @@ export abstract class PostHogCoreStateless {
   private requestTimeout: number
   private captureMode: 'form' | 'json'
   private removeDebugCallback?: () => void
-  private debugMode: boolean = false
   private disableGeoip: boolean = true
 
   private _optoutOverride: boolean | undefined
@@ -141,8 +140,6 @@ export abstract class PostHogCoreStateless {
 
   debug(enabled: boolean = true): void {
     this.removeDebugCallback?.()
-
-    this.debugMode = enabled
 
     if (enabled) {
       this.removeDebugCallback = this.on('*', (event, payload) => console.log('PostHog Debug', event, payload))

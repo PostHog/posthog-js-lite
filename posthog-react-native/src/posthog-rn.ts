@@ -34,6 +34,7 @@ export class PostHog extends PostHogCore {
 
   constructor(apiKey: string, options?: PostHogOptions) {
     super(apiKey, options)
+    this._isInitialized = false
     this._persistence = options?.persistence ?? 'file'
 
     // Either build the app properties from the existing ones

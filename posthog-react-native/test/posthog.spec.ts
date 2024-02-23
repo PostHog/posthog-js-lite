@@ -1,7 +1,8 @@
 import { PostHogPersistedProperty } from 'posthog-core'
 import { PostHog, PostHogCustomAsyncStorage } from '../index'
 import { Linking, AppState, AppStateStatus } from 'react-native'
-import { waitForExpect } from './test-utils'
+import { wait, waitForExpect } from './test-utils'
+import { SemiAsyncStorage } from '../src/storage'
 
 Linking.getInitialURL = jest.fn(() => Promise.resolve(null))
 AppState.addEventListener = jest.fn()
@@ -312,6 +313,59 @@ describe('PostHog React Native', () => {
             $app_version: '1.0.0',
             from_background: true,
           },
+        })
+      })
+    })
+  })
+
+  describe('async initialization', () => {
+    beforeEach(async () => {
+      const semiAsyncStorage = new SemiAsyncStorage(mockStorage)
+      await semiAsyncStorage.preloadAsync()
+      semiAsyncStorage.setItem(PostHogPersistedProperty.AnonymousId, 'my-anonymous-id')
+    })
+
+    it('should allow immediate calls but delay for the stored values', async () => {
+      const onCapture = jest.fn()
+      mockStorage.setItem(PostHogPersistedProperty.AnonymousId, 'my-anonymous-id')
+      posthog = new PostHog('1', {
+        customAsyncStorage: mockStorage,
+        captureNativeAppLifecycleEvents: false,
+      })
+      posthog.on('capture', onCapture)
+      posthog.on('identify', onCapture)
+
+      // Should all be empty as the storage isn't ready
+      expect(posthog.getDistinctId()).toEqual('')
+      expect(posthog.getAnonymousId()).toEqual('')
+      expect(posthog.getSessionId()).toEqual('')
+
+      // Fire multiple calls that have dependencies on one another
+      posthog.capture('anonymous event')
+      posthog.identify('identified-id')
+      posthog.capture('identified event')
+
+      await waitForExpect(200, () => {
+        expect(posthog.getDistinctId()).toEqual('identified-id')
+        expect(posthog.getAnonymousId()).toEqual('my-anonymous-id')
+
+        expect(onCapture).toHaveBeenCalledTimes(3)
+        expect(onCapture.mock.calls[0][0]).toMatchObject({
+          event: 'anonymous event',
+          distinct_id: 'my-anonymous-id',
+        })
+
+        expect(onCapture.mock.calls[1][0]).toMatchObject({
+          event: '$identify',
+          distinct_id: 'identified-id',
+          properties: {
+            $anon_distinct_id: 'my-anonymous-id',
+          },
+        })
+        expect(onCapture.mock.calls[2][0]).toMatchObject({
+          event: 'identified event',
+          distinct_id: 'identified-id',
+          properties: {},
         })
       })
     })
