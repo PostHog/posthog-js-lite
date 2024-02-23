@@ -2,6 +2,7 @@
  * @jest-environment jsdom
  */
 
+import { waitForPromises } from 'posthog-core/test/test-utils/test-utils'
 import { PostHog } from '..'
 
 describe('PosthogWeb', () => {
@@ -41,13 +42,14 @@ describe('PosthogWeb', () => {
   })
 
   describe('init', () => {
-    it('should initialise', () => {
+    it('should initialise', async () => {
       const posthog = new PostHog('TEST_API_KEY', {
         flushAt: 1,
       })
       expect(posthog.optedOut).toEqual(false)
 
       posthog.capture('test')
+      await waitForPromises()
 
       expect(fetch).toHaveBeenCalledTimes(2)
     })
