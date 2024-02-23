@@ -1,7 +1,7 @@
 import { PostHogPersistedProperty } from 'posthog-core'
 import { PostHog, PostHogCustomAsyncStorage } from '../index'
 import { Linking, AppState, AppStateStatus } from 'react-native'
-import { wait, waitForExpect } from './test-utils'
+import { waitForExpect } from './test-utils'
 import { SemiAsyncStorage } from '../src/storage'
 
 Linking.getInitialURL = jest.fn(() => Promise.resolve(null))
