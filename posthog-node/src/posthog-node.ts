@@ -87,11 +87,11 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     return `posthog-node/${version}`
   }
 
-  enable(): void {
+  enable(): Promise<void> {
     return super.optIn()
   }
 
-  disable(): void {
+  disable(): Promise<void> {
     return super.optOut()
   }
 

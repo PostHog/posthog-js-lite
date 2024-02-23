@@ -154,7 +154,7 @@ describe('PostHog React Native', () => {
 
       posthog.screen('test-screen')
 
-      expect(posthog.enrichProperties()).toMatchObject({
+      expect(posthog._props).toMatchObject({
         $screen_name: 'test-screen',
       })
 

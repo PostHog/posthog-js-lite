@@ -1055,7 +1055,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   async getFeatureFlag(key: string): Promise<boolean | string | undefined> {
     await this._initPromise
 
-    const featureFlags = this.getFeatureFlags()
+    const featureFlags = await this.getFeatureFlags()
 
     if (!featureFlags) {
       // If we haven't loaded flags yet, or errored out, we respond with undefined
@@ -1085,7 +1085,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   async getFeatureFlagPayload(key: string): Promise<JsonType | undefined> {
     await this._initPromise
 
-    const payloads = this.getFeatureFlagPayloads()
+    const payloads = await this.getFeatureFlagPayloads()
 
     if (!payloads) {
       return undefined
