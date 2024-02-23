@@ -18,12 +18,12 @@ describe('PostHog Core', () => {
     })
 
     it('should be able to init disabled', async () => {
-      ;[posthog, mocks] = createTestClient('TEST_API_KEY', { enable: false })
+      ;[posthog, mocks] = createTestClient('TEST_API_KEY', { defaultOptIn: false })
       expect(posthog.optedOut).toEqual(true)
     })
 
     it('should opt in/out when called', async () => {
-      ;[posthog, mocks] = createTestClient('TEST_API_KEY', { enable: false })
+      ;[posthog, mocks] = createTestClient('TEST_API_KEY', { defaultOptIn: false })
       posthog.optOut()
       expect(posthog.optedOut).toEqual(true)
       posthog.optIn()
@@ -31,7 +31,7 @@ describe('PostHog Core', () => {
     })
 
     it('should persist enabled state when called', async () => {
-      ;[posthog, mocks] = createTestClient('TEST_API_KEY', { enable: false })
+      ;[posthog, mocks] = createTestClient('TEST_API_KEY', { defaultOptIn: false })
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.OptedOut)).toEqual(undefined)
       posthog.optOut()
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.OptedOut)).toEqual(true)
@@ -40,7 +40,7 @@ describe('PostHog Core', () => {
     })
 
     it('should start in the correct state', async () => {
-      ;[posthog, mocks] = createTestClient('TEST_API_KEY', { enable: false }, (mocks) => {
+      ;[posthog, mocks] = createTestClient('TEST_API_KEY', { defaultOptIn: false }, (mocks) => {
         mocks.storage.setItem(PostHogPersistedProperty.OptedOut, true)
       })
 

@@ -125,7 +125,7 @@ export abstract class PostHogCoreStateless {
   }
 
   public get optedOut(): boolean {
-    return this.getPersistedProperty(PostHogPersistedProperty.OptedOut) ?? this.defaultOptIn
+    return this.getPersistedProperty(PostHogPersistedProperty.OptedOut) ?? !this.defaultOptIn
   }
 
   async optIn(): Promise<void> {
