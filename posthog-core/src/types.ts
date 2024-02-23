@@ -1,5 +1,5 @@
 export type PosthogCoreOptions = {
-  /** PostHog API host (https://app.posthog.com by default) */
+  /** PostHog API host, usually 'https://app.posthog.com' or 'https://eu.posthog.com' */
   host?: string
   /** The number of events to queue before sending to Posthog (flushing) */
   flushAt?: number
@@ -9,7 +9,7 @@ export type PosthogCoreOptions = {
   disabled?: boolean
   /** If set to false the SDK will not track until the `optIn` function is called. */
   defaultOptIn?: boolean
-  /** Whether to track that `getFeatureFlag` was called (used by Expriements) */
+  /** Whether to track that `getFeatureFlag` was called (used by Experiments) */
   sendFeatureFlagEvent?: boolean
   /** Whether to load feature flags when initialised or not */
   preloadFeatureFlags?: boolean
