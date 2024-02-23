@@ -16,7 +16,7 @@ describe('PostHog Core', () => {
     it('should capture an event', async () => {
       jest.setSystemTime(new Date('2022-01-01'))
 
-      await posthog.capture('custom-event')
+      posthog.capture('custom-event')
 
       expect(mocks.fetch).toHaveBeenCalledTimes(1)
       const [url, options] = mocks.fetch.mock.calls[0]
