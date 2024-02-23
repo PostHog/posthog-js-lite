@@ -1,4 +1,5 @@
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
+import { waitForPromises } from './test-utils/test-utils'
 
 describe('PostHog Core', () => {
   let posthog: PostHogCoreTestClient
@@ -80,6 +81,24 @@ describe('PostHog Core', () => {
 
       expect((posthog as any).getDistinctId()).toEqual('random_id')
       expect((posthog as any).getAnonymousId()).toEqual('new_id')
+    })
+  })
+
+  describe('disabled', () => {
+    it('should not send events when disabled', async () => {
+      ;[posthog, mocks] = createTestClient('TEST_API_KEY', {
+        disable: true,
+        flushAt: 1,
+      })
+      jest.runOnlyPendingTimers()
+
+      expect(posthog.getFeatureFlags()).toEqual(undefined)
+      posthog.capture('test')
+      posthog.capture('identify')
+
+      await waitForPromises()
+
+      expect(mocks.fetch).not.toHaveBeenCalled()
     })
   })
 })
