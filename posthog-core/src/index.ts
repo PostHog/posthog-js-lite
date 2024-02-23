@@ -638,9 +638,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     this._sessionExpirationTimeSeconds = options?.sessionExpirationTimeSeconds ?? 1800 // 30 minutes
   }
 
-  protected async setupBootstrap(options?: Partial<PosthogCoreOptions>): Promise<void> {
-    await this._initPromise
-
+  protected setupBootstrap(options?: Partial<PosthogCoreOptions>): void {
     if (options?.bootstrap?.distinctId) {
       if (options?.bootstrap?.isIdentifiedId) {
         this.setPersistedProperty(PostHogPersistedProperty.DistinctId, options.bootstrap.distinctId)
