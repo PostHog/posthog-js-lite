@@ -590,7 +590,7 @@ export abstract class PostHogCoreStateless {
 
         // If we've been waiting for more than the shutdownTimeout, stop it
         const now = Date.now()
-        if (startTime + timeout >= now) {
+        if (startTime + timeout < now) {
           break
         }
       }
