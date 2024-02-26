@@ -1,4 +1,11 @@
-# Next
+# Next (3.0.0)
+
+- `PostHog.initAsync` is no more! You can now initialize PostHog as you would any other class `const posthog = new PostHog(...)`
+- PostHogProvider now requires either an `apiKey` or `client` property and `usePostHog` now always returns a `PostHog` instance instead of `PostHog | undefined`. The `disabled` option can be used when initializing the `PostHogProvider` if desired and all subsequent calls to `posthog` will work but without actually doing anything.
+- Removes the `enable` option. You can now specify `defaultOptIn: false` to start the SDK opted out of tracking
+- Adds a `disabled` option and the ability to change it later via `posthog.disabled = true`. Useful for disabling PostHog tracking for example in a testing environment without having complex conditional checking
+- Many methods such as `capture` and `identify` no longer return the `this` object instead returning nothing
+- Fixes some typos in types
 
 # 2.11.6 - 2024-02-22
 
@@ -144,4 +151,4 @@ Support for bootstrapping feature flags and distinctIDs. This allows you to init
 
 # 2.1.0 - 2022-09-02
 
-PosthogProvider `autocapture` can be configured with `captureLifecycleEvents: false` and `captureScreens: false` if you want do disable these autocapture elements. Both of these default to `true`
+PostHogProvider `autocapture` can be configured with `captureLifecycleEvents: false` and `captureScreens: false` if you want do disable these autocapture elements. Both of these default to `true`

@@ -2,9 +2,10 @@
  * @jest-environment jsdom
  */
 
+import { waitForPromises } from 'posthog-core/test/test-utils/test-utils'
 import { PostHog } from '..'
 
-describe('PosthogWeb', () => {
+describe('PostHogWeb', () => {
   let fetch: jest.Mock
   jest.useRealTimers()
 
@@ -41,13 +42,14 @@ describe('PosthogWeb', () => {
   })
 
   describe('init', () => {
-    it('should initialise', () => {
+    it('should initialise', async () => {
       const posthog = new PostHog('TEST_API_KEY', {
         flushAt: 1,
       })
       expect(posthog.optedOut).toEqual(false)
 
       posthog.capture('test')
+      await waitForPromises()
 
       expect(fetch).toHaveBeenCalledTimes(2)
     })
@@ -56,6 +58,8 @@ describe('PosthogWeb', () => {
       const posthog = new PostHog('TEST_API_KEY', {
         flushAt: 1,
       })
+
+      await waitForPromises()
 
       expect(fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=3', {
         body: JSON.stringify({

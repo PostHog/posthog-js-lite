@@ -2,11 +2,11 @@ import { version } from '../package.json'
 
 import {
   JsonType,
-  PosthogCoreOptions,
+  PostHogCoreOptions,
   PostHogCoreStateless,
   PostHogFetchOptions,
   PostHogFetchResponse,
-  PosthogFlagsAndPayloadsResponse,
+  PostHogFlagsAndPayloadsResponse,
   PostHogPersistedProperty,
 } from '../../posthog-core/src'
 import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
@@ -14,7 +14,7 @@ import { EventMessage, GroupIdentifyMessage, IdentifyMessage, PostHogNodeV1 } fr
 import { FeatureFlagsPoller } from './feature-flags'
 import fetch from './fetch'
 
-export type PostHogOptions = PosthogCoreOptions & {
+export type PostHogOptions = PostHogCoreOptions & {
   persistence?: 'memory'
   personalApiKey?: string
   // The interval in milliseconds between polls for refreshing feature flag definitions
@@ -87,11 +87,11 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     return `posthog-node/${version}`
   }
 
-  enable(): void {
+  enable(): Promise<void> {
     return super.optIn()
   }
 
-  disable(): void {
+  disable(): Promise<void> {
     return super.optOut()
   }
 
@@ -381,7 +381,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       onlyEvaluateLocally?: boolean
       disableGeoip?: boolean
     }
-  ): Promise<PosthogFlagsAndPayloadsResponse> {
+  ): Promise<PostHogFlagsAndPayloadsResponse> {
     const { groups, disableGeoip } = options || {}
     let { onlyEvaluateLocally, personProperties, groupProperties } = options || {}
 

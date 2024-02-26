@@ -1,7 +1,7 @@
 import PostHog, {PostHogProvider} from 'posthog-react-native';
 import React from 'react';
 
-export const $posthog = PostHog.initAsync(
+export const posthog = new PostHog(
   'phc_pQ70jJhZKHRvDIL5ruOErnPy6xiAiWCqlL4ayELj4X8',
   {
     host: 'https://app.posthog.com',
@@ -12,7 +12,7 @@ export const $posthog = PostHog.initAsync(
 export const SharedPostHogProvider = (props: any) => {
   return (
     <PostHogProvider
-      client={$posthog}
+      client={posthog}
       autocapture={{
         captureLifecycleEvents: true,
         captureScreens: true,
