@@ -2044,17 +2044,18 @@ describe('match properties', () => {
     return
   })
 
-    it('with relative date operators handles invalid keys', () => {
-      jest.setSystemTime(new Date('2022-05-01'))
+  it('with relative date operators handles invalid keys', () => {
+    jest.setSystemTime(new Date('2022-05-01'))
 
-      // # can't be an invalid string
-      expect(() => matchProperty({ key: 'key', value: "1d", operator: "is_date_before" }, { key: 'abcdef' })).toThrow(InconclusiveMatchError)
-      // however js understands numbers as date offsets from utc epoch
-      expect(() => matchProperty({ key: 'key', value: '1d', operator: 'is_date_before' }, { key: 1 })).not.toThrow(
-        InconclusiveMatchError
-      )
-    })
-
+    // # can't be an invalid string
+    expect(() => matchProperty({ key: 'key', value: '1d', operator: 'is_date_before' }, { key: 'abcdef' })).toThrow(
+      InconclusiveMatchError
+    )
+    // however js understands numbers as date offsets from utc epoch
+    expect(() => matchProperty({ key: 'key', value: '1d', operator: 'is_date_before' }, { key: 1 })).not.toThrow(
+      InconclusiveMatchError
+    )
+  })
 
   it('null or undefined property value', () => {
     const property_a = { key: 'key', value: 'null', operator: 'is_not' }
