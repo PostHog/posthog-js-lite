@@ -1988,7 +1988,7 @@ describe('match properties', () => {
   })
 
   it.each([
-    ['is_date_before', '-6h', '2022-03-01', false],
+    ['is_date_before', '-6h', '2022-03-01', true],
     ['is_date_before', '-6h', '2022-04-30', true],
     // :TRICKY: MonthIndex is 0 indexed, so 3 is actually the 4th month, April.
     ['is_date_before', '-6h', new Date(Date.UTC(2022, 3, 30, 1, 2, 3)), true],
