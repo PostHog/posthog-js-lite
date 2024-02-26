@@ -12,7 +12,8 @@ import { PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src'
 type FetchLike = (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
 
 let _fetch: FetchLike | undefined =
-  // @ts-expect-error
+  // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
+  // @ts-ignore
   typeof fetch !== 'undefined' ? fetch : typeof global.fetch !== 'undefined' ? global.fetch : undefined
 
 if (!_fetch) {
