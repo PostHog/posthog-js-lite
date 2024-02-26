@@ -1,5 +1,5 @@
 import { PostHog } from 'posthog-node'
-// @ts-ignore
+// @ts-expect-error
 import wtf from 'wtfnode'
 
 const {
