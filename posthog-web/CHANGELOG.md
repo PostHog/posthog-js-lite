@@ -1,3 +1,10 @@
+# Next (3.0.0)
+
+- Removes the `enable` option. You can now specify `defaultOptIn: false` to start the SDK opted out of tracking
+- Adds a `disabled` option and the ability to change it later via `posthog.disabled = true`. Useful for disabling PostHog tracking for example in a testing environment without having complex conditional checking
+- Many methods such as `capture` and `identify` no longer return the `this` object instead returning nothing
+- Fixes some typos in types
+
 # 2.6.2 - 2024-02-15
 
 1. fix: using `captureMode=form` won't throw an error and retry unnecessarily

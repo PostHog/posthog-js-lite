@@ -1,3 +1,8 @@
+# Next (4.0.0)
+
+- Adds a `disabled` option and the ability to change it later via `posthog.disabled = true`. Useful for disabling PostHog tracking for example in a testing environment without having complex conditional checking
+- Fixes some typos in types
+
 # 3.6.3 - 2024-02-15
 
 1. fix: using `captureMode=form` won't throw an error and retry unnecessarily
