@@ -753,6 +753,9 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     }
   }
 
+  /**
+   * * @returns {string} The stored session ID for the current session. This may be an empty string if the client is not yet fully initialized.
+   */
   getSessionId(): string {
     if (!this._isInitialized) {
       return ''
@@ -775,6 +778,9 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     })
   }
 
+  /**
+   * * @returns {string} The stored anonymous ID. This may be an empty string if the client is not yet fully initialized.
+   */
   getAnonymousId(): string {
     if (!this._isInitialized) {
       return ''
@@ -788,6 +794,9 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     return anonId
   }
 
+  /**
+   * * @returns {string} The stored distinct ID. This may be an empty string if the client is not yet fully initialized.
+   */
   getDistinctId(): string {
     if (!this._isInitialized) {
       return ''
