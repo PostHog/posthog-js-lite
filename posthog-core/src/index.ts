@@ -37,7 +37,7 @@ class PostHogFetchNetworkError extends Error {
 
   constructor(public error: unknown) {
     // TRICKY: "cause" is a newer property but is just ignored otherwise. Cast to any to ignore the type issue.
-    // @ts-ignore
+    // @ts-expect-error
     super('Network error while fetching PostHog', error instanceof Error ? { cause: error } : {})
   }
 }
@@ -566,7 +566,6 @@ export abstract class PostHogCoreStateless {
   async shutdownAsync(): Promise<void> {
     clearTimeout(this._flushTimer)
     try {
-      await this.flushAsync()
       await Promise.all(
         Object.values(this.pendingPromises).map((x) =>
           x.catch(() => {
@@ -574,10 +573,19 @@ export abstract class PostHogCoreStateless {
           })
         )
       )
-      // flush again to make sure we send all events, some of which might've been added
-      // while we were waiting for the pending promises to resolve
-      // For example, see sendFeatureFlags in posthog-node/src/posthog-node.ts::capture
-      await this.flushAsync()
+
+      while (true) {
+        const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
+
+        if (queue.length === 0) {
+          break
+        }
+
+        // flush again to make sure we send all events, some of which might've been added
+        // while we were waiting for the pending promises to resolve
+        // For example, see sendFeatureFlags in posthog-node/src/posthog-node.ts::capture
+        await this.flushAsync()
+      }
     } catch (e) {
       if (!isPostHogFetchError(e)) {
         throw e
