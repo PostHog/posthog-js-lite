@@ -1987,81 +1987,74 @@ describe('match properties', () => {
     expect(matchProperty(property_d, { key: '2022-04-05 11:34:13 +00:00' })).toBe(false)
   })
 
-  it('with relative date operators', () => {
-    jest.setSystemTime(new Date('2022-05-01'))
-
-    const property_a = { key: 'key', value: '-6h', operator: 'is_date_before' }
-    expect(matchProperty(property_a, { key: '2022-03-01' })).toBe(true)
-    expect(matchProperty(property_a, { key: '2022-04-30' })).toBe(true)
-
+  it.each([
+    ['is_date_before', '-6h', '2022-03-01', false],
+    ['is_date_before', '-6h', '2022-04-30', true],
     // :TRICKY: MonthIndex is 0 indexed, so 3 is actually the 4th month, April.
-    expect(matchProperty(property_a, { key: new Date(Date.UTC(2022, 3, 30, 1, 2, 3)) })).toBe(true)
+    ['is_date_before', '-6h', new Date(Date.UTC(2022, 3, 30, 1, 2, 3)), true],
     // false because date comparison, instead of datetime, so reduces to same date
-    expect(matchProperty(property_a, { key: new Date(2022, 3, 30, 19, 2, 3) })).toBe(false)
-    expect(matchProperty(property_a, { key: new Date('2022-04-30T01:02:03+02:00') })).toBe(true) // europe/madrid
-    expect(matchProperty(property_a, { key: new Date('2022-04-30T20:02:03+02:00') })).toBe(false) // europe/madrid
-    expect(matchProperty(property_a, { key: new Date('2022-04-30T19:59:03+02:00') })).toBe(true) // europe/madrid
-    expect(matchProperty(property_a, { key: new Date('2022-04-30') })).toBe(true)
-    expect(matchProperty(property_a, { key: '2022-05-30' })).toBe(false)
-
-    // # can't be an invalid string
-    expect(() => matchProperty(property_a, { key: 'abcdef' })).toThrow(InconclusiveMatchError)
-    // however js understands numbers as date offsets from utc epoch
-    expect(() => matchProperty(property_a, { key: 1 })).not.toThrow(InconclusiveMatchError)
-
-    const property_b = { key: 'key', value: '1h', operator: 'is_date_after' }
-    expect(matchProperty(property_b, { key: '2022-05-02' })).toBe(true)
-    expect(matchProperty(property_b, { key: '2022-05-30' })).toBe(true)
-    expect(matchProperty(property_b, { key: new Date(2022, 4, 30) })).toBe(true)
-    expect(matchProperty(property_b, { key: new Date('2022-05-30') })).toBe(true)
-    expect(matchProperty(property_b, { key: '2022-04-30' })).toBe(false)
-
+    ['is_date_before', '-6h', new Date('2022-04-30T01:02:03+02:00'), true], // europe/madrid
+    ['is_date_before', '-6h', new Date('2022-04-30T20:02:03+02:00'), false], // europe/madrid
+    ['is_date_before', '-6h', new Date('2022-04-30T19:59:03+02:00'), true], // europe/madrid
+    ['is_date_before', '-6h', new Date('2022-04-30'), true],
+    ['is_date_before', '-6h', '2022-05-30', false],
+    // is date after
+    ['is_date_after', '1h', '2022-05-02', true],
+    ['is_date_after', '1h', '2022-05-30', true],
+    ['is_date_after', '1h', new Date(2022, 4, 30), true],
+    ['is_date_after', '1h', new Date('2022-05-30'), true],
+    ['is_date_after', '1h', '2022-04-30', false],
     // # Try all possible relative dates
-    const property_e = { key: 'key', value: '1h', operator: 'is_date_before' }
-    expect(matchProperty(property_e, { key: '2022-05-01 00:00:00' })).toBe(false)
-    expect(matchProperty(property_e, { key: '2022-04-30 22:00:00' })).toBe(true)
+    ['is_date_before', '1h', '2022-05-01 00:00:00', false],
+    ['is_date_before', '1h', '2022-04-30 22:00:00', true],
+    ['is_date_before', '-1d', '2022-04-29 23:59:00 GMT', true],
+    ['is_date_before', '-1d', '2022-04-30 00:00:01 GMT', false],
+    ['is_date_before', '1w', '2022-04-23 00:00:00 GMT', true],
+    ['is_date_before', '1w', '2022-04-24 00:00:00 GMT', false],
+    ['is_date_before', '1w', '2022-04-24 00:00:01 GMT', false],
+    ['is_date_before', '1m', '2022-03-01 00:00:00 GMT', true],
+    ['is_date_before', '1m', '2022-04-01 00:00:00 GMT', false],
+    ['is_date_before', '1m', '2022-04-05 00:00:01 GMT', false],
 
-    const property_f = { key: 'key', value: '-1d', operator: 'is_date_before' }
-    expect(matchProperty(property_f, { key: '2022-04-29 23:59:00 GMT' })).toBe(true)
-    expect(matchProperty(property_f, { key: '2022-04-30 00:00:01 GMT' })).toBe(false)
+    ['is_date_before', '-1y', '2021-04-28 00:00:00 GMT', true],
+    ['is_date_before', '-1y', '2021-05-01 00:00:01 GMT', false],
 
-    const property_g = { key: 'key', value: '1w', operator: 'is_date_before' }
-    expect(matchProperty(property_g, { key: '2022-04-23 00:00:00 GMT' })).toBe(true)
-    expect(matchProperty(property_g, { key: '2022-04-24 00:00:00 GMT' })).toBe(false)
-    expect(matchProperty(property_g, { key: '2022-04-24 00:00:01 GMT' })).toBe(false)
+    ['is_date_after', '122h', '2022-05-01 00:00:00 GMT', true],
+    ['is_date_after', '122h', '2022-04-23 01:00:00 GMT', false],
 
-    const property_h = { key: 'key', value: '1m', operator: 'is_date_before' }
-    expect(matchProperty(property_h, { key: '2022-03-01 00:00:00 GMT' })).toBe(true)
-    expect(matchProperty(property_h, { key: '2022-04-05 00:00:00 GMT' })).toBe(false)
+    ['is_date_after', '2d', '2022-05-01 00:00:00 GMT', true],
+    ['is_date_after', '2d', '2022-04-29 00:00:01 GMT', true],
+    ['is_date_after', '2d', '2022-04-29 00:00:00 GMT', false],
 
-    const property_i = { key: 'key', value: '-1y', operator: 'is_date_before' }
-    expect(matchProperty(property_i, { key: '2021-04-28 00:00:00 GMT' })).toBe(true)
-    expect(matchProperty(property_i, { key: '2021-05-01 00:00:01 GMT' })).toBe(false)
+    ['is_date_after', '02w', '2022-05-01 00:00:00 GMT', true],
+    ['is_date_after', '02w', '2022-04-16 00:00:00 GMT', false],
 
-    const property_j = { key: 'key', value: '122h', operator: 'is_date_after' }
-    expect(matchProperty(property_j, { key: '2022-05-01 00:00:00 GMT' })).toBe(true)
-    expect(matchProperty(property_j, { key: '2022-04-23 01:00:00 GMT' })).toBe(false)
+    ['is_date_after', '-1m', '2022-04-01 00:00:01 GMT', true],
+    ['is_date_after', '-1m', '2022-04-01 00:00:00 GMT', false],
 
-    const property_k = { key: 'key', value: '2d', operator: 'is_date_after' }
-    expect(matchProperty(property_k, { key: '2022-05-01 00:00:00 GMT' })).toBe(true)
-    expect(matchProperty(property_k, { key: '2022-04-29 00:00:01 GMT' })).toBe(true)
-    expect(matchProperty(property_k, { key: '2022-04-29 00:00:00 GMT' })).toBe(false)
+    ['is_date_after', '1y', '2022-05-01 00:00:00 GMT', true],
+    ['is_date_after', '1y', '2021-05-01 00:00:01 GMT', true],
+    ['is_date_after', '1y', '2021-05-01 00:00:00 GMT', false],
+    ['is_date_after', '1y', '2021-04-30 00:00:00 GMT', false],
+    ['is_date_after', '1y', '2021-03-01 12:13:00 GMT', false],
+  ])('with relative date operators: %s, %s, %s', (operator, value, date, expectation) => {
+    jest.setSystemTime(new Date('2022-05-01'))
+    expect(matchProperty({ key: 'key', value, operator }, { key: date })).toBe(expectation)
 
-    const property_l = { key: 'key', value: '02w', operator: 'is_date_after' }
-    expect(matchProperty(property_l, { key: '2022-05-01 00:00:00 GMT' })).toBe(true)
-    expect(matchProperty(property_l, { key: '2022-04-16 00:00:00 GMT' })).toBe(false)
-
-    const property_m = { key: 'key', value: '-1m', operator: 'is_date_after' }
-    expect(matchProperty(property_m, { key: '2022-04-01 00:00:01 GMT' })).toBe(true)
-    expect(matchProperty(property_m, { key: '2022-04-01 00:00:00 GMT' })).toBe(false)
-
-    const property_n = { key: 'key', value: '1y', operator: 'is_date_after' }
-    expect(matchProperty(property_n, { key: '2022-05-01 00:00:00 GMT' })).toBe(true)
-    expect(matchProperty(property_n, { key: '2021-05-01 00:00:01 GMT' })).toBe(true)
-    expect(matchProperty(property_n, { key: '2021-05-01 00:00:00 GMT' })).toBe(false)
-    expect(matchProperty(property_n, { key: '2021-04-30 00:00:00 GMT' })).toBe(false)
-    expect(matchProperty(property_n, { key: '2021-03-01 12:13:00 GMT' })).toBe(false)
+    return
   })
+
+    it('with relative date operators handles invalid keys', () => {
+      jest.setSystemTime(new Date('2022-05-01'))
+
+      // # can't be an invalid string
+      expect(() => matchProperty({ key: 'key', value: "1d", operator: "is_date_before" }, { key: 'abcdef' })).toThrow(InconclusiveMatchError)
+      // however js understands numbers as date offsets from utc epoch
+      expect(() => matchProperty({ key: 'key', value: '1d', operator: 'is_date_before' }, { key: 1 })).not.toThrow(
+        InconclusiveMatchError
+      )
+    })
+
 
   it('null or undefined property value', () => {
     const property_a = { key: 'key', value: 'null', operator: 'is_not' }
