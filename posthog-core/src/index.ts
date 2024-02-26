@@ -602,8 +602,8 @@ export abstract class PostHogCoreStateless {
     }
   }
 
-  shutdown(): void {
-    void this.shutdownAsync()
+  shutdown(shutdownTimeout?: number): void {
+    void this.shutdownAsync(shutdownTimeout)
   }
 }
 

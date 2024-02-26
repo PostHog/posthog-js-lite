@@ -445,8 +445,8 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     await this.featureFlagsPoller?.loadFeatureFlags(true)
   }
 
-  shutdown(): void {
-    void this.shutdownAsync()
+  shutdown(shutdownTimeout?: number): void {
+    void this.shutdownAsync(shutdownTimeout)
   }
 
   async shutdownAsync(shutdownTimeout?: number): Promise<void> {
