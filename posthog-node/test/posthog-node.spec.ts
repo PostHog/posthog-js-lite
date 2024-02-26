@@ -2,7 +2,7 @@
 import { PostHog as PostHog } from '../src/posthog-node'
 jest.mock('../src/fetch')
 import fetch from '../src/fetch'
-import { anyDecideCall, anyLocalEvalCall, apiImplementation } from './feature-flags.spec'
+import { anyDecideCall, anyLocalEvalCall, apiImplementation } from './test-utils'
 import { waitForPromises, wait } from '../../posthog-core/test/test-utils/test-utils'
 import { randomUUID } from 'crypto'
 
@@ -260,7 +260,6 @@ describe('PostHog Node.js', () => {
       await waitForPromises()
       jest.runOnlyPendingTimers()
       batchEvents = getLastBatchEvents()
-      console.warn(batchEvents)
       expect(batchEvents?.[0].properties).toEqual({
         $groups: { org: 123 },
         foo: 'bar',

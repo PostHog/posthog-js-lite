@@ -6,6 +6,11 @@ describe('PostHog Core', () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let mocks: PostHogCoreTestClientMocks
 
+  const getEnrichedProperties = (): any => {
+    // NOTE: Hacky override so we can just test the props functionality
+    return (posthog as any).enrichProperties()
+  }
+
   beforeEach(() => {
     ;[posthog, mocks] = createTestClient('TEST_API_KEY', {})
   })
@@ -13,30 +18,30 @@ describe('PostHog Core', () => {
   describe('register', () => {
     it('should register properties to storage', () => {
       posthog.register({ foo: 'bar' })
-      expect(posthog.enrichProperties()).toMatchObject({ foo: 'bar' })
+      expect(getEnrichedProperties()).toMatchObject({ foo: 'bar' })
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.Props)).toEqual({ foo: 'bar' })
       posthog.register({ foo2: 'bar2' })
-      expect(posthog.enrichProperties()).toMatchObject({ foo: 'bar', foo2: 'bar2' })
+      expect(getEnrichedProperties()).toMatchObject({ foo: 'bar', foo2: 'bar2' })
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.Props)).toEqual({ foo: 'bar', foo2: 'bar2' })
     })
 
     it('should unregister properties from storage', () => {
       posthog.register({ foo: 'bar', foo2: 'bar2' })
       posthog.unregister('foo')
-      expect(posthog.enrichProperties().foo).toBeUndefined()
-      expect(posthog.enrichProperties().foo2).toEqual('bar2')
+      expect(getEnrichedProperties().foo).toBeUndefined()
+      expect(getEnrichedProperties().foo2).toEqual('bar2')
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.Props)).toEqual({ foo2: 'bar2' })
     })
 
     it('should register properties only for the session', () => {
       posthog.registerForSession({ foo: 'bar' })
-      expect(posthog.enrichProperties()).toMatchObject({ foo: 'bar' })
+      expect(getEnrichedProperties()).toMatchObject({ foo: 'bar' })
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.Props)).toEqual(undefined)
 
       posthog.register({ foo: 'bar2' })
-      expect(posthog.enrichProperties()).toMatchObject({ foo: 'bar' })
+      expect(getEnrichedProperties()).toMatchObject({ foo: 'bar' })
       posthog.unregisterForSession('foo')
-      expect(posthog.enrichProperties()).toMatchObject({ foo: 'bar2' })
+      expect(getEnrichedProperties()).toMatchObject({ foo: 'bar2' })
     })
   })
 })

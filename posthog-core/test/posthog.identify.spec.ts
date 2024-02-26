@@ -1,4 +1,4 @@
-import { parseBody } from './test-utils/test-utils'
+import { parseBody, waitForPromises } from './test-utils/test-utils'
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
 import { PostHogPersistedProperty } from '../src'
 
@@ -14,12 +14,12 @@ describe('PostHog Core', () => {
   })
 
   describe('identify', () => {
-    // Identify also triggers a decide call so we should expect 2 calls
-    it('should send an $identify event', () => {
+    // Identify also triggers a subsequent decide call so we should expect 2 calls
+    it('should send an $identify event', async () => {
       posthog.identify('id-1', { foo: 'bar' })
-
+      await waitForPromises()
       expect(mocks.fetch).toHaveBeenCalledTimes(2)
-      expect(parseBody(mocks.fetch.mock.calls[1])).toEqual({
+      expect(parseBody(mocks.fetch.mock.calls[0])).toEqual({
         api_key: 'TEST_API_KEY',
         batch: [
           {
@@ -46,11 +46,12 @@ describe('PostHog Core', () => {
       })
     })
 
-    it('should include anonymous ID if set', () => {
+    it('should include anonymous ID if set', async () => {
       posthog.identify('id-1', { foo: 'bar' })
+      await waitForPromises()
 
       expect(mocks.fetch).toHaveBeenCalledTimes(2)
-      expect(parseBody(mocks.fetch.mock.calls[1])).toMatchObject({
+      expect(parseBody(mocks.fetch.mock.calls[0])).toMatchObject({
         batch: [
           {
             distinct_id: posthog.getDistinctId(),
@@ -70,14 +71,16 @@ describe('PostHog Core', () => {
       expect(mocks.storage.setItem).toHaveBeenCalledWith('distinct_id', 'id-1')
     })
 
-    it('should use existing distinctId from storage', () => {
+    it('should use existing distinctId from storage', async () => {
       mocks.storage.setItem(PostHogPersistedProperty.AnonymousId, 'my-old-value')
       mocks.storage.setItem.mockClear()
       posthog.identify('id-1', { foo: 'bar' })
+      await waitForPromises()
+
       // One call exists for the queueing, one for persisting distinct id
       expect(mocks.storage.setItem).toHaveBeenCalledWith('distinct_id', 'id-1')
-      expect(mocks.fetch).toHaveBeenCalledTimes(2) // Once for reload flags, once for identify
-      expect(parseBody(mocks.fetch.mock.calls[1])).toMatchObject({
+      expect(mocks.fetch).toHaveBeenCalledTimes(2)
+      expect(parseBody(mocks.fetch.mock.calls[0])).toMatchObject({
         batch: [
           {
             distinct_id: 'id-1',

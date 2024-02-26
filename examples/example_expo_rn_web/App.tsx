@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native'
 
 import PostHog from 'posthog-react-native'
 
-export const $posthog = PostHog.initAsync('phc_pQ70jJhZKHRvDIL5ruOErnPy6xiAiWCqlL4ayELj4X8', {
+export const posthog = new PostHog('phc_pQ70jJhZKHRvDIL5ruOErnPy6xiAiWCqlL4ayELj4X8', {
   host: 'https://app.posthog.com',
   flushAt: 1,
   captureNativeAppLifecycleEvents: false,
@@ -11,18 +11,9 @@ export const $posthog = PostHog.initAsync('phc_pQ70jJhZKHRvDIL5ruOErnPy6xiAiWCql
   preloadFeatureFlags: false,
   // captureMode: 'form',
   // persistence: 'memory',
-}).then((client) => {
-  client.debug(true)
-  // console.log('PostHog client initialized');
-  client.capture('test')
-  // console.log(`test: ${client.getFeatureFlag('test')}`);
-  // client.on('error', err => {
-  //   console.error('PostHog error', err);
-  // });
-  // client.on('capture', ev => {
-  //   console.error('PostHog ev', ev);
-  // });
 })
+posthog.debug(true)
+posthog.capture('test')
 
 export default function App() {
   return (

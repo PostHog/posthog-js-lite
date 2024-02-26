@@ -1,6 +1,7 @@
 import { PostHogPersistedProperty } from 'posthog-core'
-import { PostHog, PostHogCustomAsyncStorage, PostHogOptions } from '../index'
+import { PostHog, PostHogCustomAsyncStorage } from '../index'
 import { Linking, AppState, AppStateStatus } from 'react-native'
+import { waitForExpect } from './test-utils'
 import { SemiAsyncStorage } from '../src/storage'
 
 Linking.getInitialURL = jest.fn(() => Promise.resolve(null))
@@ -8,7 +9,6 @@ AppState.addEventListener = jest.fn()
 
 describe('PostHog React Native', () => {
   let mockStorage: PostHogCustomAsyncStorage
-  let mockSemiAsyncStorage: SemiAsyncStorage
   let cache: any = {}
 
   jest.setTimeout(500)
@@ -40,9 +40,6 @@ describe('PostHog React Native', () => {
         cache[key] = value
       },
     }
-    mockSemiAsyncStorage = new SemiAsyncStorage(mockStorage)
-
-    PostHog._resetClientCache()
   })
 
   afterEach(async () => {
@@ -51,31 +48,36 @@ describe('PostHog React Native', () => {
   })
 
   it('should initialize properly with bootstrap', async () => {
-    posthog = await PostHog.initAsync('test-token', {
+    posthog = new PostHog('test-token', {
       bootstrap: { distinctId: 'bar' },
       persistence: 'memory',
       flushInterval: 0,
     })
+
+    await posthog.ready()
 
     expect(posthog.getAnonymousId()).toEqual('bar')
     expect(posthog.getDistinctId()).toEqual('bar')
   })
 
   it('should initialize properly with bootstrap using async storage', async () => {
-    posthog = await PostHog.initAsync('test-token', {
+    posthog = new PostHog('test-token', {
       bootstrap: { distinctId: 'bar' },
       persistence: 'file',
       flushInterval: 0,
     })
+    await posthog.ready()
+
     expect(posthog.getAnonymousId()).toEqual('bar')
     expect(posthog.getDistinctId()).toEqual('bar')
   })
 
   it('should allow customising of native app properties', async () => {
-    posthog = await PostHog.initAsync('test-token', {
+    posthog = new PostHog('test-token', {
       customAppProperties: { $app_name: 'custom' },
       flushInterval: 0,
     })
+    // await posthog.ready()
 
     expect(posthog.getCommonEventProperties()).toEqual({
       $active_feature_flags: undefined,
@@ -87,7 +89,7 @@ describe('PostHog React Native', () => {
       $app_name: 'custom',
     })
 
-    const posthog2 = await PostHog.initAsync('test-token2', {
+    const posthog2 = new PostHog('test-token2', {
       flushInterval: 0,
       customAppProperties: (properties) => {
         properties.$app_name = 'customised!'
@@ -95,6 +97,7 @@ describe('PostHog React Native', () => {
         return properties
       },
     })
+    await posthog.ready()
 
     expect(posthog2.getCommonEventProperties()).toEqual({
       $active_feature_flags: undefined,
@@ -119,42 +122,16 @@ describe('PostHog React Native', () => {
     await posthog2.shutdownAsync()
   })
 
-  it("should init async preloading the storage if it's not preloaded", async () => {
-    posthog = await PostHog.initAsync('test-token', {
-      customAsyncStorage: mockStorage,
-      flushInterval: 0,
-    })
-
-    expect(posthog.getAnonymousId()).toBe(posthog.getDistinctId())
-
-    const otherPostHog = await PostHog.initAsync('test-token')
-
-    expect(otherPostHog).toEqual(posthog)
-  })
-
-  it('should init async to cache posthog', async () => {
-    posthog = await PostHog.initAsync('test-token', {
-      customAsyncStorage: mockStorage,
-      flushInterval: 0,
-    })
-
-    const otherPostHog = await PostHog.initAsync('test-token')
-
-    expect(posthog).toEqual(otherPostHog)
-
-    await otherPostHog.shutdownAsync()
-  })
-
   describe('screen', () => {
     it('should set a $screen_name property on screen', async () => {
-      posthog = await PostHog.initAsync('test-token', {
+      posthog = new PostHog('test-token', {
         customAsyncStorage: mockStorage,
         flushInterval: 0,
       })
 
-      posthog.screen('test-screen')
+      await posthog.screen('test-screen')
 
-      expect(posthog.enrichProperties()).toMatchObject({
+      expect((posthog as any).sessionProps).toMatchObject({
         $screen_name: 'test-screen',
       })
 
@@ -163,68 +140,12 @@ describe('PostHog React Native', () => {
   })
 
   describe('captureNativeAppLifecycleEvents', () => {
-    const createTestClient = async (
-      apiKey: string,
-      options?: Partial<PostHogOptions> | undefined,
-      onCapture?: jest.Mock | undefined
-    ): Promise<PostHog> => {
-      const posthog = new PostHog(
-        apiKey,
-        {
-          ...(options || {}),
-          persistence: 'file',
-          customAsyncStorage: mockStorage,
-          flushInterval: 0,
-        },
-        mockSemiAsyncStorage
-      )
-      if (onCapture) {
-        posthog.on('capture', onCapture)
-      }
-      // @ts-expect-error
-      await posthog._setupPromise
-      return posthog
-    }
-
     it('should trigger an Application Installed event', async () => {
       // arrange
       const onCapture = jest.fn()
 
       // act
-      posthog = await createTestClient(
-        'test-install',
-        {
-          captureNativeAppLifecycleEvents: true,
-          customAppProperties: {
-            $app_build: '1',
-            $app_version: '1.0.0',
-          },
-        },
-        onCapture
-      )
-
-      // assert
-      expect(onCapture).toHaveBeenCalledTimes(2)
-      expect(onCapture.mock.calls[0][0]).toMatchObject({
-        event: 'Application Installed',
-        properties: {
-          $app_build: '1',
-          $app_version: '1.0.0',
-        },
-      })
-      expect(onCapture.mock.calls[1][0]).toMatchObject({
-        event: 'Application Opened',
-        properties: {
-          $app_build: '1',
-          $app_version: '1.0.0',
-          from_background: false,
-        },
-      })
-    })
-    it('should trigger an Application Updated event', async () => {
-      // arrange
-      const onCapture = jest.fn()
-      posthog = await PostHog.initAsync('1', {
+      posthog = new PostHog('1', {
         customAsyncStorage: mockStorage,
         captureNativeAppLifecycleEvents: true,
         customAppProperties: {
@@ -232,92 +153,143 @@ describe('PostHog React Native', () => {
           $app_version: '1.0.0',
         },
       })
+      posthog.on('capture', onCapture)
 
-      // act
-      posthog = await createTestClient(
-        '2',
-        {
-          captureNativeAppLifecycleEvents: true,
-          customAppProperties: {
-            $app_build: '2',
-            $app_version: '2.0.0',
+      await waitForExpect(200, () => {
+        expect(onCapture).toHaveBeenCalledTimes(2)
+        expect(onCapture.mock.calls[0][0]).toMatchObject({
+          event: 'Application Installed',
+          properties: {
+            $app_build: '1',
+            $app_version: '1.0.0',
           },
-        },
-        onCapture
-      )
-
-      // assert
-      expect(onCapture).toHaveBeenCalledTimes(2)
-      expect(onCapture.mock.calls[0][0]).toMatchObject({
-        event: 'Application Updated',
-        properties: {
-          $app_build: '2',
-          $app_version: '2.0.0',
-          previous_build: '1',
-          previous_version: '1.0.0',
-        },
-      })
-      expect(onCapture.mock.calls[1][0]).toMatchObject({
-        event: 'Application Opened',
-        properties: {
-          $app_build: '2',
-          $app_version: '2.0.0',
-          from_background: false,
-        },
+        })
+        expect(onCapture.mock.calls[1][0]).toMatchObject({
+          event: 'Application Opened',
+          properties: {
+            $app_build: '1',
+            $app_version: '1.0.0',
+            from_background: false,
+          },
+        })
       })
     })
-    it('should include the initial url', async () => {
+
+    it('should trigger an Application Updated event', async () => {
       // arrange
-      Linking.getInitialURL = jest.fn(() => Promise.resolve('https://example.com'))
       const onCapture = jest.fn()
-      posthog = await createTestClient('test-open', {
+      posthog = new PostHog('1', {
+        customAsyncStorage: mockStorage,
         captureNativeAppLifecycleEvents: true,
         customAppProperties: {
           $app_build: '1',
           $app_version: '1.0.0',
         },
       })
+      posthog.on('capture', onCapture)
 
+      await waitForExpect(200, () => {
+        expect(onCapture).toHaveBeenCalledTimes(2)
+      })
+
+      onCapture.mockClear()
       // act
-      posthog = await createTestClient(
-        'test-open2',
-        {
-          captureNativeAppLifecycleEvents: true,
-          customAppProperties: {
-            $app_build: '1',
-            $app_version: '1.0.0',
-          },
+      posthog = new PostHog('1', {
+        customAsyncStorage: mockStorage,
+        captureNativeAppLifecycleEvents: true,
+        customAppProperties: {
+          $app_build: '2',
+          $app_version: '2.0.0',
         },
-        onCapture
-      )
+      })
+      posthog.on('capture', onCapture)
 
-      // assert
-      expect(onCapture).toHaveBeenCalledTimes(1)
-      expect(onCapture.mock.calls[0][0]).toMatchObject({
-        event: 'Application Opened',
-        properties: {
+      await waitForExpect(200, () => {
+        // assert
+        expect(onCapture).toHaveBeenCalledTimes(2)
+        expect(onCapture.mock.calls[0][0]).toMatchObject({
+          event: 'Application Updated',
+          properties: {
+            $app_build: '2',
+            $app_version: '2.0.0',
+            previous_build: '1',
+            previous_version: '1.0.0',
+          },
+        })
+        expect(onCapture.mock.calls[1][0]).toMatchObject({
+          event: 'Application Opened',
+          properties: {
+            $app_build: '2',
+            $app_version: '2.0.0',
+            from_background: false,
+          },
+        })
+      })
+    })
+
+    it('should include the initial url', async () => {
+      // arrange
+      Linking.getInitialURL = jest.fn(() => Promise.resolve('https://example.com'))
+      const onCapture = jest.fn()
+
+      posthog = new PostHog('1', {
+        customAsyncStorage: mockStorage,
+        captureNativeAppLifecycleEvents: true,
+        customAppProperties: {
           $app_build: '1',
           $app_version: '1.0.0',
-          from_background: false,
-          url: 'https://example.com',
         },
+      })
+      posthog.on('capture', onCapture)
+
+      await waitForExpect(200, () => {
+        expect(onCapture).toHaveBeenCalledTimes(2)
+      })
+
+      onCapture.mockClear()
+
+      posthog = new PostHog('1', {
+        customAsyncStorage: mockStorage,
+        captureNativeAppLifecycleEvents: true,
+        customAppProperties: {
+          $app_build: '1',
+          $app_version: '1.0.0',
+        },
+      })
+      posthog.on('capture', onCapture)
+
+      // assert
+      await waitForExpect(200, () => {
+        expect(onCapture).toHaveBeenCalledTimes(1)
+        expect(onCapture.mock.calls[0][0]).toMatchObject({
+          event: 'Application Opened',
+          properties: {
+            $app_build: '1',
+            $app_version: '1.0.0',
+            from_background: false,
+            url: 'https://example.com',
+          },
+        })
       })
     })
 
     it('should track app background and foreground', async () => {
       // arrange
       const onCapture = jest.fn()
-      posthog = await createTestClient(
-        'test-change',
-        {
-          captureNativeAppLifecycleEvents: true,
-          customAppProperties: {
-            $app_build: '1',
-            $app_version: '1.0.0',
-          },
+      posthog = new PostHog('1', {
+        customAsyncStorage: mockStorage,
+        captureNativeAppLifecycleEvents: true,
+        customAppProperties: {
+          $app_build: '1',
+          $app_version: '1.0.0',
         },
-        onCapture
-      )
+      })
+      posthog.on('capture', onCapture)
+
+      await waitForExpect(200, () => {
+        expect(onCapture).toHaveBeenCalledTimes(2)
+      })
+
       const cb: (state: AppStateStatus) => void = (AppState.addEventListener as jest.Mock).mock.calls[1][1]
 
       // act
@@ -325,21 +297,76 @@ describe('PostHog React Native', () => {
       cb('active')
 
       // assert
-      expect(onCapture).toHaveBeenCalledTimes(4)
-      expect(onCapture.mock.calls[2][0]).toMatchObject({
-        event: 'Application Backgrounded',
-        properties: {
-          $app_build: '1',
-          $app_version: '1.0.0',
-        },
+      await waitForExpect(200, () => {
+        expect(onCapture).toHaveBeenCalledTimes(4)
+        expect(onCapture.mock.calls[2][0]).toMatchObject({
+          event: 'Application Backgrounded',
+          properties: {
+            $app_build: '1',
+            $app_version: '1.0.0',
+          },
+        })
+        expect(onCapture.mock.calls[3][0]).toMatchObject({
+          event: 'Application Opened',
+          properties: {
+            $app_build: '1',
+            $app_version: '1.0.0',
+            from_background: true,
+          },
+        })
       })
-      expect(onCapture.mock.calls[3][0]).toMatchObject({
-        event: 'Application Opened',
-        properties: {
-          $app_build: '1',
-          $app_version: '1.0.0',
-          from_background: true,
-        },
+    })
+  })
+
+  describe('async initialization', () => {
+    beforeEach(async () => {
+      const semiAsyncStorage = new SemiAsyncStorage(mockStorage)
+      await semiAsyncStorage.preloadAsync()
+      semiAsyncStorage.setItem(PostHogPersistedProperty.AnonymousId, 'my-anonymous-id')
+    })
+
+    it('should allow immediate calls but delay for the stored values', async () => {
+      const onCapture = jest.fn()
+      mockStorage.setItem(PostHogPersistedProperty.AnonymousId, 'my-anonymous-id')
+      posthog = new PostHog('1', {
+        customAsyncStorage: mockStorage,
+        captureNativeAppLifecycleEvents: false,
+      })
+      posthog.on('capture', onCapture)
+      posthog.on('identify', onCapture)
+
+      // Should all be empty as the storage isn't ready
+      expect(posthog.getDistinctId()).toEqual('')
+      expect(posthog.getAnonymousId()).toEqual('')
+      expect(posthog.getSessionId()).toEqual('')
+
+      // Fire multiple calls that have dependencies on one another
+      posthog.capture('anonymous event')
+      posthog.identify('identified-id')
+      posthog.capture('identified event')
+
+      await waitForExpect(200, () => {
+        expect(posthog.getDistinctId()).toEqual('identified-id')
+        expect(posthog.getAnonymousId()).toEqual('my-anonymous-id')
+
+        expect(onCapture).toHaveBeenCalledTimes(3)
+        expect(onCapture.mock.calls[0][0]).toMatchObject({
+          event: 'anonymous event',
+          distinct_id: 'my-anonymous-id',
+        })
+
+        expect(onCapture.mock.calls[1][0]).toMatchObject({
+          event: '$identify',
+          distinct_id: 'identified-id',
+          properties: {
+            $anon_distinct_id: 'my-anonymous-id',
+          },
+        })
+        expect(onCapture.mock.calls[2][0]).toMatchObject({
+          event: 'identified event',
+          distinct_id: 'identified-id',
+          properties: {},
+        })
       })
     })
   })

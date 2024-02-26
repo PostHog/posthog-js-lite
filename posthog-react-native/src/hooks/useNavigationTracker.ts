@@ -21,9 +21,6 @@ function _useNavigationTracker(options?: PostHogAutocaptureNavigationTrackerOpti
   const navigation = OptionalReactNativeNavigation.useNavigation()
 
   const trackRoute = useCallback((): void => {
-    if (!posthog) {
-      return
-    }
     // NOTE: This method is not typed correctly but is available and takes care of parsing the router state correctly
     const currentRoute = (navigation as any).getCurrentRoute()
     if (!currentRoute) {

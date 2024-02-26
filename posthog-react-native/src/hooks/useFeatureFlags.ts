@@ -6,15 +6,11 @@ import { usePostHog } from './usePostHog'
 export function useFeatureFlags(client?: PostHog): PostHogDecideResponse['featureFlags'] | undefined {
   const contextClient = usePostHog()
   const posthog = client || contextClient
-
   const [featureFlags, setFeatureFlags] = useState<PostHogDecideResponse['featureFlags'] | undefined>(
-    posthog?.getFeatureFlags()
+    posthog.getFeatureFlags()
   )
 
   useEffect(() => {
-    if (!posthog) {
-      return
-    }
     setFeatureFlags(posthog.getFeatureFlags())
     return posthog.onFeatureFlags((flags) => {
       setFeatureFlags(flags)

@@ -1,14 +1,13 @@
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
-import { parseBody } from './test-utils/test-utils'
+import { parseBody, waitForPromises } from './test-utils/test-utils'
 
 describe('PostHog Core', () => {
   let posthog: PostHogCoreTestClient
   let mocks: PostHogCoreTestClientMocks
 
-  jest.useFakeTimers()
-  jest.setSystemTime(new Date('2022-01-01'))
-
   beforeEach(() => {
+    jest.useFakeTimers()
+    jest.setSystemTime(new Date('2022-01-01'))
     ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1 })
   })
 
@@ -38,11 +37,12 @@ describe('PostHog Core', () => {
       })
     })
 
-    it('should call groupIdentify if including props', () => {
+    it('should call groupIdentify if including props', async () => {
       posthog.group('other', 'team', { foo: 'bar' })
+      await waitForPromises()
 
       expect(mocks.fetch).toHaveBeenCalledTimes(2) // 1 for decide, 1 for groupIdentify
-      expect(parseBody(mocks.fetch.mock.calls[1])).toMatchObject({
+      expect(parseBody(mocks.fetch.mock.calls[0])).toMatchObject({
         batch: [
           {
             event: '$groupidentify',

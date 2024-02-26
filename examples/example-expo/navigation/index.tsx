@@ -14,8 +14,8 @@ import { RootStackParamList, RootTabParamList, RootTabScreenProps } from '../typ
 import LinkingConfiguration from './LinkingConfiguration'
 
 import { PostHogProvider } from 'posthog-react-native'
-import PostHogDebugScreen, { usePosthogDebugEvents } from '../screens/PostHogDebugScreen'
-import PosthogDemoScreen from '../screens/PosthogDemoScreen'
+import PostHogDebugScreen, { usePostHogDebugEvents } from '../screens/PostHogDebugScreen'
+import PostHogDemoScreen from '../screens/PostHogDemoScreen'
 
 export default function Navigation({ colorScheme }: { colorScheme: ColorSchemeName }) {
   return (
@@ -44,14 +44,14 @@ const Stack = createNativeStackNavigator<RootStackParamList>()
 
 function RootNavigator() {
   // NOTE: This is a debugging hook just for this example
-  usePosthogDebugEvents()
+  usePostHogDebugEvents()
   return (
     <Stack.Navigator>
       <Stack.Screen name="Root" component={BottomTabNavigator} options={{ headerShown: false }} />
       <Stack.Group screenOptions={{ presentation: 'modal' }}>
         <Stack.Group>
-          <Stack.Screen name="Modal" component={PosthogDemoScreen} />
-          <Stack.Screen name="ModalNextPage" component={PosthogDemoScreen} />
+          <Stack.Screen name="Modal" component={PostHogDemoScreen} />
+          <Stack.Screen name="ModalNextPage" component={PostHogDemoScreen} />
         </Stack.Group>
       </Stack.Group>
     </Stack.Navigator>
@@ -69,7 +69,7 @@ function BottomTabNavigator() {
     <BottomTab.Navigator initialRouteName="TabOne">
       <BottomTab.Screen
         name="TabOne"
-        component={PosthogDemoScreen}
+        component={PostHogDemoScreen}
         options={({ navigation }: RootTabScreenProps<'TabOne'>) => ({
           title: 'Tab One',
           tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
@@ -88,7 +88,7 @@ function BottomTabNavigator() {
       />
       <BottomTab.Screen
         name="TabTwo"
-        component={PosthogDemoScreen}
+        component={PostHogDemoScreen}
         options={{
           title: 'Tab Two',
           tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
