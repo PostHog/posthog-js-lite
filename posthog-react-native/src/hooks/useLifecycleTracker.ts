@@ -9,10 +9,6 @@ export function useLifecycleTracker(client?: PostHog): void {
   const posthog = client || contextClient
 
   return useEffect(() => {
-    if (!posthog) {
-      return
-    }
-
     if (!openTrackedRef.current) {
       openTrackedRef.current = true
       posthog.capture('Application Opened')

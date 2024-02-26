@@ -35,7 +35,7 @@ Array [
     "tag_name": "ScrollView",
   },
   Object {
-    "tag_name": "PosthogDemoScreen",
+    "tag_name": "PostHogDemoScreen",
   },
   Object {
     "attr__name": "TabOne",

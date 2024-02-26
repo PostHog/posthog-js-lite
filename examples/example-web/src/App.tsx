@@ -3,7 +3,7 @@ import './App.css'
 import { posthog } from './posthog'
 
 const GLOBAL_EVENTS: { event: string; payload: any }[] = []
-export const usePosthogDebugEvents = () => {
+export const usePostHogDebugEvents = () => {
   const [localEvents, setLocalEvents] = useState(GLOBAL_EVENTS)
 
   useEffect(() => {
@@ -34,7 +34,7 @@ export const usePosthogDebugEvents = () => {
 }
 
 const DebugEvents = (): JSX.Element => {
-  const events = usePosthogDebugEvents()
+  const events = usePostHogDebugEvents()
 
   return (
     <div className="Debugger">

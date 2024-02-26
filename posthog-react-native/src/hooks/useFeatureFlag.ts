@@ -7,12 +7,9 @@ export function useFeatureFlag(flag: string, client?: PostHog): string | boolean
   const contextClient = usePostHog()
   const posthog = client || contextClient
 
-  const [featureFlag, setFeatureFlag] = useState<boolean | string | undefined>(posthog?.getFeatureFlag(flag))
+  const [featureFlag, setFeatureFlag] = useState<boolean | string | undefined>(posthog.getFeatureFlag(flag))
 
   useEffect(() => {
-    if (!posthog) {
-      return
-    }
     setFeatureFlag(posthog.getFeatureFlag(flag))
     return posthog.onFeatureFlags(() => {
       setFeatureFlag(posthog.getFeatureFlag(flag))
@@ -27,14 +24,9 @@ export type FeatureFlagWithPayload = [boolean | string | undefined, JsonType | u
 export function useFeatureFlagWithPayload(flag: string, client?: PostHog): FeatureFlagWithPayload {
   const contextClient = usePostHog()
   const posthog = client || contextClient
-
   const [featureFlag, setFeatureFlag] = useState<FeatureFlagWithPayload>([undefined, undefined])
 
   useEffect(() => {
-    if (!posthog) {
-      return
-    }
-
     setFeatureFlag([posthog.getFeatureFlag(flag), posthog.getFeatureFlagPayload(flag)])
     return posthog.onFeatureFlags(() => {
       setFeatureFlag([posthog.getFeatureFlag(flag), posthog.getFeatureFlagPayload(flag)])
