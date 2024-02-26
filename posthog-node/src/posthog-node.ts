@@ -449,9 +449,9 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     void this.shutdownAsync()
   }
 
-  async shutdownAsync(): Promise<void> {
+  async shutdownAsync(shutdownTimeout?: number): Promise<void> {
     this.featureFlagsPoller?.stopPoller()
-    return super.shutdownAsync()
+    return super.shutdownAsync(shutdownTimeout)
   }
 
   private addLocalPersonAndGroupProperties(

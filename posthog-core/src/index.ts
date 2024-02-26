@@ -37,7 +37,7 @@ class PostHogFetchNetworkError extends Error {
 
   constructor(public error: unknown) {
     // TRICKY: "cause" is a newer property but is just ignored otherwise. Cast to any to ignore the type issue.
-    // @ts-ignore
+    // @ts-expect-error
     super('Network error while fetching PostHog', error instanceof Error ? { cause: error } : {})
   }
 }
@@ -563,7 +563,7 @@ export abstract class PostHogCoreStateless {
     )
   }
 
-  async shutdownAsync(): Promise<void> {
+  async shutdownAsync(shutdownTimeout?: number): Promise<void> {
     clearTimeout(this._flushTimer)
     try {
       await Promise.all(
@@ -574,6 +574,8 @@ export abstract class PostHogCoreStateless {
         )
       )
 
+      const timeout = shutdownTimeout ?? 30000
+      const startTime = Date.now()
       while (true) {
         const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
 
@@ -585,6 +587,12 @@ export abstract class PostHogCoreStateless {
         // while we were waiting for the pending promises to resolve
         // For example, see sendFeatureFlags in posthog-node/src/posthog-node.ts::capture
         await this.flushAsync()
+
+        // If we've been waiting for more than the shutdownTimeout, stop it
+        const now = Date.now()
+        if (startTime + timeout >= now) {
+          break
+        }
       }
     } catch (e) {
       if (!isPostHogFetchError(e)) {
