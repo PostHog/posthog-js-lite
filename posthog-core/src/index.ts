@@ -108,7 +108,6 @@ export abstract class PostHogCoreStateless {
       if (this.isDebug) {
         console.warn('[PostHog] The client is disabled')
       }
-      // When disabled we don't do anything
       return
     }
 
