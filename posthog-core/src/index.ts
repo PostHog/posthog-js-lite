@@ -616,12 +616,11 @@ export abstract class PostHogCoreStateless {
     )
   }
 
-  async shutdownAsync(): Promise<void> {
+  async shutdownAsync(shutdownTimeoutMs?: number): Promise<void> {
     await this._initPromise
 
     clearTimeout(this._flushTimer)
     try {
-      await this.flushAsync()
       await Promise.all(
         Object.values(this.pendingPromises).map((x) =>
           x.catch(() => {
@@ -629,10 +628,28 @@ export abstract class PostHogCoreStateless {
           })
         )
       )
-      // flush again to make sure we send all events, some of which might've been added
-      // while we were waiting for the pending promises to resolve
-      // For example, see sendFeatureFlags in posthog-node/src/posthog-node.ts::capture
-      await this.flushAsync()
+
+      const timeout = shutdownTimeoutMs ?? 30000
+      const startTimeWithDelay = Date.now() + timeout
+
+      while (true) {
+        const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
+
+        if (queue.length === 0) {
+          break
+        }
+
+        // flush again to make sure we send all events, some of which might've been added
+        // while we were waiting for the pending promises to resolve
+        // For example, see sendFeatureFlags in posthog-node/src/posthog-node.ts::capture
+        await this.flushAsync()
+
+        // If we've been waiting for more than the shutdownTimeoutMs, stop it
+        const now = Date.now()
+        if (startTimeWithDelay < now) {
+          break
+        }
+      }
     } catch (e) {
       if (!isPostHogFetchError(e)) {
         throw e
@@ -641,8 +658,8 @@ export abstract class PostHogCoreStateless {
     }
   }
 
-  shutdown(): void {
-    void this.shutdownAsync()
+  shutdown(shutdownTimeoutMs?: number): void {
+    void this.shutdownAsync(shutdownTimeoutMs)
   }
 }
 
