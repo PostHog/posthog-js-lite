@@ -105,6 +105,9 @@ export abstract class PostHogCoreStateless {
 
   protected wrap(fn: () => void): void {
     if (this.disabled) {
+      if (this.isDebug) {
+        console.warn('[PostHog] The client is disabled')
+      }
       // When disabled we don't do anything
       return
     }
@@ -148,8 +151,16 @@ export abstract class PostHogCoreStateless {
     this.removeDebugCallback?.()
 
     if (enabled) {
-      this.removeDebugCallback = this.on('*', (event, payload) => console.log('PostHog Debug', event, payload))
+      const removeDebugCallback = this.on('*', (event, payload) => console.log('PostHog Debug', event, payload))
+      this.removeDebugCallback = () => {
+        removeDebugCallback()
+        this.removeDebugCallback = undefined
+      }
     }
+  }
+
+  get isDebug(): boolean {
+    return !!this.removeDebugCallback
   }
 
   private buildPayload(payload: { distinct_id: string; event: string; properties?: PostHogEventProperties }): any {
