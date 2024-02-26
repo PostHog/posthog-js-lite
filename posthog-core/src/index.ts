@@ -616,7 +616,7 @@ export abstract class PostHogCoreStateless {
     )
   }
 
-  async shutdownAsync(shutdownTimeout?: number): Promise<void> {
+  async shutdownAsync(shutdownTimeoutMs?: number): Promise<void> {
     await this._initPromise
 
     clearTimeout(this._flushTimer)
@@ -629,7 +629,7 @@ export abstract class PostHogCoreStateless {
         )
       )
 
-      const timeout = shutdownTimeout ?? 30000
+      const timeout = shutdownTimeoutMs ?? 30000
       const startTimeWithDelay = Date.now() + timeout
 
       while (true) {
@@ -644,7 +644,7 @@ export abstract class PostHogCoreStateless {
         // For example, see sendFeatureFlags in posthog-node/src/posthog-node.ts::capture
         await this.flushAsync()
 
-        // If we've been waiting for more than the shutdownTimeout, stop it
+        // If we've been waiting for more than the shutdownTimeoutMs, stop it
         const now = Date.now()
         if (startTimeWithDelay < now) {
           break
@@ -658,8 +658,8 @@ export abstract class PostHogCoreStateless {
     }
   }
 
-  shutdown(shutdownTimeout?: number): void {
-    void this.shutdownAsync(shutdownTimeout)
+  shutdown(shutdownTimeoutMs?: number): void {
+    void this.shutdownAsync(shutdownTimeoutMs)
   }
 }
 
