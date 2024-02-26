@@ -59,6 +59,8 @@ describe('PosthogWeb', () => {
         flushAt: 1,
       })
 
+      await waitForPromises()
+
       expect(fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=3', {
         body: JSON.stringify({
           token: 'TEST_API_KEY',
