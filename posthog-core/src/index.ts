@@ -575,7 +575,8 @@ export abstract class PostHogCoreStateless {
       )
 
       const timeout = shutdownTimeout ?? 30000
-      const startTime = Date.now()
+      const startTimeWithDelay = Date.now() + timeout
+
       while (true) {
         const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
 
@@ -590,7 +591,7 @@ export abstract class PostHogCoreStateless {
 
         // If we've been waiting for more than the shutdownTimeout, stop it
         const now = Date.now()
-        if (startTime + timeout < now) {
+        if (startTimeWithDelay < now) {
           break
         }
       }
