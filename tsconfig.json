@@ -9,14 +9,14 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "resolveJsonModule": true,
-    "target": "es5",
+    "target": "es2020",
     "sourceMap": true,
     "noEmit": false,
     "incremental": true,
     "strict": true,
     "baseUrl": "./", // this must be specified if "paths" is specified.
     "rootDir": "./",
-    "lib": ["ES2015", "ES2022.Error"],
+    "lib": ["ES2020", "ES2022.Error"],
     "jsx": "react"
   },
   "exclude": ["**/dist/**", "node_modules", "dist", "**/*.spec.*"]
