@@ -5,7 +5,7 @@ import { Alert, FlatList, StyleSheet, TouchableOpacity, View, Text } from 'react
 // NOTE: This would obviously need to be something like Redux in production
 export const GLOBAL_EVENTS: { event: string; payload: any }[] = []
 
-export const usePosthogDebugEvents = () => {
+export const usePostHogDebugEvents = () => {
   const posthog = usePostHog()
   const [localEvents, setLocalEvents] = useState(GLOBAL_EVENTS)
 
@@ -37,7 +37,7 @@ export const usePosthogDebugEvents = () => {
 }
 
 export default function PostHogDebugScreen() {
-  const localEvents = usePosthogDebugEvents()
+  const localEvents = usePostHogDebugEvents()
   return (
     <View style={styles.container}>
       <View style={styles.header}>

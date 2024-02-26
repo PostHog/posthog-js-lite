@@ -1,4 +1,4 @@
-export type PosthogCoreOptions = {
+export type PostHogCoreOptions = {
   /** PostHog API host, usually 'https://app.posthog.com' or 'https://eu.posthog.com' */
   host?: string
   /** The number of events to queue before sending to PostHog (flushing) */
@@ -109,7 +109,7 @@ export type PostHogDecideResponse = {
   sessionRecording: boolean
 }
 
-export type PosthogFlagsAndPayloadsResponse = {
+export type PostHogFlagsAndPayloadsResponse = {
   featureFlags: PostHogDecideResponse['featureFlags']
   featureFlagPayloads: PostHogDecideResponse['featureFlagPayloads']
 }

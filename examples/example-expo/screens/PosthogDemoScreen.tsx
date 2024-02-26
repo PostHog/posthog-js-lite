@@ -3,7 +3,7 @@ import { useFeatureFlags, usePostHog } from 'posthog-react-native'
 import React from 'react'
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native'
 
-export default function PosthogDemoScreen(props: any) {
+export default function PostHogDemoScreen(props: any) {
   const navigation = useNavigation()
   const posthog = usePostHog()
 

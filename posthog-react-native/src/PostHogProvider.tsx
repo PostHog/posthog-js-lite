@@ -4,7 +4,7 @@ import { PostHog, PostHogOptions } from './posthog-rn'
 import { autocaptureFromTouchEvent } from './autocapture'
 import { useNavigationTracker } from './hooks/useNavigationTracker'
 import { useLifecycleTracker } from './hooks/useLifecycleTracker'
-import { PostHogContext } from './PosthogContext'
+import { PostHogContext } from './PostHogContext'
 import { PostHogAutocaptureOptions } from './types'
 
 export interface PostHogProviderProps {

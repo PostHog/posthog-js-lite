@@ -4,7 +4,7 @@ import {
   PostHogQueueItem,
   PostHogAutocaptureElement,
   PostHogDecideResponse,
-  PosthogCoreOptions,
+  PostHogCoreOptions,
   PostHogEventProperties,
   PostHogPersistedProperty,
   PostHogCaptureOptions,
@@ -78,7 +78,7 @@ export abstract class PostHogCoreStateless {
   abstract getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined
   abstract setPersistedProperty<T>(key: PostHogPersistedProperty, value: T | null): void
 
-  constructor(apiKey: string, options?: PosthogCoreOptions) {
+  constructor(apiKey: string, options?: PostHogCoreOptions) {
     assert(apiKey, "You must pass your PostHog project's api key.")
 
     this.apiKey = apiKey
@@ -646,7 +646,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   protected _sessionExpirationTimeSeconds: number
   protected sessionProps: PostHogEventProperties = {}
 
-  constructor(apiKey: string, options?: PosthogCoreOptions) {
+  constructor(apiKey: string, options?: PostHogCoreOptions) {
     // Default for stateful mode is to not disable geoip. Only override if explicitly set
     const disableGeoipOption = options?.disableGeoip ?? false
 
@@ -656,7 +656,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     this._sessionExpirationTimeSeconds = options?.sessionExpirationTimeSeconds ?? 1800 // 30 minutes
   }
 
-  protected setupBootstrap(options?: Partial<PosthogCoreOptions>): void {
+  protected setupBootstrap(options?: Partial<PostHogCoreOptions>): void {
     if (options?.bootstrap?.distinctId) {
       if (options?.bootstrap?.isIdentifiedId) {
         this.setPersistedProperty(PostHogPersistedProperty.DistinctId, options.bootstrap.distinctId)

@@ -5,7 +5,7 @@
 import { waitForPromises } from 'posthog-core/test/test-utils/test-utils'
 import { PostHog } from '..'
 
-describe('PosthogWeb', () => {
+describe('PostHogWeb', () => {
   let fetch: jest.Mock
   jest.useRealTimers()
 

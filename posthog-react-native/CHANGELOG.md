@@ -144,4 +144,4 @@ Support for bootstrapping feature flags and distinctIDs. This allows you to init
 
 # 2.1.0 - 2022-09-02
 
-PosthogProvider `autocapture` can be configured with `captureLifecycleEvents: false` and `captureScreens: false` if you want do disable these autocapture elements. Both of these default to `true`
+PostHogProvider `autocapture` can be configured with `captureLifecycleEvents: false` and `captureScreens: false` if you want do disable these autocapture elements. Both of these default to `true`

@@ -1,4 +1,4 @@
-import { PostHogCore, PosthogCoreOptions, PostHogFetchOptions, PostHogFetchResponse } from '../../src'
+import { PostHogCore, PostHogCoreOptions, PostHogFetchOptions, PostHogFetchResponse } from '../../src'
 
 const version = '2.0.0-alpha'
 
@@ -13,7 +13,7 @@ export interface PostHogCoreTestClientMocks {
 export class PostHogCoreTestClient extends PostHogCore {
   public _cachedDistinctId?: string
 
-  constructor(private mocks: PostHogCoreTestClientMocks, apiKey: string, options?: PosthogCoreOptions) {
+  constructor(private mocks: PostHogCoreTestClientMocks, apiKey: string, options?: PostHogCoreOptions) {
     super(apiKey, options)
 
     this.setupBootstrap(options)
@@ -41,7 +41,7 @@ export class PostHogCoreTestClient extends PostHogCore {
 
 export const createTestClient = (
   apiKey: string,
-  options?: PosthogCoreOptions,
+  options?: PostHogCoreOptions,
   setupMocks?: (mocks: PostHogCoreTestClientMocks) => void
 ): [PostHogCoreTestClient, PostHogCoreTestClientMocks] => {
   const storageCache: { [key: string]: string | undefined } = {}

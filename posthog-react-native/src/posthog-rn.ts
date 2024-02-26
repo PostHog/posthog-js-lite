@@ -3,7 +3,7 @@ import { AppState, Dimensions, Linking } from 'react-native'
 import {
   PostHogCaptureOptions,
   PostHogCore,
-  PosthogCoreOptions,
+  PostHogCoreOptions,
   PostHogFetchOptions,
   PostHogFetchResponse,
   PostHogPersistedProperty,
@@ -16,7 +16,7 @@ import { buildOptimisiticAsyncStorage, getAppProperties } from './native-deps'
 import { PostHogAutocaptureOptions, PostHogCustomAppProperties, PostHogCustomAsyncStorage } from './types'
 import { withReactNativeNavigation } from './frameworks/wix-navigation'
 
-export type PostHogOptions = PosthogCoreOptions & {
+export type PostHogOptions = PostHogCoreOptions & {
   persistence?: 'memory' | 'file'
   /** Allows you to provide your own implementation of the common information about your App or a function to modify the default App properties generated  */
   customAppProperties?:
