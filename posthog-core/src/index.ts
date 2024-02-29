@@ -91,7 +91,6 @@ export abstract class PostHogCoreStateless {
     // If enable is explicitly set to false we override the optout
     this.defaultOptIn = options?.defaultOptIn ?? true
 
-    // when changing the default, make sure to update the retriable method as well
     this._retryOptions = {
       retryCount: options?.fetchRetryCount ?? 3,
       retryDelay: options?.fetchRetryDelay ?? 3000, // 3 seconds
@@ -582,11 +581,7 @@ export abstract class PostHogCoreStateless {
     })
   }
 
-  private async fetchWithRetry(
-    url: string,
-    options: PostHogFetchOptions,
-    retryOptions?: RetriableOptions
-  ): Promise<PostHogFetchResponse> {
+  private async fetchWithRetry(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
     ;(AbortSignal as any).timeout ??= function timeout(ms: number) {
       const ctrl = new AbortController()
       setTimeout(() => ctrl.abort(), ms)
@@ -614,7 +609,7 @@ export abstract class PostHogCoreStateless {
         }
         return res
       },
-      { ...this._retryOptions, ...retryOptions }
+      { ...this._retryOptions }
     )
   }
 
