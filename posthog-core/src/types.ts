@@ -20,9 +20,9 @@ export type PostHogCoreOptions = {
     featureFlags?: Record<string, boolean | string>
     featureFlagPayloads?: Record<string, JsonType>
   }
-  /** How many times we will retry HTTP requests */
+  /** How many times we will retry HTTP requests. Defaults to 3. */
   fetchRetryCount?: number
-  /** The delay between HTTP request retries */
+  /** The delay between HTTP request retries, Defaults to 3 seconds. */
   fetchRetryDelay?: number
   /** Timeout in milliseconds for any calls. Defaults to 10 seconds. */
   requestTimeout?: number

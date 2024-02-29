@@ -15,7 +15,12 @@ export interface RetriableOptions {
 }
 
 export async function retriable<T>(fn: () => Promise<T>, props: RetriableOptions = {}): Promise<T> {
-  const { retryCount = 3, retryDelay = 5000, retryCheck = () => true } = props
+  const {
+    retryCount = 3,
+    // 3s
+    retryDelay = 3000,
+    retryCheck = () => true,
+  } = props
   let lastError = null
 
   for (let i = 0; i < retryCount + 1; i++) {

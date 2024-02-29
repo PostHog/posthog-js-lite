@@ -91,9 +91,10 @@ export abstract class PostHogCoreStateless {
     // If enable is explicitly set to false we override the optout
     this.defaultOptIn = options?.defaultOptIn ?? true
 
+    // when changing the default, make sure to update the retriable method as well
     this._retryOptions = {
       retryCount: options?.fetchRetryCount ?? 3,
-      retryDelay: options?.fetchRetryDelay ?? 3000,
+      retryDelay: options?.fetchRetryDelay ?? 3000, // 3 seconds
       retryCheck: isPostHogFetchError,
     }
     this.requestTimeout = options?.requestTimeout ?? 10000 // 10 seconds
