@@ -584,7 +584,12 @@ export abstract class PostHogCoreStateless {
     })
   }
 
-  private async fetchWithRetry(url: string, options: PostHogFetchOptions, retryOptions?: Partial<RetriableOptions>, requestTimeout?: number): Promise<PostHogFetchResponse> {
+  private async fetchWithRetry(
+    url: string,
+    options: PostHogFetchOptions,
+    retryOptions?: Partial<RetriableOptions>,
+    requestTimeout?: number
+  ): Promise<PostHogFetchResponse> {
     ;(AbortSignal as any).timeout ??= function timeout(ms: number) {
       const ctrl = new AbortController()
       setTimeout(() => ctrl.abort(), ms)

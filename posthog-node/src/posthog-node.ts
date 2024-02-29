@@ -113,7 +113,11 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       super.captureStateless(distinctId, event, props, { timestamp, disableGeoip, uuid })
     }
 
-    const _getFlags = (distinctId: EventMessage['distinctId'], groups: EventMessage['groups'], disableGeoip: EventMessage['disableGeoip']): Promise<PostHogDecideResponse['featureFlags'] | undefined> => {
+    const _getFlags = (
+      distinctId: EventMessage['distinctId'],
+      groups: EventMessage['groups'],
+      disableGeoip: EventMessage['disableGeoip']
+    ): Promise<PostHogDecideResponse['featureFlags'] | undefined> => {
       return super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)
     }
 
