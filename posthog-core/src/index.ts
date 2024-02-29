@@ -44,7 +44,7 @@ class PostHogFetchNetworkError extends Error {
 }
 
 function isPostHogFetchError(err: any): boolean {
-  return typeof err === 'object' && (err.name === 'PostHogFetchHttpError' || err.name === 'PostHogFetchNetworkError')
+  return typeof err === 'object' && (err instanceof PostHogFetchHttpError || err instanceof PostHogFetchNetworkError)
 }
 
 export abstract class PostHogCoreStateless {
