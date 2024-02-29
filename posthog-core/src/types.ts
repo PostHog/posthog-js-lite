@@ -26,6 +26,8 @@ export type PostHogCoreOptions = {
   fetchRetryDelay?: number
   /** Timeout in milliseconds for any calls. Defaults to 10 seconds. */
   requestTimeout?: number
+  /** Timeout in milliseconds for feature flag calls. Defaults to 3 seconds. */
+  featureFlagsRequestTimeout?: number
   /** For Session Analysis how long before we expire a session (defaults to 30 mins) */
   sessionExpirationTimeSeconds?: number
   /** Whether to post events to PostHog in JSON or compressed format */

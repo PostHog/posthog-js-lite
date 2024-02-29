@@ -54,6 +54,7 @@ export abstract class PostHogCoreStateless {
   private flushAt: number
   private flushInterval: number
   private requestTimeout: number
+  private featureFlagsRequestTimeout: number
   private captureMode: 'form' | 'json'
   private removeDebugCallback?: () => void
   private disableGeoip: boolean = true
@@ -97,6 +98,7 @@ export abstract class PostHogCoreStateless {
       retryCheck: isPostHogFetchError,
     }
     this.requestTimeout = options?.requestTimeout ?? 10000 // 10 seconds
+    this.featureFlagsRequestTimeout = options?.featureFlagsRequestTimeout ?? 3000 // 3 seconds
     this.disableGeoip = options?.disableGeoip ?? true
     this.disabled = options?.disabled ?? false
     // Init promise allows the derived class to block calls until it is ready
@@ -292,7 +294,8 @@ export abstract class PostHogCoreStateless {
         ...extraPayload,
       }),
     }
-    return this.fetchWithRetry(url, fetchOptions)
+    // Don't retry /decide API calls
+    return this.fetchWithRetry(url, fetchOptions, { retryCount: 0 }, this.featureFlagsRequestTimeout)
       .then((response) => response.json() as Promise<PostHogDecideResponse>)
       .catch((error) => {
         this._events.emit('error', error)
@@ -581,7 +584,7 @@ export abstract class PostHogCoreStateless {
     })
   }
 
-  private async fetchWithRetry(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
+  private async fetchWithRetry(url: string, options: PostHogFetchOptions, retryOptions?: Partial<RetriableOptions>, requestTimeout?: number): Promise<PostHogFetchResponse> {
     ;(AbortSignal as any).timeout ??= function timeout(ms: number) {
       const ctrl = new AbortController()
       setTimeout(() => ctrl.abort(), ms)
@@ -593,7 +596,7 @@ export abstract class PostHogCoreStateless {
         let res: PostHogFetchResponse | null = null
         try {
           res = await this.fetch(url, {
-            signal: (AbortSignal as any).timeout(this.requestTimeout),
+            signal: (AbortSignal as any).timeout(requestTimeout ?? this.requestTimeout),
             ...options,
           })
         } catch (e) {
@@ -609,7 +612,7 @@ export abstract class PostHogCoreStateless {
         }
         return res
       },
-      { ...this._retryOptions }
+      { ...this._retryOptions, ...retryOptions }
     )
   }
 
