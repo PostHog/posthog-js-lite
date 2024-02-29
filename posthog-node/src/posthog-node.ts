@@ -17,7 +17,7 @@ import fetch from './fetch'
 export type PostHogOptions = PostHogCoreOptions & {
   persistence?: 'memory'
   personalApiKey?: string
-  // The interval in milliseconds between polls for refreshing feature flag definitions
+  // The interval in milliseconds between polls for refreshing feature flag definitions. Defaults to 30 seconds.
   featureFlagsPollingInterval?: number
   // Timeout in milliseconds for any calls. Defaults to 10 seconds.
   requestTimeout?: number

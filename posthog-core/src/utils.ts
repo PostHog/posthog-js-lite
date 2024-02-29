@@ -9,19 +9,18 @@ export function removeTrailingSlash(url: string): string {
 }
 
 export interface RetriableOptions {
-  retryCount?: number
-  retryDelay?: number
-  retryCheck?: (err: any) => boolean
+  retryCount: number
+  retryDelay: number
+  retryCheck: (err: any) => boolean
 }
 
-export async function retriable<T>(fn: () => Promise<T>, props: RetriableOptions = {}): Promise<T> {
-  const { retryCount = 3, retryDelay = 5000, retryCheck = () => true } = props
+export async function retriable<T>(fn: () => Promise<T>, props: RetriableOptions): Promise<T> {
   let lastError = null
 
-  for (let i = 0; i < retryCount + 1; i++) {
+  for (let i = 0; i < props.retryCount + 1; i++) {
     if (i > 0) {
       // don't wait when it's the last try
-      await new Promise((r) => setTimeout(r, retryDelay))
+      await new Promise((r) => setTimeout(r, props.retryDelay))
     }
 
     try {
@@ -29,7 +28,7 @@ export async function retriable<T>(fn: () => Promise<T>, props: RetriableOptions
       return res
     } catch (e) {
       lastError = e
-      if (!retryCheck(e)) {
+      if (!props.retryCheck(e)) {
         throw e
       }
     }

@@ -44,7 +44,7 @@ class PostHogFetchNetworkError extends Error {
 }
 
 function isPostHogFetchError(err: any): boolean {
-  return typeof err === 'object' && (err.name === 'PostHogFetchHttpError' || err.name === 'PostHogFetchNetworkError')
+  return typeof err === 'object' && (err instanceof PostHogFetchHttpError || err instanceof PostHogFetchNetworkError)
 }
 
 export abstract class PostHogCoreStateless {
@@ -93,7 +93,7 @@ export abstract class PostHogCoreStateless {
 
     this._retryOptions = {
       retryCount: options?.fetchRetryCount ?? 3,
-      retryDelay: options?.fetchRetryDelay ?? 3000,
+      retryDelay: options?.fetchRetryDelay ?? 3000, // 3 seconds
       retryCheck: isPostHogFetchError,
     }
     this.requestTimeout = options?.requestTimeout ?? 10000 // 10 seconds
@@ -581,11 +581,7 @@ export abstract class PostHogCoreStateless {
     })
   }
 
-  private async fetchWithRetry(
-    url: string,
-    options: PostHogFetchOptions,
-    retryOptions?: RetriableOptions
-  ): Promise<PostHogFetchResponse> {
+  private async fetchWithRetry(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
     ;(AbortSignal as any).timeout ??= function timeout(ms: number) {
       const ctrl = new AbortController()
       setTimeout(() => ctrl.abort(), ms)
@@ -613,7 +609,7 @@ export abstract class PostHogCoreStateless {
         }
         return res
       },
-      { ...this._retryOptions, ...retryOptions }
+      { ...this._retryOptions }
     )
   }
 
