@@ -26,7 +26,11 @@ export type PostHogOptions = PostHogCoreOptions & {
   customAppProperties?:
     | PostHogCustomAppProperties
     | ((properties: PostHogCustomAppProperties) => PostHogCustomAppProperties)
+  /** Allows you to provide a custom and synchronous storage such as mmkv */
   customStorage?: PostHogCustomSyncStorage
+  /** Allows you to provide a custom and asynchronous storage such as async-storage, expo-file-system or something else.
+   * By default, the SDK will try to load expo-file-system and then async-storage if none is provided.
+   */
   customAsyncStorage?: PostHogCustomAsyncStorage
   captureNativeAppLifecycleEvents?: boolean
 }
@@ -66,9 +70,7 @@ export class PostHog extends PostHogCore {
 
     // Ensure the async storage has been preloaded (this call is cached)
     const setupAsync = async (): Promise<void> => {
-      if (!this._asyncStorage?.isPreloaded) {
-        await (this._asyncStorage as SemiAsyncStorage)?.preloadAsync()
-      }
+      await (this._asyncStorage as SemiAsyncStorage)?.preloadAsync()
       this.setupBootstrap(options)
 
       // It is possible that the old library was used so we try to get the legacy distinctID

@@ -85,9 +85,7 @@ export const buildOptimisiticAsyncStorage = (): PostHogCustomAsyncStorage => {
   }
 
   if (OptionalAsyncStorage) {
-    return {
-      ...OptionalAsyncStorage,
-    }
+    return OptionalAsyncStorage
   }
 
   throw new Error(
