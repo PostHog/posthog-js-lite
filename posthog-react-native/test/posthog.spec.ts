@@ -1,5 +1,5 @@
 import { PostHogPersistedProperty } from 'posthog-core'
-import { PostHog, PostHogCustomAsyncStorage } from '../index'
+import { PostHog, PostHogCustomAsyncStorage, PostHogCustomSyncStorage } from '../index'
 import { Linking, AppState, AppStateStatus } from 'react-native'
 import { waitForExpect } from './test-utils'
 import { PostHogRNSemiAsyncStorage } from '../src/storage'
@@ -368,6 +368,42 @@ describe('PostHog React Native', () => {
           properties: {},
         })
       })
+    })
+  })
+
+  describe('sync initialization', () => {
+    let storage: PostHogCustomSyncStorage
+    let cache: { [key: string]: any | undefined }
+
+    beforeEach(() => {
+      cache = {}
+      storage = {
+        getItem: jest.fn((key: string) => cache[key]),
+        setItem: jest.fn((key: string, value: string) => {
+          cache[key] = value
+        }),
+      }
+    })
+
+    it('should allow immediate calls without delay for stored values', async () => {
+      posthog = new PostHog('1', {
+        customStorage: storage,
+      })
+
+      expect(storage.getItem).toHaveBeenCalledTimes(1)
+      expect(posthog.getFeatureFlag('flag')).toEqual(undefined)
+      posthog.overrideFeatureFlag({
+        flag: true,
+      })
+      expect(posthog.getFeatureFlag('flag')).toEqual(true)
+
+      // New instance but same sync storage
+      posthog = new PostHog('1', {
+        customStorage: storage,
+      })
+
+      expect(storage.getItem).toHaveBeenCalledTimes(2)
+      expect(posthog.getFeatureFlag('flag')).toEqual(true)
     })
   })
 })
