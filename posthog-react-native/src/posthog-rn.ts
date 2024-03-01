@@ -8,9 +8,8 @@ import {
   PostHogFetchResponse,
   PostHogPersistedProperty,
 } from '../../posthog-core/src'
-import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
 import { getLegacyValues } from './legacy'
-import { SemiAsyncStorage, Storage, SyncStorage } from './storage'
+import { SemiAsyncStorage, SyncMemoryStorage, SyncStorage } from './storage'
 import { version } from './version'
 import { buildOptimisiticAsyncStorage, getAppProperties } from './native-deps'
 import {
@@ -27,14 +26,15 @@ export type PostHogOptions = PostHogCoreOptions & {
   customAppProperties?:
     | PostHogCustomAppProperties
     | ((properties: PostHogCustomAppProperties) => PostHogCustomAppProperties)
-  customStorage?: PostHogCustomAsyncStorage | PostHogCustomSyncStorage
+  customStorage?: PostHogCustomSyncStorage
+  customAsyncStorage?: PostHogCustomAsyncStorage
   captureNativeAppLifecycleEvents?: boolean
 }
 
 export class PostHog extends PostHogCore {
   private _persistence: PostHogOptions['persistence']
-  private _memoryStorage = new PostHogMemoryStorage()
-  private _storage?: Storage
+  private _syncStorage?: SyncStorage
+  private _asyncStorage?: SemiAsyncStorage
   private _appProperties: PostHogCustomAppProperties = {}
 
   constructor(apiKey: string, options?: PostHogOptions) {
@@ -53,33 +53,30 @@ export class PostHog extends PostHogCore {
     })
 
     if (this._persistence === 'file') {
-      const storage = options?.customStorage || buildOptimisiticAsyncStorage()
-
-      if (storage.isSemiAsync()) {
-        const asyncStorage = new SemiAsyncStorage(storage as PostHogCustomAsyncStorage)
-        this._storage = asyncStorage
+      if (options?.customStorage) {
+        this._syncStorage = new SyncStorage(options.customStorage)
+        this._syncStorage.preload()
       } else {
-        const syncStorage = new SyncStorage(storage as PostHogCustomSyncStorage)
-        this._storage = syncStorage
-        if (!syncStorage.isPreloaded) {
-          syncStorage.preload()
-        }
+        this._asyncStorage = new SemiAsyncStorage(options?.customAsyncStorage || buildOptimisiticAsyncStorage())
       }
+    } else {
+      this._syncStorage = new SyncMemoryStorage()
+      this._syncStorage.preload()
     }
 
     // Ensure the async storage has been preloaded (this call is cached)
     const setupAsync = async (): Promise<void> => {
-      if (!this._storage?.isPreloaded && this._storage?.isSemiAsync()) {
-        await (this._storage as SemiAsyncStorage)?.preloadAsync()
+      if (!this._asyncStorage?.isPreloaded) {
+        await (this._asyncStorage as SemiAsyncStorage)?.preloadAsync()
       }
       this.setupBootstrap(options)
 
       // It is possible that the old library was used so we try to get the legacy distinctID
-      if (!this._storage?.getItem(PostHogPersistedProperty.AnonymousId)) {
+      if (!this._asyncStorage?.getItem(PostHogPersistedProperty.AnonymousId)) {
         const legacyValues = await getLegacyValues()
         if (legacyValues?.distinctId) {
-          this._storage?.setItem(PostHogPersistedProperty.DistinctId, legacyValues.distinctId)
-          this._storage?.setItem(PostHogPersistedProperty.AnonymousId, legacyValues.anonymousId)
+          this._asyncStorage?.setItem(PostHogPersistedProperty.DistinctId, legacyValues.distinctId)
+          this._asyncStorage?.setItem(PostHogPersistedProperty.AnonymousId, legacyValues.anonymousId)
         }
       }
     }
@@ -113,14 +110,13 @@ export class PostHog extends PostHogCore {
   }
 
   getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined {
-    return this._storage ? this._storage.getItem(key) ?? undefined : this._memoryStorage.getProperty(key)
+    const storage = this._asyncStorage ?? this._syncStorage
+    return storage?.getItem(key) as T | undefined
   }
+
   setPersistedProperty<T>(key: PostHogPersistedProperty, value: T | null): void {
-    return this._storage
-      ? value !== null
-        ? this._storage.setItem(key, value)
-        : this._storage.removeItem(key)
-      : this._memoryStorage.setProperty(key, value)
+    const storage = this._asyncStorage ?? this._syncStorage
+    return value !== null ? storage?.setItem(key, value) : storage?.removeItem(key)
   }
 
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {

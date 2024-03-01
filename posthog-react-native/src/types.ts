@@ -50,11 +50,9 @@ export interface PostHogCustomAppProperties {
 export interface PostHogCustomAsyncStorage {
   getItem: (key: string) => Promise<string | null>
   setItem: (key: string, value: string) => Promise<void>
-  isSemiAsync(): boolean
 }
 
 export interface PostHogCustomSyncStorage {
   getItem: (key: string) => string | null
   setItem: (key: string, value: string) => void
-  isSemiAsync(): boolean
 }

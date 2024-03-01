@@ -14,10 +14,6 @@ export class Storage {
     this.storage = storage
   }
 
-  isSemiAsync(): boolean {
-    return this.storage.isSemiAsync()
-  }
-
   persist(): void {
     const payload = {
       version: POSTHOG_STORAGE_VERSION,
@@ -111,5 +107,27 @@ export class SyncStorage extends Storage {
 
     const res = this._storage.getItem(POSTHOG_STORAGE_KEY)
     this.populateMemoryCache(res)
+  }
+}
+
+export class SyncMemoryStorage extends SyncStorage {
+  constructor() {
+    const cache: { [key: string]: any | undefined } = {}
+    const storage = {
+      getItem: (key: string) => cache[key],
+      setItem: (key: string, value: string) => {
+        cache[key] = value
+      },
+    }
+
+    super(storage)
+  }
+
+  preload(): void {
+    if (this.isPreloaded) {
+      return
+    }
+
+    this.populateMemoryCache(null)
   }
 }
