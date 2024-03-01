@@ -10,11 +10,12 @@ import {
 } from '../../posthog-core/src'
 import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
 import { getLegacyValues } from './legacy'
-import { SemiAsyncStorage } from './storage'
+import { SemiAsyncStorage, Storage, SyncStorage } from './storage'
 import { version } from './version'
 import { buildOptimisiticAsyncStorage, getAppProperties } from './native-deps'
-import { PostHogAutocaptureOptions, PostHogCustomAppProperties, PostHogCustomAsyncStorage } from './types'
+import { PostHogAutocaptureOptions, PostHogCustomAppProperties, PostHogCustomAsyncStorage, PostHogCustomSyncStorage } from './types'
 import { withReactNativeNavigation } from './frameworks/wix-navigation'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 export type PostHogOptions = PostHogCoreOptions & {
   persistence?: 'memory' | 'file'
@@ -22,14 +23,14 @@ export type PostHogOptions = PostHogCoreOptions & {
   customAppProperties?:
     | PostHogCustomAppProperties
     | ((properties: PostHogCustomAppProperties) => PostHogCustomAppProperties)
-  customAsyncStorage?: PostHogCustomAsyncStorage
+  customStorage?: PostHogCustomAsyncStorage | PostHogCustomSyncStorage
   captureNativeAppLifecycleEvents?: boolean
 }
 
 export class PostHog extends PostHogCore {
   private _persistence: PostHogOptions['persistence']
   private _memoryStorage = new PostHogMemoryStorage()
-  private _semiAsyncStorage?: SemiAsyncStorage
+  private _storage?: Storage
   private _appProperties: PostHogCustomAppProperties = {}
 
   constructor(apiKey: string, options?: PostHogOptions) {
@@ -48,22 +49,31 @@ export class PostHog extends PostHogCore {
     })
 
     if (this._persistence === 'file') {
-      this._semiAsyncStorage = new SemiAsyncStorage(options?.customAsyncStorage || buildOptimisiticAsyncStorage())
+      const storage = options?.customStorage || buildOptimisiticAsyncStorage()
+
+      if (storage.isSemiAsync()) {
+        const asyncStorage = new SemiAsyncStorage(storage as PostHogCustomAsyncStorage)
+        this._storage = asyncStorage
+      } else {
+        const syncStorage = new SyncStorage(storage as PostHogCustomSyncStorage)
+        this._storage = syncStorage
+        syncStorage.preload()
+      }
     }
 
     // Ensure the async storage has been preloaded (this call is cached)
     const setupAsync = async (): Promise<void> => {
-      if (!this._semiAsyncStorage?.isPreloaded) {
-        await this._semiAsyncStorage?.preloadAsync()
+      if (!this._storage?.isPreloaded && this._storage?.isSemiAsync()) {
+        await (this._storage as SemiAsyncStorage)?.preloadAsync()
       }
       this.setupBootstrap(options)
 
       // It is possible that the old library was used so we try to get the legacy distinctID
-      if (!this._semiAsyncStorage?.getItem(PostHogPersistedProperty.AnonymousId)) {
+      if (!this._storage?.getItem(PostHogPersistedProperty.AnonymousId)) {
         const legacyValues = await getLegacyValues()
         if (legacyValues?.distinctId) {
-          this._semiAsyncStorage?.setItem(PostHogPersistedProperty.DistinctId, legacyValues.distinctId)
-          this._semiAsyncStorage?.setItem(PostHogPersistedProperty.AnonymousId, legacyValues.anonymousId)
+          this._storage?.setItem(PostHogPersistedProperty.DistinctId, legacyValues.distinctId)
+          this._storage?.setItem(PostHogPersistedProperty.AnonymousId, legacyValues.anonymousId)
         }
       }
     }
@@ -97,15 +107,15 @@ export class PostHog extends PostHogCore {
   }
 
   getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined {
-    return this._semiAsyncStorage
-      ? this._semiAsyncStorage.getItem(key) ?? undefined
+    return this._storage
+      ? this._storage.getItem(key) ?? undefined
       : this._memoryStorage.getProperty(key)
   }
   setPersistedProperty<T>(key: PostHogPersistedProperty, value: T | null): void {
-    return this._semiAsyncStorage
+    return this._storage
       ? value !== null
-        ? this._semiAsyncStorage.setItem(key, value)
-        : this._semiAsyncStorage.removeItem(key)
+        ? this._storage.setItem(key, value)
+        : this._storage.removeItem(key)
       : this._memoryStorage.setProperty(key, value)
   }
 

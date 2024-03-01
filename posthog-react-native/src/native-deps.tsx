@@ -81,11 +81,20 @@ export const buildOptimisiticAsyncStorage = (): PostHogCustomAsyncStorage => {
         const uri = (filesystem.documentDirectory || '') + key
         await filesystem.writeAsStringAsync(uri, value)
       },
+
+      isSemiAsync(): boolean {
+        return true
+      },
     }
   }
 
   if (OptionalAsyncStorage) {
-    return OptionalAsyncStorage
+    return {
+      ...OptionalAsyncStorage,
+      isSemiAsync(): boolean {
+        return true;
+      },
+    };
   }
 
   throw new Error(
