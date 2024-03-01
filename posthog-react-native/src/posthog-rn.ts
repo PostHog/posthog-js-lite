@@ -27,11 +27,13 @@ export type PostHogOptions = PostHogCoreOptions & {
     | PostHogCustomAppProperties
     | ((properties: PostHogCustomAppProperties) => PostHogCustomAppProperties)
   /** Allows you to provide a custom and synchronous storage such as mmkv
-   * customStorage if provided, has precedence over customAsyncStorage
+   * customStorage if provided, has precedence over customAsyncStorage.
+   * If no customStorage nor customAsyncStorage are available, the SDK will use in-memory storage.
    */
   customStorage?: PostHogCustomSyncStorage
   /** Allows you to provide a custom and asynchronous storage such as async-storage, expo-file-system or something else.
    * By default, the SDK will try to load expo-file-system and then async-storage if none is provided.
+   * If no customStorage nor customAsyncStorage are available, the SDK will use in-memory storage.
    */
   customAsyncStorage?: PostHogCustomAsyncStorage
   captureNativeAppLifecycleEvents?: boolean
