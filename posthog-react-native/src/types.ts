@@ -47,14 +47,14 @@ export interface PostHogCustomAppProperties {
   $timezone?: string | null
 }
 
-export abstract class PostHogCustomAsyncStorage {
-  abstract getItem: (key: string) => Promise<string | null>
-  abstract setItem: (key: string, value: string) => Promise<void>
-  abstract isSemiAsync(): boolean
+export interface PostHogCustomAsyncStorage {
+  getItem: (key: string) => Promise<string | null>
+  setItem: (key: string, value: string) => Promise<void>
+  isSemiAsync(): boolean
 }
 
-export abstract class PostHogCustomSyncStorage {
-  abstract getItem: (key: string) => string | null
-  abstract setItem: (key: string, value: string) => void
-  abstract isSemiAsync(): boolean
+export interface PostHogCustomSyncStorage {
+  getItem: (key: string) => string | null
+  setItem: (key: string, value: string) => void
+  isSemiAsync(): boolean
 }

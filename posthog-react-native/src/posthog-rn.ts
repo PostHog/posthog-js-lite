@@ -13,9 +13,13 @@ import { getLegacyValues } from './legacy'
 import { SemiAsyncStorage, Storage, SyncStorage } from './storage'
 import { version } from './version'
 import { buildOptimisiticAsyncStorage, getAppProperties } from './native-deps'
-import { PostHogAutocaptureOptions, PostHogCustomAppProperties, PostHogCustomAsyncStorage, PostHogCustomSyncStorage } from './types'
+import {
+  PostHogAutocaptureOptions,
+  PostHogCustomAppProperties,
+  PostHogCustomAsyncStorage,
+  PostHogCustomSyncStorage,
+} from './types'
 import { withReactNativeNavigation } from './frameworks/wix-navigation'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 
 export type PostHogOptions = PostHogCoreOptions & {
   persistence?: 'memory' | 'file'
@@ -57,7 +61,9 @@ export class PostHog extends PostHogCore {
       } else {
         const syncStorage = new SyncStorage(storage as PostHogCustomSyncStorage)
         this._storage = syncStorage
-        syncStorage.preload()
+        if (!syncStorage.isPreloaded) {
+          syncStorage.preload()
+        }
       }
     }
 
@@ -107,9 +113,7 @@ export class PostHog extends PostHogCore {
   }
 
   getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined {
-    return this._storage
-      ? this._storage.getItem(key) ?? undefined
-      : this._memoryStorage.getProperty(key)
+    return this._storage ? this._storage.getItem(key) ?? undefined : this._memoryStorage.getProperty(key)
   }
   setPersistedProperty<T>(key: PostHogPersistedProperty, value: T | null): void {
     return this._storage

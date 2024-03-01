@@ -92,9 +92,9 @@ export const buildOptimisiticAsyncStorage = (): PostHogCustomAsyncStorage => {
     return {
       ...OptionalAsyncStorage,
       isSemiAsync(): boolean {
-        return true;
+        return true
       },
-    };
+    }
   }
 
   throw new Error(
