@@ -74,6 +74,12 @@ export class PostHog extends PostHogCore {
     let storagePromise: Promise<void> | undefined
 
     if (this._persistence === 'file') {
+      if (options?.customStorage && options?.customAsyncStorage) {
+        console.warn(
+          '[PostHog] was initialised with both customStorage and customAsyncStorage, customStorage will take precedence.'
+        )
+      }
+
       if (options?.customStorage) {
         this._storage = new PostHogRNSyncStorage(options.customStorage)
       } else {
