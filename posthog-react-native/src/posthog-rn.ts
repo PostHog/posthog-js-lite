@@ -9,7 +9,12 @@ import {
   PostHogPersistedProperty,
 } from '../../posthog-core/src'
 import { getLegacyValues } from './legacy'
-import { SemiAsyncStorage, SyncMemoryStorage, SyncStorage } from './storage'
+import {
+  PostHogRNSemiAsyncStorage,
+  PostHogRNStorage,
+  PostHogRNSyncMemoryStorage,
+  PostHogRNSyncStorage,
+} from './storage'
 import { version } from './version'
 import { buildOptimisiticAsyncStorage, getAppProperties } from './native-deps'
 import {
@@ -33,8 +38,7 @@ export type PostHogOptions = PostHogCoreOptions & {
 
 export class PostHog extends PostHogCore {
   private _persistence: PostHogOptions['persistence']
-  private _syncStorage?: SyncStorage
-  private _asyncStorage?: SemiAsyncStorage
+  private _storage: PostHogRNStorage
   private _appProperties: PostHogCustomAppProperties = {}
 
   constructor(apiKey: string, options?: PostHogOptions) {
@@ -52,39 +56,38 @@ export class PostHog extends PostHogCore {
       this.flush()
     })
 
+    let storagePromise: Promise<void> | undefined
+
     if (this._persistence === 'file') {
       if (options?.customStorage) {
-        this._syncStorage = new SyncStorage(options.customStorage)
-        this._syncStorage.preload()
+        this._storage = new PostHogRNSyncStorage(options.customStorage)
       } else {
-        this._asyncStorage = new SemiAsyncStorage(options?.customAsyncStorage || buildOptimisiticAsyncStorage())
+        this._storage = new PostHogRNSemiAsyncStorage(options?.customAsyncStorage || buildOptimisiticAsyncStorage())
+        storagePromise = this._storage.preloadPromise
       }
     } else {
-      this._syncStorage = new SyncMemoryStorage()
-      this._syncStorage.preload()
+      this._storage = new PostHogRNSyncMemoryStorage()
     }
 
-    // Ensure the async storage has been preloaded (this call is cached)
-    const setupAsync = async (): Promise<void> => {
-      if (!this._asyncStorage?.isPreloaded) {
-        await (this._asyncStorage as SemiAsyncStorage)?.preloadAsync()
-      }
+    if (storagePromise) {
+      storagePromise.then(() => {
+        // This code is for migrating from V1 to V2 and tries its best to keep the existing anon/distinctIds
+        // It only applies for async storage
+        if (!this._storage.getItem(PostHogPersistedProperty.AnonymousId)) {
+          void getLegacyValues().then((legacyValues) => {
+            if (legacyValues?.distinctId) {
+              this._storage?.setItem(PostHogPersistedProperty.DistinctId, legacyValues.distinctId)
+              this._storage?.setItem(PostHogPersistedProperty.AnonymousId, legacyValues.anonymousId)
+            }
+          })
+        }
+      })
+    }
+
+    //
+    const initAfterStorage = (): void => {
       this.setupBootstrap(options)
 
-      // It is possible that the old library was used so we try to get the legacy distinctID
-      if (!this._asyncStorage?.getItem(PostHogPersistedProperty.AnonymousId)) {
-        const legacyValues = await getLegacyValues()
-        if (legacyValues?.distinctId) {
-          this._asyncStorage?.setItem(PostHogPersistedProperty.DistinctId, legacyValues.distinctId)
-          this._asyncStorage?.setItem(PostHogPersistedProperty.AnonymousId, legacyValues.anonymousId)
-        }
-      }
-    }
-
-    this._initPromise = setupAsync()
-
-    // Not everything needs to be in the init promise
-    this._initPromise.then(async () => {
       this._isInitialized = true
       if (options?.preloadFeatureFlags !== false) {
         this.reloadFeatureFlags()
@@ -96,12 +99,21 @@ export class PostHog extends PostHogCore {
             'PostHog was initialised with persistence set to "memory", capturing native app events is not supported.'
           )
         } else {
-          await this.captureNativeAppLifecycleEvents()
+          void this.captureNativeAppLifecycleEvents()
         }
       }
 
-      await this.persistAppVersion()
-    })
+      void this.persistAppVersion()
+    }
+
+    // For async storage, we wait for the storage to be ready before we start the SDK
+    // For sync storage we can start the SDK immediately
+    if (storagePromise) {
+      this._initPromise = storagePromise.then(initAfterStorage)
+    } else {
+      this._initPromise = Promise.resolve()
+      initAfterStorage()
+    }
   }
 
   // NOTE: This is purely a helper method for testing purposes or those who wish to be certain the SDK is fully initialised
@@ -110,13 +122,11 @@ export class PostHog extends PostHogCore {
   }
 
   getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined {
-    const storage = this._asyncStorage ?? this._syncStorage
-    return storage?.getItem(key) as T | undefined
+    return this._storage.getItem(key) as T | undefined
   }
 
   setPersistedProperty<T>(key: PostHogPersistedProperty, value: T | null): void {
-    const storage = this._asyncStorage ?? this._syncStorage
-    return value !== null ? storage?.setItem(key, value) : storage?.removeItem(key)
+    return value !== null ? this._storage.setItem(key, value) : this._storage.removeItem(key)
   }
 
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {

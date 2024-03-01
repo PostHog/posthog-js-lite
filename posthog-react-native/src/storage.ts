@@ -5,10 +5,10 @@ const POSTHOG_STORAGE_VERSION = 'v1'
 
 type PostHogStorageContents = { [key: string]: any }
 
-export class Storage {
+export class PostHogRNStorage {
   memoryCache: PostHogStorageContents = {}
   storage: PostHogCustomAsyncStorage | PostHogCustomSyncStorage
-  isPreloaded = false
+  preloadPromise: Promise<void> | undefined
 
   constructor(storage: PostHogCustomAsyncStorage | PostHogCustomSyncStorage) {
     this.storage = storage
@@ -56,61 +56,40 @@ export class Storage {
         "PostHog failed to load persisted data from storage. This is likely because the storage format is. We'll reset the storage.",
         e
       )
-    } finally {
-      this.isPreloaded = true
     }
   }
 }
 
 // NOTE: The core prefers a synchronous storage so we mimic this by pre-loading all keys
-export class SemiAsyncStorage extends Storage {
-  private _preloadSemiAsyncStoragePromise: Promise<void> | undefined
+export class PostHogRNSemiAsyncStorage extends PostHogRNStorage {
   private _storage: PostHogCustomAsyncStorage
 
   constructor(storage: PostHogCustomAsyncStorage) {
     super(storage)
     this._storage = storage
-  }
 
-  preloadAsync(): Promise<void> {
-    if (this.isPreloaded) {
-      return Promise.resolve()
-    }
-
-    if (this._preloadSemiAsyncStoragePromise) {
-      return this._preloadSemiAsyncStoragePromise
-    }
-
-    this._preloadSemiAsyncStoragePromise = this._storage.getItem(POSTHOG_STORAGE_KEY).then((res) => {
+    this.preloadPromise = this._storage.getItem(POSTHOG_STORAGE_KEY).then((res) => {
       this.populateMemoryCache(res)
     })
 
-    this._preloadSemiAsyncStoragePromise.finally(() => {
-      this._preloadSemiAsyncStoragePromise = undefined
+    this.preloadPromise.finally(() => {
+      this.preloadPromise = undefined
     })
-
-    return this._preloadSemiAsyncStoragePromise
   }
 }
 
-export class SyncStorage extends Storage {
+export class PostHogRNSyncStorage extends PostHogRNStorage {
   private _storage: PostHogCustomSyncStorage
   constructor(storage: PostHogCustomSyncStorage) {
     super(storage)
     this._storage = storage
-  }
-
-  preload(): void {
-    if (this.isPreloaded) {
-      return
-    }
 
     const res = this._storage.getItem(POSTHOG_STORAGE_KEY)
     this.populateMemoryCache(res)
   }
 }
 
-export class SyncMemoryStorage extends SyncStorage {
+export class PostHogRNSyncMemoryStorage extends PostHogRNSyncStorage {
   constructor() {
     const cache: { [key: string]: any | undefined } = {}
     const storage = {
@@ -121,13 +100,5 @@ export class SyncMemoryStorage extends SyncStorage {
     }
 
     super(storage)
-  }
-
-  preload(): void {
-    if (this.isPreloaded) {
-      return
-    }
-
-    this.populateMemoryCache(null)
   }
 }
