@@ -21,12 +21,15 @@ import {
 import { withReactNativeNavigation } from './frameworks/wix-navigation'
 
 export type PostHogOptions = PostHogCoreOptions & {
+  /** Allows you to provide the storage type. By default 'file'.
+   * 'file' will try to load the best available storage, the provided 'customStorage', 'customAsyncStorage' or in-memory storage.
+   */
   persistence?: 'memory' | 'file'
-  /** Allows you to provide your own implementation of the common information about your App or a function to modify the default App properties generated  */
+  /** Allows you to provide your own implementation of the common information about your App or a function to modify the default App properties generated */
   customAppProperties?:
     | PostHogCustomAppProperties
     | ((properties: PostHogCustomAppProperties) => PostHogCustomAppProperties)
-  /** Allows you to provide a custom and synchronous storage such as mmkv
+  /** Allows you to provide a custom and synchronous storage such as mmkv.
    * customStorage if provided, has precedence over customAsyncStorage.
    * If no customStorage nor customAsyncStorage are available, the SDK will use in-memory storage.
    */
@@ -36,6 +39,10 @@ export type PostHogOptions = PostHogCoreOptions & {
    * If no customStorage nor customAsyncStorage are available, the SDK will use in-memory storage.
    */
   customAsyncStorage?: PostHogCustomAsyncStorage
+  /** Captures native app lifecycle events such as Application Installed, Application Updated, Application Opened and Application Backgrounded.
+   * By default is false.
+   * If you're already using the 'captureLifecycleEvents' options with 'withReactNativeNavigation' or 'PostHogProvider, you should not set this to true, otherwise you may see duplicated events.
+   */
   captureNativeAppLifecycleEvents?: boolean
 }
 
