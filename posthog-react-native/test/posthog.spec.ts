@@ -2,7 +2,7 @@ import { PostHogPersistedProperty } from 'posthog-core'
 import { PostHog, PostHogCustomAsyncStorage } from '../index'
 import { Linking, AppState, AppStateStatus } from 'react-native'
 import { waitForExpect } from './test-utils'
-import { SemiAsyncStorage } from '../src/storage'
+import { PostHogRNSemiAsyncStorage } from '../src/storage'
 
 Linking.getInitialURL = jest.fn(() => Promise.resolve(null))
 AppState.addEventListener = jest.fn()
@@ -320,8 +320,8 @@ describe('PostHog React Native', () => {
 
   describe('async initialization', () => {
     beforeEach(async () => {
-      const semiAsyncStorage = new SemiAsyncStorage(mockStorage)
-      await semiAsyncStorage.preloadAsync()
+      const semiAsyncStorage = new PostHogRNSemiAsyncStorage(mockStorage)
+      await semiAsyncStorage.preloadPromise
       semiAsyncStorage.setItem(PostHogPersistedProperty.AnonymousId, 'my-anonymous-id')
     })
 
