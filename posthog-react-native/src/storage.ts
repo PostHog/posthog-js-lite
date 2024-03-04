@@ -1,4 +1,5 @@
-import { PostHogCustomAsyncStorage, PostHogCustomSyncStorage } from './types'
+import { isPromise } from '../../posthog-core/src/utils'
+import { PostHogCustomStorage } from './types'
 
 const POSTHOG_STORAGE_KEY = '.posthog-rn.json'
 const POSTHOG_STORAGE_VERSION = 'v1'
@@ -7,11 +8,25 @@ type PostHogStorageContents = { [key: string]: any }
 
 export class PostHogRNStorage {
   memoryCache: PostHogStorageContents = {}
-  storage: PostHogCustomAsyncStorage | PostHogCustomSyncStorage
+  storage: PostHogCustomStorage
   preloadPromise: Promise<void> | undefined
 
-  constructor(storage: PostHogCustomAsyncStorage | PostHogCustomSyncStorage) {
+  constructor(storage: PostHogCustomStorage) {
     this.storage = storage
+
+    const preloadResult = this.storage.getItem(POSTHOG_STORAGE_KEY)
+
+    if (isPromise(preloadResult)) {
+      this.preloadPromise = preloadResult.then((res) => {
+        this.populateMemoryCache(res)
+      })
+
+      this.preloadPromise?.finally(() => {
+        this.preloadPromise = undefined
+      })
+    } else {
+      this.populateMemoryCache(preloadResult)
+    }
   }
 
   persist(): void {
@@ -60,36 +75,7 @@ export class PostHogRNStorage {
   }
 }
 
-// NOTE: The core prefers a synchronous storage so we mimic this by pre-loading all keys
-export class PostHogRNSemiAsyncStorage extends PostHogRNStorage {
-  private _storage: PostHogCustomAsyncStorage
-
-  constructor(storage: PostHogCustomAsyncStorage) {
-    super(storage)
-    this._storage = storage
-
-    this.preloadPromise = this._storage.getItem(POSTHOG_STORAGE_KEY).then((res) => {
-      this.populateMemoryCache(res)
-    })
-
-    this.preloadPromise.finally(() => {
-      this.preloadPromise = undefined
-    })
-  }
-}
-
-export class PostHogRNSyncStorage extends PostHogRNStorage {
-  private _storage: PostHogCustomSyncStorage
-  constructor(storage: PostHogCustomSyncStorage) {
-    super(storage)
-    this._storage = storage
-
-    const res = this._storage.getItem(POSTHOG_STORAGE_KEY)
-    this.populateMemoryCache(res)
-  }
-}
-
-export class PostHogRNSyncMemoryStorage extends PostHogRNSyncStorage {
+export class PostHogRNSyncMemoryStorage extends PostHogRNStorage {
   constructor() {
     const cache: { [key: string]: any | undefined } = {}
     const storage = {

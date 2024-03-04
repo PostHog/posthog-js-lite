@@ -9,20 +9,10 @@ import {
   PostHogPersistedProperty,
 } from '../../posthog-core/src'
 import { getLegacyValues } from './legacy'
-import {
-  PostHogRNSemiAsyncStorage,
-  PostHogRNStorage,
-  PostHogRNSyncMemoryStorage,
-  PostHogRNSyncStorage,
-} from './storage'
+import { PostHogRNStorage, PostHogRNSyncMemoryStorage } from './storage'
 import { version } from './version'
 import { buildOptimisiticAsyncStorage, getAppProperties } from './native-deps'
-import {
-  PostHogAutocaptureOptions,
-  PostHogCustomAppProperties,
-  PostHogCustomAsyncStorage,
-  PostHogCustomSyncStorage,
-} from './types'
+import { PostHogAutocaptureOptions, PostHogCustomAppProperties, PostHogCustomStorage } from './types'
 import { withReactNativeNavigation } from './frameworks/wix-navigation'
 
 export type PostHogOptions = PostHogCoreOptions & {
@@ -34,16 +24,13 @@ export type PostHogOptions = PostHogCoreOptions & {
   customAppProperties?:
     | PostHogCustomAppProperties
     | ((properties: PostHogCustomAppProperties) => PostHogCustomAppProperties)
-  /** Allows you to provide a custom and synchronous storage such as mmkv.
-   * customStorage if provided, has precedence over customAsyncStorage.
-   * If no customStorage nor customAsyncStorage are available, the SDK will use in-memory storage.
+  /** Allows you to provide a custom asynchronous storage such as async-storage, expo-file-system or a synchronous storage such as mmkv.
+   * If not provided, PostHog will attempt to use the best available storage via optional peer dependencies (async-storage, expo-file-system).
+   * If `persistence` is set to 'memory', this option will be ignored.
    */
-  customStorage?: PostHogCustomSyncStorage
-  /** Allows you to provide a custom and asynchronous storage such as async-storage, expo-file-system or something else.
-   * By default, the SDK will try to load expo-file-system and then async-storage if none is provided.
-   * If no customStorage nor customAsyncStorage are available, the SDK will use in-memory storage.
-   */
-  customAsyncStorage?: PostHogCustomAsyncStorage
+  customStorage?: PostHogCustomStorage
+
+  // customAsyncStorage?: PostHogCustomAsyncStorage
   /** Captures native app lifecycle events such as Application Installed, Application Updated, Application Opened and Application Backgrounded.
    * By default is false.
    * If you're already using the 'captureLifecycleEvents' options with 'withReactNativeNavigation' or 'PostHogProvider, you should not set this to true, otherwise you may see duplicated events.
@@ -74,18 +61,8 @@ export class PostHog extends PostHogCore {
     let storagePromise: Promise<void> | undefined
 
     if (this._persistence === 'file') {
-      if (options?.customStorage && options?.customAsyncStorage) {
-        console.warn(
-          '[PostHog] was initialised with both customStorage and customAsyncStorage, customStorage will take precedence.'
-        )
-      }
-
-      if (options?.customStorage) {
-        this._storage = new PostHogRNSyncStorage(options.customStorage)
-      } else {
-        this._storage = new PostHogRNSemiAsyncStorage(options?.customAsyncStorage || buildOptimisiticAsyncStorage())
-        storagePromise = this._storage.preloadPromise
-      }
+      this._storage = new PostHogRNStorage(options?.customStorage ?? buildOptimisiticAsyncStorage())
+      storagePromise = this._storage.preloadPromise
     } else {
       this._storage = new PostHogRNSyncMemoryStorage()
     }

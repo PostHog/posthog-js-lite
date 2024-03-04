@@ -1,5 +1,5 @@
 import * as FileSystem from 'expo-file-system'
-import { PostHogRNSemiAsyncStorage } from '../src/storage'
+import { PostHogRNStorage } from '../src/storage'
 import { buildOptimisiticAsyncStorage } from '../src/native-deps'
 
 jest.mock('expo-file-system')
@@ -9,7 +9,7 @@ describe('PostHog React Native', () => {
   jest.useRealTimers()
 
   describe('storage', () => {
-    let storage: PostHogRNSemiAsyncStorage
+    let storage: PostHogRNStorage
     beforeEach(() => {
       mockedFileSystem.readAsStringAsync.mockImplementation(() => {
         const res = Promise.resolve(
@@ -23,7 +23,7 @@ describe('PostHog React Native', () => {
         return res
       })
 
-      storage = new PostHogRNSemiAsyncStorage(buildOptimisiticAsyncStorage())
+      storage = new PostHogRNStorage(buildOptimisiticAsyncStorage())
     })
 
     it('should load storage from the file system', async () => {

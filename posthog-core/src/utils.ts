@@ -53,3 +53,8 @@ export function safeSetTimeout(fn: () => void, timeout: number): any {
   t?.unref && t?.unref()
   return t
 }
+
+// NOTE: We opt for this slightly imperfect check as the global "Promise" object can get mutated in certain environments
+export const isPromise = (obj: any): obj is Promise<any> => {
+  return obj && typeof obj.then === 'function'
+}
