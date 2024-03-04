@@ -4,6 +4,7 @@ import {
   JsonType,
   PostHogCoreOptions,
   PostHogCoreStateless,
+  PostHogDecideResponse,
   PostHogFetchOptions,
   PostHogFetchResponse,
   PostHogFlagsAndPayloadsResponse,
@@ -19,8 +20,6 @@ export type PostHogOptions = PostHogCoreOptions & {
   personalApiKey?: string
   // The interval in milliseconds between polls for refreshing feature flag definitions. Defaults to 30 seconds.
   featureFlagsPollingInterval?: number
-  // Timeout in milliseconds for any calls. Defaults to 10 seconds.
-  requestTimeout?: number
   // Maximum size of cache that deduplicates $feature_flag_called calls per user.
   maxCacheSize?: number
   fetch?: (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
@@ -114,12 +113,21 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       super.captureStateless(distinctId, event, props, { timestamp, disableGeoip, uuid })
     }
 
+    const _getFlags = (
+      distinctId: EventMessage['distinctId'],
+      groups: EventMessage['groups'],
+      disableGeoip: EventMessage['disableGeoip']
+    ): Promise<PostHogDecideResponse['featureFlags'] | undefined> => {
+      return super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)
+    }
+
     // :TRICKY: If we flush, or need to shut down, to not lose events we want this promise to resolve before we flush
     const capturePromise = Promise.resolve()
       .then(async () => {
         if (sendFeatureFlags) {
           // If we are sending feature flags, we need to make sure we have the latest flags
-          return await super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)
+          // return await super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)
+          return await _getFlags(distinctId, groups, disableGeoip)
         }
 
         if ((this.featureFlagsPoller?.featureFlags?.length || 0) > 0) {

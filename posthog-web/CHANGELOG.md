@@ -5,6 +5,7 @@
 - Many methods such as `capture` and `identify` no longer return the `this` object instead returning nothing
 - Fixes some typos in types
 - `shutdown` and `shutdownAsync` takes a `shutdownTimeoutMs` param with a default of 30000 (30s). This is the time to wait for flushing events before shutting down the client. If the timeout is reached, the client will be shut down regardless of pending events.
+- Adds a new `featureFlagsRequestTimeoutMs` timeout parameter for feature flags which defaults to 10 seconds.
 
 # 2.6.2 - 2024-02-15
 
