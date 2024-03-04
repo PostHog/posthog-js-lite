@@ -5,7 +5,7 @@ import { OptionalExpoDevice } from './optional/OptionalExpoDevice'
 import { OptionalExpoFileSystem } from './optional/OptionalExpoFileSystem'
 import { OptionalExpoLocalization } from './optional/OptionalExpoLocalization'
 import { OptionalReactNativeDeviceInfo } from './optional/OptionalReactNativeDeviceInfo'
-import { PostHogCustomAppProperties, PostHogCustomAsyncStorage } from './types'
+import { PostHogCustomAppProperties, PostHogCustomStorage } from './types'
 
 export const getAppProperties = (): PostHogCustomAppProperties => {
   let deviceType = 'Mobile'
@@ -63,7 +63,7 @@ const returnPropertyIfNotUnknown = (value: string | null): string | null => {
   return null
 }
 
-export const buildOptimisiticAsyncStorage = (): PostHogCustomAsyncStorage => {
+export const buildOptimisiticAsyncStorage = (): PostHogCustomStorage => {
   if (OptionalExpoFileSystem) {
     const filesystem = OptionalExpoFileSystem
     return {

@@ -1,14 +1,14 @@
 import { PostHogPersistedProperty } from 'posthog-core'
-import { PostHog, PostHogCustomAsyncStorage } from '../index'
+import { PostHog, PostHogCustomStorage } from '../index'
 import { Linking, AppState, AppStateStatus } from 'react-native'
 import { waitForExpect } from './test-utils'
-import { SemiAsyncStorage } from '../src/storage'
+import { PostHogRNStorage } from '../src/storage'
 
 Linking.getInitialURL = jest.fn(() => Promise.resolve(null))
 AppState.addEventListener = jest.fn()
 
 describe('PostHog React Native', () => {
-  let mockStorage: PostHogCustomAsyncStorage
+  let mockStorage: PostHogCustomStorage
   let cache: any = {}
 
   jest.setTimeout(500)
@@ -125,7 +125,7 @@ describe('PostHog React Native', () => {
   describe('screen', () => {
     it('should set a $screen_name property on screen', async () => {
       posthog = new PostHog('test-token', {
-        customAsyncStorage: mockStorage,
+        customStorage: mockStorage,
         flushInterval: 0,
       })
 
@@ -146,7 +146,7 @@ describe('PostHog React Native', () => {
 
       // act
       posthog = new PostHog('1', {
-        customAsyncStorage: mockStorage,
+        customStorage: mockStorage,
         captureNativeAppLifecycleEvents: true,
         customAppProperties: {
           $app_build: '1',
@@ -179,7 +179,7 @@ describe('PostHog React Native', () => {
       // arrange
       const onCapture = jest.fn()
       posthog = new PostHog('1', {
-        customAsyncStorage: mockStorage,
+        customStorage: mockStorage,
         captureNativeAppLifecycleEvents: true,
         customAppProperties: {
           $app_build: '1',
@@ -195,7 +195,7 @@ describe('PostHog React Native', () => {
       onCapture.mockClear()
       // act
       posthog = new PostHog('1', {
-        customAsyncStorage: mockStorage,
+        customStorage: mockStorage,
         captureNativeAppLifecycleEvents: true,
         customAppProperties: {
           $app_build: '2',
@@ -233,7 +233,7 @@ describe('PostHog React Native', () => {
       const onCapture = jest.fn()
 
       posthog = new PostHog('1', {
-        customAsyncStorage: mockStorage,
+        customStorage: mockStorage,
         captureNativeAppLifecycleEvents: true,
         customAppProperties: {
           $app_build: '1',
@@ -249,7 +249,7 @@ describe('PostHog React Native', () => {
       onCapture.mockClear()
 
       posthog = new PostHog('1', {
-        customAsyncStorage: mockStorage,
+        customStorage: mockStorage,
         captureNativeAppLifecycleEvents: true,
         customAppProperties: {
           $app_build: '1',
@@ -277,7 +277,7 @@ describe('PostHog React Native', () => {
       // arrange
       const onCapture = jest.fn()
       posthog = new PostHog('1', {
-        customAsyncStorage: mockStorage,
+        customStorage: mockStorage,
         captureNativeAppLifecycleEvents: true,
         customAppProperties: {
           $app_build: '1',
@@ -320,8 +320,8 @@ describe('PostHog React Native', () => {
 
   describe('async initialization', () => {
     beforeEach(async () => {
-      const semiAsyncStorage = new SemiAsyncStorage(mockStorage)
-      await semiAsyncStorage.preloadAsync()
+      const semiAsyncStorage = new PostHogRNStorage(mockStorage)
+      await semiAsyncStorage.preloadPromise
       semiAsyncStorage.setItem(PostHogPersistedProperty.AnonymousId, 'my-anonymous-id')
     })
 
@@ -329,7 +329,7 @@ describe('PostHog React Native', () => {
       const onCapture = jest.fn()
       mockStorage.setItem(PostHogPersistedProperty.AnonymousId, 'my-anonymous-id')
       posthog = new PostHog('1', {
-        customAsyncStorage: mockStorage,
+        customStorage: mockStorage,
         captureNativeAppLifecycleEvents: false,
       })
       posthog.on('capture', onCapture)
@@ -368,6 +368,42 @@ describe('PostHog React Native', () => {
           properties: {},
         })
       })
+    })
+  })
+
+  describe('sync initialization', () => {
+    let storage: PostHogCustomStorage
+    let cache: { [key: string]: any | undefined }
+
+    beforeEach(() => {
+      cache = {}
+      storage = {
+        getItem: jest.fn((key: string) => cache[key]),
+        setItem: jest.fn((key: string, value: string) => {
+          cache[key] = value
+        }),
+      }
+    })
+
+    it('should allow immediate calls without delay for stored values', async () => {
+      posthog = new PostHog('1', {
+        customStorage: storage,
+      })
+
+      expect(storage.getItem).toHaveBeenCalledTimes(1)
+      expect(posthog.getFeatureFlag('flag')).toEqual(undefined)
+      posthog.overrideFeatureFlag({
+        flag: true,
+      })
+      expect(posthog.getFeatureFlag('flag')).toEqual(true)
+
+      // New instance but same sync storage
+      posthog = new PostHog('1', {
+        customStorage: storage,
+      })
+
+      expect(storage.getItem).toHaveBeenCalledTimes(2)
+      expect(posthog.getFeatureFlag('flag')).toEqual(true)
     })
   })
 })
