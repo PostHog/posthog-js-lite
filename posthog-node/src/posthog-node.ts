@@ -126,6 +126,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       .then(async () => {
         if (sendFeatureFlags) {
           // If we are sending feature flags, we need to make sure we have the latest flags
+          // return await super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)
           return await _getFlags(distinctId, groups, disableGeoip)
         }
 

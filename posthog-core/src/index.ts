@@ -54,7 +54,7 @@ export abstract class PostHogCoreStateless {
   private flushAt: number
   private flushInterval: number
   private requestTimeout: number
-  private featureFlagsRequestTimeout: number
+  private featureFlagsRequestTimeoutMs: number
   private captureMode: 'form' | 'json'
   private removeDebugCallback?: () => void
   private disableGeoip: boolean = true
@@ -98,7 +98,7 @@ export abstract class PostHogCoreStateless {
       retryCheck: isPostHogFetchError,
     }
     this.requestTimeout = options?.requestTimeout ?? 10000 // 10 seconds
-    this.featureFlagsRequestTimeout = options?.featureFlagsRequestTimeout ?? 3000 // 3 seconds
+    this.featureFlagsRequestTimeoutMs = options?.featureFlagsRequestTimeoutMs ?? 3000 // 3 seconds
     this.disableGeoip = options?.disableGeoip ?? true
     this.disabled = options?.disabled ?? false
     // Init promise allows the derived class to block calls until it is ready
@@ -295,7 +295,7 @@ export abstract class PostHogCoreStateless {
       }),
     }
     // Don't retry /decide API calls
-    return this.fetchWithRetry(url, fetchOptions, { retryCount: 0 }, this.featureFlagsRequestTimeout)
+    return this.fetchWithRetry(url, fetchOptions, { retryCount: 0 }, this.featureFlagsRequestTimeoutMs)
       .then((response) => response.json() as Promise<PostHogDecideResponse>)
       .catch((error) => {
         this._events.emit('error', error)
@@ -682,7 +682,10 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     // Default for stateful mode is to not disable geoip. Only override if explicitly set
     const disableGeoipOption = options?.disableGeoip ?? false
 
-    super(apiKey, { ...options, disableGeoip: disableGeoipOption })
+    // Default for stateful mode is to timeout at 10s. Only override if explicitly set
+    const featureFlagsRequestTimeoutMs = options?.featureFlagsRequestTimeoutMs ?? 10000 // 10 seconds
+
+    super(apiKey, { ...options, disableGeoip: disableGeoipOption, featureFlagsRequestTimeoutMs })
 
     this.sendFeatureFlagEvent = options?.sendFeatureFlagEvent ?? true
     this._sessionExpirationTimeSeconds = options?.sessionExpirationTimeSeconds ?? 1800 // 30 minutes
