@@ -67,7 +67,7 @@ export abstract class PostHogCoreStateless {
   protected _events = new SimpleEventEmitter()
   protected _flushTimer?: any
   protected _retryOptions: RetriableOptions
-  protected _initPromise: Promise<any>
+  protected _initPromise: Promise<void>
   protected _isInitialized: boolean = false
 
   // Abstract methods to be overridden by implementations

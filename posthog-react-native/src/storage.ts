@@ -1,81 +1,90 @@
-import { PostHogCustomAsyncStorage } from './types'
+import { isPromise } from '../../posthog-core/src/utils'
+import { PostHogCustomStorage } from './types'
 
 const POSTHOG_STORAGE_KEY = '.posthog-rn.json'
 const POSTHOG_STORAGE_VERSION = 'v1'
 
 type PostHogStorageContents = { [key: string]: any }
 
-// NOTE: The core prefers a synchronous storage so we mimic this by pre-loading all keys
-export class SemiAsyncStorage {
-  private _memoryCache: PostHogStorageContents = {}
-  private _preloadSemiAsyncStoragePromise: Promise<void> | undefined
-  private _asyncStorage: PostHogCustomAsyncStorage
-  public isPreloaded = false
+export class PostHogRNStorage {
+  memoryCache: PostHogStorageContents = {}
+  storage: PostHogCustomStorage
+  preloadPromise: Promise<void> | undefined
 
-  constructor(asyncStorage: PostHogCustomAsyncStorage) {
-    this._asyncStorage = asyncStorage
-  }
+  constructor(storage: PostHogCustomStorage) {
+    this.storage = storage
 
-  preloadAsync(): Promise<void> {
-    if (this.isPreloaded) {
-      return Promise.resolve()
+    const preloadResult = this.storage.getItem(POSTHOG_STORAGE_KEY)
+
+    if (isPromise(preloadResult)) {
+      this.preloadPromise = preloadResult.then((res) => {
+        this.populateMemoryCache(res)
+      })
+
+      this.preloadPromise?.finally(() => {
+        this.preloadPromise = undefined
+      })
+    } else {
+      this.populateMemoryCache(preloadResult)
     }
-
-    if (this._preloadSemiAsyncStoragePromise) {
-      return this._preloadSemiAsyncStoragePromise
-    }
-
-    this._preloadSemiAsyncStoragePromise = this._asyncStorage.getItem(POSTHOG_STORAGE_KEY).then((res) => {
-      try {
-        const data = res ? JSON.parse(res).content : {}
-
-        for (const key in data) {
-          this._memoryCache[key] = data[key]
-        }
-      } catch (e) {
-        console.warn(
-          "PostHog failed to load persisted data from storage. This is likely because the storage format is. We'll reset the storage.",
-          e
-        )
-      } finally {
-        this.isPreloaded = true
-      }
-    })
-
-    this._preloadSemiAsyncStoragePromise.finally(() => {
-      this._preloadSemiAsyncStoragePromise = undefined
-    })
-
-    return this._preloadSemiAsyncStoragePromise
   }
 
   persist(): void {
     const payload = {
       version: POSTHOG_STORAGE_VERSION,
-      content: this._memoryCache,
+      content: this.memoryCache,
     }
 
-    void this._asyncStorage.setItem(POSTHOG_STORAGE_KEY, JSON.stringify(payload))
+    void this.storage.setItem(POSTHOG_STORAGE_KEY, JSON.stringify(payload))
   }
 
   getItem(key: string): any | null | undefined {
-    return this._memoryCache[key]
+    return this.memoryCache[key]
   }
   setItem(key: string, value: any): void {
-    this._memoryCache[key] = value
+    this.memoryCache[key] = value
     this.persist()
   }
   removeItem(key: string): void {
-    delete this._memoryCache[key]
+    delete this.memoryCache[key]
     this.persist()
   }
   clear(): void {
-    for (const key in this._memoryCache) {
-      delete this._memoryCache[key]
+    for (const key in this.memoryCache) {
+      delete this.memoryCache[key]
     }
     this.persist()
   }
   getAllKeys(): readonly string[] {
-    return Object.keys(this._memoryCache)
+    return Object.keys(this.memoryCache)
+  }
+
+  populateMemoryCache(res: string | null): void {
+    try {
+      const data = res ? JSON.parse(res).content : {}
+
+      for (const key in data) {
+        this.memoryCache[key] = data[key]
+      }
+    } catch (e) {
+      console.warn(
+        "PostHog failed to load persisted data from storage. This is likely because the storage format is. We'll reset the storage.",
+        e
+      )
+    }
+  }
+}
+
+export class PostHogRNSyncMemoryStorage extends PostHogRNStorage {
+  constructor() {
+    const cache: { [key: string]: any | undefined } = {}
+    const storage = {
+      getItem: (key: string) => cache[key],
+      setItem: (key: string, value: string) => {
+        cache[key] = value
+      },
+    }
+
+    super(storage)
   }
 }

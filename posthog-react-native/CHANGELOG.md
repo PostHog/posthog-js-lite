@@ -8,6 +8,7 @@
 - Fixes some typos in types
 - `shutdown` and `shutdownAsync` takes a `shutdownTimeoutMs` param with a default of 30000 (30s). This is the time to wait for flushing events before shutting down the client. If the timeout is reached, the client will be shut down regardless of pending events.
 - Adds a new `featureFlagsRequestTimeoutMs` timeout parameter for feature flags which defaults to 10 seconds.
+- Replaces the option `customAsyncStorage` with `customStorage` to allow for custom synchronous or asynchronous storage implementations.
 
 # 2.11.6 - 2024-02-22
 
