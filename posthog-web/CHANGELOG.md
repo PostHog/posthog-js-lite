@@ -1,4 +1,4 @@
-# Next (3.0.0)
+# 3.0.0-beta.1 - 2024-03-04
 
 - Removes the `enable` option. You can now specify `defaultOptIn: false` to start the SDK opted out of tracking
 - Adds a `disabled` option and the ability to change it later via `posthog.disabled = true`. Useful for disabling PostHog tracking for example in a testing environment without having complex conditional checking
