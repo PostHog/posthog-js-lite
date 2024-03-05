@@ -14,6 +14,8 @@ export function getContext(window: Window): any {
       $device: device(userAgent),
       $current_url: window.location.href,
       $host: window.location.host,
+      // do I need to put something here? eg.
+      // $ui_host: somehow get the ui host from the options
       $pathname: window.location.pathname,
       $browser_version: browserVersion(userAgent, window.navigator.vendor, !!(window as any).opera),
       $screen_height: window.screen.height,

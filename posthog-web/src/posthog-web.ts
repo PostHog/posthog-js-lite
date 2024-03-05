@@ -13,6 +13,7 @@ export class PostHog extends PostHogCore {
   private _storage: PostHogStorage
   private _storageCache: any
   private _storageKey: string
+  uiHost?: string
 
   constructor(apiKey: string, options?: PostHogOptions) {
     super(apiKey, options)
@@ -20,6 +21,7 @@ export class PostHog extends PostHogCore {
     // posthog-js stores options in one object on
     this._storageKey = options?.persistence_name ? `ph_${options.persistence_name}` : `ph_${apiKey}_posthog`
     this._storage = getStorage(options?.persistence || 'localStorage', window)
+    this.uiHost = options?.uiHost
     this.setupBootstrap(options)
 
     if (options?.preloadFeatureFlags !== false) {

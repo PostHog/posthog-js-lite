@@ -51,6 +51,7 @@ export abstract class PostHogCoreStateless {
   // options
   private apiKey: string
   host: string
+  uiHost?: string
   private flushAt: number
   private flushInterval: number
   private requestTimeout: number
