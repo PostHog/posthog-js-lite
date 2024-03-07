@@ -1,3 +1,14 @@
+# 4.0.0-beta.1 - 2024-03-04
+
+- Adds a `disabled` option and the ability to change it later via `posthog.disabled = true`. Useful for disabling PostHog tracking for example in a testing environment without having complex conditional checking
+- Fixes some typos in types
+- `shutdown` and `shutdownAsync` takes a `shutdownTimeoutMs` param with a default of 30000 (30s). This is the time to wait for flushing events before shutting down the client. If the timeout is reached, the client will be shut down regardless of pending events.
+- Adds a new `featureFlagsRequestTimeoutMs` timeout parameter for feature flags which defaults to 3 seconds, updated from the default 10s for all other API calls.
+
+# 3.6.3 - 2024-02-15
+
+1. fix: using `captureMode=form` won't throw an error and retry unnecessarily
+
 # 3.6.2 - 2024-02-06
 
 1. Swapped to `uuidv7` for unique ID generation

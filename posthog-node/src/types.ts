@@ -198,6 +198,8 @@ export type PostHogNodeV1 = {
   /**
    * @description Flushes the events still in the queue and clears the feature flags poller to allow for
    * a clean shutdown.
+   *
+   * @param shutdownTimeoutMs The shutdown timeout, in milliseconds. Defaults to 30000 (30s).
    */
-  shutdown(): void
+  shutdown(shutdownTimeoutMs?: number): void
 }

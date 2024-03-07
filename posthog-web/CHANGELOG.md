@@ -1,3 +1,16 @@
+# 3.0.0-beta.1 - 2024-03-04
+
+- Removes the `enable` option. You can now specify `defaultOptIn: false` to start the SDK opted out of tracking
+- Adds a `disabled` option and the ability to change it later via `posthog.disabled = true`. Useful for disabling PostHog tracking for example in a testing environment without having complex conditional checking
+- Many methods such as `capture` and `identify` no longer return the `this` object instead returning nothing
+- Fixes some typos in types
+- `shutdown` and `shutdownAsync` takes a `shutdownTimeoutMs` param with a default of 30000 (30s). This is the time to wait for flushing events before shutting down the client. If the timeout is reached, the client will be shut down regardless of pending events.
+- Adds a new `featureFlagsRequestTimeoutMs` timeout parameter for feature flags which defaults to 10 seconds.
+
+# 2.6.2 - 2024-02-15
+
+1. fix: using `captureMode=form` won't throw an error and retry unnecessarily
+
 # 2.6.1 - 2024-02-06
 
 1. Swapped to `uuidv7` for unique ID generation

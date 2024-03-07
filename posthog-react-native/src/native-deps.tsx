@@ -5,10 +5,10 @@ import { OptionalExpoDevice } from './optional/OptionalExpoDevice'
 import { OptionalExpoFileSystem } from './optional/OptionalExpoFileSystem'
 import { OptionalExpoLocalization } from './optional/OptionalExpoLocalization'
 import { OptionalReactNativeDeviceInfo } from './optional/OptionalReactNativeDeviceInfo'
-import { PostHogCustomAppProperties, PostHogCustomAsyncStorage } from './types'
+import { PostHogCustomAppProperties, PostHogCustomStorage } from './types'
 
 export const getAppProperties = (): PostHogCustomAppProperties => {
-  var deviceType = 'Mobile'
+  let deviceType = 'Mobile'
 
   if (Platform.OS === 'macos' || Platform.OS === 'windows') {
     deviceType = 'Desktop'
@@ -29,6 +29,7 @@ export const getAppProperties = (): PostHogCustomAppProperties => {
 
   if (OptionalExpoDevice) {
     properties.$device_manufacturer = OptionalExpoDevice.manufacturer
+    // expo-device already maps the device model identifier to a human readable name
     properties.$device_name = OptionalExpoDevice.modelName
     properties.$os_name = OptionalExpoDevice.osName
     properties.$os_version = OptionalExpoDevice.osVersion
@@ -45,7 +46,8 @@ export const getAppProperties = (): PostHogCustomAppProperties => {
     properties.$app_namespace = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getBundleId())
     properties.$app_version = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getVersion())
     properties.$device_manufacturer = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getManufacturerSync())
-    properties.$device_name = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getDeviceNameSync())
+    // react-native-device-info already maps the device model identifier to a human readable name
+    properties.$device_name = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getModel())
     properties.$os_name = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getSystemName())
     properties.$os_version = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getSystemVersion())
   }
@@ -61,7 +63,7 @@ const returnPropertyIfNotUnknown = (value: string | null): string | null => {
   return null
 }
 
-export const buildOptimisiticAsyncStorage = (): PostHogCustomAsyncStorage => {
+export const buildOptimisiticAsyncStorage = (): PostHogCustomStorage => {
   if (OptionalExpoFileSystem) {
     const filesystem = OptionalExpoFileSystem
     return {

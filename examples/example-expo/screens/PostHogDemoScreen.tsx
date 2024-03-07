@@ -3,21 +3,21 @@ import { useFeatureFlags, usePostHog } from 'posthog-react-native'
 import React from 'react'
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native'
 
-export default function PosthogDemoScreen(props: any) {
+export default function PostHogDemoScreen(props: any) {
   const navigation = useNavigation()
   const posthog = usePostHog()
 
   const title = props.route.name
 
   const trackRandomEvent = () => {
-    posthog?.capture('random event', {
+    posthog.capture('random event', {
       random: Math.random(),
     })
   }
 
   const identifyUser = () => {
     const id = Math.round(Math.random() * 1000)
-    posthog?.identify(`user-${id}`, {
+    posthog.identify(`user-${id}`, {
       email: `user-${id}@posthog.com`,
     })
   }

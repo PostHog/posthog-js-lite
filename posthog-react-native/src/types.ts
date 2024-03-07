@@ -31,8 +31,10 @@ export interface PostHogCustomAppProperties {
   $app_version?: string | null
   /** Manufacturer like "Apple", "Samsung" or "Android" */
   $device_manufacturer?: string | null
-  /** Readable model name like "iPhone 12" */
+  /** Readable model name like "iPhone 12" or "Samsung Galaxy S24" */
   $device_name?: string | null
+  /** Model identifier like "iPhone13,2" or "SM-S921B" */
+  $device_model?: string | null
   /** Device type ("Mobile" | "Desktop" | "Web") */
   $device_type?: string | null
   /** Operating system name like iOS or Android */
@@ -45,7 +47,7 @@ export interface PostHogCustomAppProperties {
   $timezone?: string | null
 }
 
-export interface PostHogCustomAsyncStorage {
-  getItem: (key: string) => Promise<string | null>
-  setItem: (key: string, value: string) => Promise<void>
+export interface PostHogCustomStorage {
+  getItem: (key: string) => string | null | Promise<string | null>
+  setItem: (key: string, value: string) => void | Promise<void>
 }

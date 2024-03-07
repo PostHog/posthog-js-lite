@@ -1,32 +1,36 @@
-export type PosthogCoreOptions = {
-  // PostHog API host (https://app.posthog.com by default)
+export type PostHogCoreOptions = {
+  /** PostHog API host, usually 'https://app.posthog.com' or 'https://eu.posthog.com' */
   host?: string
-  // The number of events to queue before sending to Posthog (flushing)
+  /** The number of events to queue before sending to PostHog (flushing) */
   flushAt?: number
-  // The interval in milliseconds between periodic flushes
+  /** The interval in milliseconds between periodic flushes */
   flushInterval?: number
-  // If set to false, tracking will be disabled until `optIn` is called
-  enable?: boolean
-  // Whether to track that `getFeatureFlag` was called (used by Expriements)
+  /** If set to true the SDK is essentially disabled (useful for local environments where you don't want to track anything) */
+  disabled?: boolean
+  /** If set to false the SDK will not track until the `optIn` function is called. */
+  defaultOptIn?: boolean
+  /** Whether to track that `getFeatureFlag` was called (used by Experiments) */
   sendFeatureFlagEvent?: boolean
-  // Whether to load feature flags when initialised or not
+  /** Whether to load feature flags when initialized or not */
   preloadFeatureFlags?: boolean
-  // Option to bootstrap the library with given distinctId and feature flags
+  /** Option to bootstrap the library with given distinctId and feature flags */
   bootstrap?: {
     distinctId?: string
     isIdentifiedId?: boolean
     featureFlags?: Record<string, boolean | string>
     featureFlagPayloads?: Record<string, JsonType>
   }
-  // How many times we will retry HTTP requests
+  /** How many times we will retry HTTP requests. Defaults to 3. */
   fetchRetryCount?: number
-  // The delay between HTTP request retries
+  /** The delay between HTTP request retries, Defaults to 3 seconds. */
   fetchRetryDelay?: number
-  // Timeout in milliseconds for any calls. Defaults to 10 seconds.
+  /** Timeout in milliseconds for any calls. Defaults to 10 seconds. */
   requestTimeout?: number
-  // For Session Analysis how long before we expire a session (defaults to 30 mins)
+  /** Timeout in milliseconds for feature flag calls. Defaults to 10 seconds for stateful clients, and 3 seconds for stateless. */
+  featureFlagsRequestTimeoutMs?: number
+  /** For Session Analysis how long before we expire a session (defaults to 30 mins) */
   sessionExpirationTimeSeconds?: number
-  // Whether to post events to PostHog in JSON or compressed format
+  /** Whether to post events to PostHog in JSON or compressed format */
   captureMode?: 'json' | 'form'
   disableGeoip?: boolean
 }
@@ -107,7 +111,7 @@ export type PostHogDecideResponse = {
   sessionRecording: boolean
 }
 
-export type PosthogFlagsAndPayloadsResponse = {
+export type PostHogFlagsAndPayloadsResponse = {
   featureFlags: PostHogDecideResponse['featureFlags']
   featureFlagPayloads: PostHogDecideResponse['featureFlagPayloads']
 }

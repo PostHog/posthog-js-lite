@@ -4,7 +4,7 @@ import {
   PostHogQueueItem,
   PostHogAutocaptureElement,
   PostHogDecideResponse,
-  PosthogCoreOptions,
+  PostHogCoreOptions,
   PostHogEventProperties,
   PostHogPersistedProperty,
   PostHogCaptureOptions,
@@ -37,13 +37,14 @@ class PostHogFetchNetworkError extends Error {
 
   constructor(public error: unknown) {
     // TRICKY: "cause" is a newer property but is just ignored otherwise. Cast to any to ignore the type issue.
+    // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
     // @ts-ignore
     super('Network error while fetching PostHog', error instanceof Error ? { cause: error } : {})
   }
 }
 
 function isPostHogFetchError(err: any): boolean {
-  return typeof err === 'object' && (err.name === 'PostHogFetchHttpError' || err.name === 'PostHogFetchNetworkError')
+  return typeof err === 'object' && (err instanceof PostHogFetchHttpError || err instanceof PostHogFetchNetworkError)
 }
 
 export abstract class PostHogCoreStateless {
@@ -53,19 +54,22 @@ export abstract class PostHogCoreStateless {
   private flushAt: number
   private flushInterval: number
   private requestTimeout: number
+  private featureFlagsRequestTimeoutMs: number
   private captureMode: 'form' | 'json'
   private removeDebugCallback?: () => void
-  private debugMode: boolean = false
   private disableGeoip: boolean = true
   private isFlushing: boolean = false
+  public disabled = false
 
-  private _optoutOverride: boolean | undefined
+  private defaultOptIn: boolean = true
   private pendingPromises: Record<string, Promise<any>> = {}
 
   // internal
   protected _events = new SimpleEventEmitter()
   protected _flushTimer?: any
   protected _retryOptions: RetriableOptions
+  protected _initPromise: Promise<void>
+  protected _isInitialized: boolean = false
 
   // Abstract methods to be overridden by implementations
   abstract fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse>
@@ -77,7 +81,7 @@ export abstract class PostHogCoreStateless {
   abstract getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined
   abstract setPersistedProperty<T>(key: PostHogPersistedProperty, value: T | null): void
 
-  constructor(apiKey: string, options?: PosthogCoreOptions) {
+  constructor(apiKey: string, options?: PostHogCoreOptions) {
     assert(apiKey, "You must pass your PostHog project's api key.")
 
     this.apiKey = apiKey
@@ -87,15 +91,36 @@ export abstract class PostHogCoreStateless {
     this.captureMode = options?.captureMode || 'form'
 
     // If enable is explicitly set to false we override the optout
-    this._optoutOverride = options?.enable === false
+    this.defaultOptIn = options?.defaultOptIn ?? true
 
     this._retryOptions = {
       retryCount: options?.fetchRetryCount ?? 3,
-      retryDelay: options?.fetchRetryDelay ?? 3000,
+      retryDelay: options?.fetchRetryDelay ?? 3000, // 3 seconds
       retryCheck: isPostHogFetchError,
     }
     this.requestTimeout = options?.requestTimeout ?? 10000 // 10 seconds
+    this.featureFlagsRequestTimeoutMs = options?.featureFlagsRequestTimeoutMs ?? 3000 // 3 seconds
     this.disableGeoip = options?.disableGeoip ?? true
+    this.disabled = options?.disabled ?? false
+    // Init promise allows the derived class to block calls until it is ready
+    this._initPromise = Promise.resolve()
+    this._isInitialized = true
+  }
+
+  protected wrap(fn: () => void): void {
+    if (this.disabled) {
+      if (this.isDebug) {
+        console.warn('[PostHog] The client is disabled')
+      }
+      return
+    }
+
+    if (this._isInitialized) {
+      // NOTE: We could also check for the "opt in" status here...
+      return fn()
+    }
+
+    this._initPromise.then(() => fn())
   }
 
   protected getCommonEventProperties(): any {
@@ -106,15 +131,19 @@ export abstract class PostHogCoreStateless {
   }
 
   public get optedOut(): boolean {
-    return this.getPersistedProperty(PostHogPersistedProperty.OptedOut) ?? this._optoutOverride ?? false
+    return this.getPersistedProperty(PostHogPersistedProperty.OptedOut) ?? !this.defaultOptIn
   }
 
-  optIn(): void {
-    this.setPersistedProperty(PostHogPersistedProperty.OptedOut, false)
+  async optIn(): Promise<void> {
+    this.wrap(() => {
+      this.setPersistedProperty(PostHogPersistedProperty.OptedOut, false)
+    })
   }
 
-  optOut(): void {
-    this.setPersistedProperty(PostHogPersistedProperty.OptedOut, true)
+  async optOut(): Promise<void> {
+    this.wrap(() => {
+      this.setPersistedProperty(PostHogPersistedProperty.OptedOut, true)
+    })
   }
 
   on(event: string, cb: (...args: any[]) => void): () => void {
@@ -124,11 +153,17 @@ export abstract class PostHogCoreStateless {
   debug(enabled: boolean = true): void {
     this.removeDebugCallback?.()
 
-    this.debugMode = enabled
-
     if (enabled) {
-      this.removeDebugCallback = this.on('*', (event, payload) => console.log('PostHog Debug', event, payload))
+      const removeDebugCallback = this.on('*', (event, payload) => console.log('PostHog Debug', event, payload))
+      this.removeDebugCallback = () => {
+        removeDebugCallback()
+        this.removeDebugCallback = undefined
+      }
     }
+  }
+
+  get isDebug(): boolean {
+    return !!this.removeDebugCallback
   }
 
   private buildPayload(payload: { distinct_id: string; event: string; properties?: PostHogEventProperties }): any {
@@ -157,20 +192,21 @@ export abstract class PostHogCoreStateless {
     distinctId: string,
     properties?: PostHogEventProperties,
     options?: PostHogCaptureOptions
-  ): this {
-    // The properties passed to identifyStateless are event properties.
-    // To add person properties, pass in all person properties to the `$set` key.
+  ): void {
+    this.wrap(() => {
+      // The properties passed to identifyStateless are event properties.
+      // To add person properties, pass in all person properties to the `$set` key.
 
-    const payload = {
-      ...this.buildPayload({
-        distinct_id: distinctId,
-        event: '$identify',
-        properties,
-      }),
-    }
+      const payload = {
+        ...this.buildPayload({
+          distinct_id: distinctId,
+          event: '$identify',
+          properties,
+        }),
+      }
 
-    this.enqueue('identify', payload, options)
-    return this
+      this.enqueue('identify', payload, options)
+    })
   }
 
   protected captureStateless(
@@ -178,11 +214,11 @@ export abstract class PostHogCoreStateless {
     event: string,
     properties?: { [key: string]: any },
     options?: PostHogCaptureOptions
-  ): this {
-    const payload = this.buildPayload({ distinct_id: distinctId, event, properties })
-    this.enqueue('capture', payload, options)
-
-    return this
+  ): void {
+    this.wrap(() => {
+      const payload = this.buildPayload({ distinct_id: distinctId, event, properties })
+      this.enqueue('capture', payload, options)
+    })
   }
 
   protected aliasStateless(
@@ -190,19 +226,20 @@ export abstract class PostHogCoreStateless {
     distinctId: string,
     properties?: { [key: string]: any },
     options?: PostHogCaptureOptions
-  ): this {
-    const payload = this.buildPayload({
-      event: '$create_alias',
-      distinct_id: distinctId,
-      properties: {
-        ...(properties || {}),
+  ): void {
+    this.wrap(() => {
+      const payload = this.buildPayload({
+        event: '$create_alias',
         distinct_id: distinctId,
-        alias,
-      },
-    })
+        properties: {
+          ...(properties || {}),
+          distinct_id: distinctId,
+          alias,
+        },
+      })
 
-    this.enqueue('alias', payload, options)
-    return this
+      this.enqueue('alias', payload, options)
+    })
   }
 
   /***
@@ -215,20 +252,21 @@ export abstract class PostHogCoreStateless {
     options?: PostHogCaptureOptions,
     distinctId?: string,
     eventProperties?: PostHogEventProperties
-  ): this {
-    const payload = this.buildPayload({
-      distinct_id: distinctId || `$${groupType}_${groupKey}`,
-      event: '$groupidentify',
-      properties: {
-        $group_type: groupType,
-        $group_key: groupKey,
-        $group_set: groupProperties || {},
-        ...(eventProperties || {}),
-      },
-    })
+  ): void {
+    this.wrap(() => {
+      const payload = this.buildPayload({
+        distinct_id: distinctId || `$${groupType}_${groupKey}`,
+        event: '$groupidentify',
+        properties: {
+          $group_type: groupType,
+          $group_key: groupKey,
+          $group_set: groupProperties || {},
+          ...(eventProperties || {}),
+        },
+      })
 
-    this.enqueue('capture', payload, options)
-    return this
+      this.enqueue('capture', payload, options)
+    })
   }
 
   /***
@@ -242,6 +280,8 @@ export abstract class PostHogCoreStateless {
     groupProperties: Record<string, Record<string, string>> = {},
     extraPayload: Record<string, any> = {}
   ): Promise<PostHogDecideResponse | undefined> {
+    await this._initPromise
+
     const url = `${this.host}/decide/?v=3`
     const fetchOptions: PostHogFetchOptions = {
       method: 'POST',
@@ -255,7 +295,8 @@ export abstract class PostHogCoreStateless {
         ...extraPayload,
       }),
     }
-    return this.fetchWithRetry(url, fetchOptions)
+    // Don't retry /decide API calls
+    return this.fetchWithRetry(url, fetchOptions, { retryCount: 0 }, this.featureFlagsRequestTimeoutMs)
       .then((response) => response.json() as Promise<PostHogDecideResponse>)
       .catch((error) => {
         this._events.emit('error', error)
@@ -271,6 +312,8 @@ export abstract class PostHogCoreStateless {
     groupProperties: Record<string, Record<string, string>> = {},
     disableGeoip?: boolean
   ): Promise<boolean | string | undefined> {
+    await this._initPromise
+
     const featureFlags = await this.getFeatureFlagsStateless(
       distinctId,
       groups,
@@ -304,6 +347,8 @@ export abstract class PostHogCoreStateless {
     groupProperties: Record<string, Record<string, string>> = {},
     disableGeoip?: boolean
   ): Promise<JsonType | undefined> {
+    await this._initPromise
+
     const payloads = await this.getFeatureFlagPayloadsStateless(
       distinctId,
       groups,
@@ -333,6 +378,8 @@ export abstract class PostHogCoreStateless {
     groupProperties: Record<string, Record<string, string>> = {},
     disableGeoip?: boolean
   ): Promise<PostHogDecideResponse['featureFlagPayloads'] | undefined> {
+    await this._initPromise
+
     const payloads = (
       await this.getFeatureFlagsAndPayloadsStateless(
         distinctId,
@@ -364,6 +411,8 @@ export abstract class PostHogCoreStateless {
     groupProperties: Record<string, Record<string, string>> = {},
     disableGeoip?: boolean
   ): Promise<PostHogDecideResponse['featureFlags'] | undefined> {
+    await this._initPromise
+
     return (
       await this.getFeatureFlagsAndPayloadsStateless(
         distinctId,
@@ -385,6 +434,8 @@ export abstract class PostHogCoreStateless {
     flags: PostHogDecideResponse['featureFlags'] | undefined
     payloads: PostHogDecideResponse['featureFlagPayloads'] | undefined
   }> {
+    await this._initPromise
+
     const extraPayload: Record<string, any> = {}
     if (disableGeoip ?? this.disableGeoip) {
       extraPayload['geoip_disable'] = true
@@ -404,51 +455,55 @@ export abstract class PostHogCoreStateless {
    *** QUEUEING AND FLUSHING
    ***/
   protected enqueue(type: string, _message: any, options?: PostHogCaptureOptions): void {
-    if (this.optedOut) {
-      this._events.emit(type, `Library is disabled. Not sending event. To re-enable, call posthog.optIn()`)
-      return
-    }
-
-    const message = {
-      ..._message,
-      type: type,
-      library: this.getLibraryId(),
-      library_version: this.getLibraryVersion(),
-      timestamp: options?.timestamp ? options?.timestamp : currentISOTime(),
-      uuid: options?.uuid ? options.uuid : uuidv7(),
-    }
-
-    const addGeoipDisableProperty = options?.disableGeoip ?? this.disableGeoip
-    if (addGeoipDisableProperty) {
-      if (!message.properties) {
-        message.properties = {}
+    this.wrap(() => {
+      if (this.optedOut) {
+        this._events.emit(type, `Library is disabled. Not sending event. To re-enable, call posthog.optIn()`)
+        return
       }
-      message['properties']['$geoip_disable'] = true
-    }
 
-    if (message.distinctId) {
-      message.distinct_id = message.distinctId
-      delete message.distinctId
-    }
+      const message = {
+        ..._message,
+        type: type,
+        library: this.getLibraryId(),
+        library_version: this.getLibraryVersion(),
+        timestamp: options?.timestamp ? options?.timestamp : currentISOTime(),
+        uuid: options?.uuid ? options.uuid : uuidv7(),
+      }
 
-    const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
+      const addGeoipDisableProperty = options?.disableGeoip ?? this.disableGeoip
+      if (addGeoipDisableProperty) {
+        if (!message.properties) {
+          message.properties = {}
+        }
+        message['properties']['$geoip_disable'] = true
+      }
 
-    queue.push({ message })
-    this.setPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue, queue)
+      if (message.distinctId) {
+        message.distinct_id = message.distinctId
+        delete message.distinctId
+      }
 
-    this._events.emit(type, message)
+      const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
 
-    // Flush queued events if we meet the flushAt length
-    if (queue.length >= this.flushAt) {
-      this.flush()
-    }
+      queue.push({ message })
+      this.setPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue, queue)
 
-    if (this.flushInterval && !this._flushTimer) {
-      this._flushTimer = safeSetTimeout(() => this.flush(), this.flushInterval)
-    }
+      this._events.emit(type, message)
+
+      // Flush queued events if we meet the flushAt length
+      if (queue.length >= this.flushAt) {
+        this.flush()
+      }
+
+      if (this.flushInterval && !this._flushTimer) {
+        this._flushTimer = safeSetTimeout(() => this.flush(), this.flushInterval)
+      }
+    })
   }
 
-  flushAsync(): Promise<any> {
+  async flushAsync(): Promise<any> {
+    await this._initPromise
+
     return new Promise((resolve, reject) => {
       this.flush((err, data) => {
         return err ? reject(err) : resolve(data)
@@ -457,99 +512,102 @@ export abstract class PostHogCoreStateless {
   }
 
   flush(callback?: (err?: any, data?: any) => void): void {
-    if (this.isFlushing) {
-      console.log('[PostHog] The Queue is already flushing.')
-      callback?.()
-      return
-    }
-    this.isFlushing = true
+    this.wrap(() => {
+      if (this.isFlushing) {
+        console.log('[PostHog] The Queue is already flushing.')
+        callback?.()
+        return
+      }
+      this.isFlushing = true
 
-    if (this._flushTimer) {
-      clearTimeout(this._flushTimer)
-      this._flushTimer = null
-    }
-
-    const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
-
-    if (!queue.length) {
-      console.log('[PostHog] The Queue is empty.')
-      this.isFlushing = false
-      callback?.()
-      return
-    }
-
-    const items = queue.splice(0, this.flushAt)
-
-    const messages = items.map((item) => item.message)
-
-    const data = {
-      api_key: this.apiKey,
-      batch: messages,
-      sent_at: currentISOTime(),
-    }
-
-    const done = (err?: any): void => {
-      if (err) {
-        // depending on the error type, eg a malformed JSON or broken queue, it'll always return an error
-        // and this will be an endless loop, in this case, if the error isn't a network issue, we always remove the items from the queue
-        if (!(err instanceof PostHogFetchNetworkError)) {
-          console.log('[PostHog] There was an issue while flushing the Queue.', err)
-          this.removeItemsFromQueue(items.length)
-        } else {
-          console.log('[PostHog] There was a network issue while flushing the Queue, will try again.', err)
-        }
-
-        this._events.emit('error', err)
-      } else {
-        this.removeItemsFromQueue(items.length)
-        console.log(`[PostHog] The Queue flushed ${items.length} items.`)
+      if (this._flushTimer) {
+        clearTimeout(this._flushTimer)
+        this._flushTimer = null
       }
 
-      callback?.(err, messages)
-      this._events.emit('flush', messages)
+      const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
 
-      this.isFlushing = false
-    }
+      if (!queue.length) {
+        console.log('[PostHog] The Queue is empty.')
+        this.isFlushing = false
+        callback?.()
+        return
+      }
 
-    // Don't set the user agent if we're not on a browser. The latest spec allows
-    // the User-Agent header (see https://fetch.spec.whatwg.org/#terminology-headers
-    // and https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/setRequestHeader),
-    // but browsers such as Chrome and Safari have not caught up.
-    const customUserAgent = this.getCustomUserAgent()
-    const headers: { [key: string]: string } = {}
-    if (customUserAgent) {
-      headers['user-agent'] = customUserAgent
-    }
+      const items = queue.splice(0, this.flushAt)
+      this.setPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue, queue)
 
-    const payload = JSON.stringify(data)
+      const messages = items.map((item) => item.message)
 
-    const url =
-      this.captureMode === 'form'
-        ? `${this.host}/e/?ip=1&_=${currentTimestamp()}&v=${this.getLibraryVersion()}`
-        : `${this.host}/batch/`
+      const data = {
+        api_key: this.apiKey,
+        batch: messages,
+        sent_at: currentISOTime(),
+      }
 
-    const fetchOptions: PostHogFetchOptions =
-      this.captureMode === 'form'
-        ? {
-            method: 'POST',
-            mode: 'no-cors',
-            credentials: 'omit',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `data=${encodeURIComponent(LZString.compressToBase64(payload))}&compression=lz64`,
+      const done = (err?: any): void => {
+        if (err) {
+          // depending on the error type, eg a malformed JSON or broken queue, it'll always return an error
+          // and this will be an endless loop, in this case, if the error isn't a network issue, we always remove the items from the queue
+          if (!(err instanceof PostHogFetchNetworkError)) {
+            console.log('[PostHog] There was an issue while flushing the Queue.', err)
+            this.removeItemsFromQueue(items.length)
+          } else {
+            console.log('[PostHog] There was a network issue while flushing the Queue, will try again.', err)
           }
-        : {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: payload,
-          }
-    const requestPromise = this.fetchWithRetry(url, fetchOptions)
-    this.addPendingPromise(
-      requestPromise
-        .then(() => done())
-        .catch((err) => {
-          done(err)
-        })
-    )
+
+          this._events.emit('error', err)
+        } else {
+          this.removeItemsFromQueue(items.length)
+          console.log(`[PostHog] The Queue flushed ${items.length} items.`)
+        }
+
+        callback?.(err, messages)
+        this._events.emit('flush', messages)
+
+        this.isFlushing = false
+      }
+
+      // Don't set the user agent if we're not on a browser. The latest spec allows
+      // the User-Agent header (see https://fetch.spec.whatwg.org/#terminology-headers
+      // and https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/setRequestHeader),
+      // but browsers such as Chrome and Safari have not caught up.
+      const customUserAgent = this.getCustomUserAgent()
+      const headers: { [key: string]: string } = {}
+      if (customUserAgent) {
+        headers['user-agent'] = customUserAgent
+      }
+
+      const payload = JSON.stringify(data)
+
+      const url =
+        this.captureMode === 'form'
+          ? `${this.host}/e/?ip=1&_=${currentTimestamp()}&v=${this.getLibraryVersion()}`
+          : `${this.host}/batch/`
+
+      const fetchOptions: PostHogFetchOptions =
+        this.captureMode === 'form'
+          ? {
+              method: 'POST',
+              mode: 'no-cors',
+              credentials: 'omit',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: `data=${encodeURIComponent(LZString.compressToBase64(payload))}&compression=lz64`,
+            }
+          : {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: payload,
+            }
+      const requestPromise = this.fetchWithRetry(url, fetchOptions)
+      this.addPendingPromise(
+        requestPromise
+          .then(() => done())
+          .catch((err) => {
+            done(err)
+          })
+      )
+    })
   }
   private removeItemsFromQueue(length: number): void {
     const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
@@ -565,7 +623,8 @@ export abstract class PostHogCoreStateless {
   private async fetchWithRetry(
     url: string,
     options: PostHogFetchOptions,
-    retryOptions?: RetriableOptions
+    retryOptions?: Partial<RetriableOptions>,
+    requestTimeout?: number
   ): Promise<PostHogFetchResponse> {
     ;(AbortSignal as any).timeout ??= function timeout(ms: number) {
       const ctrl = new AbortController()
@@ -578,14 +637,18 @@ export abstract class PostHogCoreStateless {
         let res: PostHogFetchResponse | null = null
         try {
           res = await this.fetch(url, {
-            signal: (AbortSignal as any).timeout(this.requestTimeout),
+            signal: (AbortSignal as any).timeout(requestTimeout ?? this.requestTimeout),
             ...options,
           })
         } catch (e) {
           // fetch will only throw on network errors or on timeouts
           throw new PostHogFetchNetworkError(e)
         }
-        if (res.status < 200 || res.status >= 400) {
+        // If we're in no-cors mode, we can't access the response status
+        // We only throw on HTTP errors if we're not in no-cors mode
+        // https://developer.mozilla.org/en-US/docs/Web/API/Request/mode#no-cors
+        const isNoCors = options.mode === 'no-cors'
+        if (!isNoCors && (res.status < 200 || res.status >= 400)) {
           throw new PostHogFetchHttpError(res)
         }
         return res
@@ -594,10 +657,11 @@ export abstract class PostHogCoreStateless {
     )
   }
 
-  async shutdownAsync(): Promise<void> {
+  async shutdownAsync(shutdownTimeoutMs?: number): Promise<void> {
+    await this._initPromise
+
     clearTimeout(this._flushTimer)
     try {
-      await this.flushAsync()
       await Promise.all(
         Object.values(this.pendingPromises).map((x) =>
           x.catch(() => {
@@ -605,10 +669,28 @@ export abstract class PostHogCoreStateless {
           })
         )
       )
-      // flush again to make sure we send all events, some of which might've been added
-      // while we were waiting for the pending promises to resolve
-      // For example, see sendFeatureFlags in posthog-node/src/posthog-node.ts::capture
-      await this.flushAsync()
+
+      const timeout = shutdownTimeoutMs ?? 30000
+      const startTimeWithDelay = Date.now() + timeout
+
+      while (true) {
+        const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
+
+        if (queue.length === 0) {
+          break
+        }
+
+        // flush again to make sure we send all events, some of which might've been added
+        // while we were waiting for the pending promises to resolve
+        // For example, see sendFeatureFlags in posthog-node/src/posthog-node.ts::capture
+        await this.flushAsync()
+
+        // If we've been waiting for more than the shutdownTimeoutMs, stop it
+        const now = Date.now()
+        if (startTimeWithDelay < now) {
+          break
+        }
+      }
     } catch (e) {
       if (!isPostHogFetchError(e)) {
         throw e
@@ -617,8 +699,8 @@ export abstract class PostHogCoreStateless {
     }
   }
 
-  shutdown(): void {
-    void this.shutdownAsync()
+  shutdown(shutdownTimeoutMs?: number): void {
+    void this.shutdownAsync(shutdownTimeoutMs)
   }
 }
 
@@ -632,17 +714,20 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   protected _sessionExpirationTimeSeconds: number
   protected sessionProps: PostHogEventProperties = {}
 
-  constructor(apiKey: string, options?: PosthogCoreOptions) {
+  constructor(apiKey: string, options?: PostHogCoreOptions) {
     // Default for stateful mode is to not disable geoip. Only override if explicitly set
     const disableGeoipOption = options?.disableGeoip ?? false
 
-    super(apiKey, { ...options, disableGeoip: disableGeoipOption })
+    // Default for stateful mode is to timeout at 10s. Only override if explicitly set
+    const featureFlagsRequestTimeoutMs = options?.featureFlagsRequestTimeoutMs ?? 10000 // 10 seconds
+
+    super(apiKey, { ...options, disableGeoip: disableGeoipOption, featureFlagsRequestTimeoutMs })
 
     this.sendFeatureFlagEvent = options?.sendFeatureFlagEvent ?? true
     this._sessionExpirationTimeSeconds = options?.sessionExpirationTimeSeconds ?? 1800 // 30 minutes
   }
 
-  protected setupBootstrap(options?: Partial<PosthogCoreOptions>): void {
+  protected setupBootstrap(options?: Partial<PostHogCoreOptions>): void {
     if (options?.bootstrap?.distinctId) {
       if (options?.bootstrap?.isIdentifiedId) {
         this.setPersistedProperty(PostHogPersistedProperty.DistinctId, options.bootstrap.distinctId)
@@ -689,16 +774,18 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   }
 
   reset(propertiesToKeep?: PostHogPersistedProperty[]): void {
-    const allPropertiesToKeep = [PostHogPersistedProperty.Queue, ...(propertiesToKeep || [])]
+    this.wrap(() => {
+      const allPropertiesToKeep = [PostHogPersistedProperty.Queue, ...(propertiesToKeep || [])]
 
-    // clean up props
-    this.clearProps()
+      // clean up props
+      this.clearProps()
 
-    for (const key of <(keyof typeof PostHogPersistedProperty)[]>Object.keys(PostHogPersistedProperty)) {
-      if (!allPropertiesToKeep.includes(PostHogPersistedProperty[key])) {
-        this.setPersistedProperty((PostHogPersistedProperty as any)[key], null)
+      for (const key of <(keyof typeof PostHogPersistedProperty)[]>Object.keys(PostHogPersistedProperty)) {
+        if (!allPropertiesToKeep.includes(PostHogPersistedProperty[key])) {
+          this.setPersistedProperty((PostHogPersistedProperty as any)[key], null)
+        }
       }
-    }
+    })
   }
 
   protected getCommonEventProperties(): any {
@@ -717,7 +804,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     }
   }
 
-  public enrichProperties(properties?: PostHogEventProperties): any {
+  private enrichProperties(properties?: PostHogEventProperties): any {
     return {
       ...this.props, // Persisted properties first
       ...this.sessionProps, // Followed by session properties
@@ -727,7 +814,14 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     }
   }
 
-  getSessionId(): string | undefined {
+  /**
+   * * @returns {string} The stored session ID for the current session. This may be an empty string if the client is not yet fully initialized.
+   */
+  getSessionId(): string {
+    if (!this._isInitialized) {
+      return ''
+    }
+
     let sessionId = this.getPersistedProperty<string>(PostHogPersistedProperty.SessionId)
     const sessionTimestamp = this.getPersistedProperty<number>(PostHogPersistedProperty.SessionLastTimestamp) || 0
     if (!sessionId || Date.now() - sessionTimestamp > this._sessionExpirationTimeSeconds * 1000) {
@@ -740,10 +834,19 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   }
 
   resetSessionId(): void {
-    this.setPersistedProperty(PostHogPersistedProperty.SessionId, null)
+    this.wrap(() => {
+      this.setPersistedProperty(PostHogPersistedProperty.SessionId, null)
+    })
   }
 
+  /**
+   * * @returns {string} The stored anonymous ID. This may be an empty string if the client is not yet fully initialized.
+   */
   getAnonymousId(): string {
+    if (!this._isInitialized) {
+      return ''
+    }
+
     let anonId = this.getPersistedProperty<string>(PostHogPersistedProperty.AnonymousId)
     if (!anonId) {
       anonId = uuidv7()
@@ -752,21 +855,32 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     return anonId
   }
 
+  /**
+   * * @returns {string} The stored distinct ID. This may be an empty string if the client is not yet fully initialized.
+   */
   getDistinctId(): string {
+    if (!this._isInitialized) {
+      return ''
+    }
+
     return this.getPersistedProperty<string>(PostHogPersistedProperty.DistinctId) || this.getAnonymousId()
   }
 
-  unregister(property: string): void {
-    delete this.props[property]
-    this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.Props, this.props)
+  async unregister(property: string): Promise<void> {
+    this.wrap(() => {
+      delete this.props[property]
+      this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.Props, this.props)
+    })
   }
 
-  register(properties: { [key: string]: any }): void {
-    this.props = {
-      ...this.props,
-      ...properties,
-    }
-    this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.Props, this.props)
+  async register(properties: { [key: string]: any }): Promise<void> {
+    this.wrap(() => {
+      this.props = {
+        ...this.props,
+        ...properties,
+      }
+      this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.Props, this.props)
+    })
   }
 
   registerForSession(properties: { [key: string]: any }): void {
@@ -783,54 +897,53 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   /***
    *** TRACKING
    ***/
-  identify(distinctId?: string, properties?: PostHogEventProperties, options?: PostHogCaptureOptions): this {
-    const previousDistinctId = this.getDistinctId()
-    distinctId = distinctId || previousDistinctId
+  identify(distinctId?: string, properties?: PostHogEventProperties, options?: PostHogCaptureOptions): void {
+    this.wrap(() => {
+      const previousDistinctId = this.getDistinctId()
+      distinctId = distinctId || previousDistinctId
 
-    if (properties?.$groups) {
-      this.groups(properties.$groups)
-    }
+      if (properties?.$groups) {
+        this.groups(properties.$groups)
+      }
 
-    const allProperties = this.enrichProperties({
-      ...properties,
-      $anon_distinct_id: this.getAnonymousId(),
-      $set: properties,
+      const allProperties = this.enrichProperties({
+        ...properties,
+        $anon_distinct_id: this.getAnonymousId(),
+        $set: properties,
+      })
+
+      if (distinctId !== previousDistinctId) {
+        // We keep the AnonymousId to be used by decide calls and identify to link the previousId
+        this.setPersistedProperty(PostHogPersistedProperty.AnonymousId, previousDistinctId)
+        this.setPersistedProperty(PostHogPersistedProperty.DistinctId, distinctId)
+        this.reloadFeatureFlags()
+      }
+
+      super.identifyStateless(distinctId, allProperties, options)
     })
-
-    if (distinctId !== previousDistinctId) {
-      // We keep the AnonymousId to be used by decide calls and identify to link the previousId
-      this.setPersistedProperty(PostHogPersistedProperty.AnonymousId, previousDistinctId)
-      this.setPersistedProperty(PostHogPersistedProperty.DistinctId, distinctId)
-
-      this.reloadFeatureFlags()
-    }
-
-    super.identifyStateless(distinctId, allProperties, options)
-
-    return this
   }
 
-  capture(event: string, properties?: { [key: string]: any }, options?: PostHogCaptureOptions): this {
-    const distinctId = this.getDistinctId()
+  capture(event: string, properties?: { [key: string]: any }, options?: PostHogCaptureOptions): void {
+    this.wrap(() => {
+      const distinctId = this.getDistinctId()
 
-    if (properties?.$groups) {
-      this.groups(properties.$groups)
-    }
+      if (properties?.$groups) {
+        this.groups(properties.$groups)
+      }
 
-    const allProperties = this.enrichProperties(properties)
+      const allProperties = this.enrichProperties(properties)
 
-    super.captureStateless(distinctId, event, allProperties, options)
-
-    return this
+      super.captureStateless(distinctId, event, allProperties, options)
+    })
   }
 
-  alias(alias: string): this {
-    const distinctId = this.getDistinctId()
+  alias(alias: string): void {
+    this.wrap(() => {
+      const distinctId = this.getDistinctId()
+      const allProperties = this.enrichProperties({})
 
-    const allProperties = this.enrichProperties({})
-
-    super.aliasStateless(alias, distinctId, allProperties)
-    return this
+      super.aliasStateless(alias, distinctId, allProperties)
+    })
   }
 
   autocapture(
@@ -838,42 +951,43 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     elements: PostHogAutocaptureElement[],
     properties: PostHogEventProperties = {},
     options?: PostHogCaptureOptions
-  ): this {
-    const distinctId = this.getDistinctId()
-    const payload = {
-      distinct_id: distinctId,
-      event: '$autocapture',
-      properties: {
-        ...this.enrichProperties(properties),
-        $event_type: eventType,
-        $elements: elements,
-      },
-    }
+  ): void {
+    this.wrap(() => {
+      const distinctId = this.getDistinctId()
+      const payload = {
+        distinct_id: distinctId,
+        event: '$autocapture',
+        properties: {
+          ...this.enrichProperties(properties),
+          $event_type: eventType,
+          $elements: elements,
+        },
+      }
 
-    this.enqueue('autocapture', payload, options)
-    return this
+      this.enqueue('autocapture', payload, options)
+    })
   }
 
   /***
    *** GROUPS
    ***/
 
-  groups(groups: { [type: string]: string | number }): this {
-    // Get persisted groups
-    const existingGroups = this.props.$groups || {}
+  groups(groups: { [type: string]: string | number }): void {
+    this.wrap(() => {
+      // Get persisted groups
+      const existingGroups = this.props.$groups || {}
 
-    this.register({
-      $groups: {
-        ...existingGroups,
-        ...groups,
-      },
+      this.register({
+        $groups: {
+          ...existingGroups,
+          ...groups,
+        },
+      })
+
+      if (Object.keys(groups).find((type) => existingGroups[type] !== groups[type])) {
+        this.reloadFeatureFlags()
+      }
     })
-
-    if (Object.keys(groups).find((type) => existingGroups[type] !== groups[type])) {
-      this.reloadFeatureFlags()
-    }
-
-    return this
   }
 
   group(
@@ -881,16 +995,16 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     groupKey: string | number,
     groupProperties?: PostHogEventProperties,
     options?: PostHogCaptureOptions
-  ): this {
-    this.groups({
-      [groupType]: groupKey,
+  ): void {
+    this.wrap(() => {
+      this.groups({
+        [groupType]: groupKey,
+      })
+
+      if (groupProperties) {
+        this.groupIdentify(groupType, groupKey, groupProperties, options)
+      }
     })
-
-    if (groupProperties) {
-      this.groupIdentify(groupType, groupKey, groupProperties, options)
-    }
-
-    return this
   }
 
   groupIdentify(
@@ -898,76 +1012,83 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     groupKey: string | number,
     groupProperties?: PostHogEventProperties,
     options?: PostHogCaptureOptions
-  ): this {
-    const distinctId = this.getDistinctId()
-
-    const eventProperties = this.enrichProperties({})
-
-    super.groupIdentifyStateless(groupType, groupKey, groupProperties, options, distinctId, eventProperties)
-
-    return this
+  ): void {
+    this.wrap(() => {
+      const distinctId = this.getDistinctId()
+      const eventProperties = this.enrichProperties({})
+      super.groupIdentifyStateless(groupType, groupKey, groupProperties, options, distinctId, eventProperties)
+    })
   }
 
   /***
    * PROPERTIES
    ***/
-  setPersonPropertiesForFlags(properties: { [type: string]: string }): this {
-    // Get persisted person properties
-    const existingProperties =
-      this.getPersistedProperty<Record<string, string>>(PostHogPersistedProperty.PersonProperties) || {}
+  setPersonPropertiesForFlags(properties: { [type: string]: string }): void {
+    this.wrap(() => {
+      // Get persisted person properties
+      const existingProperties =
+        this.getPersistedProperty<Record<string, string>>(PostHogPersistedProperty.PersonProperties) || {}
 
-    this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.PersonProperties, {
-      ...existingProperties,
-      ...properties,
+      this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.PersonProperties, {
+        ...existingProperties,
+        ...properties,
+      })
     })
-
-    return this
   }
 
   resetPersonPropertiesForFlags(): void {
-    this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.PersonProperties, {})
+    this.wrap(() => {
+      this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.PersonProperties, {})
+    })
   }
 
   /** @deprecated - Renamed to setPersonPropertiesForFlags */
-  personProperties(properties: { [type: string]: string }): this {
+  personProperties(properties: { [type: string]: string }): void {
     return this.setPersonPropertiesForFlags(properties)
   }
 
-  setGroupPropertiesForFlags(properties: { [type: string]: Record<string, string> }): this {
-    // Get persisted group properties
-    const existingProperties =
-      this.getPersistedProperty<Record<string, Record<string, string>>>(PostHogPersistedProperty.GroupProperties) || {}
+  setGroupPropertiesForFlags(properties: { [type: string]: Record<string, string> }): void {
+    this.wrap(() => {
+      // Get persisted group properties
+      const existingProperties =
+        this.getPersistedProperty<Record<string, Record<string, string>>>(PostHogPersistedProperty.GroupProperties) ||
+        {}
 
-    if (Object.keys(existingProperties).length !== 0) {
-      Object.keys(existingProperties).forEach((groupType) => {
-        existingProperties[groupType] = {
-          ...existingProperties[groupType],
-          ...properties[groupType],
-        }
-        delete properties[groupType]
+      if (Object.keys(existingProperties).length !== 0) {
+        Object.keys(existingProperties).forEach((groupType) => {
+          existingProperties[groupType] = {
+            ...existingProperties[groupType],
+            ...properties[groupType],
+          }
+          delete properties[groupType]
+        })
+      }
+
+      this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.GroupProperties, {
+        ...existingProperties,
+        ...properties,
       })
-    }
-
-    this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.GroupProperties, {
-      ...existingProperties,
-      ...properties,
     })
-    return this
   }
 
   resetGroupPropertiesForFlags(): void {
-    this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.GroupProperties, {})
+    this.wrap(() => {
+      this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.GroupProperties, {})
+    })
   }
 
   /** @deprecated - Renamed to setGroupPropertiesForFlags */
-  groupProperties(properties: { [type: string]: Record<string, string> }): this {
-    return this.setGroupPropertiesForFlags(properties)
+  groupProperties(properties: { [type: string]: Record<string, string> }): void {
+    this.wrap(() => {
+      this.setGroupPropertiesForFlags(properties)
+    })
   }
 
   /***
    *** FEATURE FLAGS
    ***/
-  private decideAsync(sendAnonDistinctId: boolean = true): Promise<PostHogDecideResponse | undefined> {
+  private async decideAsync(sendAnonDistinctId: boolean = true): Promise<PostHogDecideResponse | undefined> {
+    await this._initPromise
     if (this._decideResponsePromise) {
       return this._decideResponsePromise
     }
@@ -975,39 +1096,41 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   }
 
   private async _decideAsync(sendAnonDistinctId: boolean = true): Promise<PostHogDecideResponse | undefined> {
-    const distinctId = this.getDistinctId()
-    const groups = this.props.$groups || {}
-    const personProperties =
-      this.getPersistedProperty<Record<string, string>>(PostHogPersistedProperty.PersonProperties) || {}
-    const groupProperties =
-      this.getPersistedProperty<Record<string, Record<string, string>>>(PostHogPersistedProperty.GroupProperties) || {}
+    this._decideResponsePromise = this._initPromise
+      .then(() => {
+        const distinctId = this.getDistinctId()
+        const groups = this.props.$groups || {}
+        const personProperties =
+          this.getPersistedProperty<Record<string, string>>(PostHogPersistedProperty.PersonProperties) || {}
+        const groupProperties =
+          this.getPersistedProperty<Record<string, Record<string, string>>>(PostHogPersistedProperty.GroupProperties) ||
+          {}
 
-    const extraProperties = {
-      $anon_distinct_id: sendAnonDistinctId ? this.getAnonymousId() : undefined,
-    }
-
-    this._decideResponsePromise = super
-      .getDecide(distinctId, groups, personProperties, groupProperties, extraProperties)
-      .then((res) => {
-        if (res?.featureFlags) {
-          let newFeatureFlags = res.featureFlags
-          let newFeatureFlagPayloads = res.featureFlagPayloads
-          if (res.errorsWhileComputingFlags) {
-            // if not all flags were computed, we upsert flags instead of replacing them
-            const currentFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
-              PostHogPersistedProperty.FeatureFlags
-            )
-            const currentFlagPayloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
-              PostHogPersistedProperty.FeatureFlagPayloads
-            )
-            newFeatureFlags = { ...currentFlags, ...res.featureFlags }
-            newFeatureFlagPayloads = { ...currentFlagPayloads, ...res.featureFlagPayloads }
-          }
-          this.setKnownFeatureFlags(newFeatureFlags)
-          this.setKnownFeatureFlagPayloads(newFeatureFlagPayloads)
+        const extraProperties = {
+          $anon_distinct_id: sendAnonDistinctId ? this.getAnonymousId() : undefined,
         }
 
-        return res
+        return super.getDecide(distinctId, groups, personProperties, groupProperties, extraProperties).then((res) => {
+          if (res?.featureFlags) {
+            let newFeatureFlags = res.featureFlags
+            let newFeatureFlagPayloads = res.featureFlagPayloads
+            if (res.errorsWhileComputingFlags) {
+              // if not all flags were computed, we upsert flags instead of replacing them
+              const currentFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
+                PostHogPersistedProperty.FeatureFlags
+              )
+              const currentFlagPayloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
+                PostHogPersistedProperty.FeatureFlagPayloads
+              )
+              newFeatureFlags = { ...currentFlags, ...res.featureFlags }
+              newFeatureFlagPayloads = { ...currentFlagPayloads, ...res.featureFlagPayloads }
+            }
+            this.setKnownFeatureFlags(newFeatureFlags)
+            this.setKnownFeatureFlagPayloads(newFeatureFlagPayloads)
+          }
+
+          return res
+        })
       })
       .finally(() => {
         this._decideResponsePromise = undefined
@@ -1016,18 +1139,22 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   }
 
   private setKnownFeatureFlags(featureFlags: PostHogDecideResponse['featureFlags']): void {
-    this.setPersistedProperty<PostHogDecideResponse['featureFlags']>(
-      PostHogPersistedProperty.FeatureFlags,
-      featureFlags
-    )
-    this._events.emit('featureflags', featureFlags)
+    this.wrap(() => {
+      this.setPersistedProperty<PostHogDecideResponse['featureFlags']>(
+        PostHogPersistedProperty.FeatureFlags,
+        featureFlags
+      )
+      this._events.emit('featureflags', featureFlags)
+    })
   }
 
   private setKnownFeatureFlagPayloads(featureFlagPayloads: PostHogDecideResponse['featureFlagPayloads']): void {
-    this.setPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
-      PostHogPersistedProperty.FeatureFlagPayloads,
-      featureFlagPayloads
-    )
+    this.wrap(() => {
+      this.setPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
+        PostHogPersistedProperty.FeatureFlagPayloads,
+        featureFlagPayloads
+      )
+    })
   }
 
   getFeatureFlag(key: string): boolean | string | undefined {
@@ -1086,6 +1213,8 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   }
 
   getFeatureFlags(): PostHogDecideResponse['featureFlags'] | undefined {
+    // NOTE: We don't check for _initPromise here as the function is designed to be
+    // callable before the state being loaded anyways
     let flags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(PostHogPersistedProperty.FeatureFlags)
     const overriddenFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
       PostHogPersistedProperty.OverrideFeatureFlags
@@ -1167,11 +1296,13 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     })
   }
 
-  overrideFeatureFlag(flags: PostHogDecideResponse['featureFlags'] | null): void {
-    if (flags === null) {
-      return this.setPersistedProperty(PostHogPersistedProperty.OverrideFeatureFlags, null)
-    }
-    return this.setPersistedProperty(PostHogPersistedProperty.OverrideFeatureFlags, flags)
+  async overrideFeatureFlag(flags: PostHogDecideResponse['featureFlags'] | null): Promise<void> {
+    this.wrap(() => {
+      if (flags === null) {
+        return this.setPersistedProperty(PostHogPersistedProperty.OverrideFeatureFlags, null)
+      }
+      return this.setPersistedProperty(PostHogPersistedProperty.OverrideFeatureFlags, flags)
+    })
   }
 }
 

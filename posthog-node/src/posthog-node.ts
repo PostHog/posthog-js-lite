@@ -2,11 +2,12 @@ import { version } from '../package.json'
 
 import {
   JsonType,
-  PosthogCoreOptions,
+  PostHogCoreOptions,
   PostHogCoreStateless,
+  PostHogDecideResponse,
   PostHogFetchOptions,
   PostHogFetchResponse,
-  PosthogFlagsAndPayloadsResponse,
+  PostHogFlagsAndPayloadsResponse,
   PostHogPersistedProperty,
 } from '../../posthog-core/src'
 import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
@@ -14,13 +15,11 @@ import { EventMessage, GroupIdentifyMessage, IdentifyMessage, PostHogNodeV1 } fr
 import { FeatureFlagsPoller } from './feature-flags'
 import fetch from './fetch'
 
-export type PostHogOptions = PosthogCoreOptions & {
+export type PostHogOptions = PostHogCoreOptions & {
   persistence?: 'memory'
   personalApiKey?: string
-  // The interval in milliseconds between polls for refreshing feature flag definitions
+  // The interval in milliseconds between polls for refreshing feature flag definitions. Defaults to 30 seconds.
   featureFlagsPollingInterval?: number
-  // Timeout in milliseconds for any calls. Defaults to 10 seconds.
-  requestTimeout?: number
   // Maximum size of cache that deduplicates $feature_flag_called calls per user.
   maxCacheSize?: number
   fetch?: (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
@@ -87,11 +86,11 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     return `posthog-node/${version}`
   }
 
-  enable(): void {
+  enable(): Promise<void> {
     return super.optIn()
   }
 
-  disable(): void {
+  disable(): Promise<void> {
     return super.optOut()
   }
 
@@ -114,12 +113,21 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       super.captureStateless(distinctId, event, props, { timestamp, disableGeoip, uuid })
     }
 
+    const _getFlags = (
+      distinctId: EventMessage['distinctId'],
+      groups: EventMessage['groups'],
+      disableGeoip: EventMessage['disableGeoip']
+    ): Promise<PostHogDecideResponse['featureFlags'] | undefined> => {
+      return super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)
+    }
+
     // :TRICKY: If we flush, or need to shut down, to not lose events we want this promise to resolve before we flush
     const capturePromise = Promise.resolve()
       .then(async () => {
         if (sendFeatureFlags) {
           // If we are sending feature flags, we need to make sure we have the latest flags
-          return await super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)
+          // return await super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)
+          return await _getFlags(distinctId, groups, disableGeoip)
         }
 
         if ((this.featureFlagsPoller?.featureFlags?.length || 0) > 0) {
@@ -381,7 +389,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       onlyEvaluateLocally?: boolean
       disableGeoip?: boolean
     }
-  ): Promise<PosthogFlagsAndPayloadsResponse> {
+  ): Promise<PostHogFlagsAndPayloadsResponse> {
     const { groups, disableGeoip } = options || {}
     let { onlyEvaluateLocally, personProperties, groupProperties } = options || {}
 
@@ -445,13 +453,13 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     await this.featureFlagsPoller?.loadFeatureFlags(true)
   }
 
-  shutdown(): void {
-    void this.shutdownAsync()
+  shutdown(shutdownTimeoutMs?: number): void {
+    void this.shutdownAsync(shutdownTimeoutMs)
   }
 
-  async shutdownAsync(): Promise<void> {
+  async shutdownAsync(shutdownTimeoutMs?: number): Promise<void> {
     this.featureFlagsPoller?.stopPoller()
-    return super.shutdownAsync()
+    return super.shutdownAsync(shutdownTimeoutMs)
   }
 
   private addLocalPersonAndGroupProperties(

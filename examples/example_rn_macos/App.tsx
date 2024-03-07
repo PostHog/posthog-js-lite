@@ -27,9 +27,7 @@ import {
 
 import PostHog from 'posthog-react-native';
 
-export let posthog: PostHog | undefined;
-
-export const posthogAsync: Promise<PostHog> = PostHog.initAsync(
+export const posthog = new PostHog(
   'phc_pQ70jJhZKHRvDIL5ruOErnPy6xiAiWCqlL4ayELj4X8',
   {
     host: 'https://app.posthog.com',
@@ -37,12 +35,8 @@ export const posthogAsync: Promise<PostHog> = PostHog.initAsync(
   },
 );
 
-posthogAsync.then(client => {
-  client.debug();
-  posthog = client;
-
-  posthog.identify('test-user-id-macos');
-});
+posthog.debug();
+posthog.identify('test-user-id-macos');
 
 type SectionProps = PropsWithChildren<{
   title: string;

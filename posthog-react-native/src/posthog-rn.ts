@@ -3,78 +3,49 @@ import { AppState, Dimensions, Linking } from 'react-native'
 import {
   PostHogCaptureOptions,
   PostHogCore,
-  PosthogCoreOptions,
+  PostHogCoreOptions,
   PostHogFetchOptions,
   PostHogFetchResponse,
   PostHogPersistedProperty,
 } from '../../posthog-core/src'
-import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
 import { getLegacyValues } from './legacy'
-import { SemiAsyncStorage } from './storage'
+import { PostHogRNStorage, PostHogRNSyncMemoryStorage } from './storage'
 import { version } from './version'
 import { buildOptimisiticAsyncStorage, getAppProperties } from './native-deps'
-import { PostHogAutocaptureOptions, PostHogCustomAppProperties, PostHogCustomAsyncStorage } from './types'
+import { PostHogAutocaptureOptions, PostHogCustomAppProperties, PostHogCustomStorage } from './types'
 import { withReactNativeNavigation } from './frameworks/wix-navigation'
 
-export type PostHogOptions = PosthogCoreOptions & {
+export type PostHogOptions = PostHogCoreOptions & {
+  /** Allows you to provide the storage type. By default 'file'.
+   * 'file' will try to load the best available storage, the provided 'customStorage', 'customAsyncStorage' or in-memory storage.
+   */
   persistence?: 'memory' | 'file'
-  /** Allows you to provide your own implementation of the common information about your App or a function to modify the default App properties generated  */
+  /** Allows you to provide your own implementation of the common information about your App or a function to modify the default App properties generated */
   customAppProperties?:
     | PostHogCustomAppProperties
     | ((properties: PostHogCustomAppProperties) => PostHogCustomAppProperties)
-  customAsyncStorage?: PostHogCustomAsyncStorage
+  /** Allows you to provide a custom asynchronous storage such as async-storage, expo-file-system or a synchronous storage such as mmkv.
+   * If not provided, PostHog will attempt to use the best available storage via optional peer dependencies (async-storage, expo-file-system).
+   * If `persistence` is set to 'memory', this option will be ignored.
+   */
+  customStorage?: PostHogCustomStorage
+
+  // customAsyncStorage?: PostHogCustomAsyncStorage
+  /** Captures native app lifecycle events such as Application Installed, Application Updated, Application Opened and Application Backgrounded.
+   * By default is false.
+   * If you're already using the 'captureLifecycleEvents' options with 'withReactNativeNavigation' or 'PostHogProvider, you should not set this to true, otherwise you may see duplicated events.
+   */
   captureNativeAppLifecycleEvents?: boolean
 }
 
-const clientMap = new Map<string, Promise<PostHog>>()
-
 export class PostHog extends PostHogCore {
   private _persistence: PostHogOptions['persistence']
-  private _memoryStorage = new PostHogMemoryStorage()
-  private _semiAsyncStorage?: SemiAsyncStorage
+  private _storage: PostHogRNStorage
   private _appProperties: PostHogCustomAppProperties = {}
-  private _setupPromise?: Promise<void>
 
-  static _resetClientCache(): void {
-    // NOTE: this method is intended for testing purposes only
-    clientMap.clear()
-  }
-
-  /** Await this method to ensure that all state has been loaded from the async provider */
-  static async initAsync(apiKey: string, options?: PostHogOptions): Promise<PostHog> {
-    let posthog = clientMap.get(apiKey)
-
-    if (!posthog) {
-      const persistence = options?.persistence ?? 'file'
-      if (persistence === 'file') {
-        try {
-          const storage = new SemiAsyncStorage(options?.customAsyncStorage || buildOptimisiticAsyncStorage())
-          posthog = storage.preloadAsync().then(() => new PostHog(apiKey, options, storage))
-        } catch (error) {
-          console.error(
-            'PostHog was unable to initialise with persistence set to "file". Falling back to "memory" persistence.',
-            error
-          )
-          posthog = Promise.resolve(
-            new PostHog(apiKey, { ...options, persistence: 'memory', customAsyncStorage: undefined })
-          )
-        }
-      } else {
-        posthog = Promise.resolve(new PostHog(apiKey, options))
-      }
-
-      clientMap.set(apiKey, posthog)
-    } else {
-      console.warn('PostHog.initAsync called twice with the same apiKey. The first instance will be used.')
-    }
-
-    const resolved = await posthog
-    await resolved._setupPromise
-    return resolved
-  }
-
-  constructor(apiKey: string, options?: PostHogOptions, storage?: SemiAsyncStorage) {
+  constructor(apiKey: string, options?: PostHogOptions) {
     super(apiKey, options)
+    this._isInitialized = false
     this._persistence = options?.persistence ?? 'file'
 
     // Either build the app properties from the existing ones
@@ -87,34 +58,34 @@ export class PostHog extends PostHogCore {
       this.flush()
     })
 
-    if (this._persistence === 'file') {
-      if (!storage) {
-        console.warn(
-          'PostHog was initialised without using PostHog.initAsync - this can lead to race condition issues.'
-        )
-      }
+    let storagePromise: Promise<void> | undefined
 
-      this._semiAsyncStorage =
-        storage || new SemiAsyncStorage(options?.customAsyncStorage || buildOptimisiticAsyncStorage())
+    if (this._persistence === 'file') {
+      this._storage = new PostHogRNStorage(options?.customStorage ?? buildOptimisiticAsyncStorage())
+      storagePromise = this._storage.preloadPromise
+    } else {
+      this._storage = new PostHogRNSyncMemoryStorage()
     }
 
-    // Ensure the async storage has been preloaded (this call is cached)
+    if (storagePromise) {
+      storagePromise.then(() => {
+        // This code is for migrating from V1 to V2 and tries its best to keep the existing anon/distinctIds
+        // It only applies for async storage
+        if (!this._storage.getItem(PostHogPersistedProperty.AnonymousId)) {
+          void getLegacyValues().then((legacyValues) => {
+            if (legacyValues?.distinctId) {
+              this._storage?.setItem(PostHogPersistedProperty.DistinctId, legacyValues.distinctId)
+              this._storage?.setItem(PostHogPersistedProperty.AnonymousId, legacyValues.anonymousId)
+            }
+          })
+        }
+      })
+    }
 
-    const setupAsync = async (): Promise<void> => {
-      if (!this._semiAsyncStorage?.isPreloaded) {
-        await this._semiAsyncStorage?.preloadAsync()
-      }
+    const initAfterStorage = (): void => {
       this.setupBootstrap(options)
 
-      // It is possible that the old library was used so we try to get the legacy distinctID
-      if (!this._semiAsyncStorage?.getItem(PostHogPersistedProperty.AnonymousId)) {
-        const legacyValues = await getLegacyValues()
-        if (legacyValues?.distinctId) {
-          this._semiAsyncStorage?.setItem(PostHogPersistedProperty.DistinctId, legacyValues.distinctId)
-          this._semiAsyncStorage?.setItem(PostHogPersistedProperty.AnonymousId, legacyValues.anonymousId)
-        }
-      }
-
+      this._isInitialized = true
       if (options?.preloadFeatureFlags !== false) {
         this.reloadFeatureFlags()
       }
@@ -125,26 +96,34 @@ export class PostHog extends PostHogCore {
             'PostHog was initialised with persistence set to "memory", capturing native app events is not supported.'
           )
         } else {
-          await this.captureNativeAppLifecycleEvents()
+          void this.captureNativeAppLifecycleEvents()
         }
       }
-      await this.persistAppVersion()
+
+      void this.persistAppVersion()
     }
 
-    this._setupPromise = setupAsync()
+    // For async storage, we wait for the storage to be ready before we start the SDK
+    // For sync storage we can start the SDK immediately
+    if (storagePromise) {
+      this._initPromise = storagePromise.then(initAfterStorage)
+    } else {
+      this._initPromise = Promise.resolve()
+      initAfterStorage()
+    }
+  }
+
+  // NOTE: This is purely a helper method for testing purposes or those who wish to be certain the SDK is fully initialised
+  public async ready(): Promise<void> {
+    await this._initPromise
   }
 
   getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined {
-    return this._semiAsyncStorage
-      ? this._semiAsyncStorage.getItem(key) ?? undefined
-      : this._memoryStorage.getProperty(key)
+    return this._storage.getItem(key) as T | undefined
   }
+
   setPersistedProperty<T>(key: PostHogPersistedProperty, value: T | null): void {
-    return this._semiAsyncStorage
-      ? value !== null
-        ? this._semiAsyncStorage.setItem(key, value)
-        : this._semiAsyncStorage.removeItem(key)
-      : this._memoryStorage.setProperty(key, value)
+    return value !== null ? this._storage.setItem(key, value) : this._storage.removeItem(key)
   }
 
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
@@ -171,7 +150,8 @@ export class PostHog extends PostHogCore {
   }
 
   // Custom methods
-  screen(name: string, properties?: { [key: string]: any }, options?: PostHogCaptureOptions): this {
+  async screen(name: string, properties?: { [key: string]: any }, options?: PostHogCaptureOptions): Promise<void> {
+    await this._initPromise
     // Screen name is good to know for all other subsequent events
     this.registerForSession({
       $screen_name: name,
@@ -191,7 +171,7 @@ export class PostHog extends PostHogCore {
     return withReactNativeNavigation(this, options)
   }
 
-  async captureNativeAppLifecycleEvents(): Promise<void> {
+  private async captureNativeAppLifecycleEvents(): Promise<void> {
     // See the other implementations for reference:
     // ios: https://github.com/PostHog/posthog-ios/blob/3a6afc24d6bde730a19470d4e6b713f44d076ad9/PostHog/Classes/PHGPostHog.m#L140
     // android: https://github.com/PostHog/posthog-android/blob/09940e6921bafa9e01e7d68b8c9032671a21ae73/posthog/src/main/java/com/posthog/android/PostHog.java#L278
@@ -249,7 +229,7 @@ export class PostHog extends PostHogCore {
     })
   }
 
-  async persistAppVersion(): Promise<void> {
+  private async persistAppVersion(): Promise<void> {
     const appBuild = this._appProperties.$app_build
     const appVersion = this._appProperties.$app_version
     this.setPersistedProperty(PostHogPersistedProperty.InstalledAppBuild, appBuild)

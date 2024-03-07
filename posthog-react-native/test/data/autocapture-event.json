@@ -68,7 +68,7 @@
                             "elementType": { "displayName": "ScrollView" },
                             "memoizedProps": { "style": { "flex": 1 } },
                             "return": {
-                              "elementType": { "name": "PosthogDemoScreen" },
+                              "elementType": { "name": "PostHogDemoScreen" },
                               "memoizedProps": {},
                               "return": {
                                 "elementType": { "name": "StaticContainer" },

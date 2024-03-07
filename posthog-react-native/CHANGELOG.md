@@ -1,7 +1,29 @@
-# Next
+# 3.0.0-beta.1 - 2024-03-04
 
-1. `$app_build` was returning the OS internal build number instead of the app's build number.
-  1. This flag was used to track app versions, you might experience a sudden increase of `Application Updated` events, but only if you're using the `react-native-device-info` library.
+- `PostHog.initAsync` is no more! You can now initialize PostHog as you would any other class `const posthog = new PostHog(...)`
+- PostHogProvider now requires either an `apiKey` or `client` property and `usePostHog` now always returns a `PostHog` instance instead of `PostHog | undefined`. The `disabled` option can be used when initializing the `PostHogProvider` if desired and all subsequent calls to `posthog` will work but without actually doing anything.
+- Removes the `enable` option. You can now specify `defaultOptIn: false` to start the SDK opted out of tracking
+- Adds a `disabled` option and the ability to change it later via `posthog.disabled = true`. Useful for disabling PostHog tracking for example in a testing environment without having complex conditional checking
+- Many methods such as `capture` and `identify` no longer return the `this` object instead returning nothing
+- Fixes some typos in types
+- `shutdown` and `shutdownAsync` takes a `shutdownTimeoutMs` param with a default of 30000 (30s). This is the time to wait for flushing events before shutting down the client. If the timeout is reached, the client will be shut down regardless of pending events.
+- Adds a new `featureFlagsRequestTimeoutMs` timeout parameter for feature flags which defaults to 10 seconds.
+- Replaces the option `customAsyncStorage` with `customStorage` to allow for custom synchronous or asynchronous storage implementations.
+
+# 2.11.6 - 2024-02-22
+
+1. `$device_name` was set to the device's user name (eg Max's iPhone) for all events wrongly, it's now set to the device's name (eg iPhone 12), this happened only if using `react-native-device-info` library.
+2. Fixes an issue related to other dependencies patching the global Promise object that could lead to crashes
+
+# 2.11.5 - 2024-02-20
+
+1. fix: undefined posthog in hooks
+
+# 2.11.4 - 2024-02-15
+
+1. fix: using `captureMode=form` won't throw an error and retry unnecessarily
+2. `$app_build` was returning the OS internal build number instead of the app's build number.
+3. This flag was used to track app versions, you might experience a sudden increase of `Application Updated` events, but only if you're using the `react-native-device-info` library.
 
 # 2.11.3 - 2024-02-08
 
@@ -132,4 +154,4 @@ Support for bootstrapping feature flags and distinctIDs. This allows you to init
 
 # 2.1.0 - 2022-09-02
 
-PosthogProvider `autocapture` can be configured with `captureLifecycleEvents: false` and `captureScreens: false` if you want do disable these autocapture elements. Both of these default to `true`
+PostHogProvider `autocapture` can be configured with `captureLifecycleEvents: false` and `captureScreens: false` if you want do disable these autocapture elements. Both of these default to `true`

@@ -1,8 +1,8 @@
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
+import { waitForPromises } from './test-utils/test-utils'
 
 describe('PostHog Core', () => {
   let posthog: PostHogCoreTestClient
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let mocks: PostHogCoreTestClientMocks
 
   beforeEach(() => {
@@ -55,19 +55,19 @@ describe('PostHog Core', () => {
       expect((posthog as any).host).toEqual('http://my-posthog.com')
     })
 
-    it('should use bootstrapped distinct ID when present', () => {
+    it('should use bootstrapped distinct ID when present', async () => {
       ;[posthog, mocks] = createTestClient('TEST_API_KEY', { bootstrap: { distinctId: 'new_anon_id' } })
 
       expect((posthog as any).getDistinctId()).toEqual('new_anon_id')
       expect((posthog as any).getAnonymousId()).toEqual('new_anon_id')
 
-      posthog.identify('random_id')
+      await posthog.identify('random_id')
 
       expect((posthog as any).getDistinctId()).toEqual('random_id')
       expect((posthog as any).getAnonymousId()).toEqual('new_anon_id')
     })
 
-    it('should use bootstrapped distinct ID as identified ID when present', () => {
+    it('should use bootstrapped distinct ID as identified ID when present', async () => {
       ;[posthog, mocks] = createTestClient('TEST_API_KEY', {
         bootstrap: { distinctId: 'new_id', isIdentifiedId: true },
       })
@@ -76,10 +76,28 @@ describe('PostHog Core', () => {
       expect((posthog as any).getDistinctId()).toEqual('new_id')
       expect((posthog as any).getAnonymousId()).not.toEqual('new_id')
 
-      posthog.identify('random_id')
+      await posthog.identify('random_id')
 
       expect((posthog as any).getDistinctId()).toEqual('random_id')
       expect((posthog as any).getAnonymousId()).toEqual('new_id')
+    })
+  })
+
+  describe('disabled', () => {
+    it('should not send events when disabled', async () => {
+      ;[posthog, mocks] = createTestClient('TEST_API_KEY', {
+        disabled: true,
+        flushAt: 1,
+      })
+      jest.runOnlyPendingTimers()
+
+      expect(posthog.getFeatureFlags()).toEqual(undefined)
+      posthog.capture('test')
+      posthog.capture('identify')
+
+      await waitForPromises()
+
+      expect(mocks.fetch).not.toHaveBeenCalled()
     })
   })
 })
