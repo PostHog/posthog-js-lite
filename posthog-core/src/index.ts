@@ -182,9 +182,11 @@ export abstract class PostHogCoreStateless {
   protected addPendingPromise<T>(promise: Promise<T>): Promise<T> {
     const promiseUUID = uuidv7()
     this.pendingPromises[promiseUUID] = promise
-    promise.finally(() => {
-      delete this.pendingPromises[promiseUUID]
-    })
+    promise
+      .catch(() => {})
+      .finally(() => {
+        delete this.pendingPromises[promiseUUID]
+      })
 
     return promise
   }
@@ -496,11 +498,11 @@ export abstract class PostHogCoreStateless {
 
       // Flush queued events if we meet the flushAt length
       if (queue.length >= this.flushAt) {
-        void this.flush()
+        this.flushBackground()
       }
 
       if (this.flushInterval && !this._flushTimer) {
-        this._flushTimer = safeSetTimeout(() => void this.flush(), this.flushInterval)
+        this._flushTimer = safeSetTimeout(() => this.flushBackground(), this.flushInterval)
       }
     })
   }
@@ -512,25 +514,37 @@ export abstract class PostHogCoreStateless {
     }
   }
 
-  async flushAsync(): Promise<any> {
+  /**
+   * Alias for .flush()
+   */
+  async flushAsync(): Promise<any[]> {
     return this.flush()
   }
 
-  async flush(): Promise<any> {
+  /**
+   * Helper for flushing the queue in the background
+   * Avoids unnecessary promise errors
+   */
+  private flushBackground(): void {
+    void this.flush().catch(() => {})
+  }
+
+  async flush(): Promise<any[]> {
     if (!this.flushPromise) {
-      this.flushPromise = this.addPendingPromise(this._flush())
+      this.flushPromise = this._flush()
+      this.addPendingPromise(this.flushPromise)
     }
     return this.flushPromise
   }
 
-  private async _flush(): Promise<any> {
+  private async _flush(): Promise<any[]> {
     await this._initPromise
     this.clearFlushTimer()
 
     const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
 
     if (!queue.length) {
-      return
+      return []
     }
 
     const items = queue.slice(0, this.flushMaxItems)
@@ -582,18 +596,23 @@ export abstract class PostHogCoreStateless {
 
     try {
       await this.fetchWithRetry(url, fetchOptions)
-      persistQueueChange()
     } catch (err) {
       // depending on the error type, eg a malformed JSON or broken queue, it'll always return an error
       // and this will be an endless loop, in this case, if the error isn't a network issue, we always remove the items from the queue
       if (!(err instanceof PostHogFetchNetworkError)) {
-        console.log('[PostHog] There was an issue while flushing the Queue.', err)
         persistQueueChange()
-      } else {
-        console.log('[PostHog] There was a network issue while flushing the Queue, will try again.', err)
       }
       this._events.emit('error', err)
+
+      console.log('ERRORRED')
+      throw err
     }
+
+    persistQueueChange()
+    console.log('eMITTING')
+    this._events.emit('flush', messages)
+
+    return messages
   }
 
   private async fetchWithRetry(

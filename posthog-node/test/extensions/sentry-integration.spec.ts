@@ -109,8 +109,9 @@ describe('PostHogSentryIntegration', () => {
 
     processorFunction(createMockSentryException())
 
-    await waitForPromises()
-    jest.runOnlyPendingTimers()
+    await waitForPromises() // First flush
+    jest.runOnlyPendingTimers() // Flush timer
+    await waitForPromises() // Second flush
     const batchEvents = getLastBatchEvents()
 
     expect(batchEvents).toEqual([

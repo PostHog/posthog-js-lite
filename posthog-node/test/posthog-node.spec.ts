@@ -25,6 +25,7 @@ describe('PostHog Node.js', () => {
   let posthog: PostHog
 
   jest.useFakeTimers()
+  jest.setTimeout(1000)
 
   beforeEach(() => {
     posthog = new PostHog('TEST_API_KEY', {

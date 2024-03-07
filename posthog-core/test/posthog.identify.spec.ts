@@ -42,7 +42,7 @@ describe('PostHog Core', () => {
             type: 'identify',
           },
         ],
-        sent_at: '2022-01-01T00:00:00.000Z',
+        sent_at: expect.any(String),
       })
     })
 

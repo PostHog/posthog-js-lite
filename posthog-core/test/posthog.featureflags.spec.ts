@@ -389,8 +389,9 @@ describe('PostHog Core', () => {
         })
       })
 
-      it('should capture $feature_flag_called when called', () => {
+      it('should capture $feature_flag_called when called', async () => {
         expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
+        await waitForPromises()
         expect(mocks.fetch).toHaveBeenCalledTimes(2)
 
         expect(parseBody(mocks.fetch.mock.calls[1])).toMatchObject({
@@ -417,8 +418,10 @@ describe('PostHog Core', () => {
         expect(posthog.getPersistedProperty(PostHogPersistedProperty.FeatureFlags)).toEqual(createMockFeatureFlags())
       })
 
-      it('should include feature flags in subsequent captures', () => {
+      it('should include feature flags in subsequent captures', async () => {
         posthog.capture('test-event', { foo: 'bar' })
+
+        await waitForPromises()
 
         expect(parseBody(mocks.fetch.mock.calls[1])).toMatchObject({
           batch: [

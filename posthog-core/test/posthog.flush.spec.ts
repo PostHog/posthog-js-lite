@@ -1,4 +1,5 @@
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
+import { waitForPromises } from './test-utils/test-utils'
 
 describe('PostHog Core', () => {
   let posthog: PostHogCoreTestClient
@@ -15,9 +16,10 @@ describe('PostHog Core', () => {
         captureMode: 'json',
       })
     })
+
     it("doesn't fail when queue is empty", async () => {
       jest.useRealTimers()
-      await expect(posthog.flushAsync()).resolves.toEqual(undefined)
+      await expect(posthog.flushAsync()).resolves.toEqual([])
     })
 
     it('flush messsages once called', async () => {
@@ -55,12 +57,15 @@ describe('PostHog Core', () => {
       ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 2 })
 
       posthog.capture('test-event-1')
+      await waitForPromises()
       expect(mocks.fetch).toHaveBeenCalledTimes(0)
       posthog.capture('test-event-2')
+      await waitForPromises()
       expect(mocks.fetch).toHaveBeenCalledTimes(1)
       posthog.optOut()
       posthog.capture('test-event-3')
       posthog.capture('test-event-4')
+      await waitForPromises()
       expect(mocks.fetch).toHaveBeenCalledTimes(1)
     })
   })
