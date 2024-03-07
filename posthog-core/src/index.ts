@@ -496,11 +496,11 @@ export abstract class PostHogCoreStateless {
 
       // Flush queued events if we meet the flushAt length
       if (queue.length >= this.flushAt) {
-        this.flush()
+        void this.flush()
       }
 
       if (this.flushInterval && !this._flushTimer) {
-        this._flushTimer = safeSetTimeout(() => this.flush(), this.flushInterval)
+        this._flushTimer = safeSetTimeout(() => void this.flush(), this.flushInterval)
       }
     })
   }

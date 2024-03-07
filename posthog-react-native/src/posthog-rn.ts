@@ -55,7 +55,7 @@ export class PostHog extends PostHogCore {
         : options?.customAppProperties || getAppProperties()
 
     AppState.addEventListener('change', () => {
-      this.flush()
+      void this.flush()
     })
 
     let storagePromise: Promise<void> | undefined
