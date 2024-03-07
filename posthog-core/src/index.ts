@@ -531,7 +531,9 @@ export abstract class PostHogCoreStateless {
 
   async flush(): Promise<any[]> {
     if (!this.flushPromise) {
-      this.flushPromise = this._flush()
+      this.flushPromise = this._flush().finally(() => {
+        this.flushPromise = null
+      })
       this.addPendingPromise(this.flushPromise)
     }
     return this.flushPromise
@@ -652,22 +654,15 @@ export abstract class PostHogCoreStateless {
     )
   }
 
-  async shutdownAsync(shutdownTimeoutMs?: number): Promise<void> {
+  async shutdownAsync(shutdownTimeoutMs: number = 30000): Promise<void> {
     await this._initPromise
 
     this.clearFlushTimer()
 
     try {
-      await Promise.all(
-        Object.values(this.pendingPromises).map((x) =>
-          x.catch(() => {
-            // ignore errors as we are shutting down and can't deal with them anyways.
-          })
-        )
-      )
+      await Promise.all(Object.values(this.pendingPromises))
 
-      const timeout = shutdownTimeoutMs ?? 30000
-      const startTimeWithDelay = Date.now() + timeout
+      const startTimeWithDelay = Date.now() + shutdownTimeoutMs
 
       while (true) {
         const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []

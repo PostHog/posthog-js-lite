@@ -10,6 +10,14 @@ jest.mock('../package.json', () => ({ version: '1.2.3' }))
 
 const mockedFetch = jest.mocked(fetch, true)
 
+const waitForFlushTimer = async (): Promise<void> => {
+  await waitForPromises()
+  // To trigger the flush via the timer
+  jest.runOnlyPendingTimers()
+  // Then wait for the flush promise
+  await waitForPromises()
+}
+
 const getLastBatchEvents = (): any[] | undefined => {
   expect(mockedFetch).toHaveBeenCalledWith('http://example.com/batch/', expect.objectContaining({ method: 'POST' }))
 
@@ -25,7 +33,6 @@ describe('PostHog Node.js', () => {
   let posthog: PostHog
 
   jest.useFakeTimers()
-  jest.setTimeout(1000)
 
   beforeEach(() => {
     posthog = new PostHog('TEST_API_KEY', {
@@ -44,6 +51,15 @@ describe('PostHog Node.js', () => {
   })
 
   afterEach(async () => {
+    mockedFetch.mockResolvedValue({
+      status: 200,
+      text: () => Promise.resolve('ok'),
+      json: () =>
+        Promise.resolve({
+          status: 'ok',
+        }),
+    } as any)
+
     // ensure clean shutdown & no test interdependencies
     await posthog.shutdownAsync()
   })
@@ -53,8 +69,7 @@ describe('PostHog Node.js', () => {
       expect(mockedFetch).toHaveBeenCalledTimes(0)
       posthog.capture({ distinctId: '123', event: 'test-event', properties: { foo: 'bar' }, groups: { org: 123 } })
 
-      await waitForPromises()
-      jest.runOnlyPendingTimers()
+      await waitForFlushTimer()
 
       const batchEvents = getLastBatchEvents()
       expect(batchEvents).toEqual([
@@ -81,8 +96,7 @@ describe('PostHog Node.js', () => {
       expect(mockedFetch).toHaveBeenCalledTimes(0)
       posthog.capture({ distinctId: '123', event: 'test-event', properties: { foo: 'bar' }, groups: { org: 123 } })
 
-      await waitForPromises()
-      jest.runOnlyPendingTimers()
+      await waitForFlushTimer()
       expect(getLastBatchEvents()?.[0]).toEqual(
         expect.objectContaining({
           distinct_id: '123',
@@ -104,8 +118,7 @@ describe('PostHog Node.js', () => {
         groups: { other_group: 'x' },
       })
 
-      await waitForPromises()
-      jest.runOnlyPendingTimers()
+      await waitForFlushTimer()
       expect(getLastBatchEvents()?.[0]).toEqual(
         expect.objectContaining({
           distinct_id: '123',
@@ -143,7 +156,7 @@ describe('PostHog Node.js', () => {
     it('should handle identify mistakenly using $set', async () => {
       expect(mockedFetch).toHaveBeenCalledTimes(0)
       posthog.identify({ distinctId: '123', properties: { foo: 'bar', $set: { foo: 'other' } } })
-      jest.runOnlyPendingTimers()
+      await waitForFlushTimer()
       const batchEvents = getLastBatchEvents()
       expect(batchEvents).toMatchObject([
         {
@@ -162,7 +175,9 @@ describe('PostHog Node.js', () => {
     it('should capture alias events on shared queue', async () => {
       expect(mockedFetch).toHaveBeenCalledTimes(0)
       posthog.alias({ distinctId: '123', alias: '1234' })
-      jest.runOnlyPendingTimers()
+      console.log('action')
+      await waitForFlushTimer()
+      console.log('assert')
       const batchEvents = getLastBatchEvents()
       expect(batchEvents).toMatchObject([
         {
@@ -180,8 +195,7 @@ describe('PostHog Node.js', () => {
     it('should allow overriding timestamp', async () => {
       expect(mockedFetch).toHaveBeenCalledTimes(0)
       posthog.capture({ event: 'custom-time', distinctId: '123', timestamp: new Date('2021-02-03') })
-      await waitForPromises()
-      jest.runOnlyPendingTimers()
+      await waitForFlushTimer()
       const batchEvents = getLastBatchEvents()
       expect(batchEvents).toMatchObject([
         {
@@ -197,8 +211,7 @@ describe('PostHog Node.js', () => {
       expect(mockedFetch).toHaveBeenCalledTimes(0)
       const uuid = randomUUID()
       posthog.capture({ event: 'custom-time', distinctId: '123', uuid })
-      await waitForPromises()
-      jest.runOnlyPendingTimers()
+      await waitForFlushTimer()
       const batchEvents = getLastBatchEvents()
       expect(batchEvents).toMatchObject([
         {
@@ -220,8 +233,7 @@ describe('PostHog Node.js', () => {
         disableGeoip: false,
       })
 
-      await waitForPromises()
-      jest.runOnlyPendingTimers()
+      await waitForFlushTimer()
       const batchEvents = getLastBatchEvents()
       expect(batchEvents?.[0].properties).toEqual({
         $groups: { org: 123 },
@@ -239,8 +251,9 @@ describe('PostHog Node.js', () => {
       })
       client.capture({ distinctId: '123', event: 'test-event', properties: { foo: 'bar' }, groups: { org: 123 } })
 
-      await waitForPromises()
-      jest.runOnlyPendingTimers()
+      await waitForFlushTimer()
+
+      console.log('asserting')
 
       let batchEvents = getLastBatchEvents()
       expect(batchEvents?.[0].properties).toEqual({
@@ -258,8 +271,8 @@ describe('PostHog Node.js', () => {
         disableGeoip: true,
       })
 
-      await waitForPromises()
-      jest.runOnlyPendingTimers()
+      await waitForFlushTimer()
+
       batchEvents = getLastBatchEvents()
       expect(batchEvents?.[0].properties).toEqual({
         $groups: { org: 123 },
@@ -277,8 +290,9 @@ describe('PostHog Node.js', () => {
         disableGeoip: false,
       })
 
+      await waitForFlushTimer()
       await waitForPromises()
-      jest.runOnlyPendingTimers()
+
       batchEvents = getLastBatchEvents()
       expect(batchEvents?.[0].properties).toEqual({
         $groups: { org: 123 },
@@ -729,8 +743,7 @@ describe('PostHog Node.js', () => {
         disableGeoip: false,
       })
 
-      await waitForPromises()
-      jest.runOnlyPendingTimers()
+      await waitForFlushTimer()
 
       expect(mockedFetch).toHaveBeenCalledWith(
         'http://example.com/decide/?v=3',

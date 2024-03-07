@@ -17,8 +17,11 @@
     "prettier": "prettier --write \"./**/*.{ts,tsx}\"",
     "prettier:check": "prettier --check \"./**/*.{ts,tsx}\"",
     "test": "jest posthog-core posthog-node posthog-web",
-    "test:all": "jest posthog-core posthog-node posthog-web && yarn test:rn",
+    "test:node": "jest posthog-node",
+    "test:core": "jest posthog-core",
+    "test:web": "jest posthog-core",
     "test:rn": "cd posthog-react-native && yarn test",
+    "test:all": "jest posthog-core posthog-node posthog-web && yarn test:rn",
     "build-rollup": "rollup -c",
     "build-react-native": "cd posthog-react-native && yarn build"
   },

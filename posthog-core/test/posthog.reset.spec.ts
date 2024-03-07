@@ -1,6 +1,5 @@
 import { PostHogPersistedProperty } from '../src'
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
-import { waitForPromises } from './test-utils/test-utils'
 
 describe('PostHog Core', () => {
   let posthog: PostHogCoreTestClient
