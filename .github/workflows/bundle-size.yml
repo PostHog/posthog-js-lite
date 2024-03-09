@@ -10,6 +10,4 @@ jobs:
       - uses: actions/checkout@v4
       - uses: preactjs/compressed-size-action@v2
         with:
-          pattern: './**/lib/**/*.{js}'
-          # Always ignore SourceMaps and node_modules:
-          exclude: '{**/*.map,**/node_modules/**}'
+          pattern: 'posthog-{web,node}/lib/**/*.js'
