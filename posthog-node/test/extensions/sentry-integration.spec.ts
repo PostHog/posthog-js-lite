@@ -86,7 +86,7 @@ describe('PostHogSentryIntegration', () => {
 
   afterEach(async () => {
     // ensure clean shutdown & no test interdependencies
-    await posthog.shutdownAsync()
+    await posthog.shutdown()
   })
 
   it('should forward sentry exceptions to posthog', async () => {
@@ -109,8 +109,9 @@ describe('PostHogSentryIntegration', () => {
 
     processorFunction(createMockSentryException())
 
-    await waitForPromises()
-    jest.runOnlyPendingTimers()
+    await waitForPromises() // First flush
+    jest.runOnlyPendingTimers() // Flush timer
+    await waitForPromises() // Second flush
     const batchEvents = getLastBatchEvents()
 
     expect(batchEvents).toEqual([

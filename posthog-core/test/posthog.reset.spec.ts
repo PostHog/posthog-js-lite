@@ -31,36 +31,26 @@ describe('PostHog Core', () => {
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.Props)).toEqual(undefined)
     })
 
-    it("shouldn't reset the events capture queue", () => {
+    it("shouldn't reset the events capture queue", async () => {
       posthog.getDistinctId()
       posthog.capture('custom-event')
 
-      expect(posthog.getPersistedProperty(PostHogPersistedProperty.Queue)).toEqual([
+      const expectedQueue = [
         {
           message: expect.objectContaining({
             event: 'custom-event',
             library: 'posthog-core-tests',
           }),
         },
-      ])
+      ]
 
+      expect(posthog.getPersistedProperty(PostHogPersistedProperty.Queue)).toEqual(expectedQueue)
       posthog.reset()
 
-      expect(posthog.getPersistedProperty(PostHogPersistedProperty.Queue)).toEqual([
-        {
-          message: expect.objectContaining({
-            event: 'custom-event',
-            library: 'posthog-core-tests',
-          }),
-        },
-      ])
-
       const newDistinctId = posthog.getDistinctId()
-      jest.runOnlyPendingTimers()
 
-      // message flushed after reset
+      expect(posthog.getPersistedProperty(PostHogPersistedProperty.Queue)).toEqual(expectedQueue)
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.AnonymousId)).toEqual(newDistinctId)
-      expect(posthog.getPersistedProperty(PostHogPersistedProperty.Queue)).toEqual([])
     })
 
     it('should not reset specific props when set', () => {

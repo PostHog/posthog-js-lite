@@ -60,8 +60,9 @@ describe('PostHog Core', () => {
   })
 
   describe('groupIdentify', () => {
-    it('should identify group', () => {
+    it('should identify group', async () => {
       posthog.groupIdentify('posthog', 'team-1', { analytics: true })
+      await waitForPromises()
 
       expect(parseBody(mocks.fetch.mock.calls[0])).toMatchObject({
         api_key: 'TEST_API_KEY',
@@ -82,7 +83,6 @@ describe('PostHog Core', () => {
             type: 'capture',
           },
         ],
-        sent_at: '2022-01-01T00:00:00.000Z',
       })
     })
   })

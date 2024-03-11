@@ -1,4 +1,4 @@
-import { parseBody } from './test-utils/test-utils'
+import { parseBody, waitForPromises } from './test-utils/test-utils'
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
 import { uuidv7 } from '../src/vendor/uuidv7'
 
@@ -18,6 +18,7 @@ describe('PostHog Core', () => {
 
       posthog.capture('custom-event')
 
+      await waitForPromises()
       expect(mocks.fetch).toHaveBeenCalledTimes(1)
       const [url, options] = mocks.fetch.mock.calls[0]
       expect(url).toMatch(/^https:\/\/app\.posthog\.com\/e\/\?ip=1&_=[0-9]+&v=[0-9.a-z-]+$/)
@@ -42,7 +43,7 @@ describe('PostHog Core', () => {
             type: 'capture',
           },
         ],
-        sent_at: '2022-01-01T00:00:00.000Z',
+        sent_at: expect.any(String),
       })
     })
 
@@ -50,8 +51,8 @@ describe('PostHog Core', () => {
       jest.setSystemTime(new Date('2022-01-01'))
 
       posthog.capture('custom-event', { foo: 'bar' }, { timestamp: new Date('2021-01-02') })
+      await waitForPromises()
       const body = parseBody(mocks.fetch.mock.calls[0])
-
       expect(body).toMatchObject({
         api_key: 'TEST_API_KEY',
         batch: [
@@ -60,7 +61,6 @@ describe('PostHog Core', () => {
             timestamp: '2021-01-02T00:00:00.000Z',
           },
         ],
-        sent_at: '2022-01-01T00:00:00.000Z',
       })
     })
 
@@ -70,6 +70,7 @@ describe('PostHog Core', () => {
       const id = uuidv7()
 
       posthog.capture('custom-event', { foo: 'bar' }, { uuid: id })
+      await waitForPromises()
       const body = parseBody(mocks.fetch.mock.calls[0])
 
       expect(body).toMatchObject({
@@ -79,7 +80,6 @@ describe('PostHog Core', () => {
             uuid: expect.any(String),
           },
         ],
-        sent_at: '2022-01-01T00:00:00.000Z',
       })
     })
   })

@@ -5,6 +5,8 @@ export type PostHogCoreOptions = {
   flushAt?: number
   /** The interval in milliseconds between periodic flushes */
   flushInterval?: number
+  /** The maximum number of queued messages to be flushed as part of a single batch (must be higher than `flushAt`) */
+  maxBatchSize?: number
   /** If set to true the SDK is essentially disabled (useful for local environments where you don't want to track anything) */
   disabled?: boolean
   /** If set to false the SDK will not track until the `optIn` function is called. */

@@ -52,7 +52,9 @@ export abstract class PostHogCoreStateless {
   private apiKey: string
   host: string
   private flushAt: number
+  private maxBatchSize: number
   private flushInterval: number
+  private flushPromise: Promise<any> | null = null
   private requestTimeout: number
   private featureFlagsRequestTimeoutMs: number
   private captureMode: 'form' | 'json'
@@ -86,6 +88,7 @@ export abstract class PostHogCoreStateless {
     this.apiKey = apiKey
     this.host = removeTrailingSlash(options?.host || 'https://app.posthog.com')
     this.flushAt = options?.flushAt ? Math.max(options?.flushAt, 1) : 20
+    this.maxBatchSize = Math.max(this.flushAt, options?.maxBatchSize ?? 100)
     this.flushInterval = options?.flushInterval ?? 10000
     this.captureMode = options?.captureMode || 'form'
 
@@ -176,12 +179,16 @@ export abstract class PostHogCoreStateless {
     }
   }
 
-  protected addPendingPromise(promise: Promise<any>): void {
+  protected addPendingPromise<T>(promise: Promise<T>): Promise<T> {
     const promiseUUID = uuidv7()
     this.pendingPromises[promiseUUID] = promise
-    promise.finally(() => {
-      delete this.pendingPromises[promiseUUID]
-    })
+    promise
+      .catch(() => {})
+      .finally(() => {
+        delete this.pendingPromises[promiseUUID]
+      })
+
+    return promise
   }
 
   /***
@@ -491,97 +498,113 @@ export abstract class PostHogCoreStateless {
 
       // Flush queued events if we meet the flushAt length
       if (queue.length >= this.flushAt) {
-        this.flush()
+        this.flushBackground()
       }
 
       if (this.flushInterval && !this._flushTimer) {
-        this._flushTimer = safeSetTimeout(() => this.flush(), this.flushInterval)
+        this._flushTimer = safeSetTimeout(() => this.flushBackground(), this.flushInterval)
       }
     })
   }
 
-  async flushAsync(): Promise<any> {
+  private clearFlushTimer(): void {
+    if (this._flushTimer) {
+      clearTimeout(this._flushTimer)
+      this._flushTimer = undefined
+    }
+  }
+
+  /**
+   * Helper for flushing the queue in the background
+   * Avoids unnecessary promise errors
+   */
+  private flushBackground(): void {
+    void this.flush().catch(() => {})
+  }
+
+  async flush(): Promise<any[]> {
+    if (!this.flushPromise) {
+      this.flushPromise = this._flush().finally(() => {
+        this.flushPromise = null
+      })
+      this.addPendingPromise(this.flushPromise)
+    }
+    return this.flushPromise
+  }
+
+  private async _flush(): Promise<any[]> {
+    this.clearFlushTimer()
     await this._initPromise
 
-    return new Promise((resolve, reject) => {
-      this.flush((err, data) => {
-        return err ? reject(err) : resolve(data)
-      })
-    })
-  }
+    const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
 
-  flush(callback?: (err?: any, data?: any) => void): void {
-    this.wrap(() => {
-      if (this._flushTimer) {
-        clearTimeout(this._flushTimer)
-        this._flushTimer = null
+    if (!queue.length) {
+      return []
+    }
+
+    const items = queue.slice(0, this.maxBatchSize)
+    const messages = items.map((item) => item.message)
+
+    const persistQueueChange = (): void => {
+      const refreshedQueue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
+      this.setPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue, refreshedQueue.slice(items.length))
+    }
+
+    const data = {
+      api_key: this.apiKey,
+      batch: messages,
+      sent_at: currentISOTime(),
+    }
+
+    // Don't set the user agent if we're not on a browser. The latest spec allows
+    // the User-Agent header (see https://fetch.spec.whatwg.org/#terminology-headers
+    // and https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/setRequestHeader),
+    // but browsers such as Chrome and Safari have not caught up.
+    const customUserAgent = this.getCustomUserAgent()
+    const headers: { [key: string]: string } = {}
+    if (customUserAgent) {
+      headers['user-agent'] = customUserAgent
+    }
+
+    const payload = JSON.stringify(data)
+
+    const url =
+      this.captureMode === 'form'
+        ? `${this.host}/e/?ip=1&_=${currentTimestamp()}&v=${this.getLibraryVersion()}`
+        : `${this.host}/batch/`
+
+    const fetchOptions: PostHogFetchOptions =
+      this.captureMode === 'form'
+        ? {
+            method: 'POST',
+            mode: 'no-cors',
+            credentials: 'omit',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `data=${encodeURIComponent(LZString.compressToBase64(payload))}&compression=lz64`,
+          }
+        : {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: payload,
+          }
+
+    try {
+      await this.fetchWithRetry(url, fetchOptions)
+    } catch (err) {
+      // depending on the error type, eg a malformed JSON or broken queue, it'll always return an error
+      // and this will be an endless loop, in this case, if the error isn't a network issue, we always remove the items from the queue
+      if (!(err instanceof PostHogFetchNetworkError)) {
+        persistQueueChange()
       }
+      this._events.emit('error', err)
 
-      const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
+      throw err
+    }
 
-      if (!queue.length) {
-        return callback?.()
-      }
+    persistQueueChange()
+    this._events.emit('flush', messages)
 
-      const items = queue.splice(0, this.flushAt)
-      this.setPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue, queue)
-
-      const messages = items.map((item) => item.message)
-
-      const data = {
-        api_key: this.apiKey,
-        batch: messages,
-        sent_at: currentISOTime(),
-      }
-
-      const done = (err?: any): void => {
-        if (err) {
-          this._events.emit('error', err)
-        }
-        callback?.(err, messages)
-        this._events.emit('flush', messages)
-      }
-
-      // Don't set the user agent if we're not on a browser. The latest spec allows
-      // the User-Agent header (see https://fetch.spec.whatwg.org/#terminology-headers
-      // and https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/setRequestHeader),
-      // but browsers such as Chrome and Safari have not caught up.
-      const customUserAgent = this.getCustomUserAgent()
-      const headers: { [key: string]: string } = {}
-      if (customUserAgent) {
-        headers['user-agent'] = customUserAgent
-      }
-
-      const payload = JSON.stringify(data)
-
-      const url =
-        this.captureMode === 'form'
-          ? `${this.host}/e/?ip=1&_=${currentTimestamp()}&v=${this.getLibraryVersion()}`
-          : `${this.host}/batch/`
-
-      const fetchOptions: PostHogFetchOptions =
-        this.captureMode === 'form'
-          ? {
-              method: 'POST',
-              mode: 'no-cors',
-              credentials: 'omit',
-              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-              body: `data=${encodeURIComponent(LZString.compressToBase64(payload))}&compression=lz64`,
-            }
-          : {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: payload,
-            }
-      const requestPromise = this.fetchWithRetry(url, fetchOptions)
-      this.addPendingPromise(
-        requestPromise
-          .then(() => done())
-          .catch((err) => {
-            done(err)
-          })
-      )
-    })
+    return messages
   }
 
   private async fetchWithRetry(
@@ -621,21 +644,15 @@ export abstract class PostHogCoreStateless {
     )
   }
 
-  async shutdownAsync(shutdownTimeoutMs?: number): Promise<void> {
+  async shutdown(shutdownTimeoutMs: number = 30000): Promise<void> {
     await this._initPromise
 
-    clearTimeout(this._flushTimer)
-    try {
-      await Promise.all(
-        Object.values(this.pendingPromises).map((x) =>
-          x.catch(() => {
-            // ignore errors as we are shutting down and can't deal with them anyways.
-          })
-        )
-      )
+    this.clearFlushTimer()
 
-      const timeout = shutdownTimeoutMs ?? 30000
-      const startTimeWithDelay = Date.now() + timeout
+    try {
+      await Promise.all(Object.values(this.pendingPromises))
+
+      const startTimeWithDelay = Date.now() + shutdownTimeoutMs
 
       while (true) {
         const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
@@ -647,7 +664,7 @@ export abstract class PostHogCoreStateless {
         // flush again to make sure we send all events, some of which might've been added
         // while we were waiting for the pending promises to resolve
         // For example, see sendFeatureFlags in posthog-node/src/posthog-node.ts::capture
-        await this.flushAsync()
+        await this.flush()
 
         // If we've been waiting for more than the shutdownTimeoutMs, stop it
         const now = Date.now()
@@ -661,10 +678,6 @@ export abstract class PostHogCoreStateless {
       }
       console.error('Error while shutting down PostHog', e)
     }
-  }
-
-  shutdown(shutdownTimeoutMs?: number): void {
-    void this.shutdownAsync(shutdownTimeoutMs)
   }
 }
 

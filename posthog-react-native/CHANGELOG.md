@@ -1,3 +1,9 @@
+# NEXT
+
+- `flushAsync` and `shutdownAsnc` are removed with `flush` and `shutdown` now being the async methods.
+- Fixed an issue where `shutdownAsync` would potentially exit early if a flush was already in progress
+- Flushes will now try to flush up to `maxBatchSize` (default 100) in one go
+
 # 3.0.0-beta.1 - 2024-03-04
 
 - `PostHog.initAsync` is no more! You can now initialize PostHog as you would any other class `const posthog = new PostHog(...)`

@@ -62,7 +62,7 @@ const server = app.listen(8010, () => {
 
 async function handleExit(signal: any) {
   console.log(`Received ${signal}. Flushing...`)
-  await posthog.shutdownAsync()
+  await posthog.shutdown()
   console.log(`Flush complete`)
   server.close(() => {
     process.exit(0)
