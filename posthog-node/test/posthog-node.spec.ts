@@ -254,8 +254,6 @@ describe('PostHog Node.js', () => {
 
       await waitForFlushTimer()
 
-      console.log('asserting')
-
       let batchEvents = getLastBatchEvents()
       expect(batchEvents?.[0].properties).toEqual({
         $groups: { org: 123 },
