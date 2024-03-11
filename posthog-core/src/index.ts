@@ -88,7 +88,7 @@ export abstract class PostHogCoreStateless {
     this.apiKey = apiKey
     this.host = removeTrailingSlash(options?.host || 'https://app.posthog.com')
     this.flushAt = options?.flushAt ? Math.max(options?.flushAt, 1) : 20
-    this.flushMaxItems = Math.max(options?.flushAt ?? 100)
+    this.flushMaxItems = Math.max(this.flushAt, 100)
     this.flushInterval = options?.flushInterval ?? 10000
     this.captureMode = options?.captureMode || 'form'
 
@@ -540,8 +540,8 @@ export abstract class PostHogCoreStateless {
   }
 
   private async _flush(): Promise<any[]> {
-    await this._initPromise
     this.clearFlushTimer()
+    await this._initPromise
 
     const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
 
@@ -554,8 +554,7 @@ export abstract class PostHogCoreStateless {
 
     const persistQueueChange = (): void => {
       const refreshedQueue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
-      refreshedQueue.splice(0, items.length)
-      this.setPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue, refreshedQueue)
+      this.setPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue, refreshedQueue.slice(items.length))
     }
 
     const data = {
