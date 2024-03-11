@@ -51,5 +51,24 @@ target 'example_rn_new_architecture' do
       config[:reactNativePath],
       :mac_catalyst_enabled => false
     )
+    # https://github.com/facebook/react-native/issues/43335
+    installer.pods_project.targets.each do |target|
+      if target.name == 'Flipper'
+          file_path = 'Pods/Flipper/xplat/Flipper/FlipperTransportTypes.h'
+          if !File.exist?(file_path)
+              return
+          end
+
+          contents = File.read(file_path)
+          if contents.include?('#include <functional>')
+              return
+          end
+          mod_content = contents.gsub("#pragma once", "#pragma once\n#include <functional>")
+          File.chmod(0755, file_path)
+          File.open(file_path, 'w') do |file|
+              file.puts(mod_content)
+          end
+      end
+    end
   end
 end
