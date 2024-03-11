@@ -1,3 +1,9 @@
+# NEXT
+
+- `flushAsync` is removed with `flush` now being an async method.
+- Fixed an issue where `shutdownAsync` would potentially exit early if a flush was already in progress
+- Flushes will now try to flush up to `maxBatchSize` (default 100) in one go
+
 # 4.0.0-beta.1 - 2024-03-04
 
 - Adds a `disabled` option and the ability to change it later via `posthog.disabled = true`. Useful for disabling PostHog tracking for example in a testing environment without having complex conditional checking

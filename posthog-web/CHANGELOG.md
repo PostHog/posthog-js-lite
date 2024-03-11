@@ -1,3 +1,9 @@
+# NEXT
+
+- `flushAsync` is removed with `flush` now being an async method.
+- Fixed an issue where `shutdownAsync` would potentially exit early if a flush was already in progress
+- Flushes will now try to flush up to `maxBatchSize` (default 100) in one go
+
 # 3.0.0-beta.1 - 2024-03-04
 
 - Removes the `enable` option. You can now specify `defaultOptIn: false` to start the SDK opted out of tracking
