@@ -606,12 +606,10 @@ export abstract class PostHogCoreStateless {
       }
       this._events.emit('error', err)
 
-      console.log('ERRORRED')
       throw err
     }
 
     persistQueueChange()
-    console.log('eMITTING')
     this._events.emit('flush', messages)
 
     return messages

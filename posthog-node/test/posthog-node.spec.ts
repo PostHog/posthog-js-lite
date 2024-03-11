@@ -1,4 +1,3 @@
-// import { PostHog } from '../'
 import { PostHog as PostHog } from '../src/posthog-node'
 jest.mock('../src/fetch')
 import fetch from '../src/fetch'
@@ -138,6 +137,8 @@ describe('PostHog Node.js', () => {
       expect(mockedFetch).toHaveBeenCalledTimes(0)
       posthog.identify({ distinctId: '123', properties: { foo: 'bar' } })
       jest.runOnlyPendingTimers()
+      await waitForPromises()
+
       const batchEvents = getLastBatchEvents()
       expect(batchEvents).toMatchObject([
         {
@@ -156,7 +157,8 @@ describe('PostHog Node.js', () => {
     it('should handle identify mistakenly using $set', async () => {
       expect(mockedFetch).toHaveBeenCalledTimes(0)
       posthog.identify({ distinctId: '123', properties: { foo: 'bar', $set: { foo: 'other' } } })
-      await waitForFlushTimer()
+      jest.runOnlyPendingTimers()
+      await waitForPromises()
       const batchEvents = getLastBatchEvents()
       expect(batchEvents).toMatchObject([
         {
@@ -175,9 +177,8 @@ describe('PostHog Node.js', () => {
     it('should capture alias events on shared queue', async () => {
       expect(mockedFetch).toHaveBeenCalledTimes(0)
       posthog.alias({ distinctId: '123', alias: '1234' })
-      console.log('action')
-      await waitForFlushTimer()
-      console.log('assert')
+      jest.runOnlyPendingTimers()
+      await waitForPromises()
       const batchEvents = getLastBatchEvents()
       expect(batchEvents).toMatchObject([
         {
