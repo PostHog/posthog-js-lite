@@ -19,7 +19,7 @@ describe('PostHog Core', () => {
         posthog.capture('test-event')
       }
 
-      await posthog.shutdownAsync()
+      await posthog.shutdown()
       expect(mocks.fetch).toHaveBeenCalledTimes(1)
     })
   })

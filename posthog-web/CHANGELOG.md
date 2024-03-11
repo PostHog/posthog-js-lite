@@ -1,6 +1,6 @@
 # NEXT
 
-- `flushAsync` is removed with `flush` now being an async method.
+- `flushAsync` and `shutdownAsnc` are removed with `flush` and `shutdown` now being the async methods.
 - Fixed an issue where `shutdownAsync` would potentially exit early if a flush was already in progress
 - Flushes will now try to flush up to `maxBatchSize` (default 100) in one go
 

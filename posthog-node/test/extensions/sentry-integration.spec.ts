@@ -86,7 +86,7 @@ describe('PostHogSentryIntegration', () => {
 
   afterEach(async () => {
     // ensure clean shutdown & no test interdependencies
-    await posthog.shutdownAsync()
+    await posthog.shutdown()
   })
 
   it('should forward sentry exceptions to posthog', async () => {

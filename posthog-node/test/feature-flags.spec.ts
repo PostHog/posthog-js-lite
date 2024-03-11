@@ -21,7 +21,7 @@ describe('local evaluation', () => {
 
   afterEach(async () => {
     // ensure clean shutdown & no test interdependencies
-    await posthog.shutdownAsync()
+    await posthog.shutdown()
   })
 
   it('evaluates person properties', async () => {
@@ -550,7 +550,7 @@ describe('local evaluation', () => {
     expect(await posthog.getFeatureFlag('beta-feature2', 'some-distinct-id')).toEqual(undefined)
     expect(await posthog.isFeatureEnabled('beta-feature2', 'some-distinct-id')).toEqual(undefined)
     expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
-    await posthog.shutdownAsync()
+    await posthog.shutdown()
     expect(err).toHaveProperty('name', 'PostHogFetchHttpError')
   })
 

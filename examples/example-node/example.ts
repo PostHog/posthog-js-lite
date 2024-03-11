@@ -30,7 +30,7 @@ posthog.capture({
 })
 
 async function testFeatureFlags() {
-  await posthog.shutdownAsync()
+  await posthog.shutdown()
   console.log('flushed')
   console.log(await posthog.isFeatureEnabled('beta-feature', 'distinct_id'))
   console.log(await posthog.isFeatureEnabled('beta-feature', 'new_distinct_id'))
@@ -71,7 +71,7 @@ async function testFeatureFlags() {
 
 testFeatureFlags().then(async () => {
   wtf.dump()
-  await posthog.shutdownAsync()
+  await posthog.shutdown()
   wtf.dump()
   console.log('shut down successfully')
 })

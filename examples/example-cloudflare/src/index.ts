@@ -25,7 +25,7 @@ export default {
 
 		posthog.capture({ distinctId: `user-${Date.now()}`, event: 'test event', properties: { test: 'test' } });
 
-		await posthog.shutdownAsync();
+		await posthog.shutdown();
 
 		return new Response('Success!');
 	},

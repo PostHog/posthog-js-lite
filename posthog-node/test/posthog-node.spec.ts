@@ -60,7 +60,7 @@ describe('PostHog Node.js', () => {
     } as any)
 
     // ensure clean shutdown & no test interdependencies
-    await posthog.shutdownAsync()
+    await posthog.shutdown()
   })
 
   describe('core methods', () => {
@@ -300,7 +300,7 @@ describe('PostHog Node.js', () => {
         $lib_version: '1.2.3',
       })
 
-      await client.shutdownAsync()
+      await client.shutdown()
     })
   })
 
@@ -368,7 +368,7 @@ describe('PostHog Node.js', () => {
 
       console.warn('YOO!!')
 
-      await ph.shutdownAsync()
+      await ph.shutdown()
       // 1 final flush for the events that were queued during shutdown
       expect(1).toEqual(logSpy.mock.calls.filter((call) => call[1].includes('flush')).length)
       logSpy.mockRestore()
@@ -387,7 +387,7 @@ describe('PostHog Node.js', () => {
         ph.capture({ event: 'test-event', distinctId: `${i}`, sendFeatureFlags: true })
       }
 
-      await ph.shutdownAsync()
+      await ph.shutdown()
       // all capture calls happen during shutdown
       const batchEvents = getLastBatchEvents()
       expect(batchEvents?.length).toEqual(6)
@@ -675,7 +675,7 @@ describe('PostHog Node.js', () => {
         false
       )
 
-      await posthog.shutdownAsync()
+      await posthog.shutdown()
     })
 
     it('doesnt add flag properties when locally evaluated flags are empty', async () => {

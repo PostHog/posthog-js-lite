@@ -44,7 +44,7 @@ describe('PostHog React Native', () => {
 
   afterEach(async () => {
     // This ensures there are no open promises / timers
-    await posthog.shutdownAsync()
+    await posthog.shutdown()
   })
 
   it('should initialize properly with bootstrap', async () => {
@@ -119,7 +119,7 @@ describe('PostHog React Native', () => {
       $timezone: 'mock',
     })
 
-    await posthog2.shutdownAsync()
+    await posthog2.shutdown()
   })
 
   describe('screen', () => {

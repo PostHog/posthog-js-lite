@@ -644,7 +644,7 @@ export abstract class PostHogCoreStateless {
     )
   }
 
-  async shutdownAsync(shutdownTimeoutMs: number = 30000): Promise<void> {
+  async shutdown(shutdownTimeoutMs: number = 30000): Promise<void> {
     await this._initPromise
 
     this.clearFlushTimer()
@@ -678,10 +678,6 @@ export abstract class PostHogCoreStateless {
       }
       console.error('Error while shutting down PostHog', e)
     }
-  }
-
-  shutdown(shutdownTimeoutMs?: number): void {
-    void this.shutdownAsync(shutdownTimeoutMs)
   }
 }
 
