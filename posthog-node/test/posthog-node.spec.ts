@@ -416,7 +416,7 @@ describe('PostHog Node.js', () => {
     it('should identify group with unique id', async () => {
       posthog.groupIdentify({ groupType: 'posthog', groupKey: 'team-1', properties: { analytics: true } })
       jest.runOnlyPendingTimers()
-      await posthog.flushAsync()
+      await posthog.flush()
       const batchEvents = getLastBatchEvents()
       expect(batchEvents).toMatchObject([
         {
@@ -441,7 +441,7 @@ describe('PostHog Node.js', () => {
         distinctId: '123',
       })
       jest.runOnlyPendingTimers()
-      await posthog.flushAsync()
+      await posthog.flush()
       const batchEvents = getLastBatchEvents()
       expect(batchEvents).toMatchObject([
         {
@@ -876,7 +876,7 @@ describe('PostHog Node.js', () => {
       // TRICKY: There's now an extra step before events are queued, so need to wait for that to resolve
       jest.runOnlyPendingTimers()
       await waitForPromises()
-      await posthog.flushAsync()
+      await posthog.flush()
 
       expect(mockedFetch).toHaveBeenCalledWith('http://example.com/batch/', expect.any(Object))
 
@@ -905,7 +905,7 @@ describe('PostHog Node.js', () => {
       ).toEqual(true)
       jest.runOnlyPendingTimers()
       await waitForPromises()
-      await posthog.flushAsync()
+      await posthog.flush()
 
       expect(mockedFetch).not.toHaveBeenCalledWith('http://example.com/batch/', expect.any(Object))
 
@@ -919,7 +919,7 @@ describe('PostHog Node.js', () => {
       ).toEqual(true)
       jest.runOnlyPendingTimers()
       await waitForPromises()
-      await posthog.flushAsync()
+      await posthog.flush()
       expect(mockedFetch).toHaveBeenCalledWith('http://example.com/batch/', expect.any(Object))
 
       expect(getLastBatchEvents()?.[0]).toEqual(
@@ -948,7 +948,7 @@ describe('PostHog Node.js', () => {
       ).toEqual(true)
       jest.runOnlyPendingTimers()
       await waitForPromises()
-      await posthog.flushAsync()
+      await posthog.flush()
       expect(mockedFetch).not.toHaveBeenCalledWith('http://example.com/batch/', expect.any(Object))
 
       // # called for different flag, falls back to decide, should call capture again
@@ -960,7 +960,7 @@ describe('PostHog Node.js', () => {
       ).toEqual('decide-value')
       jest.runOnlyPendingTimers()
       await waitForPromises()
-      await posthog.flushAsync()
+      await posthog.flush()
       // one to decide, one to batch
       expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
       expect(mockedFetch).toHaveBeenCalledWith('http://example.com/batch/', expect.any(Object))
@@ -990,7 +990,7 @@ describe('PostHog Node.js', () => {
       ).toEqual(true)
       jest.runOnlyPendingTimers()
       await waitForPromises()
-      await posthog.flushAsync()
+      await posthog.flush()
       // call decide, but not batch
       expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
       expect(mockedFetch).not.toHaveBeenCalledWith('http://example.com/batch/', expect.any(Object))

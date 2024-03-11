@@ -43,7 +43,6 @@ export enum PostHogPersistedProperty {
   FeatureFlagPayloads = 'feature_flag_payloads',
   OverrideFeatureFlags = 'override_feature_flags',
   Queue = 'queue',
-  FlushQueue = 'flush_queue',
   OptedOut = 'opted_out',
   SessionId = 'session_id',
   SessionLastTimestamp = 'session_timestamp',

@@ -52,7 +52,7 @@ export abstract class PostHogCoreStateless {
   private apiKey: string
   host: string
   private flushAt: number
-  private flushMaxItems: number
+  private maxBatchSize: number
   private flushInterval: number
   private flushPromise: Promise<any> | null = null
   private requestTimeout: number
@@ -88,7 +88,7 @@ export abstract class PostHogCoreStateless {
     this.apiKey = apiKey
     this.host = removeTrailingSlash(options?.host || 'https://app.posthog.com')
     this.flushAt = options?.flushAt ? Math.max(options?.flushAt, 1) : 20
-    this.flushMaxItems = Math.max(this.flushAt, 100)
+    this.maxBatchSize = Math.max(this.flushAt, 100)
     this.flushInterval = options?.flushInterval ?? 10000
     this.captureMode = options?.captureMode || 'form'
 
@@ -515,13 +515,6 @@ export abstract class PostHogCoreStateless {
   }
 
   /**
-   * Alias for .flush()
-   */
-  async flushAsync(): Promise<any[]> {
-    return this.flush()
-  }
-
-  /**
    * Helper for flushing the queue in the background
    * Avoids unnecessary promise errors
    */
@@ -549,7 +542,7 @@ export abstract class PostHogCoreStateless {
       return []
     }
 
-    const items = queue.slice(0, this.flushMaxItems)
+    const items = queue.slice(0, this.maxBatchSize)
     const messages = items.map((item) => item.message)
 
     const persistQueueChange = (): void => {
@@ -671,7 +664,7 @@ export abstract class PostHogCoreStateless {
         // flush again to make sure we send all events, some of which might've been added
         // while we were waiting for the pending promises to resolve
         // For example, see sendFeatureFlags in posthog-node/src/posthog-node.ts::capture
-        await this.flushAsync()
+        await this.flush()
 
         // If we've been waiting for more than the shutdownTimeoutMs, stop it
         const now = Date.now()

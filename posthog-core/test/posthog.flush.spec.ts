@@ -19,7 +19,7 @@ describe('PostHog Core', () => {
 
     it("doesn't fail when queue is empty", async () => {
       jest.useRealTimers()
-      await expect(posthog.flushAsync()).resolves.toEqual([])
+      await expect(posthog.flush()).resolves.toEqual([])
     })
 
     it('flush messsages once called', async () => {
@@ -27,7 +27,7 @@ describe('PostHog Core', () => {
       posthog.capture('test-event-2')
       posthog.capture('test-event-3')
       expect(mocks.fetch).not.toHaveBeenCalled()
-      await expect(posthog.flushAsync()).resolves.toMatchObject([
+      await expect(posthog.flush()).resolves.toMatchObject([
         { event: 'test-event-1' },
         { event: 'test-event-2' },
         { event: 'test-event-3' },
@@ -47,7 +47,7 @@ describe('PostHog Core', () => {
 
       const time = Date.now()
       jest.useRealTimers()
-      await expect(posthog.flushAsync()).rejects.toHaveProperty('name', 'PostHogFetchHttpError')
+      await expect(posthog.flush()).rejects.toHaveProperty('name', 'PostHogFetchHttpError')
       expect(mocks.fetch).toHaveBeenCalledTimes(4)
       expect(Date.now() - time).toBeGreaterThan(300)
       expect(Date.now() - time).toBeLessThan(500)
