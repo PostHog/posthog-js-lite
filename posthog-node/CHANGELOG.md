@@ -1,4 +1,4 @@
-# NEXT
+# 4.0.0-beta.2 - 2024-03-12
 
 - `flushAsync` and `shutdownAsnc` are removed with `flush` and `shutdown` now being the async methods.
 - Fixed an issue where `shutdown` would potentially exit early if a flush was already in progress
