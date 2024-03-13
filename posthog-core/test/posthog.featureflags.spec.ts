@@ -154,6 +154,7 @@ describe('PostHog Core', () => {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'User-Agent': 'posthog-core-tests',
             },
             signal: expect.anything(),
           })
@@ -224,6 +225,7 @@ describe('PostHog Core', () => {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'User-Agent': 'posthog-core-tests',
             },
             signal: expect.anything(),
           })
@@ -250,6 +252,7 @@ describe('PostHog Core', () => {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'User-Agent': 'posthog-core-tests',
             },
             signal: expect.anything(),
           })
@@ -327,6 +330,7 @@ describe('PostHog Core', () => {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'User-Agent': 'posthog-core-tests',
             },
             signal: expect.anything(),
           })
@@ -353,6 +357,7 @@ describe('PostHog Core', () => {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'User-Agent': 'posthog-core-tests',
             },
             signal: expect.anything(),
           })
@@ -545,6 +550,7 @@ describe('PostHog Core', () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'User-Agent': 'posthog-core-tests',
           },
           signal: expect.anything(),
         })
@@ -570,6 +576,7 @@ describe('PostHog Core', () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'User-Agent': 'posthog-core-tests',
           },
           signal: expect.anything(),
         })

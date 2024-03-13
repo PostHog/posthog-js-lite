@@ -58,6 +58,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         onError: (err: Error) => {
           this._events.emit('error', err)
         },
+        customHeaders: this.getCustomHeaders(),
       })
     }
     this.distinctIdHasSentFlagCalls = {}
@@ -83,7 +84,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     return version
   }
   getCustomUserAgent(): string {
-    return `posthog-node/${version}`
+    return `${this.getLibraryId()}/${this.getLibraryVersion()}`
   }
 
   enable(): Promise<void> {

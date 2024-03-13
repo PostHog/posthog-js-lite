@@ -136,8 +136,8 @@ export class PostHog extends PostHogCore {
   getLibraryVersion(): string {
     return version
   }
-  getCustomUserAgent(): void {
-    return
+  getCustomUserAgent(): string {
+    return `${this.getLibraryId()}/${this.getLibraryVersion()}`
   }
 
   getCommonEventProperties(): any {

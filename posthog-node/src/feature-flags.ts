@@ -1,6 +1,5 @@
 import { createHash } from 'rusha'
 import { FeatureFlagCondition, FlagProperty, PostHogFeatureFlag, PropertyGroup } from './types'
-import { version } from '../package.json'
 import { JsonType, PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src'
 import { safeSetTimeout } from 'posthog-core/src/utils'
 import fetch from './fetch'
@@ -38,6 +37,7 @@ type FeatureFlagsPollerOptions = {
   timeout?: number
   fetch?: (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
   onError?: (error: Error) => void
+  customHeaders?: { [key: string]: string }
 }
 
 class FeatureFlagsPoller {
@@ -55,6 +55,7 @@ class FeatureFlagsPoller {
   fetch: (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
   debugMode: boolean = false
   onError?: (error: Error) => void
+  customHeaders?: { [key: string]: string }
 
   constructor({
     pollingInterval,
@@ -62,6 +63,7 @@ class FeatureFlagsPoller {
     projectApiKey,
     timeout,
     host,
+    customHeaders,
     ...options
   }: FeatureFlagsPollerOptions) {
     this.pollingInterval = pollingInterval
@@ -78,6 +80,7 @@ class FeatureFlagsPoller {
     // NOTE: as any is required here as the AbortSignal typing is slightly misaligned but works just fine
     this.fetch = options.fetch || fetch
     this.onError = options.onError
+    this.customHeaders = customHeaders
 
     void this.loadFeatureFlags()
   }
@@ -413,9 +416,9 @@ class FeatureFlagsPoller {
     const options: PostHogFetchOptions = {
       method: 'GET',
       headers: {
+        ...this.customHeaders,
         'Content-Type': 'application/json',
         Authorization: `Bearer ${this.personalApiKey}`,
-        'user-agent': `posthog-node/${version}`,
       },
     }
 
