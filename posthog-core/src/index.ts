@@ -291,7 +291,7 @@ export abstract class PostHogCoreStateless {
     const url = `${this.host}/decide/?v=3`
     const fetchOptions: PostHogFetchOptions = {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },
       body: JSON.stringify({
         token: this.apiKey,
         distinct_id: distinctId,
@@ -532,6 +532,19 @@ export abstract class PostHogCoreStateless {
     return this.flushPromise
   }
 
+  protected getCustomHeaders(): { [key: string]: string } {
+    // Don't set the user agent if we're not on a browser. The latest spec allows
+    // the User-Agent header (see https://fetch.spec.whatwg.org/#terminology-headers
+    // and https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/setRequestHeader),
+    // but browsers such as Chrome and Safari have not caught up.
+    const customUserAgent = this.getCustomUserAgent()
+    const headers: { [key: string]: string } = {}
+    if (customUserAgent && customUserAgent !== '') {
+      headers['User-Agent'] = customUserAgent
+    }
+    return headers
+  }
+
   private async _flush(): Promise<any[]> {
     this.clearFlushTimer()
     await this._initPromise
@@ -556,16 +569,6 @@ export abstract class PostHogCoreStateless {
       sent_at: currentISOTime(),
     }
 
-    // Don't set the user agent if we're not on a browser. The latest spec allows
-    // the User-Agent header (see https://fetch.spec.whatwg.org/#terminology-headers
-    // and https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/setRequestHeader),
-    // but browsers such as Chrome and Safari have not caught up.
-    const customUserAgent = this.getCustomUserAgent()
-    const headers: { [key: string]: string } = {}
-    if (customUserAgent) {
-      headers['user-agent'] = customUserAgent
-    }
-
     const payload = JSON.stringify(data)
 
     const url =
@@ -579,12 +582,12 @@ export abstract class PostHogCoreStateless {
             method: 'POST',
             mode: 'no-cors',
             credentials: 'omit',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/x-www-form-urlencoded' },
             body: `data=${encodeURIComponent(LZString.compressToBase64(payload))}&compression=lz64`,
           }
         : {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },
             body: payload,
           }
 
