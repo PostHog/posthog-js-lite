@@ -1,15 +1,19 @@
+# Next
+
+1. Sets `User-Agent` headers with SDK name and version for RN
+
 # 4.0.0-beta.2 - 2024-03-12
 
-- `flushAsync` and `shutdownAsync` are removed with `flush` and `shutdown` now being the async methods.
-- Fixed an issue where `shutdown` would potentially exit early if a flush was already in progress
-- Flushes will now try to flush up to `maxBatchSize` (default 100) in one go
+1. `flushAsync` and `shutdownAsync` are removed with `flush` and `shutdown` now being the async methods.
+2. Fixed an issue where `shutdown` would potentially exit early if a flush was already in progress
+3. Flushes will now try to flush up to `maxBatchSize` (default 100) in one go
 
 # 4.0.0-beta.1 - 2024-03-04
 
-- Adds a `disabled` option and the ability to change it later via `posthog.disabled = true`. Useful for disabling PostHog tracking for example in a testing environment without having complex conditional checking
-- Fixes some typos in types
-- `shutdown` and `shutdownAsync` takes a `shutdownTimeoutMs` param with a default of 30000 (30s). This is the time to wait for flushing events before shutting down the client. If the timeout is reached, the client will be shut down regardless of pending events.
-- Adds a new `featureFlagsRequestTimeoutMs` timeout parameter for feature flags which defaults to 3 seconds, updated from the default 10s for all other API calls.
+1. Adds a `disabled` option and the ability to change it later via `posthog.disabled = true`. Useful for disabling PostHog tracking for example in a testing environment without having complex conditional checking
+2. Fixes some typos in types
+3. `shutdown` and `shutdownAsync` takes a `shutdownTimeoutMs` param with a default of 30000 (30s). This is the time to wait for flushing events before shutting down the client. If the timeout is reached, the client will be shut down regardless of pending events.
+4. Adds a new `featureFlagsRequestTimeoutMs` timeout parameter for feature flags which defaults to 3 seconds, updated from the default 10s for all other API calls.
 
 # 3.6.3 - 2024-02-15
 
