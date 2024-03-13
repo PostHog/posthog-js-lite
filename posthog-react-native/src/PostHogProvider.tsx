@@ -42,7 +42,7 @@ export const PostHogProvider = ({
   style,
   debug = false,
 }: PostHogProviderProps): JSX.Element | null => {
-  if (!client || !apiKey) {
+  if (!client && !apiKey) {
     throw new Error(
       'Either a PostHog client or an apiKey is required. If want to use the PostHogProvider without a client, please provide an apiKey and the options={ disabled: true }.'
     )
@@ -55,7 +55,7 @@ export const PostHogProvider = ({
       )
     }
 
-    return client ?? new PostHog(apiKey, options)
+    return client ?? new PostHog(apiKey!, options)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [client, apiKey])
 
