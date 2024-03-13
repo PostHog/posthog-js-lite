@@ -539,7 +539,7 @@ export abstract class PostHogCoreStateless {
     // but browsers such as Chrome and Safari have not caught up.
     const customUserAgent = this.getCustomUserAgent()
     const headers: { [key: string]: string } = {}
-    if (customUserAgent) {
+    if (customUserAgent && customUserAgent !== '') {
       headers['User-Agent'] = customUserAgent
     }
     return headers

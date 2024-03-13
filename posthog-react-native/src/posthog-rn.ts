@@ -1,4 +1,4 @@
-import { AppState, Dimensions, Linking } from 'react-native'
+import { AppState, Dimensions, Linking, Platform } from 'react-native'
 
 import {
   PostHogCaptureOptions,
@@ -137,6 +137,9 @@ export class PostHog extends PostHogCore {
     return version
   }
   getCustomUserAgent(): string {
+    if (Platform.OS === 'web') {
+      return ''
+    }
     return `${this.getLibraryId()}/${this.getLibraryVersion()}`
   }
 
