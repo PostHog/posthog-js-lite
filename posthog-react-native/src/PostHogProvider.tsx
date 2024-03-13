@@ -55,7 +55,7 @@ export const PostHogProvider = ({
       )
     }
 
-    return client ?? new PostHog(apiKey!, options)
+    return client ?? new PostHog(apiKey ?? '', options)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [client, apiKey])
 

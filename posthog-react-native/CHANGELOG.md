@@ -1,6 +1,7 @@
 # Next
 
 1. Sets `User-Agent` headers with SDK name and version for RN
+2. fix: PostHogProvider initialization that requires client `or` apiKey and not `and`.
 
 # 3.0.0-beta.2 - 2024-03-12
 
