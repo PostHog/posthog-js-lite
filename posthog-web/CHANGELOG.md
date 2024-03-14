@@ -1,3 +1,7 @@
+# Next
+
+1. Queued events are limited up to `maxQueueSize` (default 1000) and the oldest events are dropped when the limit is reached
+
 # 3.0.0-beta.2 - 2024-03-12
 
 - `flushAsync` and `shutdownAsync` are removed with `flush` and `shutdown` now being the async methods.

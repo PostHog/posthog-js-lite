@@ -1,3 +1,7 @@
+# Next
+
+1. Queued events are limited up to `maxQueueSize` (default 1000) and the oldest events are dropped when the limit is reached
+
 # 3.0.0-beta.3 - 2024-03-13
 
 1. Sets `User-Agent` headers with SDK name and version for RN

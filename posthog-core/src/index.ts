@@ -53,6 +53,7 @@ export abstract class PostHogCoreStateless {
   host: string
   private flushAt: number
   private maxBatchSize: number
+  private maxQueueSize: number
   private flushInterval: number
   private flushPromise: Promise<any> | null = null
   private requestTimeout: number
@@ -89,6 +90,7 @@ export abstract class PostHogCoreStateless {
     this.host = removeTrailingSlash(options?.host || 'https://app.posthog.com')
     this.flushAt = options?.flushAt ? Math.max(options?.flushAt, 1) : 20
     this.maxBatchSize = Math.max(this.flushAt, options?.maxBatchSize ?? 100)
+    this.maxQueueSize = Math.max(this.flushAt, options?.maxQueueSize ?? 1000)
     this.flushInterval = options?.flushInterval ?? 10000
     this.captureMode = options?.captureMode || 'form'
 
@@ -490,6 +492,11 @@ export abstract class PostHogCoreStateless {
       }
 
       const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
+
+      if (queue.length >= this.maxQueueSize) {
+        queue.shift()
+        console.info('Queue is full, the oldest event is dropped.')
+      }
 
       queue.push({ message })
       this.setPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue, queue)
