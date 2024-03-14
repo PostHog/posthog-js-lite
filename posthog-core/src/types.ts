@@ -7,7 +7,7 @@ export type PostHogCoreOptions = {
   flushInterval?: number
   /** The maximum number of queued messages to be flushed as part of a single batch (must be higher than `flushAt`) */
   maxBatchSize?: number
-  /** The maximum number of cached messages either in memory or on the local storage \
+  /** The maximum number of cached messages either in memory or on the local storage.
    * Defaults to 1000, (must be higher than `flushAt`)
    */
   maxQueueSize?: number
