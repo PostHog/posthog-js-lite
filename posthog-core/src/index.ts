@@ -90,7 +90,7 @@ export abstract class PostHogCoreStateless {
     this.host = removeTrailingSlash(options?.host || 'https://app.posthog.com')
     this.flushAt = options?.flushAt ? Math.max(options?.flushAt, 1) : 20
     this.maxBatchSize = Math.max(this.flushAt, options?.maxBatchSize ?? 100)
-    this.maxQueueSize = options?.maxQueueSize ?? 1000
+    this.maxQueueSize = Math.max(this.flushAt, options?.maxQueueSize ?? 1000)
     this.flushInterval = options?.flushInterval ?? 10000
     this.captureMode = options?.captureMode || 'form'
 

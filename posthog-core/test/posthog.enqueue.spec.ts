@@ -9,9 +9,10 @@ describe('PostHog Core', () => {
     jest.setSystemTime(new Date('2022-01-01'))
   })
 
-  function createSut(maxQueueSize: number = 1000): void {
+  function createSut(maxQueueSize: number = 1000, flushAt: number = 20): void {
     ;[posthog, mocks] = createTestClient('TEST_API_KEY', {
       maxQueueSize: maxQueueSize,
+      flushAt: flushAt,
     })
   }
 
@@ -42,7 +43,7 @@ describe('PostHog Core', () => {
     })
 
     it('should delete oldest message if queue is full', () => {
-      createSut(2)
+      createSut(2, 2)
 
       posthog.capture('type1', {
         foo: 'bar',
