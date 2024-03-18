@@ -1,6 +1,27 @@
-# Next
+# 4.0.0 - 2024-03-18
 
-1. Queued events are limited up to `maxQueueSize` (default 1000) and the oldest events are dropped when the limit is reached
+## Added
+
+1. Adds a `disabled` option and the ability to change it later via `posthog.disabled = true`. Useful for disabling PostHog tracking for example in a testing environment without having complex conditional checking
+2. Adds a new `featureFlagsRequestTimeoutMs` timeout parameter for feature flags which defaults to 3 seconds, updated from the default 10s for all other API calls.
+3. `shutdown` takes a `shutdownTimeoutMs` param with a default of 30000 (30s). This is the time to wait for flushing events before shutting down the client. If the timeout is reached, the client will be shut down regardless of pending events.
+4. Flushes will now try to flush up to `maxBatchSize` (default 100) in one go
+5. Queued events are limited up to `maxQueueSize` (default 1000) and the oldest events are dropped when the limit is reached
+6. Sets `User-Agent` headers with SDK name and version for RN
+
+## Removed
+
+1. `flushAsync` and `shutdownAsync` are removed with `flush` and `shutdown` now being the async methods.
+
+## Changed
+
+1. `flush` and `shutdown` now being async methods.
+
+## Fixed
+
+1. Fixed an issue where `shutdown` would potentially exit early if a flush was already in progress
+2. Fixes some typos in types
+
 
 # 4.0.0-beta.3 - 2024-03-13
 
