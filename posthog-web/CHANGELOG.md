@@ -1,21 +1,30 @@
-# Next
+# 3.0.0 - 2024-03-18
 
-1. Queued events are limited up to `maxQueueSize` (default 1000) and the oldest events are dropped when the limit is reached
+1. Removes the `enable` option. You can now specify `defaultOptIn: false` to start the SDK opted out of tracking
+2. Adds a `disabled` option and the ability to change it later via `posthog.disabled = true`. Useful for disabling PostHog tracking for example in a testing environment without having complex conditional checking
+3. Many methods such as `capture` and `identify` no longer return the `this` object instead returning nothing
+4. Fixes some typos in types
+5. `shutdown` and `shutdownAsync` takes a `shutdownTimeoutMs` param with a default of 30000 (30s). This is the time to wait for flushing events before shutting down the client. If the timeout is reached, the client will be shut down regardless of pending events.
+6. Adds a new `featureFlagsRequestTimeoutMs` timeout parameter for feature flags which defaults to 10 seconds.
+7. `flushAsync` and `shutdownAsync` are removed with `flush` and `shutdown` now being the async methods.
+8. Fixed an issue where `shutdownAsync` would potentially exit early if a flush was already in progress
+9. Flushes will now try to flush up to `maxBatchSize` (default 100) in one go
+10. Queued events are limited up to `maxQueueSize` (default 1000) and the oldest events are dropped when the limit is reached
 
 # 3.0.0-beta.2 - 2024-03-12
 
-- `flushAsync` and `shutdownAsync` are removed with `flush` and `shutdown` now being the async methods.
-- Fixed an issue where `shutdownAsync` would potentially exit early if a flush was already in progress
-- Flushes will now try to flush up to `maxBatchSize` (default 100) in one go
+1. `flushAsync` and `shutdownAsync` are removed with `flush` and `shutdown` now being the async methods.
+2. Fixed an issue where `shutdownAsync` would potentially exit early if a flush was already in progress
+3. Flushes will now try to flush up to `maxBatchSize` (default 100) in one go
 
 # 3.0.0-beta.1 - 2024-03-04
 
-- Removes the `enable` option. You can now specify `defaultOptIn: false` to start the SDK opted out of tracking
-- Adds a `disabled` option and the ability to change it later via `posthog.disabled = true`. Useful for disabling PostHog tracking for example in a testing environment without having complex conditional checking
-- Many methods such as `capture` and `identify` no longer return the `this` object instead returning nothing
-- Fixes some typos in types
-- `shutdown` and `shutdownAsync` takes a `shutdownTimeoutMs` param with a default of 30000 (30s). This is the time to wait for flushing events before shutting down the client. If the timeout is reached, the client will be shut down regardless of pending events.
-- Adds a new `featureFlagsRequestTimeoutMs` timeout parameter for feature flags which defaults to 10 seconds.
+1. Removes the `enable` option. You can now specify `defaultOptIn: false` to start the SDK opted out of tracking
+2. Adds a `disabled` option and the ability to change it later via `posthog.disabled = true`. Useful for disabling PostHog tracking for example in a testing environment without having complex conditional checking
+3. Many methods such as `capture` and `identify` no longer return the `this` object instead returning nothing
+4. Fixes some typos in types
+5. `shutdown` and `shutdownAsync` takes a `shutdownTimeoutMs` param with a default of 30000 (30s). This is the time to wait for flushing events before shutting down the client. If the timeout is reached, the client will be shut down regardless of pending events.
+6. Adds a new `featureFlagsRequestTimeoutMs` timeout parameter for feature flags which defaults to 10 seconds.
 
 # 2.6.2 - 2024-02-15
 

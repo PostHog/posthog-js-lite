@@ -1,6 +1,20 @@
-# Next
+# 3.0.0 - 2024-03-18
 
-1. Queued events are limited up to `maxQueueSize` (default 1000) and the oldest events are dropped when the limit is reached
+1. `PostHog.initAsync` is no more! You can now initialize PostHog as you would any other class `const posthog = new PostHog(...)`
+2. PostHogProvider now requires either an `apiKey` or `client` property and `usePostHog` now always returns a `PostHog` instance instead of `PostHog | undefined`. The `disabled` option can be used when initializing the `PostHogProvider` if desired and all subsequent calls to `posthog` will work but without actually doing anything.
+3. Removes the `enable` option. You can now specify `defaultOptIn: false` to start the SDK opted out of tracking
+4. Adds a `disabled` option and the ability to change it later via `posthog.disabled = true`. Useful for disabling PostHog tracking for example in a testing environment without having complex conditional checking
+5. Many methods such as `capture` and `identify` no longer return the `this` object instead returning nothing
+6. Fixes some typos in types
+7. `shutdown` and `shutdownAsync` takes a `shutdownTimeoutMs` param with a default of 30000 (30s). This is the time to wait for flushing events before shutting down the client. If the timeout is reached, the client will be shut down regardless of pending events.
+8. Adds a new `featureFlagsRequestTimeoutMs` timeout parameter for feature flags which defaults to 10 seconds.
+9. Replaces the option `customAsyncStorage` with `customStorage` to allow for custom synchronous or asynchronous storage implementations.
+10. `flushAsync` and `shutdownAsync` are removed with `flush` and `shutdown` now being the async methods.
+11. Fixed an issue where `shutdownAsync` would potentially exit early if a flush was already in progress
+12. Flushes will now try to flush up to `maxBatchSize` (default 100) in one go
+13. Sets `User-Agent` headers with SDK name and version for RN
+14. fix: PostHogProvider initialization that requires client `or` apiKey and not `and`.
+15. Queued events are limited up to `maxQueueSize` (default 1000) and the oldest events are dropped when the limit is reached
 
 # 3.0.0-beta.3 - 2024-03-13
 
