@@ -1,14 +1,14 @@
 # 4.0.0 - 2024-03-18
 
 1. Adds a `disabled` option and the ability to change it later via `posthog.disabled = true`. Useful for disabling PostHog tracking for example in a testing environment without having complex conditional checking
-2. Fixes some typos in types
-3. `shutdown` and `shutdownAsync` takes a `shutdownTimeoutMs` param with a default of 30000 (30s). This is the time to wait for flushing events before shutting down the client. If the timeout is reached, the client will be shut down regardless of pending events.
-4. Adds a new `featureFlagsRequestTimeoutMs` timeout parameter for feature flags which defaults to 3 seconds, updated from the default 10s for all other API calls.
-5. `flushAsync` and `shutdownAsync` are removed with `flush` and `shutdown` now being the async methods.
-6. Fixed an issue where `shutdown` would potentially exit early if a flush was already in progress
-7. Flushes will now try to flush up to `maxBatchSize` (default 100) in one go
+2. `flushAsync` and `shutdownAsync` are removed with `flush` and `shutdown` now being the async methods.
+3. `shutdown` takes a `shutdownTimeoutMs` param with a default of 30000 (30s). This is the time to wait for flushing events before shutting down the client. If the timeout is reached, the client will be shut down regardless of pending events.
+4. Flushes will now try to flush up to `maxBatchSize` (default 100) in one go
+5. Queued events are limited up to `maxQueueSize` (default 1000) and the oldest events are dropped when the limit is reached
+6. Adds a new `featureFlagsRequestTimeoutMs` timeout parameter for feature flags which defaults to 3 seconds, updated from the default 10s for all other API calls.
+7. Fixed an issue where `shutdown` would potentially exit early if a flush was already in progress
 8. Sets `User-Agent` headers with SDK name and version for RN
-9. Queued events are limited up to `maxQueueSize` (default 1000) and the oldest events are dropped when the limit is reached
+9. Fixes some typos in types
 
 # 4.0.0-beta.3 - 2024-03-13
 
