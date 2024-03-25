@@ -27,6 +27,7 @@ export const withReactNativeNavigation = (posthog: PostHog, options: PostHogAuto
     const appBuild = appProperties.$app_build
     const appVersion = appProperties.$app_version
 
+    // TODO: add missing initialUrl
     posthog.capture('Application Opened', {
       version: appVersion,
       build: appBuild,

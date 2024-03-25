@@ -304,7 +304,7 @@ describe('PostHog React Native', () => {
           },
         })
         expect(onCapture.mock.calls[3][0]).toMatchObject({
-          event: 'Application Opened',
+          event: 'Application Became Active',
           properties: {
             $app_build: '1',
             $app_version: '1.0.0',

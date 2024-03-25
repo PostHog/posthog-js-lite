@@ -1,3 +1,7 @@
+# Next
+
+1. If `captureNativeAppLifecycleEvents` is enabled, the event `Application Opened` with the property `from_background: true` is moved to its own event called `Application Became Active`. This event is triggered when the app is opened from the background. The `Application Opened` event is now only triggered when the app is opened from a cold start, aligning with the other integrations such as the `PostHogProvider` with the `captureLifecycleEvents` option and `initReactNativeNavigation` with the `captureLifecycleEvents` option.
+
 # 3.0.0 - 2024-03-18
 
 ## Added

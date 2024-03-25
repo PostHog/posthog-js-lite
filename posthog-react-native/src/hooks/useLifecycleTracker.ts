@@ -15,6 +15,7 @@ export function useLifecycleTracker(client?: PostHog): void {
 
     if (!openTrackedRef.current) {
       openTrackedRef.current = true
+      // TODO: add missing initialUrl
       posthog.capture('Application Opened', {
         version: appVersion,
         build: appBuild,
