@@ -146,10 +146,14 @@ export class PostHog extends PostHogCore {
   getCommonEventProperties(): any {
     return {
       ...super.getCommonEventProperties(),
-      ...this._appProperties,
+      ...getAppProperties(),
       $screen_height: Dimensions.get('screen').height,
       $screen_width: Dimensions.get('screen').width,
     }
+  }
+
+  getAppProperties(): PostHogCustomAppProperties {
+    return this._appProperties
   }
 
   // Custom methods
@@ -215,16 +219,14 @@ export class PostHog extends PostHogCore {
     this.capture('Application Opened', {
       version: appVersion,
       build: appBuild,
-      from_background: false,
       url: initialUrl,
     })
 
     AppState.addEventListener('change', (state) => {
       if (state === 'active') {
-        this.capture('Application Opened', {
+        this.capture('Application Became Active', {
           version: appVersion,
           build: appBuild,
-          from_background: true,
         })
       } else if (state === 'background') {
         this.capture('Application Backgrounded')

@@ -9,14 +9,24 @@ export function useLifecycleTracker(client?: PostHog): void {
   const posthog = client || contextClient
 
   return useEffect(() => {
+    const appProperties = posthog.getAppProperties()
+    const appBuild = appProperties.$app_build
+    const appVersion = appProperties.$app_version
+
     if (!openTrackedRef.current) {
       openTrackedRef.current = true
-      posthog.capture('Application Opened')
+      posthog.capture('Application Opened', {
+        version: appVersion,
+        build: appBuild,
+      })
     }
     const subscription = AppState.addEventListener('change', (nextAppState) => {
       switch (nextAppState) {
         case 'active':
-          return posthog.capture('Application Became Active')
+          return posthog.capture('Application Became Active', {
+            version: appVersion,
+            build: appBuild,
+          })
         case 'background':
           return posthog.capture('Application Backgrounded')
         default:
