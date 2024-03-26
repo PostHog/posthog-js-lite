@@ -152,10 +152,6 @@ export class PostHog extends PostHogCore {
     }
   }
 
-  getAppProperties(): PostHogCustomAppProperties {
-    return this._appProperties
-  }
-
   // Custom methods
   async screen(name: string, properties?: { [key: string]: any }, options?: PostHogCaptureOptions): Promise<void> {
     await this._initPromise

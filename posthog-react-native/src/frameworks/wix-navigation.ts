@@ -23,23 +23,12 @@ export const withReactNativeNavigation = (posthog: PostHog, options: PostHogAuto
       return
     }
 
-    const appProperties = posthog.getAppProperties()
-    const appBuild = appProperties.$app_build
-    const appVersion = appProperties.$app_version
-
-    // TODO: add missing initialUrl
-    posthog.capture('Application Opened', {
-      version: appVersion,
-      build: appBuild,
-    })
+    posthog.capture('Application Opened')
 
     AppState.addEventListener('change', (nextAppState) => {
       switch (nextAppState) {
         case 'active':
-          return posthog.capture('Application Became Active', {
-            version: appVersion,
-            build: appBuild,
-          })
+          return posthog.capture('Application Became Active')
         case 'background':
           return posthog.capture('Application Backgrounded')
         default:
