@@ -195,12 +195,16 @@ export class PostHog extends PostHogCore {
     if (appBuild) {
       if (!prevAppBuild) {
         // new app install
+        // version and build are deprecated, but we keep them for compatibility
+        // use $app_version and $app_build instead
         this.capture('Application Installed', {
           version: appVersion,
           build: appBuild,
         })
       } else if (prevAppBuild !== appBuild) {
         // app updated
+        // version and build are deprecated, but we keep them for compatibility
+        // use $app_version and $app_build instead
         this.capture('Application Updated', {
           previous_version: prevAppVersion,
           previous_build: prevAppBuild,
@@ -212,6 +216,8 @@ export class PostHog extends PostHogCore {
 
     const initialUrl = (await Linking.getInitialURL()) ?? undefined
 
+    // version and build are deprecated, but we keep them for compatibility
+    // use $app_version and $app_build instead
     this.capture('Application Opened', {
       version: appVersion,
       build: appBuild,
@@ -220,6 +226,8 @@ export class PostHog extends PostHogCore {
 
     AppState.addEventListener('change', (state) => {
       if (state === 'active') {
+        // version and build are deprecated, but we keep them for compatibility
+        // use $app_version and $app_build instead
         this.capture('Application Became Active', {
           version: appVersion,
           build: appBuild,
