@@ -11,6 +11,7 @@ export function useLifecycleTracker(client?: PostHog): void {
   return useEffect(() => {
     if (!openTrackedRef.current) {
       openTrackedRef.current = true
+      // TODO: add missing initialUrl
       posthog.capture('Application Opened')
     }
     const subscription = AppState.addEventListener('change', (nextAppState) => {

@@ -31,7 +31,7 @@ export type PostHogOptions = PostHogCoreOptions & {
   customStorage?: PostHogCustomStorage
 
   // customAsyncStorage?: PostHogCustomAsyncStorage
-  /** Captures native app lifecycle events such as Application Installed, Application Updated, Application Opened and Application Backgrounded.
+  /** Captures native app lifecycle events such as Application Installed, Application Updated, Application Opened, Application Became Active and Application Backgrounded.
    * By default is false.
    * If you're already using the 'captureLifecycleEvents' options with 'withReactNativeNavigation' or 'PostHogProvider, you should not set this to true, otherwise you may see duplicated events.
    */
@@ -195,12 +195,16 @@ export class PostHog extends PostHogCore {
     if (appBuild) {
       if (!prevAppBuild) {
         // new app install
+        // version and build are deprecated, but we keep them for compatibility
+        // use $app_version and $app_build instead
         this.capture('Application Installed', {
           version: appVersion,
           build: appBuild,
         })
       } else if (prevAppBuild !== appBuild) {
         // app updated
+        // version and build are deprecated, but we keep them for compatibility
+        // use $app_version and $app_build instead
         this.capture('Application Updated', {
           previous_version: prevAppVersion,
           previous_build: prevAppBuild,
@@ -212,19 +216,21 @@ export class PostHog extends PostHogCore {
 
     const initialUrl = (await Linking.getInitialURL()) ?? undefined
 
+    // version and build are deprecated, but we keep them for compatibility
+    // use $app_version and $app_build instead
     this.capture('Application Opened', {
       version: appVersion,
       build: appBuild,
-      from_background: false,
       url: initialUrl,
     })
 
     AppState.addEventListener('change', (state) => {
       if (state === 'active') {
-        this.capture('Application Opened', {
+        // version and build are deprecated, but we keep them for compatibility
+        // use $app_version and $app_build instead
+        this.capture('Application Became Active', {
           version: appVersion,
           build: appBuild,
-          from_background: true,
         })
       } else if (state === 'background') {
         this.capture('Application Backgrounded')

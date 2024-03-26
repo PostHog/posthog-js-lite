@@ -169,7 +169,6 @@ describe('PostHog React Native', () => {
           properties: {
             $app_build: '1',
             $app_version: '1.0.0',
-            from_background: false,
           },
         })
       })
@@ -221,7 +220,6 @@ describe('PostHog React Native', () => {
           properties: {
             $app_build: '2',
             $app_version: '2.0.0',
-            from_background: false,
           },
         })
       })
@@ -266,7 +264,6 @@ describe('PostHog React Native', () => {
           properties: {
             $app_build: '1',
             $app_version: '1.0.0',
-            from_background: false,
             url: 'https://example.com',
           },
         })
@@ -307,11 +304,10 @@ describe('PostHog React Native', () => {
           },
         })
         expect(onCapture.mock.calls[3][0]).toMatchObject({
-          event: 'Application Opened',
+          event: 'Application Became Active',
           properties: {
             $app_build: '1',
             $app_version: '1.0.0',
-            from_background: true,
           },
         })
       })
