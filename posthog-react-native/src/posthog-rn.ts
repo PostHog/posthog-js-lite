@@ -30,7 +30,6 @@ export type PostHogOptions = PostHogCoreOptions & {
    */
   customStorage?: PostHogCustomStorage
 
-  // customAsyncStorage?: PostHogCustomAsyncStorage
   /** Captures native app lifecycle events such as Application Installed, Application Updated, Application Opened, Application Became Active and Application Backgrounded.
    * By default is false.
    * If you're already using the 'captureLifecycleEvents' options with 'withReactNativeNavigation' or 'PostHogProvider, you should not set this to true, otherwise you may see duplicated events.
