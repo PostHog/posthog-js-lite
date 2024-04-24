@@ -551,8 +551,7 @@ describe('PostHog Node.js', () => {
         filters: {
           groups: [
             {
-              properties: [
-              ],
+              properties: [],
               rollout_percentage: 100,
             },
           ],
@@ -1052,14 +1051,10 @@ describe('PostHog Node.js', () => {
 
       mockedFetch.mockClear()
 
-      await expect(
-        posthog.getFeatureFlagPayload('feature-array', '123')
-      ).resolves.toEqual([1])
+      await expect(posthog.getFeatureFlagPayload('feature-array', '123')).resolves.toEqual([1])
       expect(mockedFetch).toHaveBeenCalledTimes(0)
 
-      await expect(
-        posthog.getFeatureFlagPayload('false-flag', '123', true)
-      ).resolves.toEqual(300)
+      await expect(posthog.getFeatureFlagPayload('false-flag', '123', true)).resolves.toEqual(300)
       expect(mockedFetch).toHaveBeenCalledTimes(0)
     })
 

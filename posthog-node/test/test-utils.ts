@@ -20,7 +20,9 @@ export const apiImplementation = ({
           } else {
             return Promise.resolve({
               featureFlags: decideFlags,
-              featureFlagPayloads: Object.fromEntries(Object.entries(decideFlagPayloads || {}).map(([k, v]) => [k, JSON.stringify(v)])),
+              featureFlagPayloads: Object.fromEntries(
+                Object.entries(decideFlagPayloads || {}).map(([k, v]) => [k, JSON.stringify(v)])
+              ),
             })
           }
         },

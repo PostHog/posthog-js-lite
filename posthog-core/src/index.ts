@@ -1116,7 +1116,11 @@ export abstract class PostHogCore extends PostHogCoreStateless {
               newFeatureFlagPayloads = { ...currentFlagPayloads, ...res.featureFlagPayloads }
             }
             this.setKnownFeatureFlags(newFeatureFlags)
-            this.setKnownFeatureFlagPayloads(Object.fromEntries(Object.entries(newFeatureFlagPayloads || {}).map(([k, v]) => [k, this._parsePayload(v)])))
+            this.setKnownFeatureFlagPayloads(
+              Object.fromEntries(
+                Object.entries(newFeatureFlagPayloads || {}).map(([k, v]) => [k, this._parsePayload(v)])
+              )
+            )
           }
 
           return res
