@@ -54,7 +54,7 @@ export type PostHogFeatureFlag = {
         rollout_percentage: number
       }[]
     }
-    payloads?: Record<string, JsonType>
+    payloads?: Record<string, string>
   }
   deleted: boolean
   active: boolean

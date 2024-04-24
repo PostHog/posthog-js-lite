@@ -340,12 +340,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         disableGeoip
       )
     }
-
-    try {
-      return JSON.parse(response as any)
-    } catch {
-      return response
-    }
+    return response
   }
 
   async isFeatureEnabled(

@@ -16,12 +16,11 @@ describe('PostHog Core', () => {
     'json-payload': true,
   })
 
-  // NOTE: Aren't these supposed to be strings?
   const createMockFeatureFlagPayloads = (): any => ({
-    'feature-1': {
+    'feature-1': JSON.stringify({
       color: 'blue',
-    },
-    'feature-variant': 5,
+    }),
+    'feature-variant': JSON.stringify([5]),
     'json-payload': '{"a":"payload"}',
   })
 
@@ -111,7 +110,7 @@ describe('PostHog Core', () => {
       })
 
       it('should return payload of matched flags only', async () => {
-        expect(posthog.getFeatureFlagPayload('feature-variant')).toEqual(5)
+        expect(posthog.getFeatureFlagPayload('feature-variant')).toEqual([5])
         expect(posthog.getFeatureFlagPayload('feature-1')).toEqual({
           color: 'blue',
         })
@@ -583,7 +582,7 @@ describe('PostHog Core', () => {
         expect(posthog.getFeatureFlagPayload('feature-1')).toEqual({
           color: 'blue',
         })
-        expect(posthog.getFeatureFlagPayload('feature-variant')).toEqual(5)
+        expect(posthog.getFeatureFlagPayload('feature-variant')).toEqual([5])
       })
     })
   })

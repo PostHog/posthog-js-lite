@@ -148,11 +148,15 @@ class FeatureFlagsPoller {
     }
 
     // Undefined means a loading or missing data issue. Null means evaluation happened and there was no match
-    if (response === undefined) {
+    if (response === undefined || response === null) {
       return null
     }
 
-    return response
+    try {
+      return JSON.parse(response)
+    } catch {
+      return response
+    }
   }
 
   async getAllFlagsAndPayloads(
@@ -308,7 +312,7 @@ class FeatureFlagsPoller {
         let matches = false
 
         if (propertyType === 'cohort') {
-          matches = matchCohort(prop, properties, this.cohorts)
+          matches = matchCohort(prop, properties, this.cohorts, this.debugMode)
         } else {
           matches = matchProperty(prop, properties)
         }
@@ -558,7 +562,8 @@ function matchProperty(
 function matchCohort(
   property: FeatureFlagCondition['properties'][number],
   propertyValues: Record<string, any>,
-  cohortProperties: FeatureFlagsPoller['cohorts']
+  cohortProperties: FeatureFlagsPoller['cohorts'],
+  debugMode: boolean = false
 ): boolean {
   const cohortId = String(property.value)
   if (!(cohortId in cohortProperties)) {
@@ -566,13 +571,14 @@ function matchCohort(
   }
 
   const propertyGroup = cohortProperties[cohortId]
-  return matchPropertyGroup(propertyGroup, propertyValues, cohortProperties)
+  return matchPropertyGroup(propertyGroup, propertyValues, cohortProperties, debugMode)
 }
 
 function matchPropertyGroup(
   propertyGroup: PropertyGroup,
   propertyValues: Record<string, any>,
-  cohortProperties: FeatureFlagsPoller['cohorts']
+  cohortProperties: FeatureFlagsPoller['cohorts'],
+  debugMode: boolean = false
 ): boolean {
   if (!propertyGroup) {
     return true
@@ -592,7 +598,7 @@ function matchPropertyGroup(
     // a nested property group
     for (const prop of properties as PropertyGroup[]) {
       try {
-        const matches = matchPropertyGroup(prop, propertyValues, cohortProperties)
+        const matches = matchPropertyGroup(prop, propertyValues, cohortProperties, debugMode)
         if (propertyGroupType === 'AND') {
           if (!matches) {
             return false
@@ -605,7 +611,9 @@ function matchPropertyGroup(
         }
       } catch (err) {
         if (err instanceof InconclusiveMatchError) {
-          console.debug(`Failed to compute property ${prop} locally: ${err}`)
+          if (debugMode) {
+            console.debug(`Failed to compute property ${prop} locally: ${err}`)
+          }
           errorMatchingLocally = true
         } else {
           throw err
@@ -623,7 +631,7 @@ function matchPropertyGroup(
       try {
         let matches: boolean
         if (prop.type === 'cohort') {
-          matches = matchCohort(prop, propertyValues, cohortProperties)
+          matches = matchCohort(prop, propertyValues, cohortProperties, debugMode)
         } else {
           matches = matchProperty(prop, propertyValues)
         }
@@ -649,7 +657,9 @@ function matchPropertyGroup(
         }
       } catch (err) {
         if (err instanceof InconclusiveMatchError) {
-          console.debug(`Failed to compute property ${prop} locally: ${err}`)
+          if (debugMode) {
+            console.debug(`Failed to compute property ${prop} locally: ${err}`)
+          }
           errorMatchingLocally = true
         } else {
           throw err
