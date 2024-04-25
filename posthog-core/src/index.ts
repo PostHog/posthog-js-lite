@@ -376,7 +376,7 @@ export abstract class PostHogCoreStateless {
       return null
     }
 
-    return this._parsePayload(response)
+    return response
   }
 
   protected async getFeatureFlagPayloadsStateless(
@@ -398,9 +398,6 @@ export abstract class PostHogCoreStateless {
       )
     ).payloads
 
-    if (payloads) {
-      return Object.fromEntries(Object.entries(payloads).map(([k, v]) => [k, this._parsePayload(v)]))
-    }
     return payloads
   }
 
@@ -453,9 +450,15 @@ export abstract class PostHogCoreStateless {
     const flags = decideResponse?.featureFlags
     const payloads = decideResponse?.featureFlagPayloads
 
+    let parsedPayloads = payloads
+
+    if (payloads) {
+      parsedPayloads = Object.fromEntries(Object.entries(payloads).map(([k, v]) => [k, this._parsePayload(v)]))
+    }
+
     return {
       flags,
-      payloads,
+      payloads: parsedPayloads,
     }
   }
 
@@ -1113,7 +1116,11 @@ export abstract class PostHogCore extends PostHogCoreStateless {
               newFeatureFlagPayloads = { ...currentFlagPayloads, ...res.featureFlagPayloads }
             }
             this.setKnownFeatureFlags(newFeatureFlags)
-            this.setKnownFeatureFlagPayloads(newFeatureFlagPayloads)
+            this.setKnownFeatureFlagPayloads(
+              Object.fromEntries(
+                Object.entries(newFeatureFlagPayloads || {}).map(([k, v]) => [k, this._parsePayload(v)])
+              )
+            )
           }
 
           return res
@@ -1186,16 +1193,14 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       return null
     }
 
-    return this._parsePayload(response)
+    return response
   }
 
   getFeatureFlagPayloads(): PostHogDecideResponse['featureFlagPayloads'] | undefined {
     const payloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
       PostHogPersistedProperty.FeatureFlagPayloads
     )
-    if (payloads) {
-      return Object.fromEntries(Object.entries(payloads).map(([k, v]) => [k, this._parsePayload(v)]))
-    }
+
     return payloads
   }
 

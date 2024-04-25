@@ -466,11 +466,14 @@ describe('PostHog Node.js', () => {
         'feature-2': true,
         'feature-variant': 'variant',
         'disabled-flag': false,
+        'feature-array': true,
       }
 
+      // these are stringified in apiImplementation
       const mockFeatureFlagPayloads = {
         'feature-1': { color: 'blue' },
         'feature-variant': 2,
+        'feature-array': [1],
       }
 
       const multivariateFlag = {
@@ -497,7 +500,7 @@ describe('PostHog Node.js', () => {
               { key: 'third-variant', name: 'Third Variant', rollout_percentage: 25 },
             ],
           },
-          payloads: { 'first-variant': 'some-payload', 'third-variant': { a: 'json' } },
+          payloads: { 'first-variant': 'some-payload', 'third-variant': JSON.stringify({ a: 'json' }) },
         },
       }
       const basicFlag = {
@@ -520,7 +523,7 @@ describe('PostHog Node.js', () => {
               rollout_percentage: 100,
             },
           ],
-          payloads: { true: 300 },
+          payloads: { true: '300' },
         },
       }
       const falseFlag = {
@@ -536,7 +539,23 @@ describe('PostHog Node.js', () => {
               rollout_percentage: 0,
             },
           ],
-          payloads: { true: 300 },
+          payloads: { true: '300' },
+        },
+      }
+
+      const arrayFlag = {
+        id: 5,
+        name: 'Beta Feature',
+        key: 'feature-array',
+        active: true,
+        filters: {
+          groups: [
+            {
+              properties: [],
+              rollout_percentage: 100,
+            },
+          ],
+          payloads: { true: JSON.stringify([1]) },
         },
       }
 
@@ -544,7 +563,7 @@ describe('PostHog Node.js', () => {
         apiImplementation({
           decideFlags: mockFeatureFlags,
           decideFlagPayloads: mockFeatureFlagPayloads,
-          localFlags: { flags: [multivariateFlag, basicFlag, falseFlag] },
+          localFlags: { flags: [multivariateFlag, basicFlag, falseFlag, arrayFlag] },
         })
       )
 
@@ -603,9 +622,10 @@ describe('PostHog Node.js', () => {
           distinct_id: 'distinct_id',
           event: 'node test event',
           properties: expect.objectContaining({
-            $active_feature_flags: ['feature-1', 'feature-2', 'feature-variant'],
+            $active_feature_flags: ['feature-1', 'feature-2', 'feature-variant', 'feature-array'],
             '$feature/feature-1': true,
             '$feature/feature-2': true,
+            '$feature/feature-array': true,
             '$feature/feature-variant': 'variant',
             $lib: 'posthog-node',
             $lib_version: '1.2.3',
@@ -659,8 +679,9 @@ describe('PostHog Node.js', () => {
           distinct_id: 'distinct_id',
           event: 'node test event',
           properties: expect.objectContaining({
-            $active_feature_flags: ['beta-feature-local'],
+            $active_feature_flags: ['beta-feature-local', 'feature-array'],
             '$feature/beta-feature-local': 'third-variant',
+            '$feature/feature-array': true,
             '$feature/false-flag': false,
             $lib: 'posthog-node',
             $lib_version: '1.2.3',
@@ -756,9 +777,10 @@ describe('PostHog Node.js', () => {
       )
 
       expect(getLastBatchEvents()?.[0].properties).toEqual({
-        $active_feature_flags: ['feature-1', 'feature-2', 'feature-variant'],
+        $active_feature_flags: ['feature-1', 'feature-2', 'feature-variant', 'feature-array'],
         '$feature/feature-1': true,
         '$feature/feature-2': true,
+        '$feature/feature-array': true,
         '$feature/disabled-flag': false,
         '$feature/feature-variant': 'variant',
         $lib: 'posthog-node',
@@ -1001,6 +1023,46 @@ describe('PostHog Node.js', () => {
       await expect(
         posthog.getFeatureFlagPayload('feature-variant', '123', 'variant', { groups: { org: '123' } })
       ).resolves.toEqual(2)
+      expect(mockedFetch).toHaveBeenCalledTimes(1)
+      expect(mockedFetch).toHaveBeenCalledWith(
+        'http://example.com/decide/?v=3',
+        expect.objectContaining({ method: 'POST', body: expect.stringContaining('"geoip_disable":true') })
+      )
+    })
+
+    it('should not double parse json with getFeatureFlagPayloads and local eval', async () => {
+      expect(mockedFetch).toHaveBeenCalledTimes(0)
+
+      posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        flushAt: 1,
+        fetchRetryCount: 0,
+        personalApiKey: 'TEST_PERSONAL_API_KEY',
+      })
+
+      mockedFetch.mockClear()
+      expect(mockedFetch).toHaveBeenCalledTimes(0)
+
+      await expect(
+        posthog.getFeatureFlagPayload('feature-array', '123', true, { onlyEvaluateLocally: true })
+      ).resolves.toEqual([1])
+      expect(mockedFetch).toHaveBeenCalledTimes(1)
+      expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
+
+      mockedFetch.mockClear()
+
+      await expect(posthog.getFeatureFlagPayload('feature-array', '123')).resolves.toEqual([1])
+      expect(mockedFetch).toHaveBeenCalledTimes(0)
+
+      await expect(posthog.getFeatureFlagPayload('false-flag', '123', true)).resolves.toEqual(300)
+      expect(mockedFetch).toHaveBeenCalledTimes(0)
+    })
+
+    it('should not double parse json with getFeatureFlagPayloads and server eval', async () => {
+      expect(mockedFetch).toHaveBeenCalledTimes(0)
+      await expect(
+        posthog.getFeatureFlagPayload('feature-array', '123', undefined, { groups: { org: '123' } })
+      ).resolves.toEqual([1])
       expect(mockedFetch).toHaveBeenCalledTimes(1)
       expect(mockedFetch).toHaveBeenCalledWith(
         'http://example.com/decide/?v=3',
