@@ -1,5 +1,5 @@
 
-# 4.0.1 - 2024-04-24
+# 4.0.1 - 2024-04-25
 
 1. Prevent double JSON parsing of feature flag payloads, which would convert the payload [1] into 1.
 
