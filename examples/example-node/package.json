@@ -10,7 +10,8 @@
     "build:posthog": "yarn build:posthog:publish && yarn build:posthog:link",
     "build:posthog:publish": "cd ../../posthog-node && yalc publish --replace",
     "build:posthog:link": "yalc add posthog-node",
-    "example": "ts-node example.ts"
+    "example": "ts-node example.ts",
+    "newtest": "ts-node newtest.ts"
   },
   "dependencies": {
     "@sentry/node": "^7.91.0",
