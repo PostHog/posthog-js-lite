@@ -30,7 +30,7 @@ import PostHog from 'posthog-react-native';
 export const posthog = new PostHog(
   'phc_pQ70jJhZKHRvDIL5ruOErnPy6xiAiWCqlL4ayELj4X8',
   {
-    host: 'https://app.posthog.com',
+    // host: 'https://us.i.posthog.com',
     // persistence: 'memory',
   },
 );

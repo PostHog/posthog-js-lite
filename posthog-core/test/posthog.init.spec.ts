@@ -23,7 +23,7 @@ describe('PostHog Core', () => {
     it('should initialise default options', () => {
       expect(posthog as any).toMatchObject({
         apiKey: 'TEST_API_KEY',
-        host: 'https://app.posthog.com',
+        host: 'https://us.i.posthog.com',
         flushAt: 20,
         flushInterval: 10000,
       })

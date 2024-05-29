@@ -141,7 +141,7 @@ describe('PostHog Core', () => {
         })
 
         it('should return undefined', async () => {
-          expect(mocks.fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=3', {
+          expect(mocks.fetch).toHaveBeenCalledWith('https://us.i.posthog.com/decide/?v=3', {
             body: JSON.stringify({
               token: 'TEST_API_KEY',
               distinct_id: posthog.getDistinctId(),
@@ -212,7 +212,7 @@ describe('PostHog Core', () => {
         })
 
         it('should return combined results', async () => {
-          expect(mocks.fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=3', {
+          expect(mocks.fetch).toHaveBeenCalledWith('https://us.i.posthog.com/decide/?v=3', {
             body: JSON.stringify({
               token: 'TEST_API_KEY',
               distinct_id: posthog.getDistinctId(),
@@ -239,7 +239,7 @@ describe('PostHog Core', () => {
           // now second call to feature flags
           await posthog.reloadFeatureFlagsAsync(false)
 
-          expect(mocks.fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=3', {
+          expect(mocks.fetch).toHaveBeenCalledWith('https://us.i.posthog.com/decide/?v=3', {
             body: JSON.stringify({
               token: 'TEST_API_KEY',
               distinct_id: posthog.getDistinctId(),
@@ -317,7 +317,7 @@ describe('PostHog Core', () => {
         })
 
         it('should return only latest results', async () => {
-          expect(mocks.fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=3', {
+          expect(mocks.fetch).toHaveBeenCalledWith('https://us.i.posthog.com/decide/?v=3', {
             body: JSON.stringify({
               token: 'TEST_API_KEY',
               distinct_id: posthog.getDistinctId(),
@@ -344,7 +344,7 @@ describe('PostHog Core', () => {
           // now second call to feature flags
           await posthog.reloadFeatureFlagsAsync(false)
 
-          expect(mocks.fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=3', {
+          expect(mocks.fetch).toHaveBeenCalledWith('https://us.i.posthog.com/decide/?v=3', {
             body: JSON.stringify({
               token: 'TEST_API_KEY',
               distinct_id: posthog.getDistinctId(),
@@ -537,7 +537,7 @@ describe('PostHog Core', () => {
       })
 
       it('should load new feature flags', async () => {
-        expect(mocks.fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=3', {
+        expect(mocks.fetch).toHaveBeenCalledWith('https://us.i.posthog.com/decide/?v=3', {
           body: JSON.stringify({
             token: 'TEST_API_KEY',
             distinct_id: posthog.getDistinctId(),
@@ -563,7 +563,7 @@ describe('PostHog Core', () => {
       })
 
       it('should load new feature flag payloads', async () => {
-        expect(mocks.fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=3', {
+        expect(mocks.fetch).toHaveBeenCalledWith('https://us.i.posthog.com/decide/?v=3', {
           body: JSON.stringify({
             token: 'TEST_API_KEY',
             distinct_id: posthog.getDistinctId(),
