@@ -70,7 +70,7 @@ export class PostHogSentryIntegration implements _SentryIntegration {
     private readonly organization?: string,
     private readonly prefix?: string
   ) {
-    this.posthogHost = posthog.options.host ?? 'https://app.posthog.com'
+    this.posthogHost = posthog.options.host ?? 'https://us.i.posthog.com'
   }
 
   public setupOnce(

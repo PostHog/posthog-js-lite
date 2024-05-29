@@ -87,7 +87,7 @@ export abstract class PostHogCoreStateless {
     assert(apiKey, "You must pass your PostHog project's api key.")
 
     this.apiKey = apiKey
-    this.host = removeTrailingSlash(options?.host || 'https://app.posthog.com')
+    this.host = removeTrailingSlash(options?.host || 'https://us.i.posthog.com')
     this.flushAt = options?.flushAt ? Math.max(options?.flushAt, 1) : 20
     this.maxBatchSize = Math.max(this.flushAt, options?.maxBatchSize ?? 100)
     this.maxQueueSize = Math.max(this.flushAt, options?.maxQueueSize ?? 1000)

@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from 'react-native'
 import PostHog from 'posthog-react-native'
 
 export const posthog = new PostHog('phc_pQ70jJhZKHRvDIL5ruOErnPy6xiAiWCqlL4ayELj4X8', {
-  host: 'https://app.posthog.com',
+  host: 'https://us.i.posthog.com',
   flushAt: 1,
   captureNativeAppLifecycleEvents: false,
   sendFeatureFlagEvent: false,

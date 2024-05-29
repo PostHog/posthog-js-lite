@@ -61,7 +61,7 @@ describe('PostHogWeb', () => {
 
       await waitForPromises()
 
-      expect(fetch).toHaveBeenCalledWith('https://app.posthog.com/decide/?v=3', {
+      expect(fetch).toHaveBeenCalledWith('https://us.i.posthog.com/decide/?v=3', {
         body: JSON.stringify({
           token: 'TEST_API_KEY',
           distinct_id: posthog.getDistinctId(),

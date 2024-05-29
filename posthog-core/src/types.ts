@@ -1,5 +1,5 @@
 export type PostHogCoreOptions = {
-  /** PostHog API host, usually 'https://app.posthog.com' or 'https://eu.posthog.com' */
+  /** PostHog API host, usually 'https://us.i.posthog.com' or 'https://eu.i.posthog.com' */
   host?: string
   /** The number of events to queue before sending to PostHog (flushing) */
   flushAt?: number
