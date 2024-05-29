@@ -317,7 +317,7 @@ describe('PostHog Core', () => {
         })
 
         it('should return only latest results', async () => {
-          expect(mocks.fetch).toHaveBeenCalledWith('/decide/?v=3', {
+          expect(mocks.fetch).toHaveBeenCalledWith('https://us.i.posthog.com/decide/?v=3', {
             body: JSON.stringify({
               token: 'TEST_API_KEY',
               distinct_id: posthog.getDistinctId(),
