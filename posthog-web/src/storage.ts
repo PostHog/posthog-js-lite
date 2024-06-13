@@ -145,7 +145,7 @@ const createMemoryStorage = (): PostHogStorage => {
 
 export const getStorage = (type: PostHogOptions['persistence'], window: Window | undefined): PostHogStorage => {
   if (window) {
-    if (!localStorage) {
+    if (!localStore) {
       const _localStore = createStorageLike(window.localStorage)
       localStore = checkStoreIsSupported(_localStore) ? _localStore : undefined
     }
