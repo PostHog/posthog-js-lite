@@ -1,4 +1,10 @@
-# Next
+# 3.0.2 - 2024-06-14
+
+## Fixed
+
+1. Fixed and error that prevented localstorage from ever being used and instead falling back to sessionstorage for persistence
+
+## Changed
 
 1. chore: change host to new address.
 
