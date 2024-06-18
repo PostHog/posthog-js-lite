@@ -1,3 +1,13 @@
+# 3.0.2 - 2024-06-15
+
+## Fixed
+
+1. Fixed and error that prevented localstorage from ever being used and instead falling back to sessionstorage for persistence
+
+## Changed
+
+1. chore: change host to new address.
+
 # 3.0.1 - 2024-04-25
 
 1. Prevent double JSON parsing of feature flag payloads, which would convert the payload [1] into 1.
