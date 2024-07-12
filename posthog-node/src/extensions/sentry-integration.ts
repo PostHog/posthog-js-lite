@@ -3,30 +3,12 @@
  */
 import { type PostHog } from '../posthog-node'
 
-// NOTE - we can't import from @sentry/types because it changes frequently and causes clashes
-// We only use a small subset of the types, so we can just define the integration overall and use any for the rest
-
-// import {
-//     Event as _SentryEvent,
-//     EventProcessor as _SentryEventProcessor,
-//     Exception as _SentryException,
-//     Hub as _SentryHub,
-//     Integration as _SentryIntegration,
-//     Primitive as _SentryPrimitive,
-// } from '@sentry/types'
-
-// Uncomment the above and comment the below to get type checking for development
-
-type _SentryEvent = any
-type _SentryEventProcessor = any
-type _SentryHub = any
-type _SentryException = any
-type _SentryPrimitive = any
-
-interface _SentryIntegration {
-  name: string
-  setupOnce(addGlobalEventProcessor: (callback: _SentryEventProcessor) => void, getCurrentHub: () => _SentryHub): void
-}
+import {
+  type Exception as _SentryException,
+  type Integration as _SentryIntegration,
+  type Primitive as _SentryPrimitive,
+  type Client,
+} from '@sentry/types'
 
 interface PostHogSentryExceptionProperties {
   $sentry_event_id?: string
@@ -73,11 +55,8 @@ export class PostHogSentryIntegration implements _SentryIntegration {
     this.posthogHost = posthog.options.host ?? 'https://us.i.posthog.com'
   }
 
-  public setupOnce(
-    addGlobalEventProcessor: (callback: _SentryEventProcessor) => void,
-    getCurrentHub: () => _SentryHub
-  ): void {
-    addGlobalEventProcessor((event: _SentryEvent): _SentryEvent => {
+  setup(client: Client): void {
+    client.addEventProcessor((event) => {
       if (event.exception?.values === undefined || event.exception.values.length === 0) {
         return event
       }
@@ -86,10 +65,8 @@ export class PostHogSentryIntegration implements _SentryIntegration {
         event.tags = {}
       }
 
-      const sentry = getCurrentHub()
-
       // Get the PostHog user ID from a specific tag, which users can set on their Sentry scope as they need.
-      const userId = event.tags[PostHogSentryIntegration.POSTHOG_ID_TAG]
+      const userId = event.tags[PostHogSentryIntegration.POSTHOG_ID_TAG]?.toString()
       if (userId === undefined) {
         // If we can't find a user ID, don't bother linking the event. We won't be able to send anything meaningful to PostHog without it.
         return event
@@ -110,7 +87,7 @@ export class PostHogSentryIntegration implements _SentryIntegration {
         $sentry_tags: event.tags,
       }
 
-      const projectId = sentry.getClient()?.getDsn()?.projectId
+      const projectId = client.getDsn()?.projectId
       if (this.organization !== undefined && projectId !== undefined && event.event_id !== undefined) {
         properties.$sentry_url = `${this.prefix ?? 'https://sentry.io/organizations'}/${
           this.organization

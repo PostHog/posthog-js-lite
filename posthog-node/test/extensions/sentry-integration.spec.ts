@@ -92,20 +92,18 @@ describe('PostHogSentryIntegration', () => {
   it('should forward sentry exceptions to posthog', async () => {
     expect(mockedFetch).toHaveBeenCalledTimes(0)
 
+    let processorFunction: any
     const mockSentry = {
-      getClient: () => ({
-        getDsn: () => ({
-          projectId: 123,
-        }),
+      getDsn: () => ({
+        projectId: 123,
       }),
+      addEventProcessor: (fn: any) => {
+        processorFunction = fn
+      },
     }
 
-    let processorFunction: any
-
-    posthogSentry.setupOnce(
-      (fn) => (processorFunction = fn),
-      () => mockSentry
-    )
+    // @ts-expect-error - we're mocking the Sentry integration
+    posthogSentry.setup(mockSentry)
 
     processorFunction(createMockSentryException())
 
