@@ -1,6 +1,7 @@
 # Next
 
 1. chore: change host to new address.
+2. chore: bump axios to 1.7.4 (fixes [CVE-2024-39338](https://github.com/advisories/GHSA-8hc4-vh64-cxmj))
 
 # 4.0.1 - 2024-04-25
 
@@ -29,7 +30,6 @@
 
 1. Fixed an issue where `shutdown` would potentially exit early if a flush was already in progress
 2. Fixes some typos in types
-
 
 # 4.0.0-beta.3 - 2024-03-13
 
