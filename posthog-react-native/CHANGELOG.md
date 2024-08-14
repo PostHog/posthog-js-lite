@@ -1,5 +1,7 @@
 # Next
 
+# 3.1.2 - 2024-08-14
+
 1. chore: change host to new address.
 
 # 3.1.1 - 2024-04-25
