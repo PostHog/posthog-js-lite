@@ -1,6 +1,6 @@
 # Next
 
-# 4.0.2 - 2024-08-14
+# 4.1.0 - 2024-08-14
 
 1. chore: change host to new address.
 2. chore: bump axios to 1.7.4 (fixes [CVE-2024-39338](https://github.com/advisories/GHSA-8hc4-vh64-cxmj))
