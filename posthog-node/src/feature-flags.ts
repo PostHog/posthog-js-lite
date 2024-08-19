@@ -647,7 +647,7 @@ function matchPropertyGroup(
         if (prop.type === 'cohort') {
           matches = matchCohort(prop, propertyValues, cohortProperties, debugMode)
         } else {
-          matches = matchProperty(prop, propertyValues, warnFunction)
+          matches = matchProperty(prop, propertyValues)
         }
 
         const negation = prop.negation || false
