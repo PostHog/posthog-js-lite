@@ -1889,7 +1889,7 @@ describe('match properties', () => {
     expect(matchProperty(property_a, {key: 'value'})).toBe(true)
     expect(matchProperty(property_a, {key: 'value2'})).toBe(true)
     expect(matchProperty(property_a, {key: ''})).toBe(true)
-    expect(matchProperty(property_a, {key: undefined})).toBe(true)
+    expect(matchProperty(property_a, {key: undefined})).toBe(false)
 
     expect(() => matchProperty(property_a, {key2: 'value'})).toThrow(InconclusiveMatchError)
     expect(() => matchProperty(property_a, {})).toThrow(InconclusiveMatchError)
@@ -2130,22 +2130,22 @@ describe('match properties', () => {
     expect(matchProperty(property_a, {key: 'nul'})).toBe(true)
 
     const property_b = { key: 'key', value: 'null', operator: 'is_set' }
-    expect(matchProperty(property_b, {key: null})).toBe(true)
-    expect(matchProperty(property_b, {key: undefined})).toBe(true)
+    expect(matchProperty(property_b, {key: null})).toBe(false)
+    expect(matchProperty(property_b, {key: undefined})).toBe(false)
     expect(matchProperty(property_b, {key: 'null'})).toBe(true)
 
     const property_c = { key: 'key', value: 'undefined', operator: 'icontains' }
     expect(matchProperty(property_c, {key: null})).toBe(false)
-    expect(matchProperty(property_c, {key: undefined})).toBe(true)
+    expect(matchProperty(property_c, {key: undefined})).toBe(false)
     expect(matchProperty(property_c, {key: 'lol'})).toBe(false)
 
     const property_d = { key: 'key', value: 'undefined', operator: 'regex' }
     expect(matchProperty(property_d, {key: null})).toBe(false)
-    expect(matchProperty(property_d, {key: undefined})).toBe(true)
+    expect(matchProperty(property_d, {key: undefined})).toBe(false)
 
     const property_e = { key: 'key', value: 1, operator: 'gt' }
-    expect(matchProperty(property_e, {key: null})).toBe(true)
-    expect(matchProperty(property_e, {key: undefined})).toBe(true)
+    expect(matchProperty(property_e, {key: null})).toBe(false)
+    expect(matchProperty(property_e, {key: undefined})).toBe(false)
 
     const property_f = { key: 'key', value: 1, operator: 'lt' }
     expect(matchProperty(property_f, {key: null})).toBe(false)
@@ -2160,18 +2160,19 @@ describe('match properties', () => {
     expect(matchProperty(property_h, {key: undefined})).toBe(false)
 
     const property_h_lower = { key: 'key', value: 'oo', operator: 'lte' }
-    expect(matchProperty(property_h_lower, {key: null})).toBe(true)
+    expect(matchProperty(property_h_lower, {key: null})).toBe(false)
     expect(matchProperty(property_h_lower, {key: undefined})).toBe(false)
 
     const property_i = { key: 'key', value: '2022-05-01', operator: 'is_date_before' }
-    expect(() => matchProperty(property_i, {key: null})).toThrow(InconclusiveMatchError)
-    expect(() => matchProperty(property_i, {key: undefined})).toThrow(InconclusiveMatchError)
+
+    expect(matchProperty(property_i, {key: null})).toBe(false)
+    expect(matchProperty(property_i, {key: undefined})).toBe(false)
 
     const property_j = { key: 'key', value: '2022-05-01', operator: 'is_date_after' }
-    expect(() => matchProperty(property_j, {key: null})).toThrow(InconclusiveMatchError)
+    expect(matchProperty(property_j, {key: null})).toBe(false)
 
     const property_k = { key: 'key', value: '2022-05-01', operator: 'is_date_before' }
-    expect(() => matchProperty(property_k, {key: null})).toThrow(InconclusiveMatchError)
+    expect(matchProperty(property_k, {key: null})).toBe(false)
   })
 
   it('null or undefined override value', () => {
