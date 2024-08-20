@@ -483,7 +483,7 @@ function matchProperty(
     // if the value is null, just fail the feature flag comparison
     // this isn't an InconclusiveMatchError because the property value was provided.
     if (warnFunction) {
-      warnFunction(`Property ${key}  cannot have a value of null/undefined with the ${operator} operator`)
+      warnFunction(`Property ${key} cannot have a value of null/undefined with the ${operator} operator`)
     }
 
     return false
