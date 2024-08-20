@@ -306,7 +306,7 @@ class FeatureFlagsPoller {
     properties: Record<string, string>
   ): boolean {
     const rolloutPercentage = condition.rollout_percentage
-    const warnFunction = (msg: string) => {
+    const warnFunction = (msg: string): void => {
         if (this.debugMode) {
           console.warn(msg)
         }
