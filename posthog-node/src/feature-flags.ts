@@ -7,6 +7,7 @@ import fetch from './fetch'
 // eslint-disable-next-line
 const LONG_SCALE = 0xfffffffffffffff
 
+const NULL_VALUES_ALLOWED_OPERATORS = ['is_not']
 class ClientError extends Error {
   constructor(message: string) {
     super()
@@ -305,7 +306,11 @@ class FeatureFlagsPoller {
     properties: Record<string, string>
   ): boolean {
     const rolloutPercentage = condition.rollout_percentage
-
+    const warnFunction = (msg: string): void => {
+        if (this.debugMode) {
+          console.warn(msg)
+        }
+    }
     if ((condition.properties || []).length > 0) {
       for (const prop of condition.properties) {
         const propertyType = prop.type
@@ -314,7 +319,7 @@ class FeatureFlagsPoller {
         if (propertyType === 'cohort') {
           matches = matchCohort(prop, properties, this.cohorts, this.debugMode)
         } else {
-          matches = matchProperty(prop, properties)
+          matches = matchProperty(prop, properties, warnFunction)
         }
 
         if (!matches) {
@@ -460,9 +465,9 @@ function _hash(key: string, distinctId: string, salt: string = ''): number {
 }
 
 function matchProperty(
-  property: FeatureFlagCondition['properties'][number],
-  propertyValues: Record<string, any>
-): boolean {
+    property: FeatureFlagCondition["properties"][number],
+    propertyValues: Record<string, any>
+    , warnFunction?: (msg: string) => void): boolean {
   const key = property.key
   const value = property.value
   const operator = property.operator || 'exact'
@@ -474,6 +479,15 @@ function matchProperty(
   }
 
   const overrideValue = propertyValues[key]
+  if (overrideValue == null && !NULL_VALUES_ALLOWED_OPERATORS.includes(operator)) {
+    // if the value is null, just fail the feature flag comparison
+    // this isn't an InconclusiveMatchError because the property value was provided.
+    if (warnFunction) {
+      warnFunction(`Property ${key} cannot have a value of null/undefined with the ${operator} operator`)
+    }
+
+    return false
+  }
 
   function computeExactMatch(value: any, overrideValue: any): boolean {
     if (Array.isArray(value)) {
