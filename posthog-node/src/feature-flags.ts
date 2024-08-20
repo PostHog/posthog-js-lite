@@ -307,9 +307,9 @@ class FeatureFlagsPoller {
   ): boolean {
     const rolloutPercentage = condition.rollout_percentage
     const warnFunction = (msg: string): void => {
-        if (this.debugMode) {
-          console.warn(msg)
-        }
+      if (this.debugMode) {
+        console.warn(msg)
+      }
     }
     if ((condition.properties || []).length > 0) {
       for (const prop of condition.properties) {
@@ -465,9 +465,10 @@ function _hash(key: string, distinctId: string, salt: string = ''): number {
 }
 
 function matchProperty(
-    property: FeatureFlagCondition["properties"][number],
-    propertyValues: Record<string, any>
-    , warnFunction?: (msg: string) => void): boolean {
+  property: FeatureFlagCondition['properties'][number],
+  propertyValues: Record<string, any>,
+  warnFunction?: (msg: string) => void
+): boolean {
   const key = property.key
   const value = property.value
   const operator = property.operator || 'exact'
