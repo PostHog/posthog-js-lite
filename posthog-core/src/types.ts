@@ -39,6 +39,8 @@ export type PostHogCoreOptions = {
   /** Whether to post events to PostHog in JSON or compressed format. Defaults to 'form' */
   captureMode?: 'json' | 'form'
   disableGeoip?: boolean
+  /** Special flag to indicate ingested data is for a historical migration. */
+  historicalMigration?: boolean
 }
 
 export enum PostHogPersistedProperty {

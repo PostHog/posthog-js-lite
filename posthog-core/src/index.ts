@@ -61,6 +61,7 @@ export abstract class PostHogCoreStateless {
   private captureMode: 'form' | 'json'
   private removeDebugCallback?: () => void
   private disableGeoip: boolean = true
+  private historicalMigration: boolean = false
   public disabled = false
 
   private defaultOptIn: boolean = true
@@ -106,6 +107,7 @@ export abstract class PostHogCoreStateless {
     this.featureFlagsRequestTimeoutMs = options?.featureFlagsRequestTimeoutMs ?? 3000 // 3 seconds
     this.disableGeoip = options?.disableGeoip ?? true
     this.disabled = options?.disabled ?? false
+    this.historicalMigration = options?.historicalMigration ?? false
     // Init promise allows the derived class to block calls until it is ready
     this._initPromise = Promise.resolve()
     this._isInitialized = true
@@ -573,10 +575,14 @@ export abstract class PostHogCoreStateless {
       this.setPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue, refreshedQueue.slice(items.length))
     }
 
-    const data = {
+    const data: Record<string, any> = {
       api_key: this.apiKey,
       batch: messages,
       sent_at: currentISOTime(),
+    }
+
+    if (this.historicalMigration) {
+      data.historical_migration = true
     }
 
     const payload = JSON.stringify(data)
