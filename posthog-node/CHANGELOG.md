@@ -1,8 +1,13 @@
 # Next
 
+# 4.2.0 - 2024-08-26
+
+1. Added `historicalMigration` option for use in tools that are migrating large data to PostHog
+
 # 4.1.1 - 2024-08-20
 
 1. Local evaluation returns correct results on `undefined/null` values
+
 # 4.1.0 - 2024-08-14
 
 1. chore: change host to new address.
