@@ -92,7 +92,7 @@ export abstract class PostHogCoreStateless {
     this.maxBatchSize = Math.max(this.flushAt, options?.maxBatchSize ?? 100)
     this.maxQueueSize = Math.max(this.flushAt, options?.maxQueueSize ?? 1000)
     this.flushInterval = options?.flushInterval ?? 10000
-    this.captureMode = options?.captureMode || 'form'
+    this.captureMode = options?.captureMode || 'json'
 
     // If enable is explicitly set to false we override the optout
     this.defaultOptIn = options?.defaultOptIn ?? true

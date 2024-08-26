@@ -10,7 +10,6 @@ describe('PostHog Core', () => {
       ;[posthog, mocks] = createTestClient('TEST_API_KEY', {
         flushAt: 10,
         preloadFeatureFlags: false,
-        captureMode: 'json',
       })
     })
 

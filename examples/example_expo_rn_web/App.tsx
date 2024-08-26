@@ -9,7 +9,6 @@ export const posthog = new PostHog('phc_pQ70jJhZKHRvDIL5ruOErnPy6xiAiWCqlL4ayELj
   captureNativeAppLifecycleEvents: false,
   sendFeatureFlagEvent: false,
   preloadFeatureFlags: false,
-  // captureMode: 'form',
   // persistence: 'memory',
 })
 posthog.debug(true)
