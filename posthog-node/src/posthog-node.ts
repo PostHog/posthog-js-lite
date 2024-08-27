@@ -39,7 +39,6 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
   distinctIdHasSentFlagCalls: Record<string, string[]>
 
   constructor(apiKey: string, options: PostHogOptions = {}) {
-    options.captureMode = options?.captureMode || 'json'
     super(apiKey, options)
 
     this.options = options

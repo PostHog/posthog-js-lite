@@ -1,6 +1,13 @@
 # Next
 
+## Changed
+
+1. chore: default `captureMode` changed to `json`.
+    1. To keep using the `form` mode, just set the `captureMode` option to `form` when initializing the PostHog client.
+
 # 3.1.2 - 2024-08-14
+
+## Changed
 
 1. chore: change host to new address.
 
@@ -121,8 +128,8 @@
 
 # 2.9.0 - 2023-12-04
 
-1.  Renamed `personProperties` to `setPersonPropertiesForFlags` to match `posthog-js` and more clearly indicated what it does
-2.  Renamed `groupProperties` to `setGroupPropertiesForFlags` to match `posthog-js` and more clearly indicated what it does
+1. Renamed `personProperties` to `setPersonPropertiesForFlags` to match `posthog-js` and more clearly indicated what it does
+2. Renamed `groupProperties` to `setGroupPropertiesForFlags` to match `posthog-js` and more clearly indicated what it does
 
 # 2.8.1 - 2023-10-09
 
@@ -164,9 +171,9 @@
 
 # 2.4.0 - 2023-01-27
 
-- Adds support for https://github.com/wix/react-native-navigation
-- Allows passing of promise based `PostHog.initAsync` to `<PostHogProvider client={...} />`
-- Captures text content in autocapture (configurable via autocapture option `propsToCapture`)
+1. Adds support for https://github.com/wix/react-native-navigation
+2. Allows passing of promise based `PostHog.initAsync` to `<PostHogProvider client={...} />`
+3. Captures text content in autocapture (configurable via autocapture option `propsToCapture`)
 
 # 2.3.0 - 2022-1-26
 
@@ -176,21 +183,21 @@
 
 # 2.2.3 - 2023-01-25
 
-- Ensures the distinctId used in `.groupIdentify` is the same as the currently identified user
+1. Ensures the distinctId used in `.groupIdentify` is the same as the currently identified user
 
 # 2.2.2 - 2023-01-05
 
-- Fixes an issue with PostHogProvider where autocapture={false} would still capture lifecycle and navigation events.
+1. Fixes an issue with PostHogProvider where autocapture={false} would still capture lifecycle and navigation events.
 
 # 2.2.1 - 2022-11-21
 
-- Fixes an issue with async storage selection while installing PostHog React Native
-- Fixes an issue where React Hooks for feature flags were conditionally loaded
+1. Fixes an issue with async storage selection while installing PostHog React Native
+2. Fixes an issue where React Hooks for feature flags were conditionally loaded
 
 # 2.2.0 - 2022-11-11
 
-- Expo modules are no longer required. Expo apps work as before and standalone React Native apps can use the more common native dependencies or roll their own implementation of the necessary functions. See the [official docs](https://posthog.com/docs/integrate/client/react-native) for more information.
-- PostHog should now be initialised via the async helper `PostHog.initAsync` to ensure persisted data is loaded before any tracking takes place
+1. Expo modules are no longer required. Expo apps work as before and standalone React Native apps can use the more common native dependencies or roll their own implementation of the necessary functions. See the [official docs](https://posthog.com/docs/integrate/client/react-native) for more information.
+2. PostHog should now be initialised via the async helper `PostHog.initAsync` to ensure persisted data is loaded before any tracking takes place
 
 # 2.1.4 - 2022-10-28
 
