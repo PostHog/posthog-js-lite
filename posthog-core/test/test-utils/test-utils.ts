@@ -17,6 +17,5 @@ export const waitForPromises = async (): Promise<void> => {
 export const parseBody = (mockCall: any): any => {
   const options = mockCall[1]
   expect(options.method).toBe('POST')
-  const bodyText = decodeURIComponent(options.body.split('&')[0].split('=')[1])
-  return JSON.parse(LZString.decompressFromBase64(bodyText) || '')
+  return JSON.parse(options.body || '')
 }
