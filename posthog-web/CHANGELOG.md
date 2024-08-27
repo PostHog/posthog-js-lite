@@ -73,8 +73,8 @@
 
 # 2.5.0 - 2023-12-04
 
-1.  Renamed `personProperties` to `setPersonPropertiesForFlags` to match `posthog-js` and more clearly indicated what it does
-2.  Renamed `groupProperties` to `setGroupPropertiesForFlags` to match `posthog-js` and more clearly indicated what it does
+1. Renamed `personProperties` to `setPersonPropertiesForFlags` to match `posthog-js` and more clearly indicated what it does
+2. Renamed `groupProperties` to `setGroupPropertiesForFlags` to match `posthog-js` and more clearly indicated what it does
 
 # 2.4.0 - 2023-04-20
 
@@ -105,4 +105,4 @@
 
 # 2.0.1 - 2023-01-25
 
-- Ensures the distinctId used in `.groupIdentify` is the same as the currently identified user
+1. Ensures the distinctId used in `.groupIdentify` is the same as the currently identified user
