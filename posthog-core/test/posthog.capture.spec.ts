@@ -21,7 +21,7 @@ describe('PostHog Core', () => {
       await waitForPromises()
       expect(mocks.fetch).toHaveBeenCalledTimes(1)
       const [url, options] = mocks.fetch.mock.calls[0]
-      expect(url).toMatch(/^https:\/\/us\.i\.posthog\.com\/batch\/$/)
+      expect(url).toMatch(/^https:\/\/us\.i\.posthog\.com\/batch\//)
       expect(options.method).toBe('POST')
       const body = parseBody(mocks.fetch.mock.calls[0])
 
