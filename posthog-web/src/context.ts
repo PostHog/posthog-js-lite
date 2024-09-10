@@ -3,7 +3,7 @@ import { version } from '../package.json'
 
 export function getContext(window: Window | undefined): any {
   let context = {}
-  if (window && window.navigator) {
+  if (window?.navigator) {
     const userAgent = window.navigator.userAgent
     context = {
       ...context,
