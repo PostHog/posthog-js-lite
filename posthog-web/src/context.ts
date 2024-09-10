@@ -1,9 +1,9 @@
 import { utils } from '../../posthog-core'
 import { version } from '../package.json'
 
-export function getContext(window: Window): any {
+export function getContext(window: Window | undefined): any {
   let context = {}
-  if (window.navigator) {
+  if (window && window.navigator) {
     const userAgent = window.navigator.userAgent
     context = {
       ...context,
@@ -21,6 +21,7 @@ export function getContext(window: Window): any {
       $screen_dpr: window.devicePixelRatio,
     }
   }
+
   context = {
     ...context,
     $lib: 'js',
@@ -114,7 +115,10 @@ function browserVersion(userAgent: string, vendor: string, opera: boolean): numb
   return parseFloat(matches[matches.length - 2])
 }
 
-function os(window: Window): string {
+function os(window: Window | undefined): string {
+  if (!window || !window.navigator) {
+    return ''
+  }
   const a = window.navigator.userAgent
   if (/Windows/i.test(a)) {
     if (/Phone/.test(a) || /WPDesktop/.test(a)) {
