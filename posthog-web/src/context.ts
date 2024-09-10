@@ -116,7 +116,7 @@ function browserVersion(userAgent: string, vendor: string, opera: boolean): numb
 }
 
 function os(window: Window | undefined): string {
-  if (!window || !window.navigator) {
+  if (!window?.navigator) {
     return ''
   }
   const a = window.navigator.userAgent
