@@ -20,13 +20,17 @@ export class PostHog extends PostHogCore {
     // posthog-js stores options in one object on
     this._storageKey = options?.persistence_name ? `ph_${options.persistence_name}` : `ph_${apiKey}_posthog`
 
-    const _window: Window | undefined = (typeof window !== 'undefined') ? window : undefined
-    this._storage = getStorage(options?.persistence || 'localStorage', _window)
+    this._storage = getStorage(options?.persistence || 'localStorage', this._getWindow())
     this.setupBootstrap(options)
 
     if (options?.preloadFeatureFlags !== false) {
       this.reloadFeatureFlags()
     }
+  }
+
+  _getWindow(): Window | undefined {
+    const _window: Window | undefined = (typeof window !== 'undefined') ? window : undefined
+    return _window
   }
 
   getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined {
@@ -71,10 +75,9 @@ export class PostHog extends PostHogCore {
   }
 
   getCommonEventProperties(): any {
-    const _window: Window | undefined = (typeof window !== 'undefined') ? window : undefined
     return {
       ...super.getCommonEventProperties(),
-      ...getContext(_window),
+      ...getContext(this._getWindow()),
     }
   }
 }
