@@ -29,7 +29,7 @@ export class PostHog extends PostHogCore {
   }
 
   _getWindow(): Window | undefined {
-    const _window: Window | undefined = (typeof window !== 'undefined') ? window : undefined
+    const _window: Window | undefined = typeof window !== 'undefined' ? window : undefined
     return _window
   }
 
