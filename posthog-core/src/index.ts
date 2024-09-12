@@ -752,17 +752,19 @@ export abstract class PostHogCore extends PostHogCoreStateless {
           {}
         )
 
-      const currentFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
-        PostHogPersistedProperty.FeatureFlags
-      )
-      const newFeatureFlags = { ...bootstrapFlags, ...currentFlags }
-      this.setKnownFeatureFlags(newFeatureFlags)
+      if (bootstrapFlags.length) {
+        const currentFlags =
+          this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(PostHogPersistedProperty.FeatureFlags) || {}
+        const newFeatureFlags = { ...bootstrapFlags, ...currentFlags }
+        this.setKnownFeatureFlags(newFeatureFlags)
+      }
 
-      if (options?.bootstrap.featureFlagPayloads) {
-        const bootstrapFlagPayloads = options?.bootstrap.featureFlagPayloads || {}
-        const currentFlagPayloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
-          PostHogPersistedProperty.FeatureFlagPayloads
-        )
+      const bootstrapFlagPayloads = options?.bootstrap?.featureFlagPayloads
+      if (bootstrapFlagPayloads && bootstrapFlagPayloads?.length) {
+        const currentFlagPayloads =
+          this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
+            PostHogPersistedProperty.FeatureFlagPayloads
+          ) || {}
         const newFeatureFlagPayloads = { bootstrapFlagPayloads, ...currentFlagPayloads }
         this.setKnownFeatureFlagPayloads(newFeatureFlagPayloads)
       }
