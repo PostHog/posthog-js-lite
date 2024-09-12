@@ -724,48 +724,52 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   }
 
   protected setupBootstrap(options?: Partial<PostHogCoreOptions>): void {
+    const bootstrap = options?.bootstrap
+    if (!bootstrap) {
+      return
+    }
+
     // bootstrap options are only set if no persisted values are found
     // this is to prevent overwriting existing values
-    if (options?.bootstrap?.distinctId) {
-      if (options?.bootstrap?.isIdentifiedId) {
+    if (bootstrap.distinctId) {
+      if (bootstrap.isIdentifiedId) {
         const distinctId = this.getPersistedProperty(PostHogPersistedProperty.DistinctId)
 
         if (!distinctId) {
-          this.setPersistedProperty(PostHogPersistedProperty.DistinctId, options.bootstrap.distinctId)
+          this.setPersistedProperty(PostHogPersistedProperty.DistinctId, bootstrap.distinctId)
         }
       } else {
         const anonymousId = this.getPersistedProperty(PostHogPersistedProperty.AnonymousId)
 
         if (!anonymousId) {
-          this.setPersistedProperty(PostHogPersistedProperty.AnonymousId, options.bootstrap.distinctId)
+          this.setPersistedProperty(PostHogPersistedProperty.AnonymousId, bootstrap.distinctId)
         }
       }
     }
 
-    if (options?.bootstrap?.featureFlags) {
-      const bootstrapFlags = Object.keys(options.bootstrap?.featureFlags || {})
-        .filter((flag) => !!options.bootstrap?.featureFlags?.[flag])
+    const bootstrapfeatureFlags = bootstrap.featureFlags
+    if (bootstrapfeatureFlags && Object.keys(bootstrapfeatureFlags).length) {
+      const bootstrapFlags = Object.keys(bootstrapfeatureFlags)
+        .filter((flag) => !!bootstrapfeatureFlags[flag])
         .reduce(
-          (res: Record<string, string | boolean>, key) => (
-            (res[key] = options.bootstrap?.featureFlags?.[key] || false), res
-          ),
+          (res: Record<string, string | boolean>, key) => ((res[key] = bootstrapfeatureFlags[key] || false), res),
           {}
         )
 
-      if (bootstrapFlags.length) {
+      if (Object.keys(bootstrapFlags).length) {
         const currentFlags =
           this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(PostHogPersistedProperty.FeatureFlags) || {}
         const newFeatureFlags = { ...bootstrapFlags, ...currentFlags }
         this.setKnownFeatureFlags(newFeatureFlags)
       }
 
-      const bootstrapFlagPayloads = options?.bootstrap?.featureFlagPayloads
-      if (bootstrapFlagPayloads && bootstrapFlagPayloads?.length) {
+      const bootstrapFlagPayloads = bootstrap.featureFlagPayloads
+      if (bootstrapFlagPayloads && Object.keys(bootstrapFlagPayloads).length) {
         const currentFlagPayloads =
           this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
             PostHogPersistedProperty.FeatureFlagPayloads
           ) || {}
-        const newFeatureFlagPayloads = { bootstrapFlagPayloads, ...currentFlagPayloads }
+        const newFeatureFlagPayloads = { ...bootstrapFlagPayloads, ...currentFlagPayloads }
         this.setKnownFeatureFlagPayloads(newFeatureFlagPayloads)
       }
     }
