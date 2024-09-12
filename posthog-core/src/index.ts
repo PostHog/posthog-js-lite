@@ -724,6 +724,8 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   }
 
   protected setupBootstrap(options?: Partial<PostHogCoreOptions>): void {
+    // bootstrap options are only set if no persisted values are found
+    // this is to prevent overwriting existing values
     if (options?.bootstrap?.distinctId) {
       if (options?.bootstrap?.isIdentifiedId) {
         const distinctId = this.getPersistedProperty(PostHogPersistedProperty.DistinctId)
@@ -750,7 +752,6 @@ export abstract class PostHogCore extends PostHogCoreStateless {
           {}
         )
 
-      // if not all flags were computed, we upsert flags instead of replacing them
       const currentFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
         PostHogPersistedProperty.FeatureFlags
       )
