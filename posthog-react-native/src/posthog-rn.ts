@@ -82,7 +82,10 @@ export class PostHog extends PostHogCore {
     }
 
     const initAfterStorage = (): void => {
-      this.setupBootstrap(options)
+      // RN should merge the bootstrap options with the existing ones
+      // The existing ones should take precedence since the flags are already loaded
+      // and survive an app reload
+      this.setupBootstrap(options, false)
 
       this._isInitialized = true
       if (options?.preloadFeatureFlags !== false) {

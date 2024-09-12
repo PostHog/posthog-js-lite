@@ -723,7 +723,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     this._sessionExpirationTimeSeconds = options?.sessionExpirationTimeSeconds ?? 1800 // 30 minutes
   }
 
-  protected setupBootstrap(options?: Partial<PostHogCoreOptions>): void {
+  protected setupBootstrap(options?: Partial<PostHogCoreOptions>, overwriteCurrentValues: boolean = true): void {
     const bootstrap = options?.bootstrap
     if (!bootstrap) {
       return
@@ -735,13 +735,13 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       if (bootstrap.isIdentifiedId) {
         const distinctId = this.getPersistedProperty(PostHogPersistedProperty.DistinctId)
 
-        if (!distinctId) {
+        if (overwriteCurrentValues || !distinctId) {
           this.setPersistedProperty(PostHogPersistedProperty.DistinctId, bootstrap.distinctId)
         }
       } else {
         const anonymousId = this.getPersistedProperty(PostHogPersistedProperty.AnonymousId)
 
-        if (!anonymousId) {
+        if (overwriteCurrentValues || !anonymousId) {
           this.setPersistedProperty(PostHogPersistedProperty.AnonymousId, bootstrap.distinctId)
         }
       }
@@ -759,8 +759,13 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       if (Object.keys(bootstrapFlags).length) {
         const currentFlags =
           this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(PostHogPersistedProperty.FeatureFlags) || {}
-        const newFeatureFlags = { ...bootstrapFlags, ...currentFlags }
-        this.setKnownFeatureFlags(newFeatureFlags)
+
+        if (overwriteCurrentValues) {
+          this.setKnownFeatureFlags(bootstrapFlags)
+        } else {
+          const newFeatureFlags = { ...bootstrapFlags, ...currentFlags }
+          this.setKnownFeatureFlags(newFeatureFlags)
+        }
       }
 
       const bootstrapFlagPayloads = bootstrap.featureFlagPayloads
@@ -769,8 +774,13 @@ export abstract class PostHogCore extends PostHogCoreStateless {
           this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
             PostHogPersistedProperty.FeatureFlagPayloads
           ) || {}
-        const newFeatureFlagPayloads = { ...bootstrapFlagPayloads, ...currentFlagPayloads }
-        this.setKnownFeatureFlagPayloads(newFeatureFlagPayloads)
+
+        if (overwriteCurrentValues) {
+          this.setKnownFeatureFlagPayloads(bootstrapFlagPayloads)
+        } else {
+          const newFeatureFlagPayloads = { ...bootstrapFlagPayloads, ...currentFlagPayloads }
+          this.setKnownFeatureFlagPayloads(newFeatureFlagPayloads)
+        }
       }
     }
   }
