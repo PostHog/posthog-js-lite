@@ -1,5 +1,7 @@
 # Next
 
+# 3.2.0 - 2024-09-12
+
 ## Changed
 
 1. chore: default `captureMode` changed to `json`.
