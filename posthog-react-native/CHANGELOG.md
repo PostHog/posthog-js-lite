@@ -4,6 +4,7 @@
 
 1. chore: default `captureMode` changed to `json`.
     1. To keep using the `form` mode, just set the `captureMode` option to `form` when initializing the PostHog client.
+2. fix: fix: bootstrap flags do not overwrite the current values
 
 # 3.1.2 - 2024-08-14
 
