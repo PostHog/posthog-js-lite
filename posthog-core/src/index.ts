@@ -726,14 +726,22 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   protected setupBootstrap(options?: Partial<PostHogCoreOptions>): void {
     if (options?.bootstrap?.distinctId) {
       if (options?.bootstrap?.isIdentifiedId) {
-        this.setPersistedProperty(PostHogPersistedProperty.DistinctId, options.bootstrap.distinctId)
+        const distinctId = this.getPersistedProperty(PostHogPersistedProperty.DistinctId)
+
+        if (!distinctId) {
+          this.setPersistedProperty(PostHogPersistedProperty.DistinctId, options.bootstrap.distinctId)
+        }
       } else {
-        this.setPersistedProperty(PostHogPersistedProperty.AnonymousId, options.bootstrap.distinctId)
+        const anonymousId = this.getPersistedProperty(PostHogPersistedProperty.AnonymousId)
+
+        if (!anonymousId) {
+          this.setPersistedProperty(PostHogPersistedProperty.AnonymousId, options.bootstrap.distinctId)
+        }
       }
     }
 
     if (options?.bootstrap?.featureFlags) {
-      const activeFlags = Object.keys(options.bootstrap?.featureFlags || {})
+      const bootstrapFlags = Object.keys(options.bootstrap?.featureFlags || {})
         .filter((flag) => !!options.bootstrap?.featureFlags?.[flag])
         .reduce(
           (res: Record<string, string | boolean>, key) => (
@@ -741,8 +749,22 @@ export abstract class PostHogCore extends PostHogCoreStateless {
           ),
           {}
         )
-      this.setKnownFeatureFlags(activeFlags)
-      options?.bootstrap.featureFlagPayloads && this.setKnownFeatureFlagPayloads(options?.bootstrap.featureFlagPayloads)
+
+      // if not all flags were computed, we upsert flags instead of replacing them
+      const currentFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
+        PostHogPersistedProperty.FeatureFlags
+      )
+      const newFeatureFlags = { ...bootstrapFlags, ...currentFlags }
+      this.setKnownFeatureFlags(newFeatureFlags)
+
+      if (options?.bootstrap.featureFlagPayloads) {
+        const bootstrapFlagPayloads = options?.bootstrap.featureFlagPayloads || {}
+        const currentFlagPayloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
+          PostHogPersistedProperty.FeatureFlagPayloads
+        )
+        const newFeatureFlagPayloads = { bootstrapFlagPayloads, ...currentFlagPayloads }
+        this.setKnownFeatureFlagPayloads(newFeatureFlagPayloads)
+      }
     }
   }
 
