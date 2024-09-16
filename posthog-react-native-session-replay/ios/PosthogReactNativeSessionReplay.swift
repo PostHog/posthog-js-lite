@@ -1,5 +1,5 @@
-@objc(PosthogReactNativeSessionReplay)
-class PosthogReactNativeSessionReplay: NSObject {
+@objc(PostHogReactNativeSessionReplay)
+class PostHogReactNativeSessionReplay: NSObject {
 
   @objc(multiply:withB:withResolver:withRejecter:)
   func multiply(a: Float, b: Float, resolve:RCTPromiseResolveBlock,reject:RCTPromiseRejectBlock) -> Void {

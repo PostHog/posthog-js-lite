@@ -6,8 +6,8 @@ const LINKING_ERROR =
   '- You rebuilt the app after installing the package\n' +
   '- You are not using Expo Go\n';
 
-const PosthogReactNativeSessionReplay = NativeModules.PosthogReactNativeSessionReplay
-  ? NativeModules.PosthogReactNativeSessionReplay
+const PostHogReactNativeSessionReplay = NativeModules.PostHogReactNativeSessionReplay
+  ? NativeModules.PostHogReactNativeSessionReplay
   : new Proxy(
       {},
       {
@@ -18,5 +18,5 @@ const PosthogReactNativeSessionReplay = NativeModules.PosthogReactNativeSessionR
     );
 
 export function multiply(a: number, b: number): Promise<number> {
-  return PosthogReactNativeSessionReplay.multiply(a, b);
+  return PostHogReactNativeSessionReplay.multiply(a, b);
 }
