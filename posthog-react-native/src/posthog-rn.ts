@@ -1,6 +1,7 @@
 import { AppState, Dimensions, Linking, Platform } from 'react-native'
 
 import {
+  JsonType,
   PostHogCaptureOptions,
   PostHogCore,
   PostHogCoreOptions,
@@ -14,6 +15,7 @@ import { version } from './version'
 import { buildOptimisiticAsyncStorage, getAppProperties } from './native-deps'
 import { PostHogAutocaptureOptions, PostHogCustomAppProperties, PostHogCustomStorage } from './types'
 import { withReactNativeNavigation } from './frameworks/wix-navigation'
+import { OptionalReactNativeSessionReplay } from './optional/OptionalSessionReplay'
 
 export type PostHogOptions = PostHogCoreOptions & {
   /** Allows you to provide the storage type. By default 'file'.
@@ -35,12 +37,20 @@ export type PostHogOptions = PostHogCoreOptions & {
    * If you're already using the 'captureLifecycleEvents' options with 'withReactNativeNavigation' or 'PostHogProvider, you should not set this to true, otherwise you may see duplicated events.
    */
   captureNativeAppLifecycleEvents?: boolean
+
+  /**
+  * Enable Recording of Session Replays for Android and iOS
+  * Requires Record user sessions to be enabled in the PostHog Project Settings
+  * Defaults to false
+  */
+  sessionReplay?: boolean
 }
 
 export class PostHog extends PostHogCore {
   private _persistence: PostHogOptions['persistence']
   private _storage: PostHogRNStorage
   private _appProperties: PostHogCustomAppProperties = {}
+  private _currentSessionId: string | undefined
 
   constructor(apiKey: string, options?: PostHogOptions) {
     super(apiKey, options)
@@ -100,6 +110,8 @@ export class PostHog extends PostHogCore {
       }
 
       void this.persistAppVersion()
+
+      void this.startSessionReplay()
     }
 
     // For async storage, we wait for the storage to be ready before we start the SDK
@@ -169,8 +181,65 @@ export class PostHog extends PostHogCore {
     )
   }
 
+  getSessionId(): string {
+    const sessionId = super.getSessionId()
+
+    // only rotate if there is a new sessionId and it is different from the current one
+    if (sessionId.length > 0 && this._currentSessionId && sessionId !== this._currentSessionId) {
+      if (OptionalReactNativeSessionReplay) {
+        try {
+          OptionalReactNativeSessionReplay.endSession()
+          OptionalReactNativeSessionReplay.startSession(sessionId)
+          console.info(`Session replay enabled with sessionId ${sessionId}.`)
+        } catch (e) {
+          console.error(`Session replay failed to rotate sessionId: ${e}.`)
+        }
+      }
+      this._currentSessionId = sessionId
+    }
+
+    return sessionId
+  }
+
   initReactNativeNavigation(options: PostHogAutocaptureOptions): boolean {
     return withReactNativeNavigation(this, options)
+  }
+
+  private async startSessionReplay(): Promise<void> {
+    const sessionReplay = this.getPersistedProperty(PostHogPersistedProperty.SessionReplay)
+
+    // sessionReplay is always an object, if its a boolean, its false if disabled
+    if (sessionReplay) {
+      if (OptionalReactNativeSessionReplay) {
+        const sessionReplayConfig = (sessionReplay as { [key: string]: JsonType }) ?? {}
+        const endpoint = (sessionReplayConfig['endpoint'] as string) ?? '' // use default instead
+
+        const sessionId = this.getSessionId()
+
+        if (sessionId.length === 0) {
+          console.warn('Session replay enabled but no sessionId found.')
+          return
+        }
+
+        try {
+          if (!await OptionalReactNativeSessionReplay.isEnabled()) {
+            await OptionalReactNativeSessionReplay.start(sessionId, endpoint)
+            console.info(`Session replay enabled with sessionId ${sessionId}.`)
+          } else {
+            console.info(`Session replay already enabled.`)
+          }
+        } catch (e) {
+          console.error(`Session replay failed to start: ${e}.`)
+        }
+      } else {
+        console.warn('Session replay enabled but not installed.')
+      }
+    } else {
+      console.info('Session replay disabled.')
+    }
+  }
+
+  private async endSessionReplay(): Promise<void> {
   }
 
   private async captureNativeAppLifecycleEvents(): Promise<void> {

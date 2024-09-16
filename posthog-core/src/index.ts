@@ -1127,6 +1127,15 @@ export abstract class PostHogCore extends PostHogCoreStateless {
                 Object.entries(newFeatureFlagPayloads || {}).map(([k, v]) => [k, this._parsePayload(v)])
               )
             )
+
+            const sessionReplay = res?.sessionRecording
+            if (sessionReplay) {
+              this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, sessionReplay)
+              console.log('Session replay config:', sessionReplay)
+            } else {
+              // TODO: add removePersistedProperty
+              this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, null)
+            }
           }
 
           return res
