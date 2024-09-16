@@ -1,4 +1,5 @@
 lib
 
 posthog-react-native/src/version.ts
+posthog-react-native-session-replay/src/version.ts
 posthog-core/src/vendor/*
