@@ -49,7 +49,7 @@ def supportsNamespace() {
 
 android {
   if (supportsNamespace()) {
-    namespace "com.posthogreactnativesessionreplay"
+    namespace "com.posthog.android.replay"
 
     sourceSets {
       main {

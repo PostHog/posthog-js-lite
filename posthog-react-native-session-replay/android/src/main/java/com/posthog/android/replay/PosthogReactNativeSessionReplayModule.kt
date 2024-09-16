@@ -1,4 +1,4 @@
-package com.posthogreactnativesessionreplay
+package com.posthog.android.replay
 
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
