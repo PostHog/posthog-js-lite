@@ -1131,9 +1131,9 @@ export abstract class PostHogCore extends PostHogCoreStateless {
             const sessionReplay = res?.sessionRecording
             if (sessionReplay) {
               this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, sessionReplay)
-              console.log('Session replay config: ', JSON.stringify(sessionReplay))
+              console.log('PostHog Debug', 'Session replay config: ', JSON.stringify(sessionReplay))
             } else {
-              console.log('Session replay config disabled.')
+              console.info('PostHog Debug', 'Session replay config disabled.')
               this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, null)
             }
           }

@@ -51,7 +51,8 @@ export class PostHog extends PostHogCore {
   private _persistence: PostHogOptions['persistence']
   private _storage: PostHogRNStorage
   private _appProperties: PostHogCustomAppProperties = {}
-  private _currentSessionId: string | undefined
+  private _currentSessionId?: string | undefined
+  private _options?: PostHogOptions | undefined
 
   constructor(apiKey: string, options?: PostHogOptions) {
     super(apiKey, options)
@@ -92,6 +93,8 @@ export class PostHog extends PostHogCore {
       })
     }
 
+    this._options = options
+
     const initAfterStorage = (): void => {
       this.setupBootstrap(options)
 
@@ -112,9 +115,7 @@ export class PostHog extends PostHogCore {
 
       void this.persistAppVersion()
 
-      if (options?.sessionReplay) {
-        void this.startSessionReplay()
-      }
+      void this.startSessionReplay(options)
     }
 
     // For async storage, we wait for the storage to be ready before we start the SDK
@@ -193,9 +194,9 @@ export class PostHog extends PostHogCore {
         try {
           OptionalReactNativeSessionReplay.endSession()
           OptionalReactNativeSessionReplay.startSession(sessionId)
-          console.info(`Session replay started with sessionId ${sessionId}.`)
+          console.info('PostHog Debug', `Session replay started with sessionId ${sessionId}.`)
         } catch (e) {
-          console.error(`Session replay failed to start with sessionId: ${e}.`)
+          console.error('PostHog Debug', `Session replay failed to start with sessionId: ${e}.`)
         }
       }
       this._currentSessionId = sessionId
@@ -208,39 +209,44 @@ export class PostHog extends PostHogCore {
     return withReactNativeNavigation(this, options)
   }
 
-  private async startSessionReplay(): Promise<void> {
-    // disabled by default if decide API didn't complete yet
-    const sessionReplay = this.getPersistedProperty(PostHogPersistedProperty.SessionReplay) ?? false
+  private async startSessionReplay(options?: PostHogOptions): Promise<void> {
+    if (!options?.sessionReplay) {
+      console.info('PostHog Debug', 'Session replay is not enabled.')
+      return
+    }
+
+    // if Decide has not returned yet, we will start session replay with default config.
+    const sessionReplay = this.getPersistedProperty(PostHogPersistedProperty.SessionReplay) ?? {}
 
     // sessionReplay is always an object, if its a boolean, its false if disabled
     if (sessionReplay) {
       const sessionReplayConfig = (sessionReplay as { [key: string]: JsonType }) ?? {}
-      console.info(`Session replay cached config: ${JSON.stringify(sessionReplayConfig)}`)
+      console.log('PostHog Debug', `Session replay cached config: ${JSON.stringify(sessionReplayConfig)}`)
       if (OptionalReactNativeSessionReplay) {
         const endpoint = (sessionReplayConfig['endpoint'] as string) ?? '' // use default instead
 
         const sessionId = this.getSessionId()
 
         if (sessionId.length === 0) {
-          console.warn('Session replay enabled but no sessionId found.')
+          console.warn('PostHog Debug', 'Session replay enabled but no sessionId found.')
           return
         }
 
         try {
           if (!(await OptionalReactNativeSessionReplay.isEnabled())) {
             await OptionalReactNativeSessionReplay.start(sessionId, endpoint)
-            console.info(`Session replay started with sessionId ${sessionId}.`)
+            console.info('PostHog Debug', `Session replay started with sessionId ${sessionId}.`)
           } else {
-            console.info(`Session replay already started.`)
+            console.log('PostHog Debug', `Session replay already started.`)
           }
         } catch (e) {
-          console.error(`Session replay failed to start: ${e}.`)
+          console.error('PostHog Debug', `Session replay failed to start: ${e}.`)
         }
       } else {
-        console.warn('Session replay enabled but not installed.')
+        console.warn('PostHog Debug', 'Session replay enabled but not installed.')
       }
     } else {
-      console.info('Session replay disabled.')
+      console.info('PostHog Debug', 'Session replay disabled.')
     }
   }
 
