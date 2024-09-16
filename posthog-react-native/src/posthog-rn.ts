@@ -13,7 +13,12 @@ import { getLegacyValues } from './legacy'
 import { PostHogRNStorage, PostHogRNSyncMemoryStorage } from './storage'
 import { version } from './version'
 import { buildOptimisiticAsyncStorage, getAppProperties } from './native-deps'
-import { PostHogAutocaptureOptions, PostHogCustomAppProperties, PostHogCustomStorage } from './types'
+import {
+  PostHogAutocaptureOptions,
+  PostHogCustomAppProperties,
+  PostHogCustomStorage,
+  PostHogSessionReplayConfig,
+} from './types'
 import { withReactNativeNavigation } from './frameworks/wix-navigation'
 import { OptionalReactNativeSessionReplay } from './optional/OptionalSessionReplay'
 
@@ -41,10 +46,18 @@ export type PostHogOptions = PostHogCoreOptions & {
   /**
    * Enable Recording of Session Replays for Android and iOS
    * Requires Record user sessions to be enabled in the PostHog Project Settings
-   * Experimental feature. May not work as expected.
+   * Experimental support
    * Defaults to false
    */
   sessionReplay?: boolean
+
+  /**
+   * Enable Recording of Session Replays for Android and iOS
+   * Requires Record user sessions to be enabled in the PostHog Project Settings
+   * Experimental support
+   * Defaults to false
+   */
+  sessionReplayConfig?: PostHogSessionReplayConfig
 }
 
 export class PostHog extends PostHogCore {
@@ -52,7 +65,6 @@ export class PostHog extends PostHogCore {
   private _storage: PostHogRNStorage
   private _appProperties: PostHogCustomAppProperties = {}
   private _currentSessionId?: string | undefined
-  private _options?: PostHogOptions | undefined
 
   constructor(apiKey: string, options?: PostHogOptions) {
     super(apiKey, options)
@@ -92,8 +104,6 @@ export class PostHog extends PostHogCore {
         }
       })
     }
-
-    this._options = options
 
     const initAfterStorage = (): void => {
       this.setupBootstrap(options)
@@ -215,6 +225,17 @@ export class PostHog extends PostHogCore {
       return
     }
 
+    const replayOptions = options?.sessionReplayConfig ?? {
+      maskAllTextInputs: true,
+      maskAllImages: true,
+      captureLog: true,
+      captureNetworkTelemetry: true,
+      iOSdebouncerDelayMs: 1000,
+      androidDebouncerDelayMs: 500,
+    }
+
+    console.log('PostHog Debug', `Session replay sdk config: ${JSON.stringify(replayOptions)}`)
+
     // if Decide has not returned yet, we will start session replay with default config.
     const sessionReplay = this.getPersistedProperty(PostHogPersistedProperty.SessionReplay) ?? {}
 
@@ -223,8 +244,6 @@ export class PostHog extends PostHogCore {
       const sessionReplayConfig = (sessionReplay as { [key: string]: JsonType }) ?? {}
       console.log('PostHog Debug', `Session replay cached config: ${JSON.stringify(sessionReplayConfig)}`)
       if (OptionalReactNativeSessionReplay) {
-        const endpoint = (sessionReplayConfig['endpoint'] as string) ?? '' // use default instead
-
         const sessionId = this.getSessionId()
 
         if (sessionId.length === 0) {
@@ -234,7 +253,7 @@ export class PostHog extends PostHogCore {
 
         try {
           if (!(await OptionalReactNativeSessionReplay.isEnabled())) {
-            await OptionalReactNativeSessionReplay.start(sessionId, endpoint)
+            await OptionalReactNativeSessionReplay.start(sessionId, sessionReplayConfig, replayOptions)
             console.info('PostHog Debug', `Session replay started with sessionId ${sessionId}.`)
           } else {
             console.log('PostHog Debug', `Session replay already started.`)

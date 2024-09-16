@@ -47,6 +47,49 @@ export interface PostHogCustomAppProperties {
   $timezone?: string | null
 }
 
+export type PostHogSessionReplayConfig = {
+  /**
+   * Enable masking of all text input fields
+   * Experimental support
+   * Default: true
+   */
+  maskAllTextInputs?: boolean
+  /**
+   * Enable masking of all images to a placeholder
+   * Experimental support
+   * Default: true
+   */
+  maskAllImages?: boolean
+  /**
+   * Enable capturing of logcat as console events
+   * Android only
+   * Experimental support
+   * Default: true
+   */
+  captureLog?: boolean
+  /**
+   * Deboucer delay used to reduce the number of snapshots captured and reduce performance impact
+   * This is used for capturing the view as a screenshot
+   * The lower the number more snapshots will be captured but higher the performance impact
+   * Defaults to 1s on iOS
+   */
+  iOSdebouncerDelayMs?: number
+  /**
+   * Deboucer delay used to reduce the number of snapshots captured and reduce performance impact
+   * This is used for capturing the view as a screenshot
+   * The lower the number more snapshots will be captured but higher the performance impact
+   * Defaults to 0.5s
+   */
+  androidDebouncerDelayMs?: number
+  /**
+   * Enable capturing network telemetry
+   * iOS only
+   * Experimental support
+   * Default: true
+   */
+  captureNetworkTelemetry?: boolean
+}
+
 export interface PostHogCustomStorage {
   getItem: (key: string) => string | null | Promise<string | null>
   setItem: (key: string, value: string) => void | Promise<void>
