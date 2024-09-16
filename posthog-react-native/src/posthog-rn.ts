@@ -39,10 +39,11 @@ export type PostHogOptions = PostHogCoreOptions & {
   captureNativeAppLifecycleEvents?: boolean
 
   /**
-  * Enable Recording of Session Replays for Android and iOS
-  * Requires Record user sessions to be enabled in the PostHog Project Settings
-  * Defaults to false
-  */
+   * Enable Recording of Session Replays for Android and iOS
+   * Requires Record user sessions to be enabled in the PostHog Project Settings
+   * Experimental feature. May not work as expected.
+   * Defaults to false
+   */
   sessionReplay?: boolean
 }
 
@@ -190,9 +191,9 @@ export class PostHog extends PostHogCore {
         try {
           OptionalReactNativeSessionReplay.endSession()
           OptionalReactNativeSessionReplay.startSession(sessionId)
-          console.info(`Session replay enabled with sessionId ${sessionId}.`)
+          console.info(`Session replay started with sessionId ${sessionId}.`)
         } catch (e) {
-          console.error(`Session replay failed to rotate sessionId: ${e}.`)
+          console.error(`Session replay failed to start with sessionId: ${e}.`)
         }
       }
       this._currentSessionId = sessionId
@@ -212,6 +213,7 @@ export class PostHog extends PostHogCore {
     if (sessionReplay) {
       if (OptionalReactNativeSessionReplay) {
         const sessionReplayConfig = (sessionReplay as { [key: string]: JsonType }) ?? {}
+        console.info(`Session replay cached config: ${sessionReplayConfig}`)
         const endpoint = (sessionReplayConfig['endpoint'] as string) ?? '' // use default instead
 
         const sessionId = this.getSessionId()
@@ -222,11 +224,11 @@ export class PostHog extends PostHogCore {
         }
 
         try {
-          if (!await OptionalReactNativeSessionReplay.isEnabled()) {
+          if (!(await OptionalReactNativeSessionReplay.isEnabled())) {
             await OptionalReactNativeSessionReplay.start(sessionId, endpoint)
-            console.info(`Session replay enabled with sessionId ${sessionId}.`)
+            console.info(`Session replay started with sessionId ${sessionId}.`)
           } else {
-            console.info(`Session replay already enabled.`)
+            console.info(`Session replay already started.`)
           }
         } catch (e) {
           console.error(`Session replay failed to start: ${e}.`)
@@ -239,8 +241,7 @@ export class PostHog extends PostHogCore {
     }
   }
 
-  private async endSessionReplay(): Promise<void> {
-  }
+  private async endSessionReplay(): Promise<void> {}
 
   private async captureNativeAppLifecycleEvents(): Promise<void> {
     // See the other implementations for reference:

@@ -117,9 +117,11 @@ export type PostHogDecideResponse = {
     [key: string]: JsonType
   }
   errorsWhileComputingFlags: boolean
-  sessionRecording?: boolean | {
-    [key: string]: JsonType
-  }
+  sessionRecording?:
+    | boolean
+    | {
+        [key: string]: JsonType
+      }
 }
 
 export type PostHogFlagsAndPayloadsResponse = {
