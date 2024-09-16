@@ -1,5 +1,5 @@
 import { Platform } from 'react-native'
-// import type PosthogReactNativeSessionReplay from 'posthog-react-native-session-replay'
+// import type PostHogReactNativeSessionReplay from 'posthog-react-native-session-replay'
 import type ReactNativeSessionReplay from '../replay/ReactNativeSessionReplay'
 
 export let OptionalReactNativeSessionReplay: typeof ReactNativeSessionReplay | undefined = undefined

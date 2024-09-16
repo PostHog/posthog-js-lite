@@ -20,6 +20,6 @@ class PostHogReactNativeSessionReplayModule(reactContext: ReactApplicationContex
   }
 
   companion object {
-    const val NAME = "PosthogReactNativeSessionReplay"
+    const val NAME = "PostHogReactNativeSessionReplay"
   }
 }

@@ -17,6 +17,18 @@ const PostHogReactNativeSessionReplay = NativeModules.PostHogReactNativeSessionR
       }
     );
 
-export function multiply(a: number, b: number): Promise<number> {
-  return PostHogReactNativeSessionReplay.multiply(a, b);
+export function start(sessionId: string, options: { [key: string]: any }, sdkOptions: { [key: string]: any }): Promise<void> {
+  return PostHogReactNativeSessionReplay.start(sessionId, options, sdkOptions);
+}
+
+export function startSession(sessionId: string): Promise<void> {
+  return PostHogReactNativeSessionReplay.startSession(sessionId);
+}
+
+export function endSession(): Promise<void> {
+  return PostHogReactNativeSessionReplay.endSession();
+}
+
+export function isEnabled(): Promise<boolean> {
+  return PostHogReactNativeSessionReplay.isEnabled();
 }
