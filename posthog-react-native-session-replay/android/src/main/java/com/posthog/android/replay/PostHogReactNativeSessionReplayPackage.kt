@@ -8,7 +8,7 @@ import com.facebook.react.uimanager.ViewManager
 
 class PostHogReactNativeSessionReplayPackage : ReactPackage {
   override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> {
-    return listOf(PostHogReactNativeSessionReplay(reactContext))
+    return listOf(PostHogReactNativeSessionReplayModule(reactContext))
   }
 
   override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> {
