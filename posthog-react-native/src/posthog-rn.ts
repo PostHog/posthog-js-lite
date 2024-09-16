@@ -112,7 +112,9 @@ export class PostHog extends PostHogCore {
 
       void this.persistAppVersion()
 
-      void this.startSessionReplay()
+      if (options?.sessionReplay) {
+        void this.startSessionReplay()
+      }
     }
 
     // For async storage, we wait for the storage to be ready before we start the SDK
@@ -207,13 +209,14 @@ export class PostHog extends PostHogCore {
   }
 
   private async startSessionReplay(): Promise<void> {
-    const sessionReplay = this.getPersistedProperty(PostHogPersistedProperty.SessionReplay)
+    // disabled by default if decide API didn't complete yet
+    const sessionReplay = this.getPersistedProperty(PostHogPersistedProperty.SessionReplay) ?? false
 
     // sessionReplay is always an object, if its a boolean, its false if disabled
     if (sessionReplay) {
+      const sessionReplayConfig = (sessionReplay as { [key: string]: JsonType }) ?? {}
+      console.info(`Session replay cached config: ${JSON.stringify(sessionReplayConfig)}`)
       if (OptionalReactNativeSessionReplay) {
-        const sessionReplayConfig = (sessionReplay as { [key: string]: JsonType }) ?? {}
-        console.info(`Session replay cached config: ${sessionReplayConfig}`)
         const endpoint = (sessionReplayConfig['endpoint'] as string) ?? '' // use default instead
 
         const sessionId = this.getSessionId()
@@ -240,8 +243,6 @@ export class PostHog extends PostHogCore {
       console.info('Session replay disabled.')
     }
   }
-
-  private async endSessionReplay(): Promise<void> {}
 
   private async captureNativeAppLifecycleEvents(): Promise<void> {
     // See the other implementations for reference:
