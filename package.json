@@ -13,7 +13,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "build": "yarn build-rollup && yarn build-react-native",
+    "build": "yarn build-rollup && yarn build-react-native && yarn build-replay",
     "lint": "eslint -c .eslintrc.js --fix posthog-*",
     "prettier": "prettier --write \"./**/*.{ts,tsx}\"",
     "prettier:check": "prettier --check \"./**/*.{ts,tsx}\"",
@@ -22,7 +22,8 @@
     "test:core": "jest posthog-core",
     "test:web": "jest posthog-core",
     "test:rn": "cd posthog-react-native && yarn test",
-    "test:all": "jest posthog-core posthog-node posthog-web && yarn test:rn",
+    "test:replay": "cd posthog-react-native-session-replay && yarn test",
+    "test:all": "jest posthog-core posthog-node posthog-web && yarn test:rn && yarn test:replay",
     "build-rollup": "rollup -c",
     "build-react-native": "cd posthog-react-native && yarn build",
     "build-replay": "cd posthog-react-native-session-replay && yarn build"

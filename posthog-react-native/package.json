@@ -29,7 +29,7 @@
     "expo-file-system": "^13.0.0",
     "expo-localization": "^11.0.0",
     "jest-expo": "^46.0.1",
-    "react": "^18.2.0",
+    "react": "18.2.0",
     "react-native": "^0.69.1",
     "react-native-device-info": "^10.3.0",
     "react-native-navigation": "^6.0.0",
