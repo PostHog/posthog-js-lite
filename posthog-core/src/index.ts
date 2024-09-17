@@ -49,8 +49,8 @@ function isPostHogFetchError(err: any): boolean {
 
 export abstract class PostHogCoreStateless {
   // options
-  private apiKey: string
-  host: string
+  readonly apiKey: string
+  readonly host: string
   private flushAt: number
   private maxBatchSize: number
   private maxQueueSize: number

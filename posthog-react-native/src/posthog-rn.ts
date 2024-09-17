@@ -225,7 +225,7 @@ export class PostHog extends PostHogCore {
       return
     }
 
-    const replayOptions = options?.sessionReplayConfig ?? {
+    const sdkReplayConfig = options?.sessionReplayConfig ?? {
       maskAllTextInputs: true,
       maskAllImages: true,
       captureLog: true,
@@ -234,15 +234,15 @@ export class PostHog extends PostHogCore {
       androidDebouncerDelayMs: 500,
     }
 
-    console.log('PostHog Debug', `Session replay sdk config: ${JSON.stringify(replayOptions)}`)
+    console.log('PostHog Debug', `Session replay sdk config: ${JSON.stringify(sdkReplayConfig)}`)
 
     // if Decide has not returned yet, we will start session replay with default config.
     const sessionReplay = this.getPersistedProperty(PostHogPersistedProperty.SessionReplay) ?? {}
 
     // sessionReplay is always an object, if its a boolean, its false if disabled
     if (sessionReplay) {
-      const sessionReplayConfig = (sessionReplay as { [key: string]: JsonType }) ?? {}
-      console.log('PostHog Debug', `Session replay cached config: ${JSON.stringify(sessionReplayConfig)}`)
+      const decideReplayConfig = (sessionReplay as { [key: string]: JsonType }) ?? {}
+      console.log('PostHog Debug', `Session replay cached config: ${JSON.stringify(decideReplayConfig)}`)
 
       if (OptionalReactNativeSessionReplay) {
         const sessionId = this.getSessionId()
@@ -252,9 +252,14 @@ export class PostHog extends PostHogCore {
           return
         }
 
+        const sdkOptions = {
+          apiKey: this.apiKey,
+          host: this.host ?? 'https://us.i.posthog.com',
+        }
+
         try {
           if (!(await OptionalReactNativeSessionReplay.isEnabled())) {
-            await OptionalReactNativeSessionReplay.start(sessionId, sessionReplayConfig, replayOptions)
+            await OptionalReactNativeSessionReplay.start(sessionId, sdkOptions, sdkReplayConfig, decideReplayConfig)
             console.info('PostHog Debug', `Session replay started with sessionId ${sessionId}.`)
           } else {
             console.log('PostHog Debug', `Session replay already started.`)
