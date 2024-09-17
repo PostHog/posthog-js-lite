@@ -6,14 +6,13 @@
     "posthog-core",
     "posthog-node",
     "posthog-react-native",
-    "posthog-react-native-session-replay",
     "posthog-web"
   ],
   "author": "PostHog",
   "private": true,
   "license": "MIT",
   "scripts": {
-    "build": "yarn build-rollup && yarn build-react-native && yarn build-replay",
+    "build": "yarn build-rollup && yarn build-react-native",
     "lint": "eslint -c .eslintrc.js --fix posthog-*",
     "prettier": "prettier --write \"./**/*.{ts,tsx}\"",
     "prettier:check": "prettier --check \"./**/*.{ts,tsx}\"",
@@ -22,11 +21,10 @@
     "test:core": "jest posthog-core",
     "test:web": "jest posthog-core",
     "test:rn": "cd posthog-react-native && yarn test",
-    "test:replay": "cd posthog-react-native-session-replay && yarn test",
-    "test:all": "jest posthog-core posthog-node posthog-web && yarn test:rn && yarn test:replay",
+    "test:all": "jest posthog-core posthog-node posthog-web && yarn test:rn",
     "build-rollup": "rollup -c",
-    "build-react-native": "cd posthog-react-native && yarn build",
-    "build-replay": "cd posthog-react-native-session-replay && yarn build"
+    "build-react-native": "cd posthog-react-native && yarn build"
+    
   },
   "devDependencies": {
     "@babel/core": "^7.18.6",

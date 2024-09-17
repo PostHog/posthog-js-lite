@@ -243,6 +243,7 @@ export class PostHog extends PostHogCore {
     if (sessionReplay) {
       const sessionReplayConfig = (sessionReplay as { [key: string]: JsonType }) ?? {}
       console.log('PostHog Debug', `Session replay cached config: ${JSON.stringify(sessionReplayConfig)}`)
+
       if (OptionalReactNativeSessionReplay) {
         const sessionId = this.getSessionId()
 

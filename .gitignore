@@ -11,6 +11,5 @@ yalc.lock
 
 # Generated at build time
 posthog-react-native/src/version.ts
-posthog-react-native-session-replay/src/version.ts
 
 .DS_Store
