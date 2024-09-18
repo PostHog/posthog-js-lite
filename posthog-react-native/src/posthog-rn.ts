@@ -49,7 +49,7 @@ export type PostHogOptions = PostHogCoreOptions & {
    * Experimental support
    * Defaults to false
    */
-  sessionReplay?: boolean
+  enableSessionReplay?: boolean
 
   /**
    * Enable Recording of Session Replays for Android and iOS
@@ -65,7 +65,7 @@ export class PostHog extends PostHogCore {
   private _storage: PostHogRNStorage
   private _appProperties: PostHogCustomAppProperties = {}
   private _currentSessionId?: string | undefined
-  private _sessionReplay?: boolean
+  private _enableSessionReplay?: boolean
 
   constructor(apiKey: string, options?: PostHogOptions) {
     super(apiKey, options)
@@ -199,7 +199,7 @@ export class PostHog extends PostHogCore {
   getSessionId(): string {
     const sessionId = super.getSessionId()
 
-    if (!this._sessionReplay) {
+    if (!this._enableSessionReplay) {
       return sessionId
     }
 
@@ -225,8 +225,8 @@ export class PostHog extends PostHogCore {
   }
 
   private async startSessionReplay(options?: PostHogOptions): Promise<void> {
-    this._sessionReplay = options?.sessionReplay
-    if (!this._sessionReplay) {
+    this._enableSessionReplay = options?.enableSessionReplay
+    if (!this._enableSessionReplay) {
       console.info('PostHog Debug', 'Session replay is not enabled.')
       return
     }
