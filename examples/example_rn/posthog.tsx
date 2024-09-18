@@ -6,7 +6,7 @@ export const posthog = new PostHog(
   {
     // host: 'https://us.i.posthog.com',
     // persistence: 'memory',
-    sessionReplay: true,
+    enableSessionReplay: true,
   },
 );
 
