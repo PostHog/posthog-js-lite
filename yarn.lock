@@ -2535,9 +2535,9 @@
   integrity sha512-j/MaB8xKoDPWMh/G60unWEeVkM0g8I4J3vk2kcGcg/wM+E0BqPhciEnB8gAIfdDvASzo3i57KeSxKdv31lVmeQ==
 
 "@types/estree@*":
-  version "1.0.5"
-  resolved "https://registry.yarnpkg.com/@types/estree/-/estree-1.0.5.tgz#a6ce3e556e00fd9895dd872dd172ad0d4bd687f4"
-  integrity sha512-/kYRxGDLWzHOB7q+wtSUQlFrtcdUccpfy+X+9iMBpHK8QLLhx2wIPYuS5DYtR9Wa/YlZAbIovy7qVdB1Aq6Lyw==
+  version "1.0.6"
+  resolved "https://registry.yarnpkg.com/@types/estree/-/estree-1.0.6.tgz#628effeeae2064a1b4e79f78e81d87b7e5fc7b50"
+  integrity sha512-AYnb1nQyY49te+VRAVgmzfcgjYS91mY5P0TKUDCLEM+gNnA+3T6rWITXRLYCpahpqSQbN5cE+gHpnPyXjHWxcw==
 
 "@types/estree@0.0.39":
   version "0.0.39"
@@ -8598,9 +8598,9 @@ possible-typed-array-names@^1.0.0:
   integrity sha512-d7Uw+eZoloe0EHDIYoe+bQ5WXnGMOpmiZFTuMWCwpjzzkL2nTjcKiAk4hh8TjnGye2TwWOk3UXucZ+3rbmBa8Q==
 
 posthog-react-native-session-replay@>=0.0.1:
-  version "0.0.11"
-  resolved "https://registry.yarnpkg.com/posthog-react-native-session-replay/-/posthog-react-native-session-replay-0.0.11.tgz#4ae302a57bcafe25a708d37e2224fe2d114cf9fe"
-  integrity sha512-n7Oz1brmNyv46eD4JZql593lOW/+GwdgNBnpHgz7QGdXx2WqhRqGUquGio8XztXLvEdOG+VMTTEplaUutiCiJw==
+  version "0.0.12"
+  resolved "https://registry.yarnpkg.com/posthog-react-native-session-replay/-/posthog-react-native-session-replay-0.0.12.tgz#84a26f5b0decf804c240f23830ad858292141090"
+  integrity sha512-qd2jIbafqV+tTFqxgng3NU4AEaPdm9smCKJPfN+pzdcBxAjqLqS1Ro4eyE/U1IvE+7c+ktkqLexyNZN+POvcHg==
 
 prelude-ls@^1.2.1:
   version "1.2.1"
