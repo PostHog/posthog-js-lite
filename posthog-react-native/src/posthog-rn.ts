@@ -65,6 +65,7 @@ export class PostHog extends PostHogCore {
   private _storage: PostHogRNStorage
   private _appProperties: PostHogCustomAppProperties = {}
   private _currentSessionId?: string | undefined
+  private _sessionReplay?: boolean
 
   constructor(apiKey: string, options?: PostHogOptions) {
     super(apiKey, options)
@@ -198,6 +199,10 @@ export class PostHog extends PostHogCore {
   getSessionId(): string {
     const sessionId = super.getSessionId()
 
+    if (!this._sessionReplay) {
+      return sessionId
+    }
+
     // only rotate if there is a new sessionId and it is different from the current one
     if (sessionId.length > 0 && this._currentSessionId && sessionId !== this._currentSessionId) {
       if (OptionalReactNativeSessionReplay) {
@@ -220,7 +225,8 @@ export class PostHog extends PostHogCore {
   }
 
   private async startSessionReplay(options?: PostHogOptions): Promise<void> {
-    if (!options?.sessionReplay) {
+    this._sessionReplay = options?.sessionReplay
+    if (!this._sessionReplay) {
       console.info('PostHog Debug', 'Session replay is not enabled.')
       return
     }
@@ -254,7 +260,7 @@ export class PostHog extends PostHogCore {
 
         const sdkOptions = {
           apiKey: this.apiKey,
-          host: this.host ?? 'https://us.i.posthog.com',
+          host: this.host,
           debug: this.isDebug,
         }
 
