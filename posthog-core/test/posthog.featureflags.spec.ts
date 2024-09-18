@@ -586,4 +586,68 @@ describe('PostHog Core', () => {
       })
     })
   })
+
+  describe('bootstapped do not overwrite values', () => {
+    beforeEach(() => {
+      ;[posthog, mocks] = createTestClient(
+        'TEST_API_KEY',
+        {
+          flushAt: 1,
+          bootstrap: {
+            distinctId: 'tomato',
+            featureFlags: { 'bootstrap-1': 'variant-1', enabled: true, disabled: false },
+            featureFlagPayloads: {
+              'bootstrap-1': {
+                some: 'key',
+              },
+              enabled: 200,
+            },
+          },
+        },
+        (_mocks) => {
+          _mocks.fetch.mockImplementation((url) => {
+            if (url.includes('/decide/')) {
+              return Promise.resolve({
+                status: 200,
+                text: () => Promise.resolve('ok'),
+                json: () =>
+                  Promise.resolve({
+                    featureFlags: createMockFeatureFlags(),
+                    featureFlagPayloads: createMockFeatureFlagPayloads(),
+                  }),
+              })
+            }
+
+            return Promise.resolve({
+              status: 200,
+              text: () => Promise.resolve('ok'),
+              json: () =>
+                Promise.resolve({
+                  status: 'ok',
+                }),
+            })
+          })
+        },
+        {
+          distinct_id: '123',
+          feature_flags: { 'bootstrap-1': 'variant-2' },
+          feature_flag_payloads: { 'bootstrap-1': { some: 'other-key' } },
+        }
+      )
+    })
+
+    it('distinct id should not be overwritten if already there', () => {
+      expect(posthog.getDistinctId()).toEqual('123')
+    })
+
+    it('flags should not be overwritten if already there', () => {
+      expect(posthog.getFeatureFlag('bootstrap-1')).toEqual('variant-2')
+    })
+
+    it('flag payloads should not be overwritten if already there', () => {
+      expect(posthog.getFeatureFlagPayload('bootstrap-1')).toEqual({
+        some: 'other-key',
+      })
+    })
+  })
 })
