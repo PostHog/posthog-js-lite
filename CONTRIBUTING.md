@@ -9,6 +9,8 @@ This repository is broken into different packages
 - **/posthog-react-native** > React Native specific code
 - **/posthog-web** > Web (DOM) specific code
 
+For Session Replay, See [posthog-react-native-session-replay](https://github.com/PostHog/posthog-react-native-session-replay/CHANGELOG.md)
+
 ## Running tests
 
 ```sh
