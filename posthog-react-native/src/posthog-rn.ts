@@ -242,7 +242,7 @@ export class PostHog extends PostHogCore {
     // sessionReplay is always an object, if its a boolean, its false if disabled
     if (sessionReplay) {
       const decideReplayConfig = (sessionReplay as { [key: string]: JsonType }) ?? {}
-      console.log('PostHog Debug', `Session replay cached config: ${JSON.stringify(decideReplayConfig)}`)
+      console.log('PostHog Debug', `Session replay decide cached config: ${JSON.stringify(decideReplayConfig)}`)
 
       if (OptionalReactNativeSessionReplay) {
         const sessionId = this.getSessionId()
@@ -255,7 +255,10 @@ export class PostHog extends PostHogCore {
         const sdkOptions = {
           apiKey: this.apiKey,
           host: this.host ?? 'https://us.i.posthog.com',
+          debug: this.isDebug,
         }
+
+        console.log('PostHog Debug', `Session replay sdk options: ${JSON.stringify(sdkOptions)}`)
 
         try {
           if (!(await OptionalReactNativeSessionReplay.isEnabled())) {
