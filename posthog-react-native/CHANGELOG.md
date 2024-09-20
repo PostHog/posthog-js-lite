@@ -1,9 +1,43 @@
 # Next
 
+# 3.2.0 - 2024-09-19
+
 ## Changed
 
 1. chore: default `captureMode` changed to `json`.
     1. To keep using the `form` mode, just set the `captureMode` option to `form` when initializing the PostHog client.
+2. chore: Session Replay for React-Native - Experimental support
+
+Install Session Replay for React-Native:
+
+```bash
+yarn add posthog-react-native-session-replay
+# or npm
+npm i -s posthog-react-native-session-replay
+```
+
+Enable Session Replay for React-Native:
+
+```js
+export const posthog = new PostHog(
+  'apiKey...',
+  {
+    // ...
+    enableSessionReplay: true,
+  },
+);
+```
+
+Or using the `PostHogProvider`
+
+```js
+<PostHogProvider
+        apiKey="apiKey..."
+        options={{
+          enableSessionReplay: true,
+        }}
+      >
+```
 
 # 3.1.2 - 2024-08-14
 

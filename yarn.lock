@@ -3703,9 +3703,9 @@ camelcase@^6.0.0, camelcase@^6.2.0:
   integrity sha512-Gmy6FhYlCY7uOElZUSbxo2UCDH8owEk996gkbrpsgGtrJLM3J7jGxl9Ic7Qwwj4ivOE5AWZWRMecDdF7hqGjFA==
 
 caniuse-lite@^1.0.30001646:
-  version "1.0.30001660"
-  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001660.tgz#31218de3463fabb44d0b7607b652e56edf2e2355"
-  integrity sha512-GacvNTTuATm26qC74pt+ad1fW15mlQ/zuTzzY1ZoIzECTP8HURDfF43kNxPgf7H1jmelCBQTTbBNxdSXOA7Bqg==
+  version "1.0.30001662"
+  resolved "https://registry.yarnpkg.com/caniuse-lite/-/caniuse-lite-1.0.30001662.tgz#3574b22dfec54a3f3b6787331da1040fe8e763ec"
+  integrity sha512-sgMUVwLmGseH8ZIrm1d51UbrhqMCH3jvS7gF/M6byuHOnKyLOBL7W8yz5V02OHwgLGA36o/AFhWzzh4uc5aqTA==
 
 capture-exit@^2.0.0:
   version "2.0.0"
@@ -8597,10 +8597,10 @@ possible-typed-array-names@^1.0.0:
   resolved "https://registry.yarnpkg.com/possible-typed-array-names/-/possible-typed-array-names-1.0.0.tgz#89bb63c6fada2c3e90adc4a647beeeb39cc7bf8f"
   integrity sha512-d7Uw+eZoloe0EHDIYoe+bQ5WXnGMOpmiZFTuMWCwpjzzkL2nTjcKiAk4hh8TjnGye2TwWOk3UXucZ+3rbmBa8Q==
 
-posthog-react-native-session-replay@>=0.0.1:
-  version "0.0.12"
-  resolved "https://registry.yarnpkg.com/posthog-react-native-session-replay/-/posthog-react-native-session-replay-0.0.12.tgz#84a26f5b0decf804c240f23830ad858292141090"
-  integrity sha512-qd2jIbafqV+tTFqxgng3NU4AEaPdm9smCKJPfN+pzdcBxAjqLqS1Ro4eyE/U1IvE+7c+ktkqLexyNZN+POvcHg==
+posthog-react-native-session-replay@>=0.1.0:
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/posthog-react-native-session-replay/-/posthog-react-native-session-replay-0.1.0.tgz#968358655aa836827973b59e805d7ca257be47d8"
+  integrity sha512-uGdG+P7X7dbQvy9tenHk4lKna0SaURzcLXO5XrtdepzerEu2B4OZbysSZGQhtg2LYeXCnheblzDJVMdS/5Nfgw==
 
 prelude-ls@^1.2.1:
   version "1.2.1"
