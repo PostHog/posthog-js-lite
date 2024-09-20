@@ -12,7 +12,7 @@ Install Session Replay for React-Native:
 
 ```bash
 yarn add posthog-react-native-session-replay
-# or yarn add
+# or npm
 npm i -s posthog-react-native-session-replay
 ```
 
