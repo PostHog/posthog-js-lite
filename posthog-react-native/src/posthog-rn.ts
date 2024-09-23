@@ -5,6 +5,7 @@ import {
   PostHogCaptureOptions,
   PostHogCore,
   PostHogCoreOptions,
+  PostHogEventProperties,
   PostHogFetchOptions,
   PostHogFetchResponse,
   PostHogPersistedProperty,
@@ -220,6 +221,30 @@ export class PostHog extends PostHogCore {
     return sessionId
   }
 
+  resetSessionId(): void {
+    super.resetSessionId()
+    if (this._enableSessionReplay && OptionalReactNativeSessionReplay) {
+      try {
+        OptionalReactNativeSessionReplay.endSession()
+        console.info('PostHog Debug', `Session replay ended.`)
+      } catch (e) {
+        console.error('PostHog Debug', `Session replay failed to end: ${e}.`)
+      }
+    }
+  }
+
+  identify(distinctId?: string, properties?: PostHogEventProperties, options?: PostHogCaptureOptions): void {
+    super.identify(distinctId, properties, options)
+    if (this._enableSessionReplay && OptionalReactNativeSessionReplay) {
+      try {
+        OptionalReactNativeSessionReplay.identify(distinctId, this.getAnonymousId())
+        console.info('PostHog Debug', `Session replay identified with distinctId ${distinctId}.`)
+      } catch (e) {
+        console.error('PostHog Debug', `Session replay failed to identify: ${e}.`)
+      }
+    }
+  }
+
   initReactNativeNavigation(options: PostHogAutocaptureOptions): boolean {
     return withReactNativeNavigation(this, options)
   }
@@ -262,6 +287,8 @@ export class PostHog extends PostHogCore {
           apiKey: this.apiKey,
           host: this.host,
           debug: this.isDebug,
+          distinctId: this.getDistinctId(),
+          anonymousId: this.getAnonymousId(),
         }
 
         console.log('PostHog Debug', `Session replay sdk options: ${JSON.stringify(sdkOptions)}`)
