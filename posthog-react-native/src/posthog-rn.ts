@@ -234,9 +234,12 @@ export class PostHog extends PostHogCore {
   }
 
   identify(distinctId?: string, properties?: PostHogEventProperties, options?: PostHogCaptureOptions): void {
+    const previousDistinctId = this.getDistinctId()
     super.identify(distinctId, properties, options)
+
     if (this._enableSessionReplay && OptionalReactNativeSessionReplay) {
       try {
+        distinctId = distinctId || previousDistinctId
         OptionalReactNativeSessionReplay.identify(distinctId, this.getAnonymousId())
         console.info('PostHog Debug', `Session replay identified with distinctId ${distinctId}.`)
       } catch (e) {
