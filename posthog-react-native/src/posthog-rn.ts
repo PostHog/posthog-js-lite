@@ -115,8 +115,10 @@ export class PostHog extends PostHogCore {
 
     const initAfterStorage = (): void => {
       // reset session id on app restart
-      if (!options?.enablePersistSessionIdAcrossRestart) {
+      const enablePersistSessionIdAcrossRestart = options?.enablePersistSessionIdAcrossRestart
+      if (!enablePersistSessionIdAcrossRestart) {
         this.setPersistedProperty(PostHogPersistedProperty.SessionId, null)
+        this.setPersistedProperty(PostHogPersistedProperty.SessionLastTimestamp, null)
       }
 
       this.setupBootstrap(options)

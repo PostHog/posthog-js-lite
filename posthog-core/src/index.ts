@@ -832,6 +832,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   resetSessionId(): void {
     this.wrap(() => {
       this.setPersistedProperty(PostHogPersistedProperty.SessionId, null)
+      this.setPersistedProperty(PostHogPersistedProperty.SessionLastTimestamp, null)
     })
   }
 

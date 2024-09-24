@@ -401,5 +401,20 @@ describe('PostHog React Native', () => {
       expect(storage.getItem).toHaveBeenCalledTimes(2)
       expect(posthog.getFeatureFlag('flag')).toEqual(true)
     })
+
+    it('do not rotate session id on restart', async () => {
+      const sessionId = '0192244d-a627-7ae2-b22a-ccd594bed71d'
+      storage.setItem(PostHogPersistedProperty.SessionId, sessionId)
+      const now = JSON.stringify(Date.now())
+      storage.setItem(PostHogPersistedProperty.SessionLastTimestamp, now)
+
+      posthog = new PostHog('1', {
+        customStorage: storage,
+        enablePersistSessionIdAcrossRestart: true,
+      })
+
+      expect(storage.getItem(PostHogPersistedProperty.SessionId)).toEqual(sessionId)
+      expect(storage.getItem(PostHogPersistedProperty.SessionLastTimestamp)).toEqual(now)
+    })
   })
 })
