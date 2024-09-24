@@ -59,9 +59,9 @@ export type PostHogOptions = PostHogCoreOptions & {
   sessionReplayConfig?: PostHogSessionReplayConfig
 
   /**
-   * The session id ($session_id) will be persisted across app restarts.
-   * This is an option for back compatibility (if enabled), so your current data isn't skewed with the new version of the SDK.
-   * If this is false, the session id will be reset on app restart.
+   * If enabled, the session id ($session_id) will be persisted across app restarts.
+   * This is an option for back compatibility, so your current data isn't skewed with the new version of the SDK.
+   * If this is false, the session id will be always reset on app restart.
    * Defaults to false
    */
   enablePersistSessionIdAcrossRestart?: boolean
