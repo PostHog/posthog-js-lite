@@ -13,3 +13,5 @@ yalc.lock
 posthog-react-native/src/version.ts
 
 .DS_Store
+
+lefthook.yml

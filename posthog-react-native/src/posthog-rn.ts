@@ -5,6 +5,7 @@ import {
   PostHogCaptureOptions,
   PostHogCore,
   PostHogCoreOptions,
+  PostHogEventProperties,
   PostHogFetchOptions,
   PostHogFetchResponse,
   PostHogPersistedProperty,
@@ -52,10 +53,8 @@ export type PostHogOptions = PostHogCoreOptions & {
   enableSessionReplay?: boolean
 
   /**
-   * Enable Recording of Session Replays for Android and iOS
-   * Requires Record user sessions to be enabled in the PostHog Project Settings
+   * Configuration for Session Replay
    * Experimental support
-   * Defaults to false
    */
   sessionReplayConfig?: PostHogSessionReplayConfig
 }
@@ -220,6 +219,33 @@ export class PostHog extends PostHogCore {
     return sessionId
   }
 
+  resetSessionId(): void {
+    super.resetSessionId()
+    if (this._enableSessionReplay && OptionalReactNativeSessionReplay) {
+      try {
+        OptionalReactNativeSessionReplay.endSession()
+        console.info('PostHog Debug', `Session replay ended.`)
+      } catch (e) {
+        console.error('PostHog Debug', `Session replay failed to end: ${e}.`)
+      }
+    }
+  }
+
+  identify(distinctId?: string, properties?: PostHogEventProperties, options?: PostHogCaptureOptions): void {
+    const previousDistinctId = this.getDistinctId()
+    super.identify(distinctId, properties, options)
+
+    if (this._enableSessionReplay && OptionalReactNativeSessionReplay) {
+      try {
+        distinctId = distinctId || previousDistinctId
+        OptionalReactNativeSessionReplay.identify(distinctId, this.getAnonymousId())
+        console.info('PostHog Debug', `Session replay identified with distinctId ${distinctId}.`)
+      } catch (e) {
+        console.error('PostHog Debug', `Session replay failed to identify: ${e}.`)
+      }
+    }
+  }
+
   initReactNativeNavigation(options: PostHogAutocaptureOptions): boolean {
     return withReactNativeNavigation(this, options)
   }
@@ -262,6 +288,8 @@ export class PostHog extends PostHogCore {
           apiKey: this.apiKey,
           host: this.host,
           debug: this.isDebug,
+          distinctId: this.getDistinctId(),
+          anonymousId: this.getAnonymousId(),
         }
 
         console.log('PostHog Debug', `Session replay sdk options: ${JSON.stringify(sdkOptions)}`)
