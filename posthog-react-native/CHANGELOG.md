@@ -1,5 +1,7 @@
 # Next
 
+# 3.2.1 - 2024-09-24
+
 ## Changed
 
 1. recording: session replay plugin isn't properly identifying users already identified
