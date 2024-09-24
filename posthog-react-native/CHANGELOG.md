@@ -1,5 +1,22 @@
 # Next
 
+# 3.3.0 - 2024-09-24
+
+## Changed
+
+1. chore: session id will be rotate on app restart.
+    1. To keep the session id across restarts, set the `enablePersistSessionIdAcrossRestart` option to `true` when initializing the PostHog client.
+
+```js
+export const posthog = new PostHog(
+  'apiKey...',
+  {
+    // ...
+    enablePersistSessionIdAcrossRestart: true,
+  },
+);
+```
+
 # 3.2.1 - 2024-09-24
 
 ## Changed

@@ -57,6 +57,14 @@ export type PostHogOptions = PostHogCoreOptions & {
    * Experimental support
    */
   sessionReplayConfig?: PostHogSessionReplayConfig
+
+  /**
+   * If enabled, the session id ($session_id) will be persisted across app restarts.
+   * This is an option for back compatibility, so your current data isn't skewed with the new version of the SDK.
+   * If this is false, the session id will be always reset on app restart.
+   * Defaults to false
+   */
+  enablePersistSessionIdAcrossRestart?: boolean
 }
 
 export class PostHog extends PostHogCore {
@@ -106,6 +114,13 @@ export class PostHog extends PostHogCore {
     }
 
     const initAfterStorage = (): void => {
+      // reset session id on app restart
+      const enablePersistSessionIdAcrossRestart = options?.enablePersistSessionIdAcrossRestart
+      if (!enablePersistSessionIdAcrossRestart) {
+        this.setPersistedProperty(PostHogPersistedProperty.SessionId, null)
+        this.setPersistedProperty(PostHogPersistedProperty.SessionLastTimestamp, null)
+      }
+
       this.setupBootstrap(options)
 
       this._isInitialized = true
