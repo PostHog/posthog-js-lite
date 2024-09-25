@@ -19,16 +19,12 @@ yarn test
 yarn test:rn
 ```
 
-### Running E2E tests with Detox
-
-See [Example Expo Readme](./examples/example-expo/README.md)
-
 ### Examples
 
 #### React Native
 
 ```sh
-cd examples/example-expo
+cd examples/example-expo-latest
 yarn && yarn start
 ```
 
@@ -45,5 +41,4 @@ Then run:
 ```sh
 cd examples/example-node
 yarn && yarn start
-# example-expo has some buttons that will talk to this server
 ```
