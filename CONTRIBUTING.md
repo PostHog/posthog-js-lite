@@ -18,27 +18,3 @@ yarn test
 # Run the RN tests - these are separate due to specific babel configs
 yarn test:rn
 ```
-
-### Examples
-
-#### React Native
-
-```sh
-cd examples/example-expo-latest
-yarn && yarn start
-```
-
-#### Node.js
-
-First install yalc:
-
-```sh
-yarn global add yalc
-```
-
-Then run:
-
-```sh
-cd examples/example-node
-yarn && yarn start
-```
