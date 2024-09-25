@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 18
 
       - run: yarn install
       - run: yarn test
@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 18
 
       - run: yarn install
       - run: yarn build
@@ -42,10 +42,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 16
+          node-version: 18
       - run: |
           yarn
-          cd examples/example-expo
+          cd examples/example-expo-latest
           yarn global add yalc
           yarn
           yarn tsc
