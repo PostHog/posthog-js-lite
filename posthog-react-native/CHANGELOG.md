@@ -1,5 +1,11 @@
 # Next
 
+# 3.3.1 - 2024-09-30
+
+## Changed
+
+1. set the right sdk name and version for recordings
+
 # 3.3.0 - 2024-09-24
 
 ## Changed

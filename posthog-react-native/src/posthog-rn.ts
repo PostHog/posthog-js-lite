@@ -305,6 +305,7 @@ export class PostHog extends PostHogCore {
           debug: this.isDebug,
           distinctId: this.getDistinctId(),
           anonymousId: this.getAnonymousId(),
+          sdkVersion: this.getLibraryVersion(),
         }
 
         console.log('PostHog Debug', `Session replay sdk options: ${JSON.stringify(sdkOptions)}`)
