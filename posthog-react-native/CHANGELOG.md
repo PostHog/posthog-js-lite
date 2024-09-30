@@ -4,7 +4,7 @@
 
 ## Changed
 
-1. set the right sdk name and version for recordings
+1. fix: set the right sdk name and version for recordings
 
 # 3.3.0 - 2024-09-24
 
