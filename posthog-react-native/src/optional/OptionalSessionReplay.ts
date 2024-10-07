@@ -10,7 +10,4 @@ try {
     web: undefined,
     default: require('posthog-react-native-session-replay'), // Only Android and iOS
   })
-} catch (e) {
-  // do nothing
-  console.warn('PostHog Debug', `Error loading posthog-react-native-session-replay: ${e}`)
-}
+} catch (e) { }
