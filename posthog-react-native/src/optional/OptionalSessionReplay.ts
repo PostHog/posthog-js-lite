@@ -10,4 +10,4 @@ try {
     web: undefined,
     default: require('posthog-react-native-session-replay'), // Only Android and iOS
   })
-} catch (e) { }
+} catch (e) {}

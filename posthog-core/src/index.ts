@@ -1112,7 +1112,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
           if (res?.featureFlags) {
             // clear flag call reported if we have new flags since they might have changed
             if (this.sendFeatureFlagEvent) {
-              this.flagCallReported = {};
+              this.flagCallReported = {}
             }
 
             let newFeatureFlags = res.featureFlags
