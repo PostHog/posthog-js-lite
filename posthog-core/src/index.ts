@@ -761,6 +761,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   private clearProps(): void {
     this.props = undefined
     this.sessionProps = {}
+    this.flagCallReported = {}
   }
 
   private _props: PostHogEventProperties | undefined
@@ -1109,6 +1110,11 @@ export abstract class PostHogCore extends PostHogCoreStateless {
 
         return super.getDecide(distinctId, groups, personProperties, groupProperties, extraProperties).then((res) => {
           if (res?.featureFlags) {
+            // clear flag call reported if we have new flags since they might have changed
+            if (this.sendFeatureFlagEvent) {
+              this.flagCallReported = {}
+            }
+
             let newFeatureFlags = res.featureFlags
             let newFeatureFlagPayloads = res.featureFlagPayloads
             if (res.errorsWhileComputingFlags) {
