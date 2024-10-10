@@ -1110,7 +1110,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
 
         return super.getDecide(distinctId, groups, personProperties, groupProperties, extraProperties).then((res) => {
           if (res?.featureFlags) {
-            // clear flag call reported if we have new flags since thye might have changed
+            // clear flag call reported if we have new flags since they might have changed
             if (this.sendFeatureFlagEvent) {
               this.flagCallReported = {};
             }
