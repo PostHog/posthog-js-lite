@@ -1,5 +1,7 @@
 # Next
 
+# 3.3.2 - 2024-10-10
+
 ## Changed
 
 1. fix: clear flagCallReported if there are new flags
