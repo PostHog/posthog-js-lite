@@ -1,5 +1,9 @@
 # Next
 
+## Changed
+
+1. fix: clear flagCallReported if there are new flags
+
 # 3.3.1 - 2024-09-30
 
 ## Changed
