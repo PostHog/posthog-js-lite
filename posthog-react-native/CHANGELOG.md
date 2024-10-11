@@ -1,5 +1,9 @@
 # Next
 
+# 3.3.3 - 2024-10-11
+
+1. fix: bootstrap flags do not overwrite the current values
+
 # 3.3.2 - 2024-10-11
 
 ## Changed
