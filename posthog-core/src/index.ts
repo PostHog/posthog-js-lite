@@ -49,8 +49,8 @@ function isPostHogFetchError(err: any): boolean {
 
 export abstract class PostHogCoreStateless {
   // options
-  private apiKey: string
-  host: string
+  readonly apiKey: string
+  readonly host: string
   private flushAt: number
   private maxBatchSize: number
   private maxQueueSize: number
@@ -790,6 +790,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   private clearProps(): void {
     this.props = undefined
     this.sessionProps = {}
+    this.flagCallReported = {}
   }
 
   private _props: PostHogEventProperties | undefined
@@ -861,6 +862,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   resetSessionId(): void {
     this.wrap(() => {
       this.setPersistedProperty(PostHogPersistedProperty.SessionId, null)
+      this.setPersistedProperty(PostHogPersistedProperty.SessionLastTimestamp, null)
     })
   }
 
@@ -1137,6 +1139,11 @@ export abstract class PostHogCore extends PostHogCoreStateless {
 
         return super.getDecide(distinctId, groups, personProperties, groupProperties, extraProperties).then((res) => {
           if (res?.featureFlags) {
+            // clear flag call reported if we have new flags since they might have changed
+            if (this.sendFeatureFlagEvent) {
+              this.flagCallReported = {}
+            }
+
             let newFeatureFlags = res.featureFlags
             let newFeatureFlagPayloads = res.featureFlagPayloads
             if (res.errorsWhileComputingFlags) {
@@ -1156,6 +1163,15 @@ export abstract class PostHogCore extends PostHogCoreStateless {
                 Object.entries(newFeatureFlagPayloads || {}).map(([k, v]) => [k, this._parsePayload(v)])
               )
             )
+
+            const sessionReplay = res?.sessionRecording
+            if (sessionReplay) {
+              this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, sessionReplay)
+              console.log('PostHog Debug', 'Session replay config: ', JSON.stringify(sessionReplay))
+            } else {
+              console.info('PostHog Debug', 'Session replay config disabled.')
+              this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, null)
+            }
           }
 
           return res

@@ -1,12 +1,82 @@
 # Next
 
-# 3.2.0 - 2024-09-12
+# 3.3.3 - 2024-10-11
+
+1. fix: bootstrap flags do not overwrite the current values
+
+# 3.3.2 - 2024-10-11
+
+## Changed
+
+1. fix: clear flagCallReported if there are new flags
+
+# 3.3.1 - 2024-09-30
+
+## Changed
+
+1. fix: set the right sdk name and version for recordings
+
+# 3.3.0 - 2024-09-24
+
+## Changed
+
+1. chore: session id will be rotate on app restart.
+    1. To keep the session id across restarts, set the `enablePersistSessionIdAcrossRestart` option to `true` when initializing the PostHog client.
+
+```js
+export const posthog = new PostHog(
+  'apiKey...',
+  {
+    // ...
+    enablePersistSessionIdAcrossRestart: true,
+  },
+);
+```
+
+# 3.2.1 - 2024-09-24
+
+## Changed
+
+1. recording: session replay plugin isn't properly identifying users already identified
+
+# 3.2.0 - 2024-09-19
 
 ## Changed
 
 1. chore: default `captureMode` changed to `json`.
     1. To keep using the `form` mode, just set the `captureMode` option to `form` when initializing the PostHog client.
-2. fix: bootstrap flags do not overwrite the current values
+2. chore: Session Replay for React-Native - Experimental support
+
+Install Session Replay for React-Native:
+
+```bash
+yarn add posthog-react-native-session-replay
+# or npm
+npm i -s posthog-react-native-session-replay
+```
+
+Enable Session Replay for React-Native:
+
+```js
+export const posthog = new PostHog(
+  'apiKey...',
+  {
+    // ...
+    enableSessionReplay: true,
+  },
+);
+```
+
+Or using the `PostHogProvider`
+
+```js
+<PostHogProvider
+        apiKey="apiKey..."
+        options={{
+          enableSessionReplay: true,
+        }}
+      >
+```
 
 # 3.1.2 - 2024-08-14
 
