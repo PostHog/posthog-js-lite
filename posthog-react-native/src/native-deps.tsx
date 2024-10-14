@@ -25,6 +25,11 @@ export const getAppProperties = (): PostHogCustomAppProperties => {
     properties.$app_name = OptionalExpoApplication.applicationName
     properties.$app_namespace = OptionalExpoApplication.applicationId
     properties.$app_version = OptionalExpoApplication.nativeApplicationVersion
+  } else if (OptionalReactNativeDeviceInfo) {
+    properties.$app_build = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getBuildNumber())
+    properties.$app_name = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getApplicationName())
+    properties.$app_namespace = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getBundleId())
+    properties.$app_version = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getVersion())
   }
 
   if (OptionalExpoDevice) {
@@ -33,23 +38,17 @@ export const getAppProperties = (): PostHogCustomAppProperties => {
     properties.$device_name = OptionalExpoDevice.modelName
     properties.$os_name = OptionalExpoDevice.osName
     properties.$os_version = OptionalExpoDevice.osVersion
-  }
-
-  if (OptionalExpoLocalization) {
-    properties.$locale = OptionalExpoLocalization.locale
-    properties.$timezone = OptionalExpoLocalization.timezone
-  }
-
-  if (OptionalReactNativeDeviceInfo) {
-    properties.$app_build = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getBuildNumber())
-    properties.$app_name = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getApplicationName())
-    properties.$app_namespace = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getBundleId())
-    properties.$app_version = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getVersion())
+  } else if (OptionalReactNativeDeviceInfo) {
     properties.$device_manufacturer = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getManufacturerSync())
     // react-native-device-info already maps the device model identifier to a human readable name
     properties.$device_name = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getModel())
     properties.$os_name = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getSystemName())
     properties.$os_version = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getSystemVersion())
+  }
+
+  if (OptionalExpoLocalization) {
+    properties.$locale = OptionalExpoLocalization.locale
+    properties.$timezone = OptionalExpoLocalization.timezone
   }
 
   return properties
