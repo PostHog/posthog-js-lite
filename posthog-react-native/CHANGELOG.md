@@ -1,5 +1,9 @@
 # Next
 
+# 3.3.4 - 2024-10-14
+
+1. fix: only log messages if debug is enabled
+
 # 3.3.3 - 2024-10-11
 
 1. fix: bootstrap flags do not overwrite the current values
