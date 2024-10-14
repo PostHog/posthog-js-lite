@@ -1,5 +1,91 @@
 # Next
 
+# 3.3.4 - 2024-10-14
+
+1. fix: only log messages if debug is enabled
+
+# 3.3.3 - 2024-10-11
+
+1. fix: bootstrap flags do not overwrite the current values
+
+# 3.3.2 - 2024-10-11
+
+## Changed
+
+1. fix: clear flagCallReported if there are new flags
+
+# 3.3.1 - 2024-09-30
+
+## Changed
+
+1. fix: set the right sdk name and version for recordings
+
+# 3.3.0 - 2024-09-24
+
+## Changed
+
+1. chore: session id will be rotate on app restart.
+    1. To keep the session id across restarts, set the `enablePersistSessionIdAcrossRestart` option to `true` when initializing the PostHog client.
+
+```js
+export const posthog = new PostHog(
+  'apiKey...',
+  {
+    // ...
+    enablePersistSessionIdAcrossRestart: true,
+  },
+);
+```
+
+# 3.2.1 - 2024-09-24
+
+## Changed
+
+1. recording: session replay plugin isn't properly identifying users already identified
+
+# 3.2.0 - 2024-09-19
+
+## Changed
+
+1. chore: default `captureMode` changed to `json`.
+    1. To keep using the `form` mode, just set the `captureMode` option to `form` when initializing the PostHog client.
+2. chore: Session Replay for React-Native - Experimental support
+
+Install Session Replay for React-Native:
+
+```bash
+yarn add posthog-react-native-session-replay
+# or npm
+npm i -s posthog-react-native-session-replay
+```
+
+Enable Session Replay for React-Native:
+
+```js
+export const posthog = new PostHog(
+  'apiKey...',
+  {
+    // ...
+    enableSessionReplay: true,
+  },
+);
+```
+
+Or using the `PostHogProvider`
+
+```js
+<PostHogProvider
+        apiKey="apiKey..."
+        options={{
+          enableSessionReplay: true,
+        }}
+      >
+```
+
+# 3.1.2 - 2024-08-14
+
+## Changed
+
 1. chore: change host to new address.
 
 # 3.1.1 - 2024-04-25
@@ -119,8 +205,8 @@
 
 # 2.9.0 - 2023-12-04
 
-1.  Renamed `personProperties` to `setPersonPropertiesForFlags` to match `posthog-js` and more clearly indicated what it does
-2.  Renamed `groupProperties` to `setGroupPropertiesForFlags` to match `posthog-js` and more clearly indicated what it does
+1. Renamed `personProperties` to `setPersonPropertiesForFlags` to match `posthog-js` and more clearly indicated what it does
+2. Renamed `groupProperties` to `setGroupPropertiesForFlags` to match `posthog-js` and more clearly indicated what it does
 
 # 2.8.1 - 2023-10-09
 
@@ -162,9 +248,9 @@
 
 # 2.4.0 - 2023-01-27
 
-- Adds support for https://github.com/wix/react-native-navigation
-- Allows passing of promise based `PostHog.initAsync` to `<PostHogProvider client={...} />`
-- Captures text content in autocapture (configurable via autocapture option `propsToCapture`)
+1. Adds support for https://github.com/wix/react-native-navigation
+2. Allows passing of promise based `PostHog.initAsync` to `<PostHogProvider client={...} />`
+3. Captures text content in autocapture (configurable via autocapture option `propsToCapture`)
 
 # 2.3.0 - 2022-1-26
 
@@ -174,21 +260,21 @@
 
 # 2.2.3 - 2023-01-25
 
-- Ensures the distinctId used in `.groupIdentify` is the same as the currently identified user
+1. Ensures the distinctId used in `.groupIdentify` is the same as the currently identified user
 
 # 2.2.2 - 2023-01-05
 
-- Fixes an issue with PostHogProvider where autocapture={false} would still capture lifecycle and navigation events.
+1. Fixes an issue with PostHogProvider where autocapture={false} would still capture lifecycle and navigation events.
 
 # 2.2.1 - 2022-11-21
 
-- Fixes an issue with async storage selection while installing PostHog React Native
-- Fixes an issue where React Hooks for feature flags were conditionally loaded
+1. Fixes an issue with async storage selection while installing PostHog React Native
+2. Fixes an issue where React Hooks for feature flags were conditionally loaded
 
 # 2.2.0 - 2022-11-11
 
-- Expo modules are no longer required. Expo apps work as before and standalone React Native apps can use the more common native dependencies or roll their own implementation of the necessary functions. See the [official docs](https://posthog.com/docs/integrate/client/react-native) for more information.
-- PostHog should now be initialised via the async helper `PostHog.initAsync` to ensure persisted data is loaded before any tracking takes place
+1. Expo modules are no longer required. Expo apps work as before and standalone React Native apps can use the more common native dependencies or roll their own implementation of the necessary functions. See the [official docs](https://posthog.com/docs/integrate/client/react-native) for more information.
+2. PostHog should now be initialised via the async helper `PostHog.initAsync` to ensure persisted data is loaded before any tracking takes place
 
 # 2.1.4 - 2022-10-28
 

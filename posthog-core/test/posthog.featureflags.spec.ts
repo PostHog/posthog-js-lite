@@ -418,6 +418,48 @@ describe('PostHog Core', () => {
         expect(mocks.fetch).toHaveBeenCalledTimes(2)
       })
 
+      it('should capture $feature_flag_called again if new flags', async () => {
+        expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
+        await waitForPromises()
+        expect(mocks.fetch).toHaveBeenCalledTimes(2)
+
+        expect(parseBody(mocks.fetch.mock.calls[1])).toMatchObject({
+          batch: [
+            {
+              event: '$feature_flag_called',
+              distinct_id: posthog.getDistinctId(),
+              properties: {
+                $feature_flag: 'feature-1',
+                $feature_flag_response: true,
+                '$feature/feature-1': true,
+              },
+              type: 'capture',
+            },
+          ],
+        })
+
+        await posthog.reloadFeatureFlagsAsync()
+        posthog.getFeatureFlag('feature-1')
+
+        await waitForPromises()
+        expect(mocks.fetch).toHaveBeenCalledTimes(4)
+
+        expect(parseBody(mocks.fetch.mock.calls[3])).toMatchObject({
+          batch: [
+            {
+              event: '$feature_flag_called',
+              distinct_id: posthog.getDistinctId(),
+              properties: {
+                $feature_flag: 'feature-1',
+                $feature_flag_response: true,
+                '$feature/feature-1': true,
+              },
+              type: 'capture',
+            },
+          ],
+        })
+      })
+
       it('should persist feature flags', () => {
         expect(posthog.getPersistedProperty(PostHogPersistedProperty.FeatureFlags)).toEqual(createMockFeatureFlags())
       })
@@ -583,6 +625,70 @@ describe('PostHog Core', () => {
           color: 'blue',
         })
         expect(posthog.getFeatureFlagPayload('feature-variant')).toEqual([5])
+      })
+    })
+  })
+
+  describe('bootstapped do not overwrite values', () => {
+    beforeEach(() => {
+      ;[posthog, mocks] = createTestClient(
+        'TEST_API_KEY',
+        {
+          flushAt: 1,
+          bootstrap: {
+            distinctId: 'tomato',
+            featureFlags: { 'bootstrap-1': 'variant-1', enabled: true, disabled: false },
+            featureFlagPayloads: {
+              'bootstrap-1': {
+                some: 'key',
+              },
+              enabled: 200,
+            },
+          },
+        },
+        (_mocks) => {
+          _mocks.fetch.mockImplementation((url) => {
+            if (url.includes('/decide/')) {
+              return Promise.resolve({
+                status: 200,
+                text: () => Promise.resolve('ok'),
+                json: () =>
+                  Promise.resolve({
+                    featureFlags: createMockFeatureFlags(),
+                    featureFlagPayloads: createMockFeatureFlagPayloads(),
+                  }),
+              })
+            }
+
+            return Promise.resolve({
+              status: 200,
+              text: () => Promise.resolve('ok'),
+              json: () =>
+                Promise.resolve({
+                  status: 'ok',
+                }),
+            })
+          })
+        },
+        {
+          distinct_id: '123',
+          feature_flags: { 'bootstrap-1': 'variant-2' },
+          feature_flag_payloads: { 'bootstrap-1': { some: 'other-key' } },
+        }
+      )
+    })
+
+    it('distinct id should not be overwritten if already there', () => {
+      expect(posthog.getDistinctId()).toEqual('123')
+    })
+
+    it('flags should not be overwritten if already there', () => {
+      expect(posthog.getFeatureFlag('bootstrap-1')).toEqual('variant-2')
+    })
+
+    it('flag payloads should not be overwritten if already there', () => {
+      expect(posthog.getFeatureFlagPayload('bootstrap-1')).toEqual({
+        some: 'other-key',
       })
     })
   })

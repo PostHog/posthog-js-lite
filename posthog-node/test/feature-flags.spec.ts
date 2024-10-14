@@ -24,6 +24,74 @@ describe('local evaluation', () => {
     await posthog.shutdown()
   })
 
+  it('evaluates person properties with undefined property values', async () => {
+    const flags = {
+      flags: [
+        {
+          id: 1,
+          name: 'Beta Feature',
+          key: 'person-flag',
+          is_simple_flag: true,
+          active: true,
+          filters: {
+            groups: [
+              {
+                variant: null,
+                properties: [
+                  {
+                    key: 'latestBuildVersion',
+                    type: 'person',
+                    value: '.+',
+                    operator: 'regex',
+                  },
+                  {
+                    key: 'latestBuildVersionMajor',
+                    type: 'person',
+                    value: '23',
+                    operator: 'gt',
+                  },
+                  {
+                    key: 'latestBuildVersionMinor',
+                    type: 'person',
+                    value: '31',
+                    operator: 'gt',
+                  },
+                  {
+                    key: 'latestBuildVersionPatch',
+                    type: 'person',
+                    value: '0',
+                    operator: 'gt',
+                  },
+                ],
+                rollout_percentage: 100,
+              },
+            ],
+          },
+        },
+      ],
+    }
+    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags }))
+
+    posthog = new PostHog('TEST_API_KEY', {
+      host: 'http://example.com',
+      personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
+    })
+
+    expect(
+      await posthog.getFeatureFlag('person-flag', 'some-distinct-id', {
+        personProperties: {
+          latestBuildVersion: undefined,
+          latestBuildVersionMajor: undefined,
+          latestBuildVersionMinor: undefined,
+          latestBuildVersionPatch: undefined,
+        } as unknown as Record<string, string>,
+      })
+    ).toEqual(false)
+
+    expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
+  })
+
   it('evaluates person properties', async () => {
     const flags = {
       flags: [
@@ -1824,7 +1892,7 @@ describe('match properties', () => {
     expect(matchProperty(property_a, { key: 'value' })).toBe(true)
     expect(matchProperty(property_a, { key: 'value2' })).toBe(true)
     expect(matchProperty(property_a, { key: '' })).toBe(true)
-    expect(matchProperty(property_a, { key: undefined })).toBe(true)
+    expect(matchProperty(property_a, { key: undefined })).toBe(false)
 
     expect(() => matchProperty(property_a, { key2: 'value' })).toThrow(InconclusiveMatchError)
     expect(() => matchProperty(property_a, {})).toThrow(InconclusiveMatchError)
@@ -2065,22 +2133,22 @@ describe('match properties', () => {
     expect(matchProperty(property_a, { key: 'nul' })).toBe(true)
 
     const property_b = { key: 'key', value: 'null', operator: 'is_set' }
-    expect(matchProperty(property_b, { key: null })).toBe(true)
-    expect(matchProperty(property_b, { key: undefined })).toBe(true)
+    expect(matchProperty(property_b, { key: null })).toBe(false)
+    expect(matchProperty(property_b, { key: undefined })).toBe(false)
     expect(matchProperty(property_b, { key: 'null' })).toBe(true)
 
     const property_c = { key: 'key', value: 'undefined', operator: 'icontains' }
     expect(matchProperty(property_c, { key: null })).toBe(false)
-    expect(matchProperty(property_c, { key: undefined })).toBe(true)
+    expect(matchProperty(property_c, { key: undefined })).toBe(false)
     expect(matchProperty(property_c, { key: 'lol' })).toBe(false)
 
     const property_d = { key: 'key', value: 'undefined', operator: 'regex' }
     expect(matchProperty(property_d, { key: null })).toBe(false)
-    expect(matchProperty(property_d, { key: undefined })).toBe(true)
+    expect(matchProperty(property_d, { key: undefined })).toBe(false)
 
     const property_e = { key: 'key', value: 1, operator: 'gt' }
-    expect(matchProperty(property_e, { key: null })).toBe(true)
-    expect(matchProperty(property_e, { key: undefined })).toBe(true)
+    expect(matchProperty(property_e, { key: null })).toBe(false)
+    expect(matchProperty(property_e, { key: undefined })).toBe(false)
 
     const property_f = { key: 'key', value: 1, operator: 'lt' }
     expect(matchProperty(property_f, { key: null })).toBe(false)
@@ -2095,18 +2163,79 @@ describe('match properties', () => {
     expect(matchProperty(property_h, { key: undefined })).toBe(false)
 
     const property_h_lower = { key: 'key', value: 'oo', operator: 'lte' }
-    expect(matchProperty(property_h_lower, { key: null })).toBe(true)
+    expect(matchProperty(property_h_lower, { key: null })).toBe(false)
     expect(matchProperty(property_h_lower, { key: undefined })).toBe(false)
 
     const property_i = { key: 'key', value: '2022-05-01', operator: 'is_date_before' }
-    expect(() => matchProperty(property_i, { key: null })).toThrow(InconclusiveMatchError)
-    expect(() => matchProperty(property_i, { key: undefined })).toThrow(InconclusiveMatchError)
+
+    expect(matchProperty(property_i, { key: null })).toBe(false)
+    expect(matchProperty(property_i, { key: undefined })).toBe(false)
 
     const property_j = { key: 'key', value: '2022-05-01', operator: 'is_date_after' }
-    expect(() => matchProperty(property_j, { key: null })).toThrow(InconclusiveMatchError)
+    expect(matchProperty(property_j, { key: null })).toBe(false)
 
     const property_k = { key: 'key', value: '2022-05-01', operator: 'is_date_before' }
-    expect(() => matchProperty(property_k, { key: null })).toThrow(InconclusiveMatchError)
+    expect(matchProperty(property_k, { key: null })).toBe(false)
+  })
+
+  it('null or undefined override value', () => {
+    const property_a = { key: 'key', value: 'ab', operator: 'is_not' }
+    expect(matchProperty(property_a, { key: null })).toBe(true)
+    expect(matchProperty(property_a, { key: undefined })).toBe(true)
+    expect(matchProperty(property_a, { key: 'null' })).toBe(true)
+    expect(matchProperty(property_a, { key: 'nul' })).toBe(true)
+
+    const property_b = { key: 'key', value: 'null', operator: 'is_set' }
+    expect(matchProperty(property_b, { key: null })).toBe(false)
+    expect(matchProperty(property_b, { key: undefined })).toBe(false)
+    expect(matchProperty(property_b, { key: 'null' })).toBe(true)
+
+    const property_c = { key: 'key', value: 'app.posthog.com', operator: 'icontains' }
+    expect(matchProperty(property_c, { key: null })).toBe(false)
+    expect(matchProperty(property_c, { key: undefined })).toBe(false)
+    expect(matchProperty(property_c, { key: 'lol' })).toBe(false)
+    expect(matchProperty(property_c, { key: 'https://app.posthog.com' })).toBe(true)
+
+    const property_d = { key: 'key', value: '.+', operator: 'regex' }
+    expect(matchProperty(property_d, { key: null })).toBe(false)
+    expect(matchProperty(property_d, { key: undefined })).toBe(false)
+    expect(matchProperty(property_d, { key: 'i_am_a_value' })).toBe(true)
+
+    const property_e = { key: 'key', value: 1, operator: 'gt' }
+    expect(matchProperty(property_e, { key: null })).toBe(false)
+    expect(matchProperty(property_e, { key: undefined })).toBe(false)
+    expect(matchProperty(property_e, { key: 1 })).toBe(false)
+    expect(matchProperty(property_e, { key: 2 })).toBe(true)
+
+    const property_f = { key: 'key', value: 1, operator: 'lt' }
+    expect(matchProperty(property_f, { key: null })).toBe(false)
+    expect(matchProperty(property_f, { key: undefined })).toBe(false)
+    expect(matchProperty(property_f, { key: 0 })).toBe(true)
+
+    const property_g = { key: 'key', value: 'xyz', operator: 'gte' }
+    expect(matchProperty(property_g, { key: null })).toBe(false)
+    expect(matchProperty(property_g, { key: undefined })).toBe(false)
+    expect(matchProperty(property_g, { key: 'xyz' })).toBe(true)
+
+    const property_h = { key: 'key', value: 'Oo', operator: 'lte' }
+    expect(matchProperty(property_h, { key: null })).toBe(false)
+    expect(matchProperty(property_h, { key: undefined })).toBe(false)
+    expect(matchProperty(property_h, { key: 'Oo' })).toBe(true)
+
+    const property_h_lower = { key: 'key', value: 'oo', operator: 'lte' }
+    expect(matchProperty(property_h_lower, { key: null })).toBe(false)
+    expect(matchProperty(property_h_lower, { key: undefined })).toBe(false)
+    expect(matchProperty(property_h_lower, { key: 'oo' })).toBe(true)
+
+    const property_i = { key: 'key', value: '2022-05-01', operator: 'is_date_before' }
+    expect(matchProperty(property_i, { key: null })).toBe(false)
+    expect(matchProperty(property_i, { key: undefined })).toBe(false)
+
+    const property_j = { key: 'key', value: '2022-05-01', operator: 'is_date_after' }
+    expect(matchProperty(property_j, { key: null })).toBe(false)
+
+    const property_k = { key: 'key', value: '2022-05-01', operator: 'is_date_before' }
+    expect(matchProperty(property_k, { key: null })).toBe(false)
   })
 
   it('with invalid operator', () => {

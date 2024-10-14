@@ -7,6 +7,7 @@ import fetch from './fetch'
 // eslint-disable-next-line
 const LONG_SCALE = 0xfffffffffffffff
 
+const NULL_VALUES_ALLOWED_OPERATORS = ['is_not']
 class ClientError extends Error {
   constructor(message: string) {
     super()
@@ -89,6 +90,12 @@ class FeatureFlagsPoller {
     this.debugMode = enabled
   }
 
+  private logMsgIfDebug(fn: () => void): void {
+    if (this.debugMode) {
+      fn()
+    }
+  }
+
   async getFeatureFlag(
     key: string,
     distinctId: string,
@@ -98,7 +105,7 @@ class FeatureFlagsPoller {
   ): Promise<string | boolean | undefined> {
     await this.loadFeatureFlags()
 
-    let response = undefined
+    let response: string | boolean | undefined = undefined
     let featureFlag = undefined
 
     if (!this.loadedSuccessfullyOnce) {
@@ -115,14 +122,10 @@ class FeatureFlagsPoller {
     if (featureFlag !== undefined) {
       try {
         response = this.computeFlagLocally(featureFlag, distinctId, groups, personProperties, groupProperties)
-        if (this.debugMode) {
-          console.debug(`Successfully computed flag locally: ${key} -> ${response}`)
-        }
+        this.logMsgIfDebug(() => console.debug(`Successfully computed flag locally: ${key} -> ${response}`))
       } catch (e) {
         if (e instanceof InconclusiveMatchError) {
-          if (this.debugMode) {
-            console.debug(`InconclusiveMatchError when computing flag locally: ${key}: ${e}`)
-          }
+          this.logMsgIfDebug(() => console.debug(`InconclusiveMatchError when computing flag locally: ${key}: ${e}`))
         } else if (e instanceof Error) {
           this.onError?.(new Error(`Error computing flag locally: ${key}: ${e}`))
         }
@@ -218,18 +221,18 @@ class FeatureFlagsPoller {
       const groupName = this.groupTypeMapping[String(aggregation_group_type_index)]
 
       if (!groupName) {
-        if (this.debugMode) {
+        this.logMsgIfDebug(() =>
           console.warn(
             `[FEATURE FLAGS] Unknown group type index ${aggregation_group_type_index} for feature flag ${flag.key}`
           )
-        }
+        )
         throw new InconclusiveMatchError('Flag has unknown group type index')
       }
 
       if (!(groupName in groups)) {
-        if (this.debugMode) {
+        this.logMsgIfDebug(() =>
           console.warn(`[FEATURE FLAGS] Can't compute group feature flag: ${flag.key} without group names passed in`)
-        }
+        )
         return false
       }
 
@@ -305,7 +308,9 @@ class FeatureFlagsPoller {
     properties: Record<string, string>
   ): boolean {
     const rolloutPercentage = condition.rollout_percentage
-
+    const warnFunction = (msg: string): void => {
+      this.logMsgIfDebug(() => console.warn(msg))
+    }
     if ((condition.properties || []).length > 0) {
       for (const prop of condition.properties) {
         const propertyType = prop.type
@@ -314,7 +319,7 @@ class FeatureFlagsPoller {
         if (propertyType === 'cohort') {
           matches = matchCohort(prop, properties, this.cohorts, this.debugMode)
         } else {
-          matches = matchProperty(prop, properties)
+          matches = matchProperty(prop, properties, warnFunction)
         }
 
         if (!matches) {
@@ -461,7 +466,8 @@ function _hash(key: string, distinctId: string, salt: string = ''): number {
 
 function matchProperty(
   property: FeatureFlagCondition['properties'][number],
-  propertyValues: Record<string, any>
+  propertyValues: Record<string, any>,
+  warnFunction?: (msg: string) => void
 ): boolean {
   const key = property.key
   const value = property.value
@@ -474,6 +480,15 @@ function matchProperty(
   }
 
   const overrideValue = propertyValues[key]
+  if (overrideValue == null && !NULL_VALUES_ALLOWED_OPERATORS.includes(operator)) {
+    // if the value is null, just fail the feature flag comparison
+    // this isn't an InconclusiveMatchError because the property value was provided.
+    if (warnFunction) {
+      warnFunction(`Property ${key} cannot have a value of null/undefined with the ${operator} operator`)
+    }
+
+    return false
+  }
 
   function computeExactMatch(value: any, overrideValue: any): boolean {
     if (Array.isArray(value)) {

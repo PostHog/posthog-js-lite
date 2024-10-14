@@ -49,8 +49,8 @@ function isPostHogFetchError(err: any): boolean {
 
 export abstract class PostHogCoreStateless {
   // options
-  private apiKey: string
-  host: string
+  readonly apiKey: string
+  readonly host: string
   private flushAt: number
   private maxBatchSize: number
   private maxQueueSize: number
@@ -61,6 +61,7 @@ export abstract class PostHogCoreStateless {
   private captureMode: 'form' | 'json'
   private removeDebugCallback?: () => void
   private disableGeoip: boolean = true
+  private historicalMigration: boolean = false
   public disabled = false
 
   private defaultOptIn: boolean = true
@@ -92,7 +93,7 @@ export abstract class PostHogCoreStateless {
     this.maxBatchSize = Math.max(this.flushAt, options?.maxBatchSize ?? 100)
     this.maxQueueSize = Math.max(this.flushAt, options?.maxQueueSize ?? 1000)
     this.flushInterval = options?.flushInterval ?? 10000
-    this.captureMode = options?.captureMode || 'form'
+    this.captureMode = options?.captureMode || 'json'
 
     // If enable is explicitly set to false we override the optout
     this.defaultOptIn = options?.defaultOptIn ?? true
@@ -106,16 +107,21 @@ export abstract class PostHogCoreStateless {
     this.featureFlagsRequestTimeoutMs = options?.featureFlagsRequestTimeoutMs ?? 3000 // 3 seconds
     this.disableGeoip = options?.disableGeoip ?? true
     this.disabled = options?.disabled ?? false
+    this.historicalMigration = options?.historicalMigration ?? false
     // Init promise allows the derived class to block calls until it is ready
     this._initPromise = Promise.resolve()
     this._isInitialized = true
   }
 
+  protected logMsgIfDebug(fn: () => void): void {
+    if (this.isDebug) {
+      fn()
+    }
+  }
+
   protected wrap(fn: () => void): void {
     if (this.disabled) {
-      if (this.isDebug) {
-        console.warn('[PostHog] The client is disabled')
-      }
+      this.logMsgIfDebug(() => console.warn('[PostHog] The client is disabled'))
       return
     }
 
@@ -498,7 +504,7 @@ export abstract class PostHogCoreStateless {
 
       if (queue.length >= this.maxQueueSize) {
         queue.shift()
-        console.info('Queue is full, the oldest event is dropped.')
+        this.logMsgIfDebug(() => console.info('Queue is full, the oldest event is dropped.'))
       }
 
       queue.push({ message })
@@ -573,10 +579,14 @@ export abstract class PostHogCoreStateless {
       this.setPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue, refreshedQueue.slice(items.length))
     }
 
-    const data = {
+    const data: Record<string, any> = {
       api_key: this.apiKey,
       batch: messages,
       sent_at: currentISOTime(),
+    }
+
+    if (this.historicalMigration) {
+      data.historical_migration = true
     }
 
     const payload = JSON.stringify(data)
@@ -689,7 +699,7 @@ export abstract class PostHogCoreStateless {
       if (!isPostHogFetchError(e)) {
         throw e
       }
-      console.error('Error while shutting down PostHog', e)
+      this.logMsgIfDebug(() => console.error('Error while shutting down PostHog', e))
     }
   }
 }
@@ -718,25 +728,54 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   }
 
   protected setupBootstrap(options?: Partial<PostHogCoreOptions>): void {
-    if (options?.bootstrap?.distinctId) {
-      if (options?.bootstrap?.isIdentifiedId) {
-        this.setPersistedProperty(PostHogPersistedProperty.DistinctId, options.bootstrap.distinctId)
+    const bootstrap = options?.bootstrap
+    if (!bootstrap) {
+      return
+    }
+
+    // bootstrap options are only set if no persisted values are found
+    // this is to prevent overwriting existing values
+    if (bootstrap.distinctId) {
+      if (bootstrap.isIdentifiedId) {
+        const distinctId = this.getPersistedProperty(PostHogPersistedProperty.DistinctId)
+
+        if (!distinctId) {
+          this.setPersistedProperty(PostHogPersistedProperty.DistinctId, bootstrap.distinctId)
+        }
       } else {
-        this.setPersistedProperty(PostHogPersistedProperty.AnonymousId, options.bootstrap.distinctId)
+        const anonymousId = this.getPersistedProperty(PostHogPersistedProperty.AnonymousId)
+
+        if (!anonymousId) {
+          this.setPersistedProperty(PostHogPersistedProperty.AnonymousId, bootstrap.distinctId)
+        }
       }
     }
 
-    if (options?.bootstrap?.featureFlags) {
-      const activeFlags = Object.keys(options.bootstrap?.featureFlags || {})
-        .filter((flag) => !!options.bootstrap?.featureFlags?.[flag])
+    const bootstrapfeatureFlags = bootstrap.featureFlags
+    if (bootstrapfeatureFlags && Object.keys(bootstrapfeatureFlags).length) {
+      const bootstrapFlags = Object.keys(bootstrapfeatureFlags)
+        .filter((flag) => !!bootstrapfeatureFlags[flag])
         .reduce(
-          (res: Record<string, string | boolean>, key) => (
-            (res[key] = options.bootstrap?.featureFlags?.[key] || false), res
-          ),
+          (res: Record<string, string | boolean>, key) => ((res[key] = bootstrapfeatureFlags[key] || false), res),
           {}
         )
-      this.setKnownFeatureFlags(activeFlags)
-      options?.bootstrap.featureFlagPayloads && this.setKnownFeatureFlagPayloads(options?.bootstrap.featureFlagPayloads)
+
+      if (Object.keys(bootstrapFlags).length) {
+        const currentFlags =
+          this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(PostHogPersistedProperty.FeatureFlags) || {}
+        const newFeatureFlags = { ...bootstrapFlags, ...currentFlags }
+        this.setKnownFeatureFlags(newFeatureFlags)
+      }
+
+      const bootstrapFlagPayloads = bootstrap.featureFlagPayloads
+      if (bootstrapFlagPayloads && Object.keys(bootstrapFlagPayloads).length) {
+        const currentFlagPayloads =
+          this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
+            PostHogPersistedProperty.FeatureFlagPayloads
+          ) || {}
+        const newFeatureFlagPayloads = { ...bootstrapFlagPayloads, ...currentFlagPayloads }
+        this.setKnownFeatureFlagPayloads(newFeatureFlagPayloads)
+      }
     }
   }
 
@@ -755,6 +794,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   private clearProps(): void {
     this.props = undefined
     this.sessionProps = {}
+    this.flagCallReported = {}
   }
 
   private _props: PostHogEventProperties | undefined
@@ -826,6 +866,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   resetSessionId(): void {
     this.wrap(() => {
       this.setPersistedProperty(PostHogPersistedProperty.SessionId, null)
+      this.setPersistedProperty(PostHogPersistedProperty.SessionLastTimestamp, null)
     })
   }
 
@@ -1102,6 +1143,11 @@ export abstract class PostHogCore extends PostHogCoreStateless {
 
         return super.getDecide(distinctId, groups, personProperties, groupProperties, extraProperties).then((res) => {
           if (res?.featureFlags) {
+            // clear flag call reported if we have new flags since they might have changed
+            if (this.sendFeatureFlagEvent) {
+              this.flagCallReported = {}
+            }
+
             let newFeatureFlags = res.featureFlags
             let newFeatureFlagPayloads = res.featureFlagPayloads
             if (res.errorsWhileComputingFlags) {
@@ -1121,6 +1167,17 @@ export abstract class PostHogCore extends PostHogCoreStateless {
                 Object.entries(newFeatureFlagPayloads || {}).map(([k, v]) => [k, this._parsePayload(v)])
               )
             )
+
+            const sessionReplay = res?.sessionRecording
+            if (sessionReplay) {
+              this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, sessionReplay)
+              this.logMsgIfDebug(() =>
+                console.log('PostHog Debug', 'Session replay config: ', JSON.stringify(sessionReplay))
+              )
+            } else {
+              this.logMsgIfDebug(() => console.info('PostHog Debug', 'Session replay config disabled.'))
+              this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, null)
+            }
           }
 
           return res
@@ -1259,7 +1316,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       .catch((e) => {
         cb?.(e, undefined)
         if (!cb) {
-          console.log('[PostHog] Error reloading feature flags', e)
+          this.logMsgIfDebug(() => console.log('[PostHog] Error reloading feature flags', e))
         }
       })
   }

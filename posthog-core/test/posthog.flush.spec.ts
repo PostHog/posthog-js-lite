@@ -13,7 +13,6 @@ describe('PostHog Core', () => {
         fetchRetryCount: 3,
         fetchRetryDelay: 100,
         preloadFeatureFlags: false,
-        captureMode: 'json',
       })
     })
 
