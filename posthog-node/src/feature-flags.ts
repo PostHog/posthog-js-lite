@@ -105,7 +105,7 @@ class FeatureFlagsPoller {
   ): Promise<string | boolean | undefined> {
     await this.loadFeatureFlags()
 
-    let response: string | boolean | PromiseLike<string | boolean | undefined> | undefined = undefined
+    let response: string | boolean | undefined = undefined
     let featureFlag = undefined
 
     if (!this.loadedSuccessfullyOnce) {
@@ -590,7 +590,6 @@ function matchCohort(
 }
 
 function matchPropertyGroup(
-  this: any,
   propertyGroup: PropertyGroup,
   propertyValues: Record<string, any>,
   cohortProperties: FeatureFlagsPoller['cohorts'],
@@ -627,7 +626,9 @@ function matchPropertyGroup(
         }
       } catch (err) {
         if (err instanceof InconclusiveMatchError) {
-          this.logMsgIfDebug(() => console.debug(`Failed to compute property ${prop} locally: ${err}`))
+          if (debugMode) {
+            console.debug(`Failed to compute property ${prop} locally: ${err}`)
+          }
           errorMatchingLocally = true
         } else {
           throw err
@@ -671,7 +672,9 @@ function matchPropertyGroup(
         }
       } catch (err) {
         if (err instanceof InconclusiveMatchError) {
-          this.logMsgIfDebug(() => console.debug(`Failed to compute property ${prop} locally: ${err}`))
+          if (debugMode) {
+            console.debug(`Failed to compute property ${prop} locally: ${err}`)
+          }
           errorMatchingLocally = true
         } else {
           throw err
