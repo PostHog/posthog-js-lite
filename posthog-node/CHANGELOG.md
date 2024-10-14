@@ -1,5 +1,9 @@
 # Next
 
+# 4.2.1 - 2024-10-14
+
+1. fix: only log messages if debug is enabled
+
 # 4.2.0 - 2024-08-26
 
 1. Added `historicalMigration` option for use in tools that are migrating large data to PostHog

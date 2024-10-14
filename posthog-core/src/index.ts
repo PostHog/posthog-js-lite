@@ -113,11 +113,15 @@ export abstract class PostHogCoreStateless {
     this._isInitialized = true
   }
 
+  protected logMsgIfDebug(fn: () => void): void {
+    if (this.isDebug) {
+      fn()
+    }
+  }
+
   protected wrap(fn: () => void): void {
     if (this.disabled) {
-      if (this.isDebug) {
-        console.warn('[PostHog] The client is disabled')
-      }
+      this.logMsgIfDebug(() => console.warn('[PostHog] The client is disabled'))
       return
     }
 
@@ -500,7 +504,7 @@ export abstract class PostHogCoreStateless {
 
       if (queue.length >= this.maxQueueSize) {
         queue.shift()
-        console.info('Queue is full, the oldest event is dropped.')
+        this.logMsgIfDebug(() => console.info('Queue is full, the oldest event is dropped.'))
       }
 
       queue.push({ message })
@@ -695,7 +699,7 @@ export abstract class PostHogCoreStateless {
       if (!isPostHogFetchError(e)) {
         throw e
       }
-      console.error('Error while shutting down PostHog', e)
+      this.logMsgIfDebug(() => console.error('Error while shutting down PostHog', e))
     }
   }
 }
@@ -1167,9 +1171,11 @@ export abstract class PostHogCore extends PostHogCoreStateless {
             const sessionReplay = res?.sessionRecording
             if (sessionReplay) {
               this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, sessionReplay)
-              console.log('PostHog Debug', 'Session replay config: ', JSON.stringify(sessionReplay))
+              this.logMsgIfDebug(() =>
+                console.log('PostHog Debug', 'Session replay config: ', JSON.stringify(sessionReplay))
+              )
             } else {
-              console.info('PostHog Debug', 'Session replay config disabled.')
+              this.logMsgIfDebug(() => console.info('PostHog Debug', 'Session replay config disabled.'))
               this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, null)
             }
           }
@@ -1310,7 +1316,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       .catch((e) => {
         cb?.(e, undefined)
         if (!cb) {
-          console.log('[PostHog] Error reloading feature flags', e)
+          this.logMsgIfDebug(() => console.log('[PostHog] Error reloading feature flags', e))
         }
       })
   }

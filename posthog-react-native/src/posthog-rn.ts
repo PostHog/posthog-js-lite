@@ -130,8 +130,10 @@ export class PostHog extends PostHogCore {
 
       if (options?.captureNativeAppLifecycleEvents) {
         if (this._persistence === 'memory') {
-          console.warn(
-            'PostHog was initialised with persistence set to "memory", capturing native app events is not supported.'
+          this.logMsgIfDebug(() =>
+            console.warn(
+              'PostHog was initialised with persistence set to "memory", capturing native app events is not supported.'
+            )
           )
         } else {
           void this.captureNativeAppLifecycleEvents()
@@ -223,9 +225,11 @@ export class PostHog extends PostHogCore {
         try {
           OptionalReactNativeSessionReplay.endSession()
           OptionalReactNativeSessionReplay.startSession(sessionId)
-          console.info('PostHog Debug', `Session replay started with sessionId ${sessionId}.`)
+          this.logMsgIfDebug(() => console.info('PostHog Debug', `Session replay started with sessionId ${sessionId}.`))
         } catch (e) {
-          console.error('PostHog Debug', `Session replay failed to start with sessionId: ${e}.`)
+          this.logMsgIfDebug(() =>
+            console.error('PostHog Debug', `Session replay failed to start with sessionId: ${e}.`)
+          )
         }
       }
       this._currentSessionId = sessionId
@@ -239,9 +243,9 @@ export class PostHog extends PostHogCore {
     if (this._enableSessionReplay && OptionalReactNativeSessionReplay) {
       try {
         OptionalReactNativeSessionReplay.endSession()
-        console.info('PostHog Debug', `Session replay ended.`)
+        this.logMsgIfDebug(() => console.info('PostHog Debug', `Session replay ended.`))
       } catch (e) {
-        console.error('PostHog Debug', `Session replay failed to end: ${e}.`)
+        this.logMsgIfDebug(() => console.error('PostHog Debug', `Session replay failed to end: ${e}.`))
       }
     }
   }
@@ -254,9 +258,11 @@ export class PostHog extends PostHogCore {
       try {
         distinctId = distinctId || previousDistinctId
         OptionalReactNativeSessionReplay.identify(distinctId, this.getAnonymousId())
-        console.info('PostHog Debug', `Session replay identified with distinctId ${distinctId}.`)
+        this.logMsgIfDebug(() =>
+          console.info('PostHog Debug', `Session replay identified with distinctId ${distinctId}.`)
+        )
       } catch (e) {
-        console.error('PostHog Debug', `Session replay failed to identify: ${e}.`)
+        this.logMsgIfDebug(() => console.error('PostHog Debug', `Session replay failed to identify: ${e}.`))
       }
     }
   }
@@ -268,7 +274,7 @@ export class PostHog extends PostHogCore {
   private async startSessionReplay(options?: PostHogOptions): Promise<void> {
     this._enableSessionReplay = options?.enableSessionReplay
     if (!this._enableSessionReplay) {
-      console.info('PostHog Debug', 'Session replay is not enabled.')
+      this.logMsgIfDebug(() => console.info('PostHog Debug', 'Session replay is not enabled.'))
       return
     }
 
@@ -281,7 +287,9 @@ export class PostHog extends PostHogCore {
       androidDebouncerDelayMs: 500,
     }
 
-    console.log('PostHog Debug', `Session replay sdk config: ${JSON.stringify(sdkReplayConfig)}`)
+    this.logMsgIfDebug(() =>
+      console.log('PostHog Debug', `Session replay sdk config: ${JSON.stringify(sdkReplayConfig)}`)
+    )
 
     // if Decide has not returned yet, we will start session replay with default config.
     const sessionReplay = this.getPersistedProperty(PostHogPersistedProperty.SessionReplay) ?? {}
@@ -289,13 +297,15 @@ export class PostHog extends PostHogCore {
     // sessionReplay is always an object, if its a boolean, its false if disabled
     if (sessionReplay) {
       const decideReplayConfig = (sessionReplay as { [key: string]: JsonType }) ?? {}
-      console.log('PostHog Debug', `Session replay decide cached config: ${JSON.stringify(decideReplayConfig)}`)
+      this.logMsgIfDebug(() =>
+        console.log('PostHog Debug', `Session replay decide cached config: ${JSON.stringify(decideReplayConfig)}`)
+      )
 
       if (OptionalReactNativeSessionReplay) {
         const sessionId = this.getSessionId()
 
         if (sessionId.length === 0) {
-          console.warn('PostHog Debug', 'Session replay enabled but no sessionId found.')
+          this.logMsgIfDebug(() => console.warn('PostHog Debug', 'Session replay enabled but no sessionId found.'))
           return
         }
 
@@ -308,23 +318,27 @@ export class PostHog extends PostHogCore {
           sdkVersion: this.getLibraryVersion(),
         }
 
-        console.log('PostHog Debug', `Session replay sdk options: ${JSON.stringify(sdkOptions)}`)
+        this.logMsgIfDebug(() =>
+          console.log('PostHog Debug', `Session replay sdk options: ${JSON.stringify(sdkOptions)}`)
+        )
 
         try {
           if (!(await OptionalReactNativeSessionReplay.isEnabled())) {
             await OptionalReactNativeSessionReplay.start(sessionId, sdkOptions, sdkReplayConfig, decideReplayConfig)
-            console.info('PostHog Debug', `Session replay started with sessionId ${sessionId}.`)
+            this.logMsgIfDebug(() =>
+              console.info('PostHog Debug', `Session replay started with sessionId ${sessionId}.`)
+            )
           } else {
-            console.log('PostHog Debug', `Session replay already started.`)
+            this.logMsgIfDebug(() => console.log('PostHog Debug', `Session replay already started.`))
           }
         } catch (e) {
-          console.error('PostHog Debug', `Session replay failed to start: ${e}.`)
+          this.logMsgIfDebug(() => console.error('PostHog Debug', `Session replay failed to start: ${e}.`))
         }
       } else {
-        console.warn('PostHog Debug', 'Session replay enabled but not installed.')
+        this.logMsgIfDebug(() => console.warn('PostHog Debug', 'Session replay enabled but not installed.'))
       }
     } else {
-      console.info('PostHog Debug', 'Session replay disabled.')
+      this.logMsgIfDebug(() => console.info('PostHog Debug', 'Session replay disabled.'))
     }
   }
 
@@ -340,10 +354,12 @@ export class PostHog extends PostHogCore {
     const appVersion = this._appProperties.$app_version
 
     if (!appBuild || !appVersion) {
-      console.warn(
-        'PostHog could not track installation/update/open, as the build and version were not set. ' +
-          'This can happen if some dependencies are not installed correctly, or if you have provided' +
-          'customAppProperties but not included $app_build or $app_version.'
+      this.logMsgIfDebug(() =>
+        console.warn(
+          'PostHog could not track installation/update/open, as the build and version were not set. ' +
+            'This can happen if some dependencies are not installed correctly, or if you have provided' +
+            'customAppProperties but not included $app_build or $app_version.'
+        )
       )
     }
     if (appBuild) {
