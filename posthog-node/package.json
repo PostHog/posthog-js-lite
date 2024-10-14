@@ -31,9 +31,6 @@
     "@sentry/types": "^8.17.0",
     "commander": "^9.3.0"
   },
-  "peerDependencies": {
-    "@sentry/types": ">=8"
-  },
   "keywords": [
     "posthog",
     "stats",
