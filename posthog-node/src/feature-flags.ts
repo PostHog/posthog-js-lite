@@ -90,6 +90,12 @@ class FeatureFlagsPoller {
     this.debugMode = enabled
   }
 
+  private logMsgIfDebug(fn: () => void): void {
+    if (this.debugMode) {
+      fn()
+    }
+  }
+
   async getFeatureFlag(
     key: string,
     distinctId: string,
@@ -99,7 +105,7 @@ class FeatureFlagsPoller {
   ): Promise<string | boolean | undefined> {
     await this.loadFeatureFlags()
 
-    let response = undefined
+    let response: string | boolean | PromiseLike<string | boolean | undefined> | undefined = undefined
     let featureFlag = undefined
 
     if (!this.loadedSuccessfullyOnce) {
@@ -116,14 +122,10 @@ class FeatureFlagsPoller {
     if (featureFlag !== undefined) {
       try {
         response = this.computeFlagLocally(featureFlag, distinctId, groups, personProperties, groupProperties)
-        if (this.debugMode) {
-          console.debug(`Successfully computed flag locally: ${key} -> ${response}`)
-        }
+        this.logMsgIfDebug(() => console.debug(`Successfully computed flag locally: ${key} -> ${response}`))
       } catch (e) {
         if (e instanceof InconclusiveMatchError) {
-          if (this.debugMode) {
-            console.debug(`InconclusiveMatchError when computing flag locally: ${key}: ${e}`)
-          }
+          this.logMsgIfDebug(() => console.debug(`InconclusiveMatchError when computing flag locally: ${key}: ${e}`))
         } else if (e instanceof Error) {
           this.onError?.(new Error(`Error computing flag locally: ${key}: ${e}`))
         }
@@ -219,18 +221,18 @@ class FeatureFlagsPoller {
       const groupName = this.groupTypeMapping[String(aggregation_group_type_index)]
 
       if (!groupName) {
-        if (this.debugMode) {
+        this.logMsgIfDebug(() =>
           console.warn(
             `[FEATURE FLAGS] Unknown group type index ${aggregation_group_type_index} for feature flag ${flag.key}`
           )
-        }
+        )
         throw new InconclusiveMatchError('Flag has unknown group type index')
       }
 
       if (!(groupName in groups)) {
-        if (this.debugMode) {
+        this.logMsgIfDebug(() =>
           console.warn(`[FEATURE FLAGS] Can't compute group feature flag: ${flag.key} without group names passed in`)
-        }
+        )
         return false
       }
 
@@ -307,9 +309,7 @@ class FeatureFlagsPoller {
   ): boolean {
     const rolloutPercentage = condition.rollout_percentage
     const warnFunction = (msg: string): void => {
-      if (this.debugMode) {
-        console.warn(msg)
-      }
+      this.logMsgIfDebug(() => console.warn(msg))
     }
     if ((condition.properties || []).length > 0) {
       for (const prop of condition.properties) {
@@ -590,6 +590,7 @@ function matchCohort(
 }
 
 function matchPropertyGroup(
+  this: any,
   propertyGroup: PropertyGroup,
   propertyValues: Record<string, any>,
   cohortProperties: FeatureFlagsPoller['cohorts'],
@@ -626,9 +627,7 @@ function matchPropertyGroup(
         }
       } catch (err) {
         if (err instanceof InconclusiveMatchError) {
-          if (debugMode) {
-            console.debug(`Failed to compute property ${prop} locally: ${err}`)
-          }
+          this.logMsgIfDebug(() => console.debug(`Failed to compute property ${prop} locally: ${err}`))
           errorMatchingLocally = true
         } else {
           throw err
@@ -672,9 +671,7 @@ function matchPropertyGroup(
         }
       } catch (err) {
         if (err instanceof InconclusiveMatchError) {
-          if (debugMode) {
-            console.debug(`Failed to compute property ${prop} locally: ${err}`)
-          }
+          this.logMsgIfDebug(() => console.debug(`Failed to compute property ${prop} locally: ${err}`))
           errorMatchingLocally = true
         } else {
           throw err
