@@ -1,5 +1,9 @@
 # Next
 
+# 3.3.5 - 2024-10-15
+
+1. fix: only tries to read device context from react-native-device-info if expo libs are not available
+
 # 3.3.4 - 2024-10-14
 
 1. fix: only log messages if debug is enabled

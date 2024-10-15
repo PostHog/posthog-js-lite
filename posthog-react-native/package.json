@@ -1,6 +1,6 @@
 {
   "name": "posthog-react-native",
-  "version": "3.3.4",
+  "version": "3.3.5",
   "main": "lib/posthog-react-native/index.js",
   "files": [
     "lib/"
