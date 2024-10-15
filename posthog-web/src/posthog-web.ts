@@ -9,6 +9,11 @@ import { PostHogStorage, getStorage } from './storage'
 import { version } from '../package.json'
 import { PostHogOptions } from './types'
 
+export function _getWindow(): Window | undefined {
+  const _window: Window | undefined = typeof window !== 'undefined' ? window : undefined
+  return _window
+}
+
 export class PostHog extends PostHogCore {
   private _storage: PostHogStorage
   private _storageCache: any
@@ -19,7 +24,8 @@ export class PostHog extends PostHogCore {
 
     // posthog-js stores options in one object on
     this._storageKey = options?.persistence_name ? `ph_${options.persistence_name}` : `ph_${apiKey}_posthog`
-    this._storage = getStorage(options?.persistence || 'localStorage', window)
+
+    this._storage = getStorage(options?.persistence || 'localStorage', _getWindow())
     this.setupBootstrap(options)
 
     if (options?.preloadFeatureFlags !== false) {
@@ -50,6 +56,9 @@ export class PostHog extends PostHogCore {
   }
 
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
+    // TODO: what to do here?
+    // should we move this to core? https://github.com/PostHog/posthog-js-lite/blob/main/posthog-node/src/fetch.ts
+    // and reuse it here? if window isn't available?
     return window.fetch(url, options)
   }
 
@@ -68,7 +77,7 @@ export class PostHog extends PostHogCore {
   getCommonEventProperties(): any {
     return {
       ...super.getCommonEventProperties(),
-      ...getContext(window),
+      ...getContext(_getWindow()),
     }
   }
 }
