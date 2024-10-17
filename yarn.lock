@@ -2411,6 +2411,11 @@
     component-type "^1.2.1"
     join-component "^1.1.0"
 
+"@sentry/types-v7@npm:@sentry/types@^7.119.2":
+  version "7.119.2"
+  resolved "https://registry.yarnpkg.com/@sentry/types/-/types-7.119.2.tgz#e4c6b94ff868f45d6c0ed0f3f3e90e115d8be5cc"
+  integrity sha512-ydq1tWsdG7QW+yFaTp0gFaowMLNVikIqM70wxWNK+u98QzKnVY/3XTixxNLsUtnAB4Y+isAzFhrc6Vb5GFdFeg==
+
 "@sentry/types@^8.17.0":
   version "8.34.0"
   resolved "https://registry.yarnpkg.com/@sentry/types/-/types-8.34.0.tgz#b02da72d1be67df5246aa9a97ca661ee71569372"

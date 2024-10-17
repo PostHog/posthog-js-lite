@@ -29,6 +29,7 @@
   "devDependencies": {
     "@types/node": "^18.0.0",
     "@sentry/types": "^8.17.0",
+    "@sentry/types-v7": "npm:@sentry/types@^7.119.2",
     "commander": "^9.3.0"
   },
   "keywords": [

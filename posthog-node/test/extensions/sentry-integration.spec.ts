@@ -1,6 +1,7 @@
 // import { PostHog } from '../'
 import { PostHog as PostHog } from '../../src/posthog-node'
-import { PostHogSentryIntegration } from '../../src/extensions/sentry-integration'
+import { posthogSentryIntegration, PostHogSentryIntegration } from '../../src/extensions/sentry-integration'
+import * as SentryTypesV8 from '@sentry/types'
 jest.mock('../../src/fetch')
 import fetch from '../../src/fetch'
 import { waitForPromises } from 'posthog-core/test/test-utils/test-utils'
@@ -62,7 +63,8 @@ const createMockSentryException = (): any => ({
 
 describe('PostHogSentryIntegration', () => {
   let posthog: PostHog
-  let posthogSentry: PostHogSentryIntegration
+  let posthogSentryV8: SentryTypesV8.Integration
+  let posthogSentryV7: PostHogSentryIntegration
 
   jest.useFakeTimers()
 
@@ -72,7 +74,8 @@ describe('PostHogSentryIntegration', () => {
       fetchRetryCount: 0,
     })
 
-    posthogSentry = new PostHogSentryIntegration(posthog)
+    posthogSentryV7 = new PostHogSentryIntegration(posthog)
+    posthogSentryV8 = posthogSentryIntegration(posthog)
 
     mockedFetch.mockResolvedValue({
       status: 200,
@@ -93,7 +96,14 @@ describe('PostHogSentryIntegration', () => {
     expect(mockedFetch).toHaveBeenCalledTimes(0)
 
     let processorFunction: any
-    const mockSentry = {
+    const mockSentryV7 = {
+      getClient: () => ({
+        getDsn: () => ({
+          projectId: 123,
+        }),
+      }),
+    }
+    const mockSentryV8 = {
       getDsn: () => ({
         projectId: 123,
       }),
@@ -102,8 +112,13 @@ describe('PostHogSentryIntegration', () => {
       },
     }
 
+    posthogSentryV7.setupOnce(
+      (fn) => (processorFunction = fn),
+      // @ts-expect-error - we're mocking the Sentry integration
+      () => mockSentryV7
+    )
     // @ts-expect-error - we're mocking the Sentry integration
-    posthogSentry.setup(mockSentry)
+    posthogSentryV8.setup(mockSentryV8)
 
     processorFunction(createMockSentryException())
 
