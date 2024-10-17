@@ -1,6 +1,7 @@
 // import { PostHog } from '../'
 import { PostHog as PostHog } from '../../src/posthog-node'
-import { PostHogSentryIntegration } from '../../src/extensions/sentry-integration'
+import { posthogSentryIntegration, PostHogSentryIntegration } from '../../src/extensions/sentry-integration'
+import * as SentryTypesV8 from '@sentry/types'
 jest.mock('../../src/fetch')
 import fetch from '../../src/fetch'
 import { waitForPromises } from 'posthog-core/test/test-utils/test-utils'
@@ -62,7 +63,8 @@ const createMockSentryException = (): any => ({
 
 describe('PostHogSentryIntegration', () => {
   let posthog: PostHog
-  let posthogSentry: PostHogSentryIntegration
+  let posthogSentryV8: SentryTypesV8.Integration
+  let posthogSentryV7: PostHogSentryIntegration
 
   jest.useFakeTimers()
 
@@ -72,7 +74,8 @@ describe('PostHogSentryIntegration', () => {
       fetchRetryCount: 0,
     })
 
-    posthogSentry = new PostHogSentryIntegration(posthog)
+    posthogSentryV7 = new PostHogSentryIntegration(posthog)
+    posthogSentryV8 = posthogSentryIntegration(posthog)
 
     mockedFetch.mockResolvedValue({
       status: 200,
@@ -92,20 +95,30 @@ describe('PostHogSentryIntegration', () => {
   it('should forward sentry exceptions to posthog', async () => {
     expect(mockedFetch).toHaveBeenCalledTimes(0)
 
-    const mockSentry = {
+    let processorFunction: any
+    const mockSentryV7 = {
       getClient: () => ({
         getDsn: () => ({
           projectId: 123,
         }),
       }),
     }
+    const mockSentryV8 = {
+      getDsn: () => ({
+        projectId: 123,
+      }),
+      addEventProcessor: (fn: any) => {
+        processorFunction = fn
+      },
+    }
 
-    let processorFunction: any
-
-    posthogSentry.setupOnce(
+    posthogSentryV7.setupOnce(
       (fn) => (processorFunction = fn),
-      () => mockSentry
+      // @ts-expect-error - we're mocking the Sentry integration
+      () => mockSentryV7
     )
+    // @ts-expect-error - we're mocking the Sentry integration
+    posthogSentryV8.setup(mockSentryV8)
 
     processorFunction(createMockSentryException())
 
