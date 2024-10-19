@@ -1,5 +1,9 @@
 # Next
 
+# 3.3.6 - 2024-10-19
+
+1. fix: all sdkReplayConfig should have a default value
+
 # 3.3.5 - 2024-10-15
 
 1. fix: only tries to read device context from react-native-device-info if expo libs are not available
