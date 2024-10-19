@@ -278,13 +278,22 @@ export class PostHog extends PostHogCore {
       return
     }
 
-    const sdkReplayConfig = options?.sessionReplayConfig ?? {
-      maskAllTextInputs: true,
-      maskAllImages: true,
-      captureLog: true,
-      captureNetworkTelemetry: true,
-      iOSdebouncerDelayMs: 1000,
-      androidDebouncerDelayMs: 500,
+    const {
+      maskAllTextInputs = true,
+      maskAllImages = true,
+      captureLog = true,
+      captureNetworkTelemetry = true,
+      iOSdebouncerDelayMs = 1000,
+      androidDebouncerDelayMs = 500,
+    } = options?.sessionReplayConfig ?? {}
+
+    const sdkReplayConfig = {
+      maskAllTextInputs,
+      maskAllImages,
+      captureLog,
+      captureNetworkTelemetry,
+      iOSdebouncerDelayMs,
+      androidDebouncerDelayMs,
     }
 
     this.logMsgIfDebug(() =>
