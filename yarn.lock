@@ -8551,7 +8551,7 @@ possible-typed-array-names@^1.0.0:
   resolved "https://registry.yarnpkg.com/possible-typed-array-names/-/possible-typed-array-names-1.0.0.tgz#89bb63c6fada2c3e90adc4a647beeeb39cc7bf8f"
   integrity sha512-d7Uw+eZoloe0EHDIYoe+bQ5WXnGMOpmiZFTuMWCwpjzzkL2nTjcKiAk4hh8TjnGye2TwWOk3UXucZ+3rbmBa8Q==
 
-posthog-react-native-session-replay@^0.1.2:
+posthog-react-native-session-replay@^0.1.5:
   version "0.1.5"
   resolved "https://registry.yarnpkg.com/posthog-react-native-session-replay/-/posthog-react-native-session-replay-0.1.5.tgz#85af854b40b8f94edf0a847d4622afa5b3888891"
   integrity sha512-roFi9JDrJ8Nd2yvp7FqEbleHQV3Jv+Gh0cKHXYs98HDHuPy3ELnXOgcBU5BG0GmRVPxF9GLOaxbSiak6kaVQbg==
