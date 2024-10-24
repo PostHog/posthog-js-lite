@@ -62,7 +62,7 @@ export abstract class PostHogCoreStateless {
   private removeDebugCallback?: () => void
   private disableGeoip: boolean = true
   private historicalMigration: boolean = false
-  public disabled = false
+  protected disabled = false
 
   private defaultOptIn: boolean = true
   private pendingPromises: Record<string, Promise<any>> = {}
@@ -174,6 +174,10 @@ export abstract class PostHogCoreStateless {
 
   get isDebug(): boolean {
     return !!this.removeDebugCallback
+  }
+
+  get isDisabled(): boolean {
+    return this.disabled
   }
 
   private buildPayload(payload: { distinct_id: string; event: string; properties?: PostHogEventProperties }): any {
