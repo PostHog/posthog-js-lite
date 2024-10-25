@@ -288,7 +288,7 @@ export class PostHog extends PostHogCore {
       captureLog = true,
       captureNetworkTelemetry = true,
       iOSdebouncerDelayMs = 1000,
-      androidDebouncerDelayMs = 500,
+      androidDebouncerDelayMs = 1000,
     } = options?.sessionReplayConfig ?? {}
 
     const sdkReplayConfig = {

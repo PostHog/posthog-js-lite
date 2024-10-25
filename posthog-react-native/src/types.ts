@@ -78,7 +78,8 @@ export type PostHogSessionReplayConfig = {
    * Deboucer delay used to reduce the number of snapshots captured and reduce performance impact
    * This is used for capturing the view as a screenshot
    * The lower the number more snapshots will be captured but higher the performance impact
-   * Defaults to 0.5s
+   * Defaults to 1000ms (1s)
+   * Ps: it was 500ms (0.5s) by default until version 3.3.7
    */
   androidDebouncerDelayMs?: number
   /**
