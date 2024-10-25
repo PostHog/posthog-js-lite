@@ -212,10 +212,14 @@ export class PostHog extends PostHogCore {
     )
   }
 
+  _isEnableSessionReplay(): boolean {
+    return !this.isDisabled && (this._enableSessionReplay ?? false)
+  }
+
   getSessionId(): string {
     const sessionId = super.getSessionId()
 
-    if (!this._enableSessionReplay) {
+    if (!this._isEnableSessionReplay()) {
       return sessionId
     }
 
@@ -240,7 +244,7 @@ export class PostHog extends PostHogCore {
 
   resetSessionId(): void {
     super.resetSessionId()
-    if (this._enableSessionReplay && OptionalReactNativeSessionReplay) {
+    if (this._isEnableSessionReplay() && OptionalReactNativeSessionReplay) {
       try {
         OptionalReactNativeSessionReplay.endSession()
         this.logMsgIfDebug(() => console.info('PostHog Debug', `Session replay ended.`))
@@ -254,7 +258,7 @@ export class PostHog extends PostHogCore {
     const previousDistinctId = this.getDistinctId()
     super.identify(distinctId, properties, options)
 
-    if (this._enableSessionReplay && OptionalReactNativeSessionReplay) {
+    if (this._isEnableSessionReplay() && OptionalReactNativeSessionReplay) {
       try {
         distinctId = distinctId || previousDistinctId
         OptionalReactNativeSessionReplay.identify(distinctId, this.getAnonymousId())
@@ -273,7 +277,7 @@ export class PostHog extends PostHogCore {
 
   private async startSessionReplay(options?: PostHogOptions): Promise<void> {
     this._enableSessionReplay = options?.enableSessionReplay
-    if (!this._enableSessionReplay) {
+    if (!this._isEnableSessionReplay()) {
       this.logMsgIfDebug(() => console.info('PostHog Debug', 'Session replay is not enabled.'))
       return
     }

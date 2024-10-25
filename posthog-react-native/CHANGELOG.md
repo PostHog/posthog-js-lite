@@ -1,5 +1,9 @@
 # Next
 
+# 3.3.7 - 2024-10-25
+
+1. fix: session replay respects the `disabled` flag
+
 # 3.3.6 - 2024-10-19
 
 1. fix: all sdkReplayConfig should have a default value
