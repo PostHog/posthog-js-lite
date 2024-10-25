@@ -1,5 +1,9 @@
 # Next
 
+# 3.3.8 - 2024-10-25
+
+1. chore: change androidDebouncerDelayMs default from 500ms to 1000ms (1s)
+
 # 3.3.7 - 2024-10-25
 
 1. fix: session replay respects the `disabled` flag
