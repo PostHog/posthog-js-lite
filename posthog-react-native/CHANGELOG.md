@@ -1,5 +1,9 @@
 # Next
 
+# 3.3.9 - 2024-10-26
+
+1. fix: rollback module to ESNext
+
 # 3.3.8 - 2024-10-25
 
 1. chore: change androidDebouncerDelayMs default from 500ms to 1000ms (1s)
