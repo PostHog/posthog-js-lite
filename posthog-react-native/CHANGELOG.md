@@ -1,5 +1,7 @@
 # Next
 
+# 3.3.10 - 2024-11-04
+
 1. fix: capture customLabelProp if set
 
 # 3.3.9 - 2024-10-26
