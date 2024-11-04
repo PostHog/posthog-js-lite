@@ -93,7 +93,7 @@ export const PostHogProvider = ({
 
   return (
     <View
-    {...{ [phLabelProp]: 'PostHogProvider' }} // Dynamically setting customLabelProp (default: ph-label)
+      {...{ [phLabelProp]: 'PostHogProvider' }} // Dynamically setting customLabelProp (default: ph-label)
       style={style || { flex: 1 }}
       onTouchEndCapture={captureTouches ? (e) => onTouch('end', e) : undefined}
     >
