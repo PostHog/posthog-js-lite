@@ -71,7 +71,7 @@ export const PostHogProvider = ({
   const captureScreens = !captureNone && posthog && (captureAll || (autocaptureOptions?.captureScreens ?? true)) // Default to true if not set
   const captureLifecycle =
     !captureNone && posthog && (captureAll || (autocaptureOptions?.captureLifecycleEvents ?? true)) // Default to true if not set
-  const phLabelProp = autocaptureOptions?.customLabelProp ?? defaultPostHogLabelProp
+  const phLabelProp = autocaptureOptions?.customLabelProp || defaultPostHogLabelProp
 
   useEffect(() => {
     posthog.debug(debug)
