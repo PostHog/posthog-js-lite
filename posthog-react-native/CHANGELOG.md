@@ -1,5 +1,7 @@
 # Next
 
+1. fix: capture customLabelProp if set
+
 # 3.3.9 - 2024-10-26
 
 1. fix: rollback module to ESNext

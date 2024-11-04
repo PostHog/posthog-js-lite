@@ -39,14 +39,16 @@ const sanitiseLabel = (label: string): string => {
   return label.replace(/[^a-z0-9]+/gi, '-')
 }
 
+export const defaultPostHogLabelProp = 'ph-label'
+
 export const autocaptureFromTouchEvent = (e: any, posthog: PostHog, options: PostHogAutocaptureOptions = {}): void => {
   const {
     noCaptureProp = 'ph-no-capture',
-    customLabelProp = 'ph-label',
+    customLabelProp = defaultPostHogLabelProp,
     maxElementsCaptured = 20,
     ignoreLabels = [],
-    propsToCapture = ['style', 'testID', 'accessibilityLabel', 'ph-label', 'children'],
   } = options
+  const propsToCapture = ['style', 'testID', 'accessibilityLabel', customLabelProp, 'children']
 
   if (!e._targetInst) {
     return
@@ -105,16 +107,16 @@ export const autocaptureFromTouchEvent = (e: any, posthog: PostHog, options: Pos
   }
 
   if (elements.length) {
-    // The element that was tapped, may be a child (or grandchild of an element with a ph-label)
-    // In this case, the current labels applied obscure the ph-label
-    // To correct this, loop over the elements in reverse, and promote the ph-label
+    // The element that was tapped, may be a child (or grandchild of an element with a customLabelProp (default: ph-label))
+    // In this case, the current labels applied obscure the customLabelProp (default: ph-label)
+    // To correct this, loop over the elements in reverse, and promote the customLabelProp (default: ph-label)
     const elAttrLabelKey = `attr__${customLabelProp}`
     let lastLabel: string | undefined = undefined
 
     for (let i = elements.length - 1; i >= 0; i--) {
       const element = elements[i]
       if (element[elAttrLabelKey]) {
-        // this element had a ph-label set, promote it to the lastLabel
+        // this element had a customLabelProp (default: ph-label) set, promote it to the lastLabel
         lastLabel = element[elAttrLabelKey]
       }
 
