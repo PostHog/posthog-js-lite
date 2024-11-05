@@ -6,6 +6,7 @@ import { useNavigationTracker } from './hooks/useNavigationTracker'
 import { useLifecycleTracker } from './hooks/useLifecycleTracker'
 import { PostHogContext } from './PostHogContext'
 import { PostHogAutocaptureOptions } from './types'
+import { defaultPostHogLabelProp } from './autocapture'
 
 export interface PostHogProviderProps {
   children: React.ReactNode
@@ -70,6 +71,7 @@ export const PostHogProvider = ({
   const captureScreens = !captureNone && posthog && (captureAll || (autocaptureOptions?.captureScreens ?? true)) // Default to true if not set
   const captureLifecycle =
     !captureNone && posthog && (captureAll || (autocaptureOptions?.captureLifecycleEvents ?? true)) // Default to true if not set
+  const phLabelProp = autocaptureOptions?.customLabelProp || defaultPostHogLabelProp
 
   useEffect(() => {
     posthog.debug(debug)
@@ -91,7 +93,7 @@ export const PostHogProvider = ({
 
   return (
     <View
-      ph-label="PostHogProvider"
+      {...{ [phLabelProp]: 'PostHogProvider' }} // Dynamically setting customLabelProp (default: ph-label)
       style={style || { flex: 1 }}
       onTouchEndCapture={captureTouches ? (e) => onTouch('end', e) : undefined}
     >
