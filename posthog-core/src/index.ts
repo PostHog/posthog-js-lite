@@ -672,39 +672,59 @@ export abstract class PostHogCoreStateless {
   }
 
   async shutdown(shutdownTimeoutMs: number = 30000): Promise<void> {
-    await this._initPromise
+    // A little tricky - we want to have a max shutdown time and enforce it, even if that means we have some
+    // dangling promises. We'll keep track of the timeout and resolve/reject based on that.
 
+    await this._initPromise
+    let hasTimedOut = false
     this.clearFlushTimer()
 
-    try {
-      await Promise.all(Object.values(this.pendingPromises))
+    const doShutdown = async (): Promise<void> => {
+      try {
+        await Promise.all(Object.values(this.pendingPromises))
 
-      const startTimeWithDelay = Date.now() + shutdownTimeoutMs
+        while (true) {
+          const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
 
-      while (true) {
-        const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
+          if (queue.length === 0) {
+            break
+          }
 
-        if (queue.length === 0) {
-          break
+          // flush again to make sure we send all events, some of which might've been added
+          // while we were waiting for the pending promises to resolve
+          // For example, see sendFeatureFlags in posthog-node/src/posthog-node.ts::capture
+          await this.flush()
+
+          if (hasTimedOut) {
+            break
+          }
         }
-
-        // flush again to make sure we send all events, some of which might've been added
-        // while we were waiting for the pending promises to resolve
-        // For example, see sendFeatureFlags in posthog-node/src/posthog-node.ts::capture
-        await this.flush()
-
-        // If we've been waiting for more than the shutdownTimeoutMs, stop it
-        const now = Date.now()
-        if (startTimeWithDelay < now) {
-          break
+      } catch (e) {
+        if (!isPostHogFetchError(e)) {
+          throw e
         }
+        this.logMsgIfDebug(() => console.error('Error while shutting down PostHog', e))
       }
-    } catch (e) {
-      if (!isPostHogFetchError(e)) {
-        throw e
-      }
-      this.logMsgIfDebug(() => console.error('Error while shutting down PostHog', e))
     }
+
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        hasTimedOut = true
+        reject(new Error('PostHog shutdown timed out'))
+      }, shutdownTimeoutMs)
+
+      doShutdown()
+        .then(() => {
+          if (!hasTimedOut) {
+            resolve()
+          }
+        })
+        .catch((e) => {
+          if (!hasTimedOut) {
+            reject(e)
+          }
+        })
+    })
   }
 }
 
