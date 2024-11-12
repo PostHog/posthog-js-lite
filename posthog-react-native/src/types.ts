@@ -49,7 +49,7 @@ export interface PostHogCustomAppProperties {
 
 export type PostHogSessionReplayConfig = {
   /**
-   * Enable masking of all text input fields
+   * Enable masking of all text and text input fields
    * Experimental support
    * Default: true
    */
