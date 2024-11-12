@@ -707,24 +707,16 @@ export abstract class PostHogCoreStateless {
       }
     }
 
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        hasTimedOut = true
-        reject(new Error('PostHog shutdown timed out'))
-      }, shutdownTimeoutMs)
-
-      doShutdown()
-        .then(() => {
-          if (!hasTimedOut) {
-            resolve()
-          }
-        })
-        .catch((e) => {
-          if (!hasTimedOut) {
-            reject(e)
-          }
-        })
-    })
+    return Promise.race([
+      doShutdown(),
+      new Promise<void>((resolve, reject) => {
+        safeSetTimeout(() => {
+          this.logMsgIfDebug(() => console.error('Timedout while shutting down PostHog'))
+          hasTimedOut = true
+          reject()
+        }, shutdownTimeoutMs)
+      }),
+    ])
   }
 }
 
