@@ -709,9 +709,9 @@ export abstract class PostHogCoreStateless {
 
     return Promise.race([
       doShutdown(),
-      new Promise<void>((resolve, reject) => {
+      new Promise<void>((_, reject) => {
         safeSetTimeout(() => {
-          this.logMsgIfDebug(() => console.error('Timedout while shutting down PostHog'))
+          this.logMsgIfDebug(() => console.error('Timed out while shutting down PostHog'))
           hasTimedOut = true
           reject()
         }, shutdownTimeoutMs)

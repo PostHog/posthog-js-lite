@@ -21,5 +21,22 @@ describe('PostHog Core', () => {
       await posthog.shutdown()
       expect(mocks.fetch).toHaveBeenCalledTimes(1)
     })
+
+    it.only('respects timeout', async () => {
+      mocks.fetch.mockImplementation(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+        console.log('FETCH RETURNED')
+        return {
+          status: 200,
+          text: () => Promise.resolve('ok'),
+          json: () => Promise.resolve({ status: 'ok' }),
+        }
+      })
+
+      posthog.capture('test-event')
+
+      await expect(posthog.shutdown(100)).rejects.toThrow('Timeout')
+      expect(mocks.fetch).toHaveBeenCalledTimes(1)
+    })
   })
 })
