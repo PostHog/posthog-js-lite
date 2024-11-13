@@ -708,14 +708,14 @@ export abstract class PostHogCoreStateless {
     }
 
     return Promise.race([
-      doShutdown(),
       new Promise<void>((_, reject) => {
         safeSetTimeout(() => {
           this.logMsgIfDebug(() => console.error('Timed out while shutting down PostHog'))
           hasTimedOut = true
-          reject()
+          reject('Timeout while shutting down PostHog. Some events may not have been sent.')
         }, shutdownTimeoutMs)
       }),
+      doShutdown(),
     ])
   }
 }

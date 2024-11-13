@@ -35,7 +35,14 @@ describe('PostHog Core', () => {
 
       posthog.capture('test-event')
 
-      await expect(posthog.shutdown(100)).rejects.toThrow('Timeout')
+      await posthog
+        .shutdown(100)
+        .then(() => {
+          throw new Error('Should not resolve')
+        })
+        .catch((e) => {
+          expect(e).toEqual('Timeout while shutting down PostHog. Some events may not have been sent.')
+        })
       expect(mocks.fetch).toHaveBeenCalledTimes(1)
     })
   })
