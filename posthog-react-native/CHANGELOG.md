@@ -1,5 +1,9 @@
 # Next
 
+# 3.3.11 - 2024-11-13
+
+1. fix: respect the given propsToCapture autocapture option
+
 # 3.3.10 - 2024-11-04
 
 1. fix: capture customLabelProp if set
