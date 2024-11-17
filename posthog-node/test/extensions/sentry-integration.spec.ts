@@ -93,6 +93,7 @@ describe('PostHogSentryIntegration', () => {
     expect(mockedFetch).toHaveBeenCalledTimes(0)
 
     const mockSentry = {
+			addEventProcessor: (fn) => (processorFunction = fn),
       getClient: () => ({
         getDsn: () => ({
           projectId: 123,
@@ -102,10 +103,12 @@ describe('PostHogSentryIntegration', () => {
 
     let processorFunction: any
 
-    posthogSentry.setupOnce(
-      (fn) => (processorFunction = fn),
-      () => mockSentry
-    )
+    // posthogSentry.setupOnce(
+    //   (fn) => (processorFunction = fn),
+    //   () => mockSentry
+    // )
+
+		posthogSentry.setup(mockSentry)
 
     processorFunction(createMockSentryException())
 
