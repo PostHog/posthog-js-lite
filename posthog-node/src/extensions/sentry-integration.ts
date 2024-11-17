@@ -8,25 +8,19 @@ import { type PostHog } from '../posthog-node'
 
 // import {
 //     Event as _SentryEvent,
-//     EventProcessor as _SentryEventProcessor,
 //     Exception as _SentryException,
-//     Hub as _SentryHub,
 //     Integration as _SentryIntegration,
 //     Primitive as _SentryPrimitive,
+//     Client as _SentryClient,
 // } from '@sentry/types'
 
 // Uncomment the above and comment the below to get type checking for development
 
 type _SentryEvent = any
-type _SentryEventProcessor = any
-type _SentryHub = any
 type _SentryException = any
 type _SentryPrimitive = any
-
-interface _SentryIntegration {
-  name: string
-  setupOnce(addGlobalEventProcessor: (callback: _SentryEventProcessor) => void, getCurrentHub: () => _SentryHub): void
-}
+type _SentryClient = any
+type _SentryIntegration = any
 
 interface PostHogSentryExceptionProperties {
   $sentry_event_id?: string
@@ -73,11 +67,10 @@ export class PostHogSentryIntegration implements _SentryIntegration {
     this.posthogHost = posthog.options.host ?? 'https://us.i.posthog.com'
   }
 
-  public setupOnce(
-    addGlobalEventProcessor: (callback: _SentryEventProcessor) => void,
-    getCurrentHub: () => _SentryHub
+  public setup(
+    client: _SentryClient
   ): void {
-    addGlobalEventProcessor((event: _SentryEvent): _SentryEvent => {
+    client.addEventProcessor((event: _SentryEvent): _SentryEvent => {
       if (event.exception?.values === undefined || event.exception.values.length === 0) {
         return event
       }
@@ -85,8 +78,6 @@ export class PostHogSentryIntegration implements _SentryIntegration {
       if (!event.tags) {
         event.tags = {}
       }
-
-      const sentry = getCurrentHub()
 
       // Get the PostHog user ID from a specific tag, which users can set on their Sentry scope as they need.
       const userId = event.tags[PostHogSentryIntegration.POSTHOG_ID_TAG]
@@ -110,7 +101,7 @@ export class PostHogSentryIntegration implements _SentryIntegration {
         $sentry_tags: event.tags,
       }
 
-      const projectId = sentry.getClient()?.getDsn()?.projectId
+      const projectId = client.getDsn()?.projectId
       if (this.organization !== undefined && projectId !== undefined && event.event_id !== undefined) {
         properties.$sentry_url = `${this.prefix ?? 'https://sentry.io/organizations'}/${
           this.organization

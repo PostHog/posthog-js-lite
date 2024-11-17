@@ -27,6 +27,7 @@
     "rusha": "^0.8.14"
   },
   "devDependencies": {
+    "@sentry/types": "^8.38.0",
     "@types/node": "^18.0.0",
     "commander": "^9.3.0"
   },
