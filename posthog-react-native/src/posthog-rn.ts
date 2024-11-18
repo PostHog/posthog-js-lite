@@ -217,8 +217,8 @@ export class PostHog extends PostHogCore {
   }
 
   _resetSessionId(reactNativeSessionReplay: typeof OptionalReactNativeSessionReplay, sessionId: string): void {
-    reactNativeSessionReplay.endSession()
-    reactNativeSessionReplay.startSession(sessionId)
+    reactNativeSessionReplay?.endSession()
+    reactNativeSessionReplay?.startSession(sessionId)
   }
 
   getSessionId(): string {
