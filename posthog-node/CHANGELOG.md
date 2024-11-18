@@ -1,5 +1,9 @@
 # Next
 
+# 4.2.2 - 2024-11-18
+
+1. fix: Shutdown will now respect the timeout and forcefully return rather than returning after the next fetch.
+
 # 4.2.1 - 2024-10-14
 
 1. fix: only log messages if debug is enabled
