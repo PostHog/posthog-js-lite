@@ -1,5 +1,9 @@
 # Next
 
+# 3.3.12 - 2024-11-18
+
+1. fix: session replay forces the session id if the SDK is already enabled
+
 # 3.3.11 - 2024-11-13
 
 1. fix: respect the given propsToCapture autocapture option

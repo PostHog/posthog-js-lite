@@ -216,6 +216,17 @@ export class PostHog extends PostHogCore {
     return !this.isDisabled && (this._enableSessionReplay ?? false)
   }
 
+  _resetSessionId(
+    reactNativeSessionReplay: typeof OptionalReactNativeSessionReplay | undefined,
+    sessionId: string
+  ): void {
+    // _resetSessionId is only called if reactNativeSessionReplay not undefined, but the linter wasn't happy
+    if (reactNativeSessionReplay) {
+      reactNativeSessionReplay.endSession()
+      reactNativeSessionReplay.startSession(sessionId)
+    }
+  }
+
   getSessionId(): string {
     const sessionId = super.getSessionId()
 
@@ -227,8 +238,7 @@ export class PostHog extends PostHogCore {
     if (sessionId.length > 0 && this._currentSessionId && sessionId !== this._currentSessionId) {
       if (OptionalReactNativeSessionReplay) {
         try {
-          OptionalReactNativeSessionReplay.endSession()
-          OptionalReactNativeSessionReplay.startSession(sessionId)
+          this._resetSessionId(OptionalReactNativeSessionReplay, sessionId)
           this.logMsgIfDebug(() => console.info('PostHog Debug', `Session replay started with sessionId ${sessionId}.`))
         } catch (e) {
           this.logMsgIfDebug(() =>
@@ -237,6 +247,11 @@ export class PostHog extends PostHogCore {
         }
       }
       this._currentSessionId = sessionId
+    } else {
+      console.log(
+        'PostHog Debug',
+        `Session replay session id not rotated, sessionId ${sessionId} and currentSessionId ${this._currentSessionId}.`
+      )
     }
 
     return sessionId
@@ -342,7 +357,11 @@ export class PostHog extends PostHogCore {
               console.info('PostHog Debug', `Session replay started with sessionId ${sessionId}.`)
             )
           } else {
-            this.logMsgIfDebug(() => console.log('PostHog Debug', `Session replay already started.`))
+            // if somehow the SDK is already enabled with a different sessionId, we reset it
+            this._resetSessionId(OptionalReactNativeSessionReplay, sessionId)
+            this.logMsgIfDebug(() =>
+              console.log('PostHog Debug', `Session replay already started with sessionId ${sessionId}.`)
+            )
           }
         } catch (e) {
           this.logMsgIfDebug(() => console.error('PostHog Debug', `Session replay failed to start: ${e}.`))
