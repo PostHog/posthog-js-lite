@@ -216,7 +216,7 @@ export class PostHog extends PostHogCore {
     return !this.isDisabled && (this._enableSessionReplay ?? false)
   }
 
-  _resetSessionId(reactNativeSessionReplay: OptionalReactNativeSessionReplay, sessionId: string): void {
+  _resetSessionId(reactNativeSessionReplay: typeof OptionalReactNativeSessionReplay, sessionId: string): void {
     reactNativeSessionReplay.endSession()
     reactNativeSessionReplay.startSession(sessionId)
   }
