@@ -51,7 +51,7 @@ export abstract class PostHogCoreStateless {
   // options
   readonly apiKey: string
   readonly host: string
-  private flushAt: number
+  readonly flushAt: number
   private maxBatchSize: number
   private maxQueueSize: number
   private flushInterval: number
