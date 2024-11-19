@@ -344,6 +344,7 @@ export class PostHog extends PostHogCore {
           distinctId: this.getDistinctId(),
           anonymousId: this.getAnonymousId(),
           sdkVersion: this.getLibraryVersion(),
+          flushAt: this.flushAt,
         }
 
         this.logMsgIfDebug(() =>

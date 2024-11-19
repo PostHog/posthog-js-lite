@@ -1,5 +1,7 @@
 # Next
 
+1. fix: session replay respects the flushAt flag
+
 # 3.3.12 - 2024-11-18
 
 1. fix: session replay forces the session id if the SDK is already enabled
