@@ -1,5 +1,7 @@
 # Next
 
+# 3.3.13 - 2024-11-19
+
 1. fix: session replay respects the flushAt flag
 
 # 3.3.12 - 2024-11-18
