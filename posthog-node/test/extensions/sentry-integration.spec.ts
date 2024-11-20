@@ -39,6 +39,7 @@ const createMockSentryException = (): any => ({
   server_name: 'localhost',
   timestamp: 1704203482.356,
   environment: 'production',
+  level: 'error',
   tags: { posthog_distinct_id: 'EXAMPLE_APP_GLOBAL' },
   breadcrumbs: [
     {
@@ -119,16 +120,25 @@ describe('PostHogSentryIntegration', () => {
         distinct_id: 'EXAMPLE_APP_GLOBAL',
         event: '$exception',
         properties: {
+          $exception_level: 'error',
+          $exception_list: [
+            {
+              mechanism: { handled: true, type: 'generic' },
+              stacktrace: { frames: [], type: 'raw' },
+              type: 'Error',
+              value: 'example error',
+            },
+          ],
           $exception_message: 'example error',
           $exception_type: 'Error',
-          $exception_personURL: 'http://example.com/person/EXAMPLE_APP_GLOBAL',
+          $exception_personURL: 'http://example.com/project/TEST_API_KEY/person/EXAMPLE_APP_GLOBAL',
           $sentry_event_id: '80a7023ac32c47f7acb0adaed600d149',
           $sentry_exception: {
             values: [
               {
                 type: 'Error',
                 value: 'example error',
-                stacktrace: { frames: [] },
+                stacktrace: { frames: [], type: 'raw' },
                 mechanism: { type: 'generic', handled: true },
               },
             ],
@@ -137,7 +147,7 @@ describe('PostHogSentryIntegration', () => {
           $sentry_exception_type: 'Error',
           $sentry_tags: {
             posthog_distinct_id: 'EXAMPLE_APP_GLOBAL',
-            'PostHog Person URL': 'http://example.com/person/EXAMPLE_APP_GLOBAL',
+            'PostHog Person URL': 'http://example.com/project/TEST_API_KEY/person/EXAMPLE_APP_GLOBAL',
           },
           $lib: 'posthog-node',
           $lib_version: '1.2.3',

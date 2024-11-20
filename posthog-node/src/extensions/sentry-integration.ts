@@ -170,17 +170,22 @@ export class PostHogSentryIntegration implements _SentryIntegrationClass {
     getCurrentHub: () => _SentryHub
   ) => void
 
-  constructor(
-    _posthog: PostHog,
-    organization?: string,
-    projectId?: number,
-    prefix?: string,
-    severityAllowList?: SeverityLevel[] | '*'
-  ) {
+  constructor(_posthog: PostHog, organization?: string, prefix?: string, severityAllowList?: SeverityLevel[] | '*') {
     // setupOnce gets called by Sentry when it intializes the plugin
     this.name = NAME
-    this.setupOnce = function (addGlobalEventProcessor: (callback: _SentryEventProcessor) => void) {
-      addGlobalEventProcessor(createEventProcessor(_posthog, { organization, projectId, prefix, severityAllowList }))
+    this.setupOnce = function (
+      addGlobalEventProcessor: (callback: _SentryEventProcessor) => void,
+      getCurrentHub: () => _SentryHub
+    ) {
+      const projectId = getCurrentHub()?.getClient()?.getDsn()?.projectId
+      addGlobalEventProcessor(
+        createEventProcessor(_posthog, {
+          organization,
+          projectId,
+          prefix,
+          severityAllowList,
+        })
+      )
     }
   }
 }
