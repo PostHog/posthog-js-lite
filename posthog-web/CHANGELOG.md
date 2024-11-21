@@ -1,9 +1,12 @@
 # Next
 
+# 3.1.0 - 2024-11-21
+
 ## Changed
 
 1. chore: default `captureMode` changed to `json`.
     1. To keep using the `form` mode, just set the `captureMode` option to `form` when initializing the PostHog client.
+2. fix: identify method allows passing a $set_once object
 
 # 3.0.2 - 2024-06-15
 
