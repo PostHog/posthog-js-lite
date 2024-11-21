@@ -287,68 +287,75 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       disableGeoip?: boolean
     }
   ): Promise<JsonType | undefined> {
-    const { groups, disableGeoip } = options || {}
-    let { onlyEvaluateLocally, personProperties, groupProperties } = options || {}
+    const {
+      groups,
+      disableGeoip,
+      onlyEvaluateLocally = false,
+      sendFeatureFlagEvents = true,
+      personProperties,
+      groupProperties,
+    } = options || {}
 
-    const adjustedProperties = this.addLocalPersonAndGroupProperties(
+    const { allPersonProperties, allGroupProperties } = this.addLocalPersonAndGroupProperties(
       distinctId,
       groups,
       personProperties,
       groupProperties
     )
 
-    personProperties = adjustedProperties.allPersonProperties
-    groupProperties = adjustedProperties.allGroupProperties
+    const effectiveMatchValue =
+      matchValue !== undefined
+        ? matchValue
+        : await this.getFeatureFlag(key, distinctId, {
+            ...options,
+            onlyEvaluateLocally: true,
+            sendFeatureFlagEvents: false,
+          })
 
-    let payload: JsonType | undefined = undefined
-    let response: string | boolean | undefined = undefined
+    const { response, payload } = effectiveMatchValue
+      ? {
+          response: effectiveMatchValue,
+          payload: await this.featureFlagsPoller?.computeFeatureFlagPayloadLocally(key, effectiveMatchValue),
+        }
+      : { response: undefined, payload: undefined }
 
-    // Try to get match value locally if not provided
-    if (!matchValue) {
-      matchValue = await this.getFeatureFlag(key, distinctId, {
-        ...options,
-        onlyEvaluateLocally: true,
-        sendFeatureFlagEvents: false,
+    const payloadWasLocallyEvaluated = payload !== undefined
+
+    const finalFlagsAndPayloads =
+      payloadWasLocallyEvaluated || onlyEvaluateLocally
+        ? {
+            flags: { [key]: response },
+            payloads: { [key]: payload },
+          }
+        : await super.getFeatureFlagsAndPayloadsStateless(
+            distinctId,
+            groups,
+            allPersonProperties,
+            allGroupProperties,
+            disableGeoip
+          )
+
+    const finalResponse = finalFlagsAndPayloads.flags?.[key]
+    const finalPayload = finalFlagsAndPayloads.payloads?.[key]
+    const finalLocallyEvaluated = payloadWasLocallyEvaluated
+
+    if (sendFeatureFlagEvents && finalResponse !== undefined) {
+      this.capture({
+        distinctId,
+        event: '$feature_flag_payload_called',
+        properties: {
+          $feature_flag: key,
+          $feature_flag_response: finalResponse,
+          $feature_flag_payload: finalPayload,
+          locally_evaluated: finalLocallyEvaluated,
+          [`$feature/${key}`]: finalResponse,
+        },
+        groups,
+        disableGeoip,
       })
     }
 
-    if (matchValue) {
-      response = matchValue
-      payload = await this.featureFlagsPoller?.computeFeatureFlagPayloadLocally(key, matchValue)
-    }
-
-    // Set defaults
-    onlyEvaluateLocally = onlyEvaluateLocally ?? false
-    const payloadWasLocallyEvaluated = payload !== undefined
-
-    if (!payloadWasLocallyEvaluated && !onlyEvaluateLocally) {
-      const { flags, payloads } = await super.getFeatureFlagsAndPayloadsStateless(
-        distinctId,
-        groups,
-        personProperties,
-        groupProperties,
-        disableGeoip
-      )
-      response = flags?.[key]
-      payload = payloads?.[key]
-    }
-
-    // Send the event with the response and payload
-    this.capture({
-      distinctId,
-      event: '$feature_flag_payload_called',
-      properties: {
-        $feature_flag: key,
-        $feature_flag_response: response,
-        $feature_flag_payload: payload,
-        locally_evaluated: payloadWasLocallyEvaluated,
-        [`$feature/${key}`]: response,
-      },
-      groups,
-      disableGeoip,
-    })
-
-    return payload
+    return finalPayload
   }
 
   async isFeatureEnabled(
