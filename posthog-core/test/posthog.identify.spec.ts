@@ -30,11 +30,88 @@ describe('PostHog Core', () => {
             properties: {
               $lib: 'posthog-core-tests',
               $lib_version: '2.0.0-alpha',
-              foo: 'bar',
               $anon_distinct_id: expect.any(String),
               $session_id: expect.any(String),
               $set: {
                 foo: 'bar',
+              },
+            },
+            timestamp: '2022-01-01T00:00:00.000Z',
+            uuid: expect.any(String),
+            type: 'identify',
+          },
+        ],
+        sent_at: expect.any(String),
+      })
+    })
+
+    it('should send an $identify with $set and $set_once event', async () => {
+      posthog.identify('id-1', {
+        $set: {
+          foo: 'bar',
+        },
+        $set_once: {
+          vip: true,
+        },
+      })
+      await waitForPromises()
+      expect(mocks.fetch).toHaveBeenCalledTimes(2)
+      expect(parseBody(mocks.fetch.mock.calls[0])).toEqual({
+        api_key: 'TEST_API_KEY',
+        batch: [
+          {
+            event: '$identify',
+            distinct_id: posthog.getDistinctId(),
+            library: 'posthog-core-tests',
+            library_version: '2.0.0-alpha',
+            properties: {
+              $lib: 'posthog-core-tests',
+              $lib_version: '2.0.0-alpha',
+              $anon_distinct_id: expect.any(String),
+              $session_id: expect.any(String),
+              $set: {
+                foo: 'bar',
+              },
+              $set_once: {
+                vip: true,
+              },
+            },
+            timestamp: '2022-01-01T00:00:00.000Z',
+            uuid: expect.any(String),
+            type: 'identify',
+          },
+        ],
+        sent_at: expect.any(String),
+      })
+    })
+
+    it('should send an $identify with $set_once event', async () => {
+      posthog.identify('id-1', {
+        foo: 'bar',
+        $set_once: {
+          vip: true,
+        },
+      })
+      await waitForPromises()
+      expect(mocks.fetch).toHaveBeenCalledTimes(2)
+      expect(parseBody(mocks.fetch.mock.calls[0])).toEqual({
+        api_key: 'TEST_API_KEY',
+        batch: [
+          {
+            event: '$identify',
+            distinct_id: posthog.getDistinctId(),
+            library: 'posthog-core-tests',
+            library_version: '2.0.0-alpha',
+            properties: {
+              $lib: 'posthog-core-tests',
+              $lib_version: '2.0.0-alpha',
+              $anon_distinct_id: expect.any(String),
+              $session_id: expect.any(String),
+              $set: {
+                foo: 'bar',
+              },
+              $set_once: {
+                vip: true,
               },
             },
             timestamp: '2022-01-01T00:00:00.000Z',
