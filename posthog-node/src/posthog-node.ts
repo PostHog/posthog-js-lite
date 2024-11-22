@@ -349,7 +349,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
 
     this.capture({
       distinctId,
-      event: '$feature_flag_payload_called',
+      event: '$feature_flag_called',
       properties: {
         $feature_flag: key,
         $feature_flag_response: finalResponse,

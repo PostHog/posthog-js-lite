@@ -940,7 +940,7 @@ describe('PostHog Node.js', () => {
       expect(getLastBatchEvents()?.[0]).toEqual(
         expect.objectContaining({
           distinct_id: 'some-distinct-id',
-          event: '$feature_flag_payload_called',
+          event: '$feature_flag_called',
           properties: expect.objectContaining({
             $feature_flag: 'beta-feature',
             $feature_flag_response: true,
