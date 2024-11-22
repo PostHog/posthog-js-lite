@@ -342,7 +342,6 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       fetchedOrLocalPayloads = fetchedData.payloads || {}
     }
 
-    // Extract the final response and payload for the specific key
     const finalResponse = fetchedOrLocalFlags[key]
     const finalPayload = fetchedOrLocalPayloads[key]
     const finalLocallyEvaluated = payloadWasLocallyEvaluated
@@ -361,7 +360,6 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       disableGeoip,
     })
 
-    // Return the final payload
     return finalPayload
   }
 
