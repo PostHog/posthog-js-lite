@@ -287,14 +287,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       disableGeoip?: boolean
     }
   ): Promise<JsonType | undefined> {
-    const {
-      groups,
-      disableGeoip,
-      onlyEvaluateLocally = false,
-      sendFeatureFlagEvents = true,
-      personProperties,
-      groupProperties,
-    } = options || {}
+    const { groups, disableGeoip, onlyEvaluateLocally = false, personProperties, groupProperties } = options || {}
 
     const { allPersonProperties, allGroupProperties } = this.addLocalPersonAndGroupProperties(
       distinctId,
