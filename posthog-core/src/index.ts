@@ -51,7 +51,7 @@ export abstract class PostHogCoreStateless {
   // options
   readonly apiKey: string
   readonly host: string
-  private flushAt: number
+  readonly flushAt: number
   private maxBatchSize: number
   private maxQueueSize: number
   private flushInterval: number
@@ -62,7 +62,7 @@ export abstract class PostHogCoreStateless {
   private removeDebugCallback?: () => void
   private disableGeoip: boolean = true
   private historicalMigration: boolean = false
-  public disabled = false
+  protected disabled = false
 
   private defaultOptIn: boolean = true
   private pendingPromises: Record<string, Promise<any>> = {}
@@ -176,6 +176,10 @@ export abstract class PostHogCoreStateless {
     return !!this.removeDebugCallback
   }
 
+  get isDisabled(): boolean {
+    return this.disabled
+  }
+
   private buildPayload(payload: { distinct_id: string; event: string; properties?: PostHogEventProperties }): any {
     return {
       distinct_id: payload.distinct_id,
@@ -209,7 +213,7 @@ export abstract class PostHogCoreStateless {
   ): void {
     this.wrap(() => {
       // The properties passed to identifyStateless are event properties.
-      // To add person properties, pass in all person properties to the `$set` key.
+      // To add person properties, pass in all person properties to the `$set` and `$set_once` keys.
 
       const payload = {
         ...this.buildPayload({
@@ -668,39 +672,51 @@ export abstract class PostHogCoreStateless {
   }
 
   async shutdown(shutdownTimeoutMs: number = 30000): Promise<void> {
-    await this._initPromise
+    // A little tricky - we want to have a max shutdown time and enforce it, even if that means we have some
+    // dangling promises. We'll keep track of the timeout and resolve/reject based on that.
 
+    await this._initPromise
+    let hasTimedOut = false
     this.clearFlushTimer()
 
-    try {
-      await Promise.all(Object.values(this.pendingPromises))
+    const doShutdown = async (): Promise<void> => {
+      try {
+        await Promise.all(Object.values(this.pendingPromises))
 
-      const startTimeWithDelay = Date.now() + shutdownTimeoutMs
+        while (true) {
+          const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
 
-      while (true) {
-        const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
+          if (queue.length === 0) {
+            break
+          }
 
-        if (queue.length === 0) {
-          break
+          // flush again to make sure we send all events, some of which might've been added
+          // while we were waiting for the pending promises to resolve
+          // For example, see sendFeatureFlags in posthog-node/src/posthog-node.ts::capture
+          await this.flush()
+
+          if (hasTimedOut) {
+            break
+          }
         }
-
-        // flush again to make sure we send all events, some of which might've been added
-        // while we were waiting for the pending promises to resolve
-        // For example, see sendFeatureFlags in posthog-node/src/posthog-node.ts::capture
-        await this.flush()
-
-        // If we've been waiting for more than the shutdownTimeoutMs, stop it
-        const now = Date.now()
-        if (startTimeWithDelay < now) {
-          break
+      } catch (e) {
+        if (!isPostHogFetchError(e)) {
+          throw e
         }
+        this.logMsgIfDebug(() => console.error('Error while shutting down PostHog', e))
       }
-    } catch (e) {
-      if (!isPostHogFetchError(e)) {
-        throw e
-      }
-      this.logMsgIfDebug(() => console.error('Error while shutting down PostHog', e))
     }
+
+    return Promise.race([
+      new Promise<void>((_, reject) => {
+        safeSetTimeout(() => {
+          this.logMsgIfDebug(() => console.error('Timed out while shutting down PostHog'))
+          hasTimedOut = true
+          reject('Timeout while shutting down PostHog. Some events may not have been sent.')
+        }, shutdownTimeoutMs)
+      }),
+      doShutdown(),
+    ])
   }
 }
 
@@ -937,10 +953,17 @@ export abstract class PostHogCore extends PostHogCoreStateless {
         this.groups(properties.$groups)
       }
 
+      // promote $set and $set_once to top level
+      const userPropsOnce = properties?.$set_once
+      delete properties?.$set_once
+
+      // if no $set is provided we assume all properties are $set
+      const userProps = properties?.$set || properties
+
       const allProperties = this.enrichProperties({
-        ...properties,
         $anon_distinct_id: this.getAnonymousId(),
-        $set: properties,
+        $set: userProps,
+        $set_once: userPropsOnce,
       })
 
       if (distinctId !== previousDistinctId) {
