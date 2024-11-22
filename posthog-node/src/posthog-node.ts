@@ -174,12 +174,19 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
 
   identify({ distinctId, properties, disableGeoip }: IdentifyMessage): void {
     // Catch properties passed as $set and move them to the top level
-    const personProperties = properties?.$set || properties
+
+    // promote $set and $set_once to top level
+    const userPropsOnce = properties?.$set_once
+    delete properties?.$set_once
+
+    // if no $set is provided we assume all properties are $set
+    const userProps = properties?.$set || properties
 
     super.identifyStateless(
       distinctId,
       {
-        $set: personProperties,
+        $set: userProps,
+        $set_once: userPropsOnce,
       },
       { disableGeoip }
     )

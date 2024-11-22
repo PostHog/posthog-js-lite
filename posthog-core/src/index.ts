@@ -213,7 +213,7 @@ export abstract class PostHogCoreStateless {
   ): void {
     this.wrap(() => {
       // The properties passed to identifyStateless are event properties.
-      // To add person properties, pass in all person properties to the `$set` key.
+      // To add person properties, pass in all person properties to the `$set` and `$set_once` keys.
 
       const payload = {
         ...this.buildPayload({
@@ -953,10 +953,17 @@ export abstract class PostHogCore extends PostHogCoreStateless {
         this.groups(properties.$groups)
       }
 
+      // promote $set and $set_once to top level
+      const userPropsOnce = properties?.$set_once
+      delete properties?.$set_once
+
+      // if no $set is provided we assume all properties are $set
+      const userProps = properties?.$set || properties
+
       const allProperties = this.enrichProperties({
-        ...properties,
         $anon_distinct_id: this.getAnonymousId(),
-        $set: properties,
+        $set: userProps,
+        $set_once: userPropsOnce,
       })
 
       if (distinctId !== previousDistinctId) {
