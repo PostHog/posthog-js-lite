@@ -1,5 +1,9 @@
 # Next
 
+# 4.3.0 - 2024-11-25
+
+1. Add Sentry v8 support to the Sentry integration
+
 # 4.2.3 - 2024-11-21
 
 1. fix: identify method allows passing a $set_once object
