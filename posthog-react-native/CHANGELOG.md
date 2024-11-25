@@ -1,5 +1,9 @@
 # Next
 
+# 3.3.14 - 2024-11-21
+
+1. fix: identify method allows passing a $set_once object
+
 # 3.3.13 - 2024-11-19
 
 1. fix: session replay respects the flushAt flag

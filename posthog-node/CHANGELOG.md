@@ -1,5 +1,9 @@
 # Next
 
+# 4.2.3 - 2024-11-21
+
+1. fix: identify method allows passing a $set_once object
+
 # 4.2.2 - 2024-11-18
 
 1. fix: Shutdown will now respect the timeout and forcefully return rather than returning after the next fetch.
