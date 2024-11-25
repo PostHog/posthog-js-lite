@@ -61,6 +61,21 @@ export type PostHogSessionReplayConfig = {
    */
   maskAllImages?: boolean
   /**
+   * Enable masking of all sandboxed system views
+   * These may include UIImagePickerController, PHPickerViewController and CNContactPickerViewController
+   * iOS only
+   * Experimental support
+   * Default: true
+   */
+  maskAllSandboxedViews?: boolean
+  /**
+   * Enable masking of images that likely originated from user's photo library
+   * Experimental support (UIKit only)
+   * iOS only
+   * Default: true
+   */
+  maskPhotoLibraryImages?: boolean
+  /**
    * Enable capturing of logcat as console events
    * Android only
    * Experimental support
