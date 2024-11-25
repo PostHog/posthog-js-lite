@@ -311,6 +311,8 @@ export class PostHog extends PostHogCore {
     const sdkReplayConfig = {
       maskAllTextInputs,
       maskAllImages,
+      maskAllSandboxedViews,
+      maskPhotoLibraryImages,
       captureLog,
       captureNetworkTelemetry,
       iOSdebouncerDelayMs,
