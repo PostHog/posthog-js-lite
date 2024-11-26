@@ -300,6 +300,8 @@ export class PostHog extends PostHogCore {
     const {
       maskAllTextInputs = true,
       maskAllImages = true,
+      maskAllSandboxedViews = true,
+      maskPhotoLibraryImages = true,
       captureLog = true,
       captureNetworkTelemetry = true,
       iOSdebouncerDelayMs = 1000,
@@ -309,6 +311,8 @@ export class PostHog extends PostHogCore {
     const sdkReplayConfig = {
       maskAllTextInputs,
       maskAllImages,
+      maskAllSandboxedViews,
+      maskPhotoLibraryImages,
       captureLog,
       captureNetworkTelemetry,
       iOSdebouncerDelayMs,
