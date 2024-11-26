@@ -1,5 +1,9 @@
 # Next
 
+# 4.2.2 - 2024-11-26
+
+1. Fix bug where this SDK incorrectly sent feature flag events with null values when calling `getFeatureFlagPayload`.
+
 # 4.2.1 - 2024-10-14
 
 1. fix: only log messages if debug is enabled
