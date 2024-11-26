@@ -1,5 +1,19 @@
 # Next
 
+# 3.4.0 - 2024-11-26
+
+1. feat: automatically mask out user photos and sandboxed views like photo picker (iOS Only)
+  1. To disable masking set `maskAllSandboxedViews` and `maskPhotoLibraryImages` to false
+
+```js
+export const posthog = new PostHog(
+  'apiKey...',
+  sessionReplayConfig: {
+      maskAllSandboxedViews: false,
+      maskPhotoLibraryImages: false,
+);
+```
+
 # 3.3.14 - 2024-11-21
 
 1. fix: identify method allows passing a $set_once object

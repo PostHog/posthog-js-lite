@@ -1,8 +1,12 @@
 # Next
 
-# 4.2.4 - 2024-11-26
+# 4.3.1 - 2024-11-26
 
-1. fix: this SDK incorrectly sent feature flag events with null values when calling `getFeatureFlagPayload`.
+1. Fix bug where this SDK incorrectly sent `$feature_flag_called` events with null values when using `getFeatureFlagPayload`.
+
+# 4.3.0 - 2024-11-25
+
+1. Add Sentry v8 support to the Sentry integration
 
 # 4.2.3 - 2024-11-21
 
