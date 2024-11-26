@@ -1,5 +1,41 @@
 # Next
 
+# 3.3.14 - 2024-11-21
+
+1. fix: identify method allows passing a $set_once object
+
+# 3.3.13 - 2024-11-19
+
+1. fix: session replay respects the flushAt flag
+
+# 3.3.12 - 2024-11-18
+
+1. fix: session replay forces the session id if the SDK is already enabled
+
+# 3.3.11 - 2024-11-13
+
+1. fix: respect the given propsToCapture autocapture option
+
+# 3.3.10 - 2024-11-04
+
+1. fix: capture customLabelProp if set
+
+# 3.3.9 - 2024-10-26
+
+1. fix: rollback module to ESNext
+
+# 3.3.8 - 2024-10-25
+
+1. chore: change androidDebouncerDelayMs default from 500ms to 1000ms (1s)
+
+# 3.3.7 - 2024-10-25
+
+1. fix: session replay respects the `disabled` flag
+
+# 3.3.6 - 2024-10-19
+
+1. fix: all sdkReplayConfig should have a default value
+
 # 3.3.5 - 2024-10-15
 
 1. fix: only tries to read device context from react-native-device-info if expo libs are not available

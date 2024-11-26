@@ -1,8 +1,16 @@
 # Next
 
-# 4.2.2 - 2024-11-26
+# 4.2.4 - 2024-11-26
 
-1. Fix bug where this SDK incorrectly sent feature flag events with null values when calling `getFeatureFlagPayload`.
+1. fix: this SDK incorrectly sent feature flag events with null values when calling `getFeatureFlagPayload`.
+
+# 4.2.3 - 2024-11-21
+
+1. fix: identify method allows passing a $set_once object
+
+# 4.2.2 - 2024-11-18
+
+1. fix: Shutdown will now respect the timeout and forcefully return rather than returning after the next fetch.
 
 # 4.2.1 - 2024-10-14
 
