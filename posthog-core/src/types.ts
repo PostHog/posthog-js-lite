@@ -49,6 +49,8 @@ export enum PostHogPersistedProperty {
   Props = 'props',
   FeatureFlags = 'feature_flags',
   FeatureFlagPayloads = 'feature_flag_payloads',
+  BootstrapFeatureFlags = 'bootstrap_feature_flags',
+  BootstrapFeatureFlagPayloads = 'bootstrap_feature_flag_payloads',
   OverrideFeatureFlags = 'override_feature_flags',
   Queue = 'queue',
   OptedOut = 'opted_out',

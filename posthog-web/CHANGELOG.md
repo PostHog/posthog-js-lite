@@ -1,5 +1,11 @@
 # Next
 
+# 3.1.1 - 2024-11-27
+
+## Changed
+
+1. Add new debugging property `$feature_flag_bootstrapped_response` and `$feature_flag_bootstrapped_payload` to `$feature_flag_called` event
+
 # 3.1.0 - 2024-11-21
 
 ## Changed

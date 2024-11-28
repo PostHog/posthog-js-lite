@@ -1,5 +1,9 @@
 # Next
 
+# 3.4.1 - 2024-11-27
+
+1. Add new debugging property `$feature_flag_bootstrapped_response` and `$feature_flag_bootstrapped_payload` to `$feature_flag_called` event
+
 # 3.4.0 - 2024-11-26
 
 1. feat: automatically mask out user photos and sandboxed views like photo picker (iOS Only)
