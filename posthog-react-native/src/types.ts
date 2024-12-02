@@ -73,7 +73,7 @@ export type PostHogSessionReplayConfig = {
    * Experimental support (UIKit only)
    * iOS only
    * Default: false
-   * 
+   *
    * @deprecated This property has no effect and will be removed in the next major release. To learn how to manually mask user photos please see our Privacy controls documentation: https://posthog.com/docs/session-replay/privacy?tab=React+Native
    */
   maskPhotoLibraryImages?: boolean
