@@ -301,7 +301,7 @@ export class PostHog extends PostHogCore {
       maskAllTextInputs = true,
       maskAllImages = true,
       maskAllSandboxedViews = true,
-      maskPhotoLibraryImages = true,
+      maskPhotoLibraryImages = false,
       captureLog = true,
       captureNetworkTelemetry = true,
       iOSdebouncerDelayMs = 1000,

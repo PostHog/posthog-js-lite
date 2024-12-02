@@ -73,6 +73,8 @@ export type PostHogSessionReplayConfig = {
    * Experimental support (UIKit only)
    * iOS only
    * Default: true
+   * 
+   * @deprecated This property has no effect and will be removed in the next major release. To manually mask user photos, use `ph-no-capture` accessibility label in your app.
    */
   maskPhotoLibraryImages?: boolean
   /**

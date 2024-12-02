@@ -1,5 +1,9 @@
 # Next
 
+# 3.5.0 - 2024-12-02
+
+1. fix: deprecate maskPhotoLibraryImages due to unintended masking issues
+
 # 3.4.0 - 2024-11-26
 
 1. feat: automatically mask out user photos and sandboxed views like photo picker (iOS Only)
