@@ -1,6 +1,6 @@
 # Next
 
-# 3.5.0 - 2024-12-02
+# 3.5.0 - 2024-12-03
 
 1. fix: deprecate maskPhotoLibraryImages due to unintended masking issues
 
