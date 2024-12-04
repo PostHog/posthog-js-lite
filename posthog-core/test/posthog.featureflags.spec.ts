@@ -407,6 +407,7 @@ describe('PostHog Core', () => {
                 $feature_flag: 'feature-1',
                 $feature_flag_response: true,
                 '$feature/feature-1': true,
+                $used_bootstrap_value: false,
               },
               type: 'capture',
             },
@@ -432,6 +433,7 @@ describe('PostHog Core', () => {
                 $feature_flag: 'feature-1',
                 $feature_flag_response: true,
                 '$feature/feature-1': true,
+                $used_bootstrap_value: false,
               },
               type: 'capture',
             },
@@ -453,6 +455,7 @@ describe('PostHog Core', () => {
                 $feature_flag: 'feature-1',
                 $feature_flag_response: true,
                 '$feature/feature-1': true,
+                $used_bootstrap_value: false,
               },
               type: 'capture',
             },
@@ -501,7 +504,7 @@ describe('PostHog Core', () => {
     })
   })
 
-  describe('bootstapped feature flags', () => {
+  describe('bootstrapped feature flags', () => {
     beforeEach(() => {
       ;[posthog, mocks] = createTestClient(
         'TEST_API_KEY',
@@ -509,10 +512,18 @@ describe('PostHog Core', () => {
           flushAt: 1,
           bootstrap: {
             distinctId: 'tomato',
-            featureFlags: { 'bootstrap-1': 'variant-1', enabled: true, disabled: false },
+            featureFlags: {
+              'bootstrap-1': 'variant-1',
+              'feature-1': 'feature-1-bootstrap-value',
+              enabled: true,
+              disabled: false,
+            },
             featureFlagPayloads: {
               'bootstrap-1': {
                 some: 'key',
+              },
+              'feature-1': {
+                color: 'feature-1-bootstrap-color',
               },
               enabled: 200,
             },
@@ -521,15 +532,7 @@ describe('PostHog Core', () => {
         (_mocks) => {
           _mocks.fetch.mockImplementation((url) => {
             if (url.includes('/decide/')) {
-              return Promise.resolve({
-                status: 200,
-                text: () => Promise.resolve('ok'),
-                json: () =>
-                  Promise.resolve({
-                    featureFlags: createMockFeatureFlags(),
-                    featureFlagPayloads: createMockFeatureFlagPayloads(),
-                  }),
-              })
+              return Promise.reject(new Error('Not responding to emulate use of bootstrapped values'))
             }
 
             return Promise.resolve({
@@ -545,17 +548,46 @@ describe('PostHog Core', () => {
       )
     })
 
-    it('getFeatureFlags should return bootstrapped flags', () => {
-      expect(posthog.getFeatureFlags()).toEqual({ 'bootstrap-1': 'variant-1', enabled: true })
+    it('getFeatureFlags should return bootstrapped flags', async () => {
+      expect(posthog.getFeatureFlags()).toEqual({
+        'bootstrap-1': 'variant-1',
+        enabled: true,
+        'feature-1': 'feature-1-bootstrap-value',
+      })
       expect(posthog.getDistinctId()).toEqual('tomato')
       expect(posthog.getAnonymousId()).toEqual('tomato')
     })
 
-    it('getFeatureFlag should return bootstrapped flags', () => {
+    it('getFeatureFlag should return bootstrapped flags', async () => {
       expect(posthog.getFeatureFlag('my-flag')).toEqual(false)
       expect(posthog.getFeatureFlag('bootstrap-1')).toEqual('variant-1')
       expect(posthog.getFeatureFlag('enabled')).toEqual(true)
       expect(posthog.getFeatureFlag('disabled')).toEqual(false)
+    })
+
+    it('getFeatureFlag should capture $feature_flag_called with bootstrapped values', async () => {
+      expect(posthog.getFeatureFlag('bootstrap-1')).toEqual('variant-1')
+
+      await waitForPromises()
+      expect(mocks.fetch).toHaveBeenCalledTimes(1)
+
+      expect(parseBody(mocks.fetch.mock.calls[0])).toMatchObject({
+        batch: [
+          {
+            event: '$feature_flag_called',
+            distinct_id: posthog.getDistinctId(),
+            properties: {
+              $feature_flag: 'bootstrap-1',
+              $feature_flag_response: 'variant-1',
+              '$feature/bootstrap-1': 'variant-1',
+              $feature_flag_bootstrapped_response: 'variant-1',
+              $feature_flag_bootstrapped_payload: { some: 'key' },
+              $used_bootstrap_value: true,
+            },
+            type: 'capture',
+          },
+        ],
+      })
     })
 
     it('isFeatureEnabled should return true/false for bootstrapped flags', () => {
@@ -575,6 +607,55 @@ describe('PostHog Core', () => {
 
     describe('when loaded', () => {
       beforeEach(() => {
+        ;[posthog, mocks] = createTestClient(
+          'TEST_API_KEY',
+          {
+            flushAt: 1,
+            bootstrap: {
+              distinctId: 'tomato',
+              featureFlags: {
+                'bootstrap-1': 'variant-1',
+                'feature-1': 'feature-1-bootstrap-value',
+                enabled: true,
+                disabled: false,
+              },
+              featureFlagPayloads: {
+                'bootstrap-1': {
+                  some: 'key',
+                },
+                'feature-1': {
+                  color: 'feature-1-bootstrap-color',
+                },
+                enabled: 200,
+              },
+            },
+          },
+          (_mocks) => {
+            _mocks.fetch.mockImplementation((url) => {
+              if (url.includes('/decide/')) {
+                return Promise.resolve({
+                  status: 200,
+                  text: () => Promise.resolve('ok'),
+                  json: () =>
+                    Promise.resolve({
+                      featureFlags: createMockFeatureFlags(),
+                      featureFlagPayloads: createMockFeatureFlagPayloads(),
+                    }),
+                })
+              }
+
+              return Promise.resolve({
+                status: 200,
+                text: () => Promise.resolve('ok'),
+                json: () =>
+                  Promise.resolve({
+                    status: 'ok',
+                  }),
+              })
+            })
+          }
+        )
+
         posthog.reloadFeatureFlags()
       })
 
@@ -625,6 +706,31 @@ describe('PostHog Core', () => {
           color: 'blue',
         })
         expect(posthog.getFeatureFlagPayload('feature-variant')).toEqual([5])
+      })
+
+      it('should capture $feature_flag_called with bootstrapped values', async () => {
+        expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
+
+        await waitForPromises()
+        expect(mocks.fetch).toHaveBeenCalledTimes(2)
+
+        expect(parseBody(mocks.fetch.mock.calls[1])).toMatchObject({
+          batch: [
+            {
+              event: '$feature_flag_called',
+              distinct_id: posthog.getDistinctId(),
+              properties: {
+                $feature_flag: 'feature-1',
+                $feature_flag_response: true,
+                '$feature/feature-1': true,
+                $feature_flag_bootstrapped_response: 'feature-1-bootstrap-value',
+                $feature_flag_bootstrapped_payload: { color: 'feature-1-bootstrap-color' },
+                $used_bootstrap_value: false,
+              },
+              type: 'capture',
+            },
+          ],
+        })
       })
     })
   })

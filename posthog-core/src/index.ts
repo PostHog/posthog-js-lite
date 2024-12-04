@@ -1194,6 +1194,8 @@ export abstract class PostHogCore extends PostHogCoreStateless {
                 Object.entries(newFeatureFlagPayloads || {}).map(([k, v]) => [k, this._parsePayload(v)])
               )
             )
+            // Mark that we hit the /decide endpoint so we can capture this in the $feature_flag_called event
+            this.setPersistedProperty(PostHogPersistedProperty.DecideEndpointWasHit, true)
 
             const sessionReplay = res?.sessionRecording
             if (sessionReplay) {
@@ -1262,6 +1264,8 @@ export abstract class PostHogCore extends PostHogCoreStateless {
         $feature_flag_bootstrapped_payload: this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
           PostHogPersistedProperty.BootstrapFeatureFlagPayloads
         )?.[key],
+        // If we haven't gotten a response from the /decide endpoint, we must have used the bootstrapped value
+        $used_bootstrap_value: !this.getPersistedProperty(PostHogPersistedProperty.DecideEndpointWasHit),
       })
     }
 
