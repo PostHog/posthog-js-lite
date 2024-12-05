@@ -2,11 +2,10 @@
 
 # 3.2.0 - 2024-12-05
 
-1. Add new debugging property `$feature_flag_bootstrapped_response`, `$feature_flag_bootstrapped_payload` and `$used_bootstrap_value` to `$feature_flag_called` event
-
 ## Changed
 
-1. Add new debugging property `$feature_flag_bootstrapped_response` and `$feature_flag_bootstrapped_payload` to `$feature_flag_called` event
+1. Add new debugging property `$feature_flag_bootstrapped_response`, `$feature_flag_bootstrapped_payload` and `$used_bootstrap_value` to `$feature_flag_called` event
+
 
 # 3.1.0 - 2024-11-21
 
