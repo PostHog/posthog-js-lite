@@ -1,17 +1,13 @@
 # Next
 
-# 3.6.0 - 2024-12-04
+# 3.6.0 - 2024-12-05
 
 1. Add new debugging property `$feature_flag_bootstrapped_response`, `$feature_flag_bootstrapped_payload` and `$used_bootstrap_value` to `$feature_flag_called` event
-
-# 3.5.0 - 2024-12-03
-
-1. fix: deprecate maskPhotoLibraryImages due to unintended masking issues
 
 # 3.4.0 - 2024-11-26
 
 1. feat: automatically mask out user photos and sandboxed views like photo picker (iOS Only)
-1. To disable masking set `maskAllSandboxedViews` and `maskPhotoLibraryImages` to false
+  1. To disable masking set `maskAllSandboxedViews` and `maskPhotoLibraryImages` to false
 
 ```js
 export const posthog = new PostHog(
@@ -87,13 +83,16 @@ export const posthog = new PostHog(
 ## Changed
 
 1. chore: session id will be rotate on app restart.
-   1. To keep the session id across restarts, set the `enablePersistSessionIdAcrossRestart` option to `true` when initializing the PostHog client.
+    1. To keep the session id across restarts, set the `enablePersistSessionIdAcrossRestart` option to `true` when initializing the PostHog client.
 
 ```js
-export const posthog = new PostHog('apiKey...', {
-  // ...
-  enablePersistSessionIdAcrossRestart: true,
-})
+export const posthog = new PostHog(
+  'apiKey...',
+  {
+    // ...
+    enablePersistSessionIdAcrossRestart: true,
+  },
+);
 ```
 
 # 3.2.1 - 2024-09-24
@@ -107,7 +106,7 @@ export const posthog = new PostHog('apiKey...', {
 ## Changed
 
 1. chore: default `captureMode` changed to `json`.
-   1. To keep using the `form` mode, just set the `captureMode` option to `form` when initializing the PostHog client.
+    1. To keep using the `form` mode, just set the `captureMode` option to `form` when initializing the PostHog client.
 2. chore: Session Replay for React-Native - Experimental support
 
 Install Session Replay for React-Native:
@@ -121,10 +120,13 @@ npm i -s posthog-react-native-session-replay
 Enable Session Replay for React-Native:
 
 ```js
-export const posthog = new PostHog('apiKey...', {
-  // ...
-  enableSessionReplay: true,
-})
+export const posthog = new PostHog(
+  'apiKey...',
+  {
+    // ...
+    enableSessionReplay: true,
+  },
+);
 ```
 
 Or using the `PostHogProvider`
