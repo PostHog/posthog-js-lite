@@ -2,7 +2,7 @@
 
 Please see the main [PostHog docs](https://www.posthog.com/docs).
 
-Specifically, the [Node.js integration](https://posthog.com/docs/integrate/server/node) details.
+Specifically, the [Node.js docs](https://posthog.com/docs/libraries/node) details.
 
 ## Questions?
 
