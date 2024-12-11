@@ -1,5 +1,9 @@
 # Next
 
+# 4.3.2 - 2024-12-11
+
+1. REVERT: Fix bug where this SDK incorrectly sent `$feature_flag_called` events with null values when using `getFeatureFlagPayload`.
+
 # 4.3.1 - 2024-11-26
 
 1. Fix bug where this SDK incorrectly sent `$feature_flag_called` events with null values when using `getFeatureFlagPayload`.

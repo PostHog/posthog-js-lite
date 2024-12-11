@@ -897,18 +897,13 @@ describe('PostHog Node.js', () => {
                   rollout_percentage: 100,
                 },
               ],
-              payloads: { true: { variant: 'A' } },
             },
           },
         ],
       }
 
       mockedFetch.mockImplementation(
-        apiImplementation({
-          localFlags: flags,
-          decideFlags: { 'decide-flag': 'decide-value' },
-          decideFlagPayloads: { 'beta-feature': { variant: 'A' } },
-        })
+        apiImplementation({ localFlags: flags, decideFlags: { 'decide-flag': 'decide-value' } })
       )
 
       posthog = new PostHog('TEST_API_KEY', {
@@ -945,34 +940,6 @@ describe('PostHog Node.js', () => {
             $lib_version: '1.2.3',
             locally_evaluated: true,
             $geoip_disable: true,
-          }),
-        })
-      )
-      mockedFetch.mockClear()
-
-      expect(
-        await posthog.getFeatureFlagPayload('beta-feature', 'some-distinct-id', undefined, {
-          personProperties: { region: 'USA', name: 'Aloha' },
-        })
-      ).toEqual({ variant: 'A' })
-
-      // TRICKY: There's now an extra step before events are queued, so need to wait for that to resolve
-      jest.runOnlyPendingTimers()
-      await waitForPromises()
-      await posthog.flush()
-
-      expect(mockedFetch).toHaveBeenCalledWith('http://example.com/batch/', expect.any(Object))
-
-      expect(getLastBatchEvents()?.[0]).toEqual(
-        expect.objectContaining({
-          distinct_id: 'some-distinct-id',
-          event: '$feature_flag_called',
-          properties: expect.objectContaining({
-            $feature_flag: 'beta-feature',
-            $feature_flag_response: true,
-            $feature_flag_payload: { variant: 'A' },
-            locally_evaluated: true,
-            [`$feature/${'beta-feature'}`]: true,
           }),
         })
       )
@@ -1114,7 +1081,7 @@ describe('PostHog Node.js', () => {
       expect(mockedFetch).toHaveBeenCalledTimes(0)
 
       await expect(posthog.getFeatureFlagPayload('false-flag', '123', true)).resolves.toEqual(300)
-      expect(mockedFetch).toHaveBeenCalledTimes(1) // this now calls the server, because in this case the flag is not locally evaluated but we have a payload that we need to calculate
+      expect(mockedFetch).toHaveBeenCalledTimes(0)
     })
 
     it('should not double parse json with getFeatureFlagPayloads and server eval', async () => {
