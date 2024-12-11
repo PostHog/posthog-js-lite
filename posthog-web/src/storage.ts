@@ -93,9 +93,6 @@ const createStorageLike = (store: any): PostHogStorage => {
 }
 
 const checkStoreIsSupported = (storage: PostHogStorage, key = '__mplssupport__'): boolean => {
-  if (!window) {
-    return false
-  }
   try {
     const val = 'xyz'
     storage.setItem(key, val)
