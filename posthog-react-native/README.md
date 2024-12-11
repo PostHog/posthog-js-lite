@@ -2,7 +2,7 @@
 
 Please see the main [PostHog docs](https://www.posthog.com/docs).
 
-Specifically, the [React Native integration](https://www.posthog.com/docs/integrations/react-native-integration) details.
+Specifically, the [React Native docs](https://posthog.com/docs/libraries/react-native) details.
 
 ## Questions?
 
