@@ -22,7 +22,7 @@ describe('PostHog Core', () => {
       expect(mocks.fetch).toHaveBeenCalledTimes(1)
     })
 
-    it.only('respects timeout', async () => {
+    it('respects timeout', async () => {
       mocks.fetch.mockImplementation(async () => {
         await new Promise((resolve) => setTimeout(resolve, 1000))
         console.log('FETCH RETURNED')
