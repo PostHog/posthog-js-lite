@@ -158,7 +158,7 @@ export type PostHogNodeV1 = {
 
   /**
    * @description Retrieves payload associated with the specified flag and matched value that is passed in.
-   * (Expected to be used in conjuction with getFeatureFlag but allows for manual lookup).
+   * (Expected to be used in conjunction with getFeatureFlag but allows for manual lookup).
    * If matchValue isn't passed, getFeatureFlag is called implicitly.
    * Will try to evaluate for payload locally first otherwise default to network call if allowed
    *
