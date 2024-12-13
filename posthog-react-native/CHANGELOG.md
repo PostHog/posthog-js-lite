@@ -1,5 +1,9 @@
 # Next
 
+# 3.6.0 - 2024-12-12
+
+1. Add new debugging property `$feature_flag_bootstrapped_response`, `$feature_flag_bootstrapped_payload` and `$used_bootstrap_value` to `$feature_flag_called` event
+
 # 3.5.0 - 2024-12-03
 
 1. fix: deprecate maskPhotoLibraryImages due to unintended masking issues
