@@ -7942,6 +7942,11 @@ minizlib@^2.1.1:
     minipass "^3.0.0"
     yallist "^4.0.0"
 
+mitata@^1.0.21:
+  version "1.0.21"
+  resolved "https://registry.yarnpkg.com/mitata/-/mitata-1.0.21.tgz#525828c6306a5243da65b4d0574956f2572ca432"
+  integrity sha512-5HnbQJpz0Ub/7x7lxaxPhd3U3zXr7rD+24FIgEp/hjVE5wz6ye/pQRBrgH3MUK8KLy/FfPy/yfZbpi0sbmsNFg==
+
 mixin-deep@^1.2.0:
   version "1.3.2"
   resolved "https://registry.yarnpkg.com/mixin-deep/-/mixin-deep-1.3.2.tgz#1120b43dc359a785dce65b55b82e257ccf479566"
