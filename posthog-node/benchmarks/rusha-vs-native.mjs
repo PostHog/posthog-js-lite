@@ -35,24 +35,6 @@ summary(() => {
 await run();
 
 
-// !BUN
-// bun benchmarks/rusha-vs-native.mjs 
-// clk: ~5.04 GHz
-// cpu: AMD Ryzen 7 7700 8-Core Processor
-// runtime: bun 1.1.37 (x64-linux)
-
-// benchmark                   avg (min … max) p75   p99    (min … top 1%)
-// ------------------------------------------- -------------------------------
-// _hash with rusha              10.00 µs/iter   4.96 µs  █
-//                         (2.60 µs … 2.78 ms)  45.85 µs ▂█▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
-// _hash with native            471.82 ns/iter 420.00 ns █
-//                     (370.00 ns … 949.79 µs)   1.99 µs █▆▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
-
-// summary
-//   _hash with native
-//    21.19x faster than _hash with rusha
-
-
 // !NODE
 // node benchmarks/rusha-vs-native.mjs
 // clk: ~3.99 GHz
@@ -69,3 +51,20 @@ await run();
 // summary
 //   _hash with native
 //    22.12x faster than _hash with rusha
+
+// !BUN
+// bun benchmarks/rusha-vs-native.mjs 
+// clk: ~5.04 GHz
+// cpu: AMD Ryzen 7 7700 8-Core Processor
+// runtime: bun 1.1.37 (x64-linux)
+
+// benchmark                   avg (min … max) p75   p99    (min … top 1%)
+// ------------------------------------------- -------------------------------
+// _hash with rusha              10.00 µs/iter   4.96 µs  █
+//                         (2.60 µs … 2.78 ms)  45.85 µs ▂█▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+// _hash with native            471.82 ns/iter 420.00 ns █
+//                     (370.00 ns … 949.79 µs)   1.99 µs █▆▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+
+// summary
+//   _hash with native
+//    21.19x faster than _hash with rusha
