@@ -36,7 +36,16 @@ export const getAppProperties = (): PostHogCustomAppProperties => {
     properties.$device_manufacturer = OptionalExpoDevice.manufacturer
     // expo-device already maps the device model identifier to a human readable name
     properties.$device_name = OptionalExpoDevice.modelName
-    properties.$os_name = OptionalExpoDevice.osName
+
+    // https://github.com/expo/expo/issues/6990
+    // some devices return a value similar to:
+    // HUAWEI/SNE-LX1/HWSNE:8.1.0/HUAWEISNE-LX1/131(C432):user/release-keys
+    if (Platform.OS === 'android') {
+      properties.$os_name = 'Android'
+    } else {
+      properties.$os_name = OptionalExpoDevice.osName
+    }
+
     properties.$os_version = OptionalExpoDevice.osVersion
   } else if (OptionalReactNativeDeviceInfo) {
     properties.$device_manufacturer = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getManufacturerSync())
