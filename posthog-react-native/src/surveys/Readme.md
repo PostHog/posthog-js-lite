@@ -61,7 +61,7 @@ The hook `useActiveSurvey` will return the survey that should currently be displ
 You can also import the `<Questions>` component directly and pass your own survey appearance if you'd like to reuse the survey content in your own modal or screen.
 
 ```ts
-import { useActiveSurvey, type SurveyAppearance } from 'posthog-react-native-surveys'
+import { useActiveSurvey, type SurveyAppearance } from 'posthog-react-native'
 
 const appearance: SurveyAppearance = {
   // ... Your theme here
