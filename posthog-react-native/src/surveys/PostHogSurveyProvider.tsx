@@ -91,7 +91,7 @@ export function PostHogSurveyProvider(props: PostHogSurveyProviderProps): JSX.El
 
   // Whenever state changes and there's no active survey, check if there is a new survey to show
   useEffect(() => {
-    if (activeSurvey || props.automaticSurveyModal === false) {
+    if (activeSurvey) {
       return
     }
 
@@ -153,11 +153,16 @@ export function PostHogSurveyProvider(props: PostHogSurveyProviderProps): JSX.El
     }
   }, [activeSurvey, posthog, setLastSeenSurveyDate, setSeenSurvey])
 
+  // Modal is shown for PopOver surveys or if automaticSurveyModal is true, and for all widget surveys
+  // because these would have been invoked by the useFeedbackSurvey hook's showSurveyModal() method
+  const shouldShowModal =
+    activeContext && (props.automaticSurveyModal !== false || activeContext.survey.type === 'widget')
+
   return (
     <ActiveSurveyContext.Provider value={activeContext}>
       <FeedbackSurveyContext.Provider value={{ surveys, activeSurvey, setActiveSurvey }}>
         {props.children}
-        {activeContext && <SurveyModal appearance={surveyAppearance} {...activeContext} />}
+        {shouldShowModal && <SurveyModal appearance={surveyAppearance} {...activeContext} />}
       </FeedbackSurveyContext.Provider>
     </ActiveSurveyContext.Provider>
   )
