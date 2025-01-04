@@ -62,6 +62,8 @@ export enum PostHogPersistedProperty {
   InstalledAppVersion = 'installed_app_version', // only used by posthog-react-native
   SessionReplay = 'session_replay', // only used by posthog-react-native
   DecideEndpointWasHit = 'decide_endpoint_was_hit', // only used by posthog-react-native
+  SurveyLastSeenDate = 'survey_last_seen_date', // only used by posthog-react-native
+  SurveysSeen = 'surveys_seen', // only used by posthog-react-native
 }
 
 export type PostHogFetchOptions = {

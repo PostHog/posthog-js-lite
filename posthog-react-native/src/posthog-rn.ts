@@ -22,6 +22,7 @@ import {
 } from './types'
 import { withReactNativeNavigation } from './frameworks/wix-navigation'
 import { OptionalReactNativeSessionReplay } from './optional/OptionalSessionReplay'
+import { Survey, SurveyResponse } from './surveys/posthog-surveys-types'
 
 export type PostHogOptions = PostHogCoreOptions & {
   /** Allows you to provide the storage type. By default 'file'.
@@ -450,5 +451,30 @@ export class PostHog extends PostHogCore {
     const appVersion = this._appProperties.$app_version
     this.setPersistedProperty(PostHogPersistedProperty.InstalledAppBuild, appBuild)
     this.setPersistedProperty(PostHogPersistedProperty.InstalledAppVersion, appVersion)
+  }
+
+  /**
+   * @todo Where should this go, and should the result be cached?
+   * I can't find a public method in PostHog which does an authenticated fetch,
+   * so for now I've included the fetch here so it can access the api key.
+   */
+  public async fetchSurveys(): Promise<Survey[]> {
+    const response = await this.fetch(
+      // PostHog Dashboard complains I'm using an old SDK version, I think because the ver query param isn't provided.
+      // TODO I've pulled a recent version from posthog-js, but this should be updated.
+      `${this.host}/api/surveys/?token=${this.apiKey}&ver=1.200.0`,
+      {
+        method: 'GET',
+        headers: this.getCustomHeaders(),
+      }
+    )
+
+    if (response.status > 300) {
+      // TODO Best practice for handling this?
+      throw new Error('Failed to fetch PostHog surveys')
+    }
+
+    const json = (await response.json()) as SurveyResponse
+    return json.surveys
   }
 }
