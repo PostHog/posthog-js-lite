@@ -76,7 +76,7 @@ export function PostHogSurveyProvider(props: PostHogSurveyProviderProps): JSX.El
   const activatedSurveys = useActivatedSurveys(posthog, surveys)
 
   //TODO Why is this untyped?
-   
+
   const flags: Record<string, string | boolean> | undefined = useFeatureFlags(posthog)
 
   // Load surveys once
@@ -91,7 +91,7 @@ export function PostHogSurveyProvider(props: PostHogSurveyProviderProps): JSX.El
 
   // Whenever state changes and there's no active survey, check if there is a new survey to show
   useEffect(() => {
-    if (activeSurvey || !props.automaticSurveyModal) {
+    if (activeSurvey || props.automaticSurveyModal === false) {
       return
     }
 
