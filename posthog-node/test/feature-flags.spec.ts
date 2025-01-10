@@ -2073,8 +2073,8 @@ describe('match properties', () => {
     ['is_date_after', '1h', new Date('2022-05-30'), true],
     ['is_date_after', '1h', '2022-04-30', false],
     // # Try all possible relative dates
-    ['is_date_before', '1h', '2022-05-01 00:00:00', false],
-    ['is_date_before', '1h', '2022-04-30 22:00:00', true],
+    ['is_date_before', '1h', '2022-05-01 00:00:00 GMT', false],
+    ['is_date_before', '1h', '2022-04-30 22:00:00 GMT', true],
     ['is_date_before', '-1d', '2022-04-29 23:59:00 GMT', true],
     ['is_date_before', '-1d', '2022-04-30 00:00:01 GMT', false],
     ['is_date_before', '1w', '2022-04-23 00:00:00 GMT', true],
