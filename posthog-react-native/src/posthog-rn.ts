@@ -248,9 +248,11 @@ export class PostHog extends PostHogCore {
       }
       this._currentSessionId = sessionId
     } else {
-      console.log(
-        'PostHog Debug',
-        `Session replay session id not rotated, sessionId ${sessionId} and currentSessionId ${this._currentSessionId}.`
+      this.logMsgIfDebug(() =>
+        console.log(
+          'PostHog Debug',
+          `Session replay session id not rotated, sessionId ${sessionId} and currentSessionId ${this._currentSessionId}.`
+        )
       )
     }
 
@@ -368,6 +370,7 @@ export class PostHog extends PostHogCore {
               console.log('PostHog Debug', `Session replay already started with sessionId ${sessionId}.`)
             )
           }
+          this._currentSessionId = sessionId
         } catch (e) {
           this.logMsgIfDebug(() => console.error('PostHog Debug', `Session replay failed to start: ${e}.`))
         }
