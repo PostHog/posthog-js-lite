@@ -1,5 +1,9 @@
 # Next
 
+# 3.6.2 - 2025-01-13
+
+1. fix: Set initial currentSessionId, log only with debug flag on
+
 # 3.6.1 - 2024-12-17
 
 1. fix: os_name was not being set correctly for some devices using expo-device
