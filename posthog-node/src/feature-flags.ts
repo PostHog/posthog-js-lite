@@ -458,7 +458,7 @@ class FeatureFlagsPoller {
 // # uniformly distributed between 0 and 1, so if we want to show this feature to 20% of traffic
 // # we can do _hash(key, distinct_id) < 0.2
 function _hash(key: string, distinctId: string, salt: string = ''): number {
-  const sha1Hash = createHash("sha1")
+  const sha1Hash = createHash('sha1')
   sha1Hash.update(`${key}.${distinctId}${salt}`)
   return parseInt(sha1Hash.digest('hex').slice(0, 15), 16) / LONG_SCALE
 }
