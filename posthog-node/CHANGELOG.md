@@ -1,5 +1,9 @@
 # Next
 
+# 4.4.0 - 2025-01-15
+
+Switch from rusha to native (node:crypto) sha1 implementation
+
 # 4.3.2 - 2024-12-11
 
 1. REVERT: Fix bug where this SDK incorrectly sent `$feature_flag_called` events with null values when using `getFeatureFlagPayload`.

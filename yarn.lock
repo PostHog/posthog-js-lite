@@ -7942,6 +7942,11 @@ minizlib@^2.1.1:
     minipass "^3.0.0"
     yallist "^4.0.0"
 
+mitata@^1.0.21:
+  version "1.0.21"
+  resolved "https://registry.yarnpkg.com/mitata/-/mitata-1.0.21.tgz#525828c6306a5243da65b4d0574956f2572ca432"
+  integrity sha512-5HnbQJpz0Ub/7x7lxaxPhd3U3zXr7rD+24FIgEp/hjVE5wz6ye/pQRBrgH3MUK8KLy/FfPy/yfZbpi0sbmsNFg==
+
 mixin-deep@^1.2.0:
   version "1.3.2"
   resolved "https://registry.yarnpkg.com/mixin-deep/-/mixin-deep-1.3.2.tgz#1120b43dc359a785dce65b55b82e257ccf479566"
@@ -9222,11 +9227,6 @@ run-parallel@^1.1.9:
   integrity sha512-5l4VyZR86LZ/lDxZTR6jqL8AFE2S0IFLMP26AbjsLVADxHdhB/c0GUsH+y39UfCi3dzz8OlQuPmnaJOMoDHQBA==
   dependencies:
     queue-microtask "^1.2.2"
-
-rusha@^0.8.14:
-  version "0.8.14"
-  resolved "https://registry.yarnpkg.com/rusha/-/rusha-0.8.14.tgz#a977d0de9428406138b7bb90d3de5dcd024e2f68"
-  integrity sha512-cLgakCUf6PedEu15t8kbsjnwIFFR2D4RfL+W3iWFJ4iac7z4B0ZI8fxy4R3J956kAI68HclCFGL8MPoUVC3qVA==
 
 safe-array-concat@^1.1.2:
   version "1.1.2"
