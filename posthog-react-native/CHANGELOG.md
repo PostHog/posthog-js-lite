@@ -1,5 +1,9 @@
 # Next
 
+# 3.6.3 - 2025-01-16
+
+1. fix: session replay respect linked feature flags
+
 # 3.6.2 - 2025-01-13
 
 1. fix: Set initial currentSessionId, log only with debug flag on

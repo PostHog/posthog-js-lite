@@ -327,14 +327,36 @@ export class PostHog extends PostHogCore {
 
     // if Decide has not returned yet, we will start session replay with default config.
     const sessionReplay = this.getPersistedProperty(PostHogPersistedProperty.SessionReplay) ?? {}
+    const featureFlags = this.getPersistedProperty(PostHogPersistedProperty.FeatureFlags) ?? {}
+    const decideFeatureFlags = (featureFlags as { [key: string]: JsonType }) ?? {}
 
-    // sessionReplay is always an object, if its a boolean, its false if disabled
-    if (sessionReplay) {
-      const decideReplayConfig = (sessionReplay as { [key: string]: JsonType }) ?? {}
-      this.logMsgIfDebug(() =>
-        console.log('PostHog Debug', `Session replay decide cached config: ${JSON.stringify(decideReplayConfig)}`)
-      )
+    const decideReplayConfig = (sessionReplay as { [key: string]: JsonType }) ?? {}
+    this.logMsgIfDebug(() =>
+      console.log('PostHog Debug', `Session replay decide cached config: ${JSON.stringify(decideReplayConfig)}`)
+    )
 
+    let recordingActive = true
+    const linkedFlag = decideReplayConfig['linkedFlag'] as string | { [key: string]: JsonType } | undefined
+    if (typeof linkedFlag === 'string') {
+      const value = decideFeatureFlags[linkedFlag]
+      if (typeof value === 'boolean') {
+        recordingActive = value
+      }
+
+      this.logMsgIfDebug(() => console.log('PostHog Debug', `Session replay ${linkedFlag} linked flag value: ${value}`))
+    } else if (typeof linkedFlag === 'object') {
+      const flag = linkedFlag['flag'] as string | undefined
+      const variant = linkedFlag['variant'] as string | undefined
+      if (flag && variant) {
+        const value = decideFeatureFlags[flag]
+        if (value) {
+          recordingActive = value === variant
+          this.logMsgIfDebug(() => console.log('PostHog Debug', `Session replay ${flag} linked flag value: ${value}`))
+        }
+      }
+    }
+
+    if (recordingActive) {
       if (OptionalReactNativeSessionReplay) {
         const sessionId = this.getSessionId()
 
