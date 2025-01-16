@@ -351,7 +351,9 @@ export class PostHog extends PostHogCore {
         const value = decideFeatureFlags[flag]
         if (value) {
           recordingActive = value === variant
-          this.logMsgIfDebug(() => console.log('PostHog Debug', `Session replay ${flag} linked flag value: ${value}`))
+          this.logMsgIfDebug(() =>
+            console.log('PostHog Debug', `Session replay ${flag} linked flag variant: ${variant} and value ${value}`)
+          )
         }
       }
     }
