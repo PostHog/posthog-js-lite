@@ -133,3 +133,5 @@ export type PostHogFlagsAndPayloadsResponse = {
 }
 
 export type JsonType = string | number | boolean | null | { [key: string]: JsonType } | Array<JsonType>
+
+export type FetchLike = (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>

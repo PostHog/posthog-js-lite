@@ -1,3 +1,5 @@
+import { FetchLike } from './types'
+
 export function assert(truthyValue: any, message: string): void {
   if (!truthyValue) {
     throw new Error(message)
@@ -57,4 +59,8 @@ export function safeSetTimeout(fn: () => void, timeout: number): any {
 // NOTE: We opt for this slightly imperfect check as the global "Promise" object can get mutated in certain environments
 export const isPromise = (obj: any): obj is Promise<any> => {
   return obj && typeof obj.then === 'function'
+}
+
+export function getFetch(): FetchLike | undefined {
+  return typeof fetch !== 'undefined' ? fetch : typeof global.fetch !== 'undefined' ? global.fetch : undefined
 }
