@@ -8,10 +8,7 @@ import { getContext } from './context'
 import { PostHogStorage, getStorage } from './storage'
 import { version } from '../package.json'
 import { PostHogOptions } from './types'
-
-export function _getWindow(): Window | undefined {
-  return typeof window !== 'undefined' ? window : undefined
-}
+import { getFetch } from 'posthog-core/src/utils'
 
 export class PostHog extends PostHogCore {
   private _storage: PostHogStorage
@@ -24,12 +21,16 @@ export class PostHog extends PostHogCore {
     // posthog-js stores options in one object on
     this._storageKey = options?.persistence_name ? `ph_${options.persistence_name}` : `ph_${apiKey}_posthog`
 
-    this._storage = getStorage(options?.persistence || 'localStorage', _getWindow())
+    this._storage = getStorage(options?.persistence || 'localStorage', this.getWindow())
     this.setupBootstrap(options)
 
     if (options?.preloadFeatureFlags !== false) {
       this.reloadFeatureFlags()
     }
+  }
+
+  private getWindow(): Window | undefined {
+    return typeof window !== 'undefined' ? window : undefined
   }
 
   getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined {
@@ -55,10 +56,14 @@ export class PostHog extends PostHogCore {
   }
 
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
-    // TODO: what to do here?
-    // should we move this to core? https://github.com/PostHog/posthog-js-lite/blob/main/posthog-node/src/fetch.ts
-    // and reuse it here? if window isn't available?
-    return window.fetch(url, options)
+    const fetchFn = getFetch()
+
+    if (!fetchFn) {
+      // error will be handled by the caller (fetchWithRetry)
+      return Promise.reject(new Error('Fetch API is not available in this environment.'))
+    }
+
+    return fetch(url, options)
   }
 
   getLibraryId(): string {
@@ -76,7 +81,7 @@ export class PostHog extends PostHogCore {
   getCommonEventProperties(): any {
     return {
       ...super.getCommonEventProperties(),
-      ...getContext(_getWindow()),
+      ...getContext(this.getWindow()),
     }
   }
 }

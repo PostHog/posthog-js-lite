@@ -1,5 +1,9 @@
 # Next
 
+# 4.4.1 - 2025-01-17
+
+fix: check if window is available before using on web env
+
 # 4.4.0 - 2025-01-15
 
 Switch from rusha to native (node:crypto) sha1 implementation
