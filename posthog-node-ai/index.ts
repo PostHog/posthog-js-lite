@@ -15,7 +15,7 @@ import type { Stream } from 'openai/streaming.mjs';
 interface MonitoringOpenAIConfig {
     apiKey: string;
     posthog: PostHog;
-    // add any other OpenAI config fields you want, e.g. organization, baseURL, etc.
+    // add others
     baseURL?: string;
   }
 
@@ -27,23 +27,18 @@ interface MonitoringParams {
     posthog_groups?: Record<string, any>;
 }
 
-  /**
-   * Example POC that extends OpenAI and overrides the chat and embeddings resources
-   * for usage tracking (e.g. PostHog).
-   */
+
 export class PostHogOpenAI extends OpenAIOrignal {
     private readonly phClient: PostHog;
   
-    // Example properties:
-    // - If you want to store default groups, properties, etc. for every call, you can do it here.
+    // coming soon
     private readonly defaultGroups?: Record<string, any>;
   
     constructor(config: MonitoringOpenAIConfig) {
-      // Pass all relevant config to the super constructor
       super({
         apiKey: config.apiKey,
         baseURL: config.baseURL,
-        // If you need other config, add it above and pass it along
+        // need to decontruct
       });
   
       this.phClient = config.posthog;
@@ -65,9 +60,9 @@ export class PostHogOpenAI extends OpenAIOrignal {
   export class WrappedChat extends OpenAIOrignal.Chat {
     private readonly baseChat: Chat;
     private readonly phClient: PostHog;
-    private readonly parentClient: MonitoringOpenAI;
+    private readonly parentClient: PostHogOpenAI;
   
-    constructor(parentClient: MonitoringOpenAI, phClient: PostHog) {
+    constructor(parentClient: PostHogOpenAI, phClient: PostHog) {
       super(parentClient);
       this.phClient = phClient;
       this.parentClient = parentClient;
@@ -83,7 +78,7 @@ export class PostHogOpenAI extends OpenAIOrignal {
   export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
     private readonly phClient: PostHog;
   
-    constructor(client: OpenAI, phClient: PostHog) {
+    constructor(client: OpenAIOrignal, phClient: PostHog) {
       super(client);
       this.phClient = phClient;
     }
@@ -111,7 +106,6 @@ export class PostHogOpenAI extends OpenAIOrignal {
       body: ChatCompletionCreateParamsBase & MonitoringParams,
       options?: RequestOptions
     ): APIPromise<ChatCompletion | Stream<ChatCompletionChunk>> {
-      // 1. Extract PostHog fields
       const {
         posthog_distinct_id,
         posthog_trace_id,
@@ -124,10 +118,8 @@ export class PostHogOpenAI extends OpenAIOrignal {
       const traceId = posthog_trace_id ?? uuidv4();
       const startTime = Date.now();
   
-      // 2. Call the parent create method with only the OpenAI params
       const parentPromise = super.create(openAIParams, options);
   
-      // 3. Chain off that APIPromise to do your analytics/tracking.
       const wrappedPromise = parentPromise.then(
         (result) => {
           // success
@@ -177,8 +169,6 @@ export class PostHogOpenAI extends OpenAIOrignal {
         }
       ) as APIPromise<ChatCompletion | Stream<ChatCompletionChunk>>;
 
-  
-      // 4. Return the wrapped APIPromise (not an async function).
       return wrappedPromise;
     }
   }
