@@ -63,7 +63,7 @@ export class PostHog extends PostHogCore {
       return Promise.reject(new Error('Fetch API is not available in this environment.'))
     }
 
-    return fetch(url, options)
+    return fetchFn(url, options)
   }
 
   getLibraryId(): string {
