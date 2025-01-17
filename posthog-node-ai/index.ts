@@ -1,7 +1,7 @@
 import type { ChatCompletionCreateParamsBase } from 'openai/resources/chat/completions.mjs';
 import type { ChatCompletionCreateParamsStreaming } from 'openai/resources/chat/completions.mjs';
 import OpenAIOrignal from './node_modules/openai';
-import type { PostHog } from 'posthog-node'; // or your custom client
+import type { PostHog } from 'posthog-node';
 import { v4 as uuidv4 } from 'uuid';
 
 
