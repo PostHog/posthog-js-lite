@@ -154,9 +154,9 @@ describe('PostHog Node.js', () => {
       ])
     })
 
-    it('should handle identify mistakenly using $set', async () => {
+    it('should handle identify using $set and $set_once', async () => {
       expect(mockedFetch).toHaveBeenCalledTimes(0)
-      posthog.identify({ distinctId: '123', properties: { foo: 'bar', $set: { foo: 'other' } } })
+      posthog.identify({ distinctId: '123', properties: { $set: { foo: 'bar' }, $set_once: { vip: true } } })
       jest.runOnlyPendingTimers()
       await waitForPromises()
       const batchEvents = getLastBatchEvents()
@@ -166,7 +166,33 @@ describe('PostHog Node.js', () => {
           event: '$identify',
           properties: {
             $set: {
-              foo: 'other',
+              foo: 'bar',
+            },
+            $set_once: {
+              vip: true,
+            },
+            $geoip_disable: true,
+          },
+        },
+      ])
+    })
+
+    it('should handle identify using $set_once', async () => {
+      expect(mockedFetch).toHaveBeenCalledTimes(0)
+      posthog.identify({ distinctId: '123', properties: { foo: 'bar', $set_once: { vip: true } } })
+      jest.runOnlyPendingTimers()
+      await waitForPromises()
+      const batchEvents = getLastBatchEvents()
+      expect(batchEvents).toMatchObject([
+        {
+          distinct_id: '123',
+          event: '$identify',
+          properties: {
+            $set: {
+              foo: 'bar',
+            },
+            $set_once: {
+              vip: true,
             },
             $geoip_disable: true,
           },

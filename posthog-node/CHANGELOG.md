@@ -1,5 +1,33 @@
 # Next
 
+# 4.4.0 - 2025-01-15
+
+Switch from rusha to native (node:crypto) sha1 implementation
+
+# 4.3.2 - 2024-12-11
+
+1. REVERT: Fix bug where this SDK incorrectly sent `$feature_flag_called` events with null values when using `getFeatureFlagPayload`.
+
+# 4.3.1 - 2024-11-26
+
+1. Fix bug where this SDK incorrectly sent `$feature_flag_called` events with null values when using `getFeatureFlagPayload`.
+
+# 4.3.0 - 2024-11-25
+
+1. Add Sentry v8 support to the Sentry integration
+
+# 4.2.3 - 2024-11-21
+
+1. fix: identify method allows passing a $set_once object
+
+# 4.2.2 - 2024-11-18
+
+1. fix: Shutdown will now respect the timeout and forcefully return rather than returning after the next fetch.
+
+# 4.2.1 - 2024-10-14
+
+1. fix: only log messages if debug is enabled
+
 # 4.2.0 - 2024-08-26
 
 1. Added `historicalMigration` option for use in tools that are migrating large data to PostHog

@@ -158,13 +158,25 @@ export type PostHogNodeV1 = {
 
   /**
    * @description Retrieves payload associated with the specified flag and matched value that is passed in.
-   * (Expected to be used in conjuction with getFeatureFlag but allows for manual lookup).
-   * If matchValue isn't passed, getFeatureFlag is called implicitly.
-   * Will try to evaluate for payload locally first otherwise default to network call if allowed
+   *
+   * IMPORTANT: The `matchValue` parameter should be the value you previously obtained from `getFeatureFlag()`.
+   * If matchValue isn't passed (or is undefined), this method will automatically call `getFeatureFlag()`
+   * internally to fetch the flag value, which could result in a network call to the PostHog server if this flag can
+   * not be evaluated locally. This means that omitting `matchValue` will potentially:
+   * - Bypass local evaluation
+   * - Count as an additional flag evaluation against your quota
+   * - Impact performance due to the extra network request
+   *
+   * Example usage:
+   * ```js
+   * const flagValue = await client.getFeatureFlag('my-flag', distinctId);
+   * const payload = await client.getFeatureFlagPayload('my-flag', distinctId, flagValue);
+   * ```
    *
    * @param key the unique key of your feature flag
    * @param distinctId the current unique id
-   * @param matchValue optional- the matched flag string or boolean
+   * @param matchValue The flag value previously obtained from calling `getFeatureFlag()`. Can be a string or boolean.
+   *                   To avoid extra network calls, pass this parameter when you can.
    * @param options: dict with optional parameters below
    * @param onlyEvaluateLocally optional - whether to only evaluate the flag locally. Defaults to false.
    *

@@ -1,4 +1,4 @@
-import { PostHogCore, PostHogCoreOptions, PostHogFetchOptions, PostHogFetchResponse } from '../../src'
+import { JsonType, PostHogCore, PostHogCoreOptions, PostHogFetchOptions, PostHogFetchResponse } from '../../src'
 
 const version = '2.0.0-alpha'
 
@@ -42,9 +42,9 @@ export class PostHogCoreTestClient extends PostHogCore {
 export const createTestClient = (
   apiKey: string,
   options?: PostHogCoreOptions,
-  setupMocks?: (mocks: PostHogCoreTestClientMocks) => void
+  setupMocks?: (mocks: PostHogCoreTestClientMocks) => void,
+  storageCache: { [key: string]: string | JsonType } = {}
 ): [PostHogCoreTestClient, PostHogCoreTestClientMocks] => {
-  const storageCache: { [key: string]: string | undefined } = {}
   const mocks = {
     fetch: jest.fn<Promise<PostHogFetchResponse>, [string, PostHogFetchOptions]>(),
     storage: {

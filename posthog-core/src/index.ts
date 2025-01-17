@@ -49,9 +49,9 @@ function isPostHogFetchError(err: any): boolean {
 
 export abstract class PostHogCoreStateless {
   // options
-  private apiKey: string
-  host: string
-  private flushAt: number
+  readonly apiKey: string
+  readonly host: string
+  readonly flushAt: number
   private maxBatchSize: number
   private maxQueueSize: number
   private flushInterval: number
@@ -62,7 +62,7 @@ export abstract class PostHogCoreStateless {
   private removeDebugCallback?: () => void
   private disableGeoip: boolean = true
   private historicalMigration: boolean = false
-  public disabled = false
+  protected disabled = false
 
   private defaultOptIn: boolean = true
   private pendingPromises: Record<string, Promise<any>> = {}
@@ -113,11 +113,15 @@ export abstract class PostHogCoreStateless {
     this._isInitialized = true
   }
 
+  protected logMsgIfDebug(fn: () => void): void {
+    if (this.isDebug) {
+      fn()
+    }
+  }
+
   protected wrap(fn: () => void): void {
     if (this.disabled) {
-      if (this.isDebug) {
-        console.warn('[PostHog] The client is disabled')
-      }
+      this.logMsgIfDebug(() => console.warn('[PostHog] The client is disabled'))
       return
     }
 
@@ -172,6 +176,10 @@ export abstract class PostHogCoreStateless {
     return !!this.removeDebugCallback
   }
 
+  get isDisabled(): boolean {
+    return this.disabled
+  }
+
   private buildPayload(payload: { distinct_id: string; event: string; properties?: PostHogEventProperties }): any {
     return {
       distinct_id: payload.distinct_id,
@@ -205,7 +213,7 @@ export abstract class PostHogCoreStateless {
   ): void {
     this.wrap(() => {
       // The properties passed to identifyStateless are event properties.
-      // To add person properties, pass in all person properties to the `$set` key.
+      // To add person properties, pass in all person properties to the `$set` and `$set_once` keys.
 
       const payload = {
         ...this.buildPayload({
@@ -500,7 +508,7 @@ export abstract class PostHogCoreStateless {
 
       if (queue.length >= this.maxQueueSize) {
         queue.shift()
-        console.info('Queue is full, the oldest event is dropped.')
+        this.logMsgIfDebug(() => console.info('Queue is full, the oldest event is dropped.'))
       }
 
       queue.push({ message })
@@ -664,39 +672,51 @@ export abstract class PostHogCoreStateless {
   }
 
   async shutdown(shutdownTimeoutMs: number = 30000): Promise<void> {
-    await this._initPromise
+    // A little tricky - we want to have a max shutdown time and enforce it, even if that means we have some
+    // dangling promises. We'll keep track of the timeout and resolve/reject based on that.
 
+    await this._initPromise
+    let hasTimedOut = false
     this.clearFlushTimer()
 
-    try {
-      await Promise.all(Object.values(this.pendingPromises))
+    const doShutdown = async (): Promise<void> => {
+      try {
+        await Promise.all(Object.values(this.pendingPromises))
 
-      const startTimeWithDelay = Date.now() + shutdownTimeoutMs
+        while (true) {
+          const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
 
-      while (true) {
-        const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
+          if (queue.length === 0) {
+            break
+          }
 
-        if (queue.length === 0) {
-          break
+          // flush again to make sure we send all events, some of which might've been added
+          // while we were waiting for the pending promises to resolve
+          // For example, see sendFeatureFlags in posthog-node/src/posthog-node.ts::capture
+          await this.flush()
+
+          if (hasTimedOut) {
+            break
+          }
         }
-
-        // flush again to make sure we send all events, some of which might've been added
-        // while we were waiting for the pending promises to resolve
-        // For example, see sendFeatureFlags in posthog-node/src/posthog-node.ts::capture
-        await this.flush()
-
-        // If we've been waiting for more than the shutdownTimeoutMs, stop it
-        const now = Date.now()
-        if (startTimeWithDelay < now) {
-          break
+      } catch (e) {
+        if (!isPostHogFetchError(e)) {
+          throw e
         }
+        this.logMsgIfDebug(() => console.error('Error while shutting down PostHog', e))
       }
-    } catch (e) {
-      if (!isPostHogFetchError(e)) {
-        throw e
-      }
-      console.error('Error while shutting down PostHog', e)
     }
+
+    return Promise.race([
+      new Promise<void>((_, reject) => {
+        safeSetTimeout(() => {
+          this.logMsgIfDebug(() => console.error('Timed out while shutting down PostHog'))
+          hasTimedOut = true
+          reject('Timeout while shutting down PostHog. Some events may not have been sent.')
+        }, shutdownTimeoutMs)
+      }),
+      doShutdown(),
+    ])
   }
 }
 
@@ -724,25 +744,58 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   }
 
   protected setupBootstrap(options?: Partial<PostHogCoreOptions>): void {
-    if (options?.bootstrap?.distinctId) {
-      if (options?.bootstrap?.isIdentifiedId) {
-        this.setPersistedProperty(PostHogPersistedProperty.DistinctId, options.bootstrap.distinctId)
+    const bootstrap = options?.bootstrap
+    if (!bootstrap) {
+      return
+    }
+
+    // bootstrap options are only set if no persisted values are found
+    // this is to prevent overwriting existing values
+    if (bootstrap.distinctId) {
+      if (bootstrap.isIdentifiedId) {
+        const distinctId = this.getPersistedProperty(PostHogPersistedProperty.DistinctId)
+
+        if (!distinctId) {
+          this.setPersistedProperty(PostHogPersistedProperty.DistinctId, bootstrap.distinctId)
+        }
       } else {
-        this.setPersistedProperty(PostHogPersistedProperty.AnonymousId, options.bootstrap.distinctId)
+        const anonymousId = this.getPersistedProperty(PostHogPersistedProperty.AnonymousId)
+
+        if (!anonymousId) {
+          this.setPersistedProperty(PostHogPersistedProperty.AnonymousId, bootstrap.distinctId)
+        }
       }
     }
 
-    if (options?.bootstrap?.featureFlags) {
-      const activeFlags = Object.keys(options.bootstrap?.featureFlags || {})
-        .filter((flag) => !!options.bootstrap?.featureFlags?.[flag])
+    const bootstrapfeatureFlags = bootstrap.featureFlags
+    if (bootstrapfeatureFlags && Object.keys(bootstrapfeatureFlags).length) {
+      const bootstrapFlags = Object.keys(bootstrapfeatureFlags)
+        .filter((flag) => !!bootstrapfeatureFlags[flag])
         .reduce(
-          (res: Record<string, string | boolean>, key) => (
-            (res[key] = options.bootstrap?.featureFlags?.[key] || false), res
-          ),
+          (res: Record<string, string | boolean>, key) => ((res[key] = bootstrapfeatureFlags[key] || false), res),
           {}
         )
-      this.setKnownFeatureFlags(activeFlags)
-      options?.bootstrap.featureFlagPayloads && this.setKnownFeatureFlagPayloads(options?.bootstrap.featureFlagPayloads)
+
+      if (Object.keys(bootstrapFlags).length) {
+        this.setPersistedProperty(PostHogPersistedProperty.BootstrapFeatureFlags, bootstrapFlags)
+
+        const currentFlags =
+          this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(PostHogPersistedProperty.FeatureFlags) || {}
+        const newFeatureFlags = { ...bootstrapFlags, ...currentFlags }
+        this.setKnownFeatureFlags(newFeatureFlags)
+      }
+
+      const bootstrapFlagPayloads = bootstrap.featureFlagPayloads
+      if (bootstrapFlagPayloads && Object.keys(bootstrapFlagPayloads).length) {
+        this.setPersistedProperty(PostHogPersistedProperty.BootstrapFeatureFlagPayloads, bootstrapFlagPayloads)
+
+        const currentFlagPayloads =
+          this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
+            PostHogPersistedProperty.FeatureFlagPayloads
+          ) || {}
+        const newFeatureFlagPayloads = { ...bootstrapFlagPayloads, ...currentFlagPayloads }
+        this.setKnownFeatureFlagPayloads(newFeatureFlagPayloads)
+      }
     }
   }
 
@@ -761,6 +814,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   private clearProps(): void {
     this.props = undefined
     this.sessionProps = {}
+    this.flagCallReported = {}
   }
 
   private _props: PostHogEventProperties | undefined
@@ -832,6 +886,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   resetSessionId(): void {
     this.wrap(() => {
       this.setPersistedProperty(PostHogPersistedProperty.SessionId, null)
+      this.setPersistedProperty(PostHogPersistedProperty.SessionLastTimestamp, null)
     })
   }
 
@@ -902,10 +957,17 @@ export abstract class PostHogCore extends PostHogCoreStateless {
         this.groups(properties.$groups)
       }
 
+      // promote $set and $set_once to top level
+      const userPropsOnce = properties?.$set_once
+      delete properties?.$set_once
+
+      // if no $set is provided we assume all properties are $set
+      const userProps = properties?.$set || properties
+
       const allProperties = this.enrichProperties({
-        ...properties,
         $anon_distinct_id: this.getAnonymousId(),
-        $set: properties,
+        $set: userProps,
+        $set_once: userPropsOnce,
       })
 
       if (distinctId !== previousDistinctId) {
@@ -1108,6 +1170,11 @@ export abstract class PostHogCore extends PostHogCoreStateless {
 
         return super.getDecide(distinctId, groups, personProperties, groupProperties, extraProperties).then((res) => {
           if (res?.featureFlags) {
+            // clear flag call reported if we have new flags since they might have changed
+            if (this.sendFeatureFlagEvent) {
+              this.flagCallReported = {}
+            }
+
             let newFeatureFlags = res.featureFlags
             let newFeatureFlagPayloads = res.featureFlagPayloads
             if (res.errorsWhileComputingFlags) {
@@ -1127,6 +1194,19 @@ export abstract class PostHogCore extends PostHogCoreStateless {
                 Object.entries(newFeatureFlagPayloads || {}).map(([k, v]) => [k, this._parsePayload(v)])
               )
             )
+            // Mark that we hit the /decide endpoint so we can capture this in the $feature_flag_called event
+            this.setPersistedProperty(PostHogPersistedProperty.DecideEndpointWasHit, true)
+
+            const sessionReplay = res?.sessionRecording
+            if (sessionReplay) {
+              this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, sessionReplay)
+              this.logMsgIfDebug(() =>
+                console.log('PostHog Debug', 'Session replay config: ', JSON.stringify(sessionReplay))
+              )
+            } else {
+              this.logMsgIfDebug(() => console.info('PostHog Debug', 'Session replay config disabled.'))
+              this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, null)
+            }
           }
 
           return res
@@ -1178,6 +1258,14 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       this.capture('$feature_flag_called', {
         $feature_flag: key,
         $feature_flag_response: response,
+        $feature_flag_bootstrapped_response: this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
+          PostHogPersistedProperty.BootstrapFeatureFlags
+        )?.[key],
+        $feature_flag_bootstrapped_payload: this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
+          PostHogPersistedProperty.BootstrapFeatureFlagPayloads
+        )?.[key],
+        // If we haven't yet received a response from the /decide endpoint, we must have used the bootstrapped value
+        $used_bootstrap_value: !this.getPersistedProperty(PostHogPersistedProperty.DecideEndpointWasHit),
       })
     }
 
@@ -1265,7 +1353,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       .catch((e) => {
         cb?.(e, undefined)
         if (!cb) {
-          console.log('[PostHog] Error reloading feature flags', e)
+          this.logMsgIfDebug(() => console.log('[PostHog] Error reloading feature flags', e))
         }
       })
   }

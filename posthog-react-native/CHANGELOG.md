@@ -1,9 +1,160 @@
 # Next
 
+# 3.6.3 - 2025-01-16
+
+1. fix: session replay respect linked feature flags
+
+# 3.6.2 - 2025-01-13
+
+1. fix: Set initial currentSessionId, log only with debug flag on
+
+# 3.6.1 - 2024-12-17
+
+1. fix: os_name was not being set correctly for some devices using expo-device
+
+# 3.6.0 - 2024-12-12
+
+1. Add new debugging property `$feature_flag_bootstrapped_response`, `$feature_flag_bootstrapped_payload` and `$used_bootstrap_value` to `$feature_flag_called` event
+
+# 3.5.0 - 2024-12-03
+
+1. fix: deprecate maskPhotoLibraryImages due to unintended masking issues
+
+# 3.4.0 - 2024-11-26
+
+1. feat: automatically mask out user photos and sandboxed views like photo picker (iOS Only)
+  1. To disable masking set `maskAllSandboxedViews` and `maskPhotoLibraryImages` to false
+
+```js
+export const posthog = new PostHog(
+  'apiKey...',
+  sessionReplayConfig: {
+      maskAllSandboxedViews: false,
+      maskPhotoLibraryImages: false,
+);
+```
+
+# 3.3.14 - 2024-11-21
+
+1. fix: identify method allows passing a $set_once object
+
+# 3.3.13 - 2024-11-19
+
+1. fix: session replay respects the flushAt flag
+
+# 3.3.12 - 2024-11-18
+
+1. fix: session replay forces the session id if the SDK is already enabled
+
+# 3.3.11 - 2024-11-13
+
+1. fix: respect the given propsToCapture autocapture option
+
+# 3.3.10 - 2024-11-04
+
+1. fix: capture customLabelProp if set
+
+# 3.3.9 - 2024-10-26
+
+1. fix: rollback module to ESNext
+
+# 3.3.8 - 2024-10-25
+
+1. chore: change androidDebouncerDelayMs default from 500ms to 1000ms (1s)
+
+# 3.3.7 - 2024-10-25
+
+1. fix: session replay respects the `disabled` flag
+
+# 3.3.6 - 2024-10-19
+
+1. fix: all sdkReplayConfig should have a default value
+
+# 3.3.5 - 2024-10-15
+
+1. fix: only tries to read device context from react-native-device-info if expo libs are not available
+
+# 3.3.4 - 2024-10-14
+
+1. fix: only log messages if debug is enabled
+
+# 3.3.3 - 2024-10-11
+
+1. fix: bootstrap flags do not overwrite the current values
+
+# 3.3.2 - 2024-10-11
+
+## Changed
+
+1. fix: clear flagCallReported if there are new flags
+
+# 3.3.1 - 2024-09-30
+
+## Changed
+
+1. fix: set the right sdk name and version for recordings
+
+# 3.3.0 - 2024-09-24
+
+## Changed
+
+1. chore: session id will be rotate on app restart.
+    1. To keep the session id across restarts, set the `enablePersistSessionIdAcrossRestart` option to `true` when initializing the PostHog client.
+
+```js
+export const posthog = new PostHog(
+  'apiKey...',
+  {
+    // ...
+    enablePersistSessionIdAcrossRestart: true,
+  },
+);
+```
+
+# 3.2.1 - 2024-09-24
+
+## Changed
+
+1. recording: session replay plugin isn't properly identifying users already identified
+
+# 3.2.0 - 2024-09-19
+
 ## Changed
 
 1. chore: default `captureMode` changed to `json`.
     1. To keep using the `form` mode, just set the `captureMode` option to `form` when initializing the PostHog client.
+2. chore: Session Replay for React-Native - Experimental support
+
+Install Session Replay for React-Native:
+
+```bash
+yarn add posthog-react-native-session-replay
+# or npm
+npm i -s posthog-react-native-session-replay
+```
+
+Enable Session Replay for React-Native:
+
+```js
+export const posthog = new PostHog(
+  'apiKey...',
+  {
+    // ...
+    enableSessionReplay: true,
+  },
+);
+```
+
+Or using the `PostHogProvider`
+
+```js
+<PostHogProvider
+        apiKey="apiKey..."
+        options={{
+          enableSessionReplay: true,
+        }}
+      >
+```
 
 # 3.1.2 - 2024-08-14
 

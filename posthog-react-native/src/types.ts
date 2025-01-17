@@ -47,6 +47,67 @@ export interface PostHogCustomAppProperties {
   $timezone?: string | null
 }
 
+export type PostHogSessionReplayConfig = {
+  /**
+   * Enable masking of all text and text input fields
+   * Experimental support
+   * Default: true
+   */
+  maskAllTextInputs?: boolean
+  /**
+   * Enable masking of all images to a placeholder
+   * Experimental support
+   * Default: true
+   */
+  maskAllImages?: boolean
+  /**
+   * Enable masking of all sandboxed system views
+   * These may include UIImagePickerController, PHPickerViewController and CNContactPickerViewController
+   * iOS only
+   * Experimental support
+   * Default: true
+   */
+  maskAllSandboxedViews?: boolean
+  /**
+   * Enable masking of images that likely originated from user's photo library
+   * Experimental support (UIKit only)
+   * iOS only
+   * Default: false
+   *
+   * @deprecated This property has no effect and will be removed in the next major release. To learn how to manually mask user photos please see our Privacy controls documentation: https://posthog.com/docs/session-replay/privacy?tab=React+Native
+   */
+  maskPhotoLibraryImages?: boolean
+  /**
+   * Enable capturing of logcat as console events
+   * Android only
+   * Experimental support
+   * Default: true
+   */
+  captureLog?: boolean
+  /**
+   * Deboucer delay used to reduce the number of snapshots captured and reduce performance impact
+   * This is used for capturing the view as a screenshot
+   * The lower the number more snapshots will be captured but higher the performance impact
+   * Defaults to 1s on iOS
+   */
+  iOSdebouncerDelayMs?: number
+  /**
+   * Deboucer delay used to reduce the number of snapshots captured and reduce performance impact
+   * This is used for capturing the view as a screenshot
+   * The lower the number more snapshots will be captured but higher the performance impact
+   * Defaults to 1000ms (1s)
+   * Ps: it was 500ms (0.5s) by default until version 3.3.7
+   */
+  androidDebouncerDelayMs?: number
+  /**
+   * Enable capturing network telemetry
+   * iOS only
+   * Experimental support
+   * Default: true
+   */
+  captureNetworkTelemetry?: boolean
+}
+
 export interface PostHogCustomStorage {
   getItem: (key: string) => string | null | Promise<string | null>
   setItem: (key: string, value: string) => void | Promise<void>

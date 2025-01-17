@@ -1,9 +1,11 @@
 import { AppState, Dimensions, Linking, Platform } from 'react-native'
 
 import {
+  JsonType,
   PostHogCaptureOptions,
   PostHogCore,
   PostHogCoreOptions,
+  PostHogEventProperties,
   PostHogFetchOptions,
   PostHogFetchResponse,
   PostHogPersistedProperty,
@@ -12,8 +14,14 @@ import { getLegacyValues } from './legacy'
 import { PostHogRNStorage, PostHogRNSyncMemoryStorage } from './storage'
 import { version } from './version'
 import { buildOptimisiticAsyncStorage, getAppProperties } from './native-deps'
-import { PostHogAutocaptureOptions, PostHogCustomAppProperties, PostHogCustomStorage } from './types'
+import {
+  PostHogAutocaptureOptions,
+  PostHogCustomAppProperties,
+  PostHogCustomStorage,
+  PostHogSessionReplayConfig,
+} from './types'
 import { withReactNativeNavigation } from './frameworks/wix-navigation'
+import { OptionalReactNativeSessionReplay } from './optional/OptionalSessionReplay'
 
 export type PostHogOptions = PostHogCoreOptions & {
   /** Allows you to provide the storage type. By default 'file'.
@@ -35,12 +43,36 @@ export type PostHogOptions = PostHogCoreOptions & {
    * If you're already using the 'captureLifecycleEvents' options with 'withReactNativeNavigation' or 'PostHogProvider, you should not set this to true, otherwise you may see duplicated events.
    */
   captureNativeAppLifecycleEvents?: boolean
+
+  /**
+   * Enable Recording of Session Replays for Android and iOS
+   * Requires Record user sessions to be enabled in the PostHog Project Settings
+   * Experimental support
+   * Defaults to false
+   */
+  enableSessionReplay?: boolean
+
+  /**
+   * Configuration for Session Replay
+   * Experimental support
+   */
+  sessionReplayConfig?: PostHogSessionReplayConfig
+
+  /**
+   * If enabled, the session id ($session_id) will be persisted across app restarts.
+   * This is an option for back compatibility, so your current data isn't skewed with the new version of the SDK.
+   * If this is false, the session id will be always reset on app restart.
+   * Defaults to false
+   */
+  enablePersistSessionIdAcrossRestart?: boolean
 }
 
 export class PostHog extends PostHogCore {
   private _persistence: PostHogOptions['persistence']
   private _storage: PostHogRNStorage
   private _appProperties: PostHogCustomAppProperties = {}
+  private _currentSessionId?: string | undefined
+  private _enableSessionReplay?: boolean
 
   constructor(apiKey: string, options?: PostHogOptions) {
     super(apiKey, options)
@@ -82,6 +114,13 @@ export class PostHog extends PostHogCore {
     }
 
     const initAfterStorage = (): void => {
+      // reset session id on app restart
+      const enablePersistSessionIdAcrossRestart = options?.enablePersistSessionIdAcrossRestart
+      if (!enablePersistSessionIdAcrossRestart) {
+        this.setPersistedProperty(PostHogPersistedProperty.SessionId, null)
+        this.setPersistedProperty(PostHogPersistedProperty.SessionLastTimestamp, null)
+      }
+
       this.setupBootstrap(options)
 
       this._isInitialized = true
@@ -91,8 +130,10 @@ export class PostHog extends PostHogCore {
 
       if (options?.captureNativeAppLifecycleEvents) {
         if (this._persistence === 'memory') {
-          console.warn(
-            'PostHog was initialised with persistence set to "memory", capturing native app events is not supported.'
+          this.logMsgIfDebug(() =>
+            console.warn(
+              'PostHog was initialised with persistence set to "memory", capturing native app events is not supported.'
+            )
           )
         } else {
           void this.captureNativeAppLifecycleEvents()
@@ -100,6 +141,8 @@ export class PostHog extends PostHogCore {
       }
 
       void this.persistAppVersion()
+
+      void this.startSessionReplay(options)
     }
 
     // For async storage, we wait for the storage to be ready before we start the SDK
@@ -169,8 +212,198 @@ export class PostHog extends PostHogCore {
     )
   }
 
+  _isEnableSessionReplay(): boolean {
+    return !this.isDisabled && (this._enableSessionReplay ?? false)
+  }
+
+  _resetSessionId(
+    reactNativeSessionReplay: typeof OptionalReactNativeSessionReplay | undefined,
+    sessionId: string
+  ): void {
+    // _resetSessionId is only called if reactNativeSessionReplay not undefined, but the linter wasn't happy
+    if (reactNativeSessionReplay) {
+      reactNativeSessionReplay.endSession()
+      reactNativeSessionReplay.startSession(sessionId)
+    }
+  }
+
+  getSessionId(): string {
+    const sessionId = super.getSessionId()
+
+    if (!this._isEnableSessionReplay()) {
+      return sessionId
+    }
+
+    // only rotate if there is a new sessionId and it is different from the current one
+    if (sessionId.length > 0 && this._currentSessionId && sessionId !== this._currentSessionId) {
+      if (OptionalReactNativeSessionReplay) {
+        try {
+          this._resetSessionId(OptionalReactNativeSessionReplay, sessionId)
+          this.logMsgIfDebug(() => console.info('PostHog Debug', `Session replay started with sessionId ${sessionId}.`))
+        } catch (e) {
+          this.logMsgIfDebug(() =>
+            console.error('PostHog Debug', `Session replay failed to start with sessionId: ${e}.`)
+          )
+        }
+      }
+      this._currentSessionId = sessionId
+    } else {
+      this.logMsgIfDebug(() =>
+        console.log(
+          'PostHog Debug',
+          `Session replay session id not rotated, sessionId ${sessionId} and currentSessionId ${this._currentSessionId}.`
+        )
+      )
+    }
+
+    return sessionId
+  }
+
+  resetSessionId(): void {
+    super.resetSessionId()
+    if (this._isEnableSessionReplay() && OptionalReactNativeSessionReplay) {
+      try {
+        OptionalReactNativeSessionReplay.endSession()
+        this.logMsgIfDebug(() => console.info('PostHog Debug', `Session replay ended.`))
+      } catch (e) {
+        this.logMsgIfDebug(() => console.error('PostHog Debug', `Session replay failed to end: ${e}.`))
+      }
+    }
+  }
+
+  identify(distinctId?: string, properties?: PostHogEventProperties, options?: PostHogCaptureOptions): void {
+    const previousDistinctId = this.getDistinctId()
+    super.identify(distinctId, properties, options)
+
+    if (this._isEnableSessionReplay() && OptionalReactNativeSessionReplay) {
+      try {
+        distinctId = distinctId || previousDistinctId
+        OptionalReactNativeSessionReplay.identify(distinctId, this.getAnonymousId())
+        this.logMsgIfDebug(() =>
+          console.info('PostHog Debug', `Session replay identified with distinctId ${distinctId}.`)
+        )
+      } catch (e) {
+        this.logMsgIfDebug(() => console.error('PostHog Debug', `Session replay failed to identify: ${e}.`))
+      }
+    }
+  }
+
   initReactNativeNavigation(options: PostHogAutocaptureOptions): boolean {
     return withReactNativeNavigation(this, options)
+  }
+
+  private async startSessionReplay(options?: PostHogOptions): Promise<void> {
+    this._enableSessionReplay = options?.enableSessionReplay
+    if (!this._isEnableSessionReplay()) {
+      this.logMsgIfDebug(() => console.info('PostHog Debug', 'Session replay is not enabled.'))
+      return
+    }
+
+    const {
+      maskAllTextInputs = true,
+      maskAllImages = true,
+      maskAllSandboxedViews = true,
+      maskPhotoLibraryImages = false,
+      captureLog = true,
+      captureNetworkTelemetry = true,
+      iOSdebouncerDelayMs = 1000,
+      androidDebouncerDelayMs = 1000,
+    } = options?.sessionReplayConfig ?? {}
+
+    const sdkReplayConfig = {
+      maskAllTextInputs,
+      maskAllImages,
+      maskAllSandboxedViews,
+      maskPhotoLibraryImages,
+      captureLog,
+      captureNetworkTelemetry,
+      iOSdebouncerDelayMs,
+      androidDebouncerDelayMs,
+    }
+
+    this.logMsgIfDebug(() =>
+      console.log('PostHog Debug', `Session replay sdk config: ${JSON.stringify(sdkReplayConfig)}`)
+    )
+
+    // if Decide has not returned yet, we will start session replay with default config.
+    const sessionReplay = this.getPersistedProperty(PostHogPersistedProperty.SessionReplay) ?? {}
+    const featureFlags = this.getPersistedProperty(PostHogPersistedProperty.FeatureFlags) ?? {}
+    const decideFeatureFlags = (featureFlags as { [key: string]: JsonType }) ?? {}
+
+    const decideReplayConfig = (sessionReplay as { [key: string]: JsonType }) ?? {}
+    this.logMsgIfDebug(() =>
+      console.log('PostHog Debug', `Session replay decide cached config: ${JSON.stringify(decideReplayConfig)}`)
+    )
+
+    let recordingActive = true
+    const linkedFlag = decideReplayConfig['linkedFlag'] as string | { [key: string]: JsonType } | undefined
+    if (typeof linkedFlag === 'string') {
+      const value = decideFeatureFlags[linkedFlag]
+      if (typeof value === 'boolean') {
+        recordingActive = value
+      }
+
+      this.logMsgIfDebug(() => console.log('PostHog Debug', `Session replay ${linkedFlag} linked flag value: ${value}`))
+    } else if (typeof linkedFlag === 'object') {
+      const flag = linkedFlag['flag'] as string | undefined
+      const variant = linkedFlag['variant'] as string | undefined
+      if (flag && variant) {
+        const value = decideFeatureFlags[flag]
+        if (value) {
+          recordingActive = value === variant
+          this.logMsgIfDebug(() =>
+            console.log('PostHog Debug', `Session replay ${flag} linked flag variant: ${variant} and value ${value}`)
+          )
+        }
+      }
+    }
+
+    if (recordingActive) {
+      if (OptionalReactNativeSessionReplay) {
+        const sessionId = this.getSessionId()
+
+        if (sessionId.length === 0) {
+          this.logMsgIfDebug(() => console.warn('PostHog Debug', 'Session replay enabled but no sessionId found.'))
+          return
+        }
+
+        const sdkOptions = {
+          apiKey: this.apiKey,
+          host: this.host,
+          debug: this.isDebug,
+          distinctId: this.getDistinctId(),
+          anonymousId: this.getAnonymousId(),
+          sdkVersion: this.getLibraryVersion(),
+          flushAt: this.flushAt,
+        }
+
+        this.logMsgIfDebug(() =>
+          console.log('PostHog Debug', `Session replay sdk options: ${JSON.stringify(sdkOptions)}`)
+        )
+
+        try {
+          if (!(await OptionalReactNativeSessionReplay.isEnabled())) {
+            await OptionalReactNativeSessionReplay.start(sessionId, sdkOptions, sdkReplayConfig, decideReplayConfig)
+            this.logMsgIfDebug(() =>
+              console.info('PostHog Debug', `Session replay started with sessionId ${sessionId}.`)
+            )
+          } else {
+            // if somehow the SDK is already enabled with a different sessionId, we reset it
+            this._resetSessionId(OptionalReactNativeSessionReplay, sessionId)
+            this.logMsgIfDebug(() =>
+              console.log('PostHog Debug', `Session replay already started with sessionId ${sessionId}.`)
+            )
+          }
+          this._currentSessionId = sessionId
+        } catch (e) {
+          this.logMsgIfDebug(() => console.error('PostHog Debug', `Session replay failed to start: ${e}.`))
+        }
+      } else {
+        this.logMsgIfDebug(() => console.warn('PostHog Debug', 'Session replay enabled but not installed.'))
+      }
+    } else {
+      this.logMsgIfDebug(() => console.info('PostHog Debug', 'Session replay disabled.'))
+    }
   }
 
   private async captureNativeAppLifecycleEvents(): Promise<void> {
@@ -185,10 +418,12 @@ export class PostHog extends PostHogCore {
     const appVersion = this._appProperties.$app_version
 
     if (!appBuild || !appVersion) {
-      console.warn(
-        'PostHog could not track installation/update/open, as the build and version were not set. ' +
-          'This can happen if some dependencies are not installed correctly, or if you have provided' +
-          'customAppProperties but not included $app_build or $app_version.'
+      this.logMsgIfDebug(() =>
+        console.warn(
+          'PostHog could not track installation/update/open, as the build and version were not set. ' +
+            'This can happen if some dependencies are not installed correctly, or if you have provided' +
+            'customAppProperties but not included $app_build or $app_version.'
+        )
       )
     }
     if (appBuild) {
