@@ -10,8 +10,7 @@ import { version } from '../package.json'
 import { PostHogOptions } from './types'
 
 export function _getWindow(): Window | undefined {
-  const _window: Window | undefined = typeof window !== 'undefined' ? window : undefined
-  return _window
+  return typeof window !== 'undefined' ? window : undefined
 }
 
 export class PostHog extends PostHogCore {

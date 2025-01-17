@@ -5,9 +5,10 @@ export function getContext(window: Window | undefined): any {
   let context = {}
   if (window?.navigator) {
     const userAgent = window.navigator.userAgent
+    const osValue = os(window)
     context = {
       ...context,
-      $os: os(window),
+      ...(osValue !== undefined && { $os: osValue }),
       $browser: browser(userAgent, window.navigator.vendor, !!(window as any).opera),
       $referrer: window.document.referrer,
       $referring_domain: referringDomain(window.document.referrer),
@@ -115,9 +116,9 @@ function browserVersion(userAgent: string, vendor: string, opera: boolean): numb
   return parseFloat(matches[matches.length - 2])
 }
 
-function os(window: Window | undefined): string {
+function os(window: Window | undefined): string | undefined {
   if (!window?.navigator) {
-    return ''
+    return undefined
   }
   const a = window.navigator.userAgent
   if (/Windows/i.test(a)) {
@@ -138,7 +139,7 @@ function os(window: Window | undefined): string {
   } else if (/CrOS/.test(a)) {
     return 'Chrome OS'
   } else {
-    return ''
+    return undefined
   }
 }
 
