@@ -42,21 +42,12 @@ export class PostHogOpenAI extends OpenAIOrignal {
       });
   
       this.phClient = config.posthog;
-  
-      // Replace the built-in resources with your own wrappers.
-      // Each wrapper internally references `super.chat` or `super.embeddings`.
       this.chat = new WrappedChat(this, this.phClient);
     }
   
-    // These props override the base class's `chat` and `embeddings`.
-    // Type them carefully if you want full IntelliSense support.
     public chat: WrappedChat;
   }
   
-  /** 
-   * Minimal example wrapper around `chat` resource.
-   * OpenAI library organizes them like: client.chat.completions.create(...)
-   */
   export class WrappedChat extends OpenAIOrignal.Chat {
     private readonly baseChat: Chat;
     private readonly phClient: PostHog;
@@ -67,11 +58,9 @@ export class PostHogOpenAI extends OpenAIOrignal {
       this.phClient = phClient;
       this.parentClient = parentClient;
       this.baseChat = parentClient.chat;
-      // Initialize the completions property with our wrapped version
       this.completions = new WrappedCompletions(parentClient, phClient);
     }
   
-    // Add the completions property
     public completions: WrappedCompletions;
   }
 
@@ -173,10 +162,7 @@ export class PostHogOpenAI extends OpenAIOrignal {
     }
   }
   
-//   /** 
-//    * Minimal example wrapper around `embeddings` resource.
-//    * Called like: client.embeddings.create(...)
-//    */
+
 //   export class WrappedEmbeddings {
 //     private readonly baseEmbeddings: Embedding;
 //     private readonly phClient: PostHog;
