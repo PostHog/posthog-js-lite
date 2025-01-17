@@ -1,0 +1,29 @@
+{
+  "name": "posthog-node-ai",
+  "version": "1.0.0",
+  "description": "PostHog Node.js AI integrations",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PostHog/posthog-js-lite.git",
+    "directory": "posthog-node-ai"
+  },
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "keywords": [
+    "posthog",
+    "ai",
+    "openai",
+    "anthropic",
+    "llm"
+  ],
+  "dependencies": {
+    "openai": "^4.78.1",
+    "uuid": "^11.0.5"
+  }
+}
