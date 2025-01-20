@@ -18,6 +18,7 @@ import fetch from './fetch'
 export type PostHogOptions = PostHogCoreOptions & {
   persistence?: 'memory'
   personalApiKey?: string
+  privacyMode?: boolean
   // The interval in milliseconds between polls for refreshing feature flag definitions. Defaults to 30 seconds.
   featureFlagsPollingInterval?: number
   // Maximum size of cache that deduplicates $feature_flag_called calls per user.
