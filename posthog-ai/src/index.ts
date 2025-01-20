@@ -1,3 +1,3 @@
-import PostHogOpenAI from './openai';
+import PostHogOpenAI from './openai'
 
-export { PostHogOpenAI as OpenAI };
+export { PostHogOpenAI as OpenAI }
