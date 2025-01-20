@@ -31,8 +31,7 @@
     "uuid": "^11.0.5"
   },
   "scripts": {
-    "build": "bun build ./src --outdir ./dist --target bun",
     "test": "jest",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "cd .. && yarn build"
   }
 }
