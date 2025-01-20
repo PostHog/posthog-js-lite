@@ -8,6 +8,7 @@ import { getContext } from './context'
 import { PostHogStorage, getStorage } from './storage'
 import { version } from '../package.json'
 import { PostHogOptions } from './types'
+import { getFetch } from 'posthog-core/src/utils'
 
 export class PostHog extends PostHogCore {
   private _storage: PostHogStorage
@@ -19,12 +20,17 @@ export class PostHog extends PostHogCore {
 
     // posthog-js stores options in one object on
     this._storageKey = options?.persistence_name ? `ph_${options.persistence_name}` : `ph_${apiKey}_posthog`
-    this._storage = getStorage(options?.persistence || 'localStorage', window)
+
+    this._storage = getStorage(options?.persistence || 'localStorage', this.getWindow())
     this.setupBootstrap(options)
 
     if (options?.preloadFeatureFlags !== false) {
       this.reloadFeatureFlags()
     }
+  }
+
+  private getWindow(): Window | undefined {
+    return typeof window !== 'undefined' ? window : undefined
   }
 
   getPersistedProperty<T>(key: PostHogPersistedProperty): T | undefined {
@@ -50,7 +56,14 @@ export class PostHog extends PostHogCore {
   }
 
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
-    return window.fetch(url, options)
+    const fetchFn = getFetch()
+
+    if (!fetchFn) {
+      // error will be handled by the caller (fetchWithRetry)
+      return Promise.reject(new Error('Fetch API is not available in this environment.'))
+    }
+
+    return fetchFn(url, options)
   }
 
   getLibraryId(): string {
@@ -68,7 +81,7 @@ export class PostHog extends PostHogCore {
   getCommonEventProperties(): any {
     return {
       ...super.getCommonEventProperties(),
-      ...getContext(window),
+      ...getContext(this.getWindow()),
     }
   }
 }
