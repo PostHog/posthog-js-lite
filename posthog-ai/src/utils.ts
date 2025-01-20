@@ -33,7 +33,7 @@ export const getModelParams = (params: ChatCompletionCreateParamsBase & Monitori
 };
   
 
-  export const extractCoreModelParams = (params: ChatCompletionCreateParamsBase & MonitoringParams, provider: string) => {
+  export const extractCoreModelParams = (params: ChatCompletionCreateParamsBase & MonitoringParams, provider: string): Record<string, any> => {
     const output: Record<string, any> = {};
   
     if (provider === 'anthropic') {
@@ -136,7 +136,7 @@ export const getModelParams = (params: ChatCompletionCreateParamsBase & Monitori
   }
   
 
-  export const mergeSystemPrompt = (params: ChatCompletionCreateParamsBase & MonitoringParams, provider: string) => {
+  export const mergeSystemPrompt = (params: ChatCompletionCreateParamsBase & MonitoringParams, provider: string): any => {
     if (provider !== 'anthropic') {
       return params.messages;
     }
@@ -181,7 +181,7 @@ export const getModelParams = (params: ChatCompletionCreateParamsBase & Monitori
     params,
     httpStatus = 200,
     usage = {}
-  }: SendEventToPosthogParams) => {
+  }: SendEventToPosthogParams): void => {
     if (client.capture) {
       client.capture({
         distinctId: distinctId ?? traceId,
