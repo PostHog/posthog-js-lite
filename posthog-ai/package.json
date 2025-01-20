@@ -7,9 +7,9 @@
     "url": "https://github.com/PostHog/posthog-js-lite.git",
     "directory": "posthog-node-ai"
   },
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "main": "./lib/index.js",
+  "module": "./lib/index.mjs",
+  "types": "./lib/index.d.ts",
   "devDependencies": {
     "@types/bun": "latest",
     "@types/jest": "^29.5.14",
