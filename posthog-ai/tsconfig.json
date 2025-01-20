@@ -1,8 +1,10 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    "types": ["node", "openai"],
-    "typeRoots": ["./node_modules/@types", "../node_modules/@types", "../node_modules"],
-    "moduleResolution": "node"
+    "types": ["node"],
+    "typeRoots": ["./node_modules/@types", "../node_modules/@types"],
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true
   }
 }
