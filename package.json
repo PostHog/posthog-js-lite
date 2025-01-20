@@ -65,5 +65,8 @@
   },
   "lint-staged": {
     "*.{ts,js,css,scss}": "prettier --write"
+  },
+  "dependencies": {
+    "openai": "^4.79.1"
   }
 }
