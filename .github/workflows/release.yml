@@ -18,6 +18,8 @@ jobs:
             npm_token_secret: NPM_TOKEN_BEN_WHITE # TODO: Change to standard token once able
           - name: posthog-web
             npm_token_secret: NPM_TOKEN # TODO: Change to standard token once able
+          - name: posthog-ai
+            npm_token_secret: NPM_TOKEN # TODO: Change to standard token once able
 
     steps:
       - name: Checkout the repository
