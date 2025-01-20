@@ -1,5 +1,3 @@
-import type { ChatCompletionCreateParamsBase } from 'openai/resources/chat/completions'
-import type { ChatCompletionCreateParamsStreaming } from 'openai/resources/chat/completions'
 import OpenAIOrignal from 'openai'
 import type { PostHog } from 'posthog-node'
 import { v4 as uuidv4 } from 'uuid'
@@ -8,7 +6,9 @@ import { mergeSystemPrompt, type MonitoringParams, sendEventToPosthog } from '..
 
 type ChatCompletion = OpenAIOrignal.ChatCompletion
 type ChatCompletionChunk = OpenAIOrignal.ChatCompletionChunk
-import type { ChatCompletionCreateParamsNonStreaming } from 'openai/resources/chat/completions'
+type ChatCompletionCreateParamsBase = OpenAIOrignal.Chat.Completions.ChatCompletionCreateParams
+type ChatCompletionCreateParamsNonStreaming = OpenAIOrignal.Chat.Completions.ChatCompletionCreateParamsNonStreaming
+type ChatCompletionCreateParamsStreaming = OpenAIOrignal.Chat.Completions.ChatCompletionCreateParamsStreaming
 import type { APIPromise, RequestOptions } from 'openai/core'
 import type { Stream } from 'openai/streaming'
 

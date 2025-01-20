@@ -1,5 +1,7 @@
 import { PostHog } from 'posthog-node'
-import type { ChatCompletionCreateParamsBase } from 'openai/resources/chat/completions'
+import OpenAIOrignal from 'openai'
+
+type ChatCompletionCreateParamsBase = OpenAIOrignal.Chat.Completions.ChatCompletionCreateParams
 
 export interface MonitoringParams {
   posthog_distinct_id?: string
