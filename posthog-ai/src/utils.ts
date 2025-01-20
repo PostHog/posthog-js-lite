@@ -149,7 +149,7 @@ export const getModelParams = (params: ChatCompletionCreateParamsBase & Monitori
   };
   
 
-  export const withPrivacyMode = (client: PostHog, privacyMode: boolean, input: any) => {
+  export const withPrivacyMode = (client: PostHog, privacyMode: boolean, input: any): any => {
     return (client as any).privacy_mode || privacyMode ? null : input;
   };
   
