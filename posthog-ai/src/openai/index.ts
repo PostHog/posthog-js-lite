@@ -126,6 +126,23 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
               passThroughStream.end()
             } catch (error) {
               // error handling
+              sendEventToPosthog({
+                client: this.phClient,
+                distinctId: posthog_distinct_id ?? traceId,
+                traceId,
+                model: openAIParams.model,
+                provider: 'openai',
+                input: posthog_privacy_mode ? '' : mergeSystemPrompt(openAIParams, 'openai'),
+                output: [],
+                latency: 0,
+                baseURL: (this as any).baseURL ?? '',
+                params: body,
+                httpStatus: 500,
+                usage: {
+                  input_tokens: 0,
+                  output_tokens: 0,
+                },
+              })
               passThroughStream.emit('error', error)
             }
           })()
@@ -158,6 +175,23 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
           return result
         },
         (error) => {
+          sendEventToPosthog({
+            client: this.phClient,
+            distinctId: posthog_distinct_id ?? traceId,
+            traceId,
+            model: openAIParams.model,
+            provider: 'openai',
+            input: posthog_privacy_mode ? '' : mergeSystemPrompt(openAIParams, 'openai'),
+            output: [],
+            latency: 0,
+            baseURL: (this as any).baseURL ?? '',
+            params: body,
+            httpStatus: 500,
+            usage: {
+              input_tokens: 0,
+              output_tokens: 0,
+            },
+          })
           throw error
         }
       ) as APIPromise<ChatCompletion>

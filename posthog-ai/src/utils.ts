@@ -32,48 +32,6 @@ export const getModelParams = (params: ChatCompletionCreateParamsBase & Monitori
   return modelParams
 }
 
-export const extractCoreModelParams = (
-  params: ChatCompletionCreateParamsBase & MonitoringParams,
-  provider: string
-): Record<string, any> => {
-  const output: Record<string, any> = {}
-
-  if (provider === 'anthropic') {
-    if (params.temperature !== undefined) {
-      output.$ai_temperature = params.temperature
-    }
-    if (params.max_tokens !== undefined) {
-      output.$ai_max_tokens = params.max_tokens
-    }
-    if (params.stream !== undefined) {
-      output.$ai_stream = params.stream
-    }
-  } else if (provider === 'openai') {
-    if (params.temperature !== undefined) {
-      output.$ai_temperature = params.temperature
-    }
-    if (params.max_completion_tokens !== undefined) {
-      output.$ai_max_tokens = params.max_completion_tokens
-    }
-    if (params.stream !== undefined) {
-      output.$ai_stream = params.stream
-    }
-  } else {
-    // Default to openai-like params
-    if (params.temperature !== undefined) {
-      output.$ai_temperature = params.temperature
-    }
-    if (params.max_completion_tokens !== undefined) {
-      output.$ai_max_tokens = params.max_completion_tokens
-    }
-    if (params.stream !== undefined) {
-      output.$ai_stream = params.stream
-    }
-  }
-
-  return output
-}
-
 export const getUsage = (response: any, provider: string): { input_tokens: number; output_tokens: number } => {
   if (!response?.usage) {
     return { input_tokens: 0, output_tokens: 0 }
@@ -197,7 +155,6 @@ export const sendEventToPosthog = ({
         $ai_latency: latency,
         $ai_trace_id: traceId,
         $ai_base_url: baseURL,
-        ...extractCoreModelParams(params, provider),
         ...params.posthog_properties,
         ...(distinctId ? {} : { $process_person_profile: false }),
       },
