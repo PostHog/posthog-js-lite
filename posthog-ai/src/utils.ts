@@ -1,4 +1,4 @@
-import { PostHog } from "../posthog-node";
+import { PostHog } from "posthog-node";
 import type { ChatCompletionCreateParamsBase } from 'openai/resources/chat/completions';
 
 export interface MonitoringParams {

@@ -1,5 +1,5 @@
 import { PostHog } from 'posthog-node'
-import PostHogOpenAI from '../openai/index'
+import PostHogOpenAI from '../src/openai'
 
 jest.mock('posthog-node', () => {
     return {

@@ -1,5 +1,5 @@
 {
-  "name": "posthog-node-ai",
+  "name": "posthog-ai",
   "version": "1.0.0",
   "description": "PostHog Node.js AI integrations",
   "repository": {
@@ -19,9 +19,6 @@
     "ts-jest": "^29.2.5",
     "typescript": "^5.0.0"
   },
-  "peerDependencies": {
-    "typescript": "^5.0.0"
-  },
   "keywords": [
     "posthog",
     "ai",
@@ -34,7 +31,7 @@
     "uuid": "^11.0.5"
   },
   "scripts": {
-    "build": "tsup",
+    "build": "bun build ./src --outdir ./dist --target bun",
     "test": "jest",
     "prepublishOnly": "npm run build"
   }
