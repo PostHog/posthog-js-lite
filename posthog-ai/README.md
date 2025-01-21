@@ -28,7 +28,7 @@ await client.chat.completions.create({
 ### After
 
 ```typescript
-import { OpenAI } from 'posthog-node-ai'
+import { OpenAI } from '@posthog/ai'
 import { PostHog } from 'posthog-node'
 
 const phClient = new PostHog(
