@@ -1,6 +1,6 @@
 {
   "name": "@posthog/ai",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "PostHog Node.js AI integrations",
   "repository": {
     "type": "git",

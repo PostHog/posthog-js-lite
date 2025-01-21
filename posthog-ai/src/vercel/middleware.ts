@@ -9,11 +9,11 @@ import type { PostHog } from 'posthog-node'
 import { sendEventToPosthog } from '../utils'
 
 interface CreateInstrumentationMiddlewareOptions {
-  posthog_distinct_id: string
+  posthog_distinct_id?: string
   posthog_trace_id: string
-  posthog_properties: Record<string, any>
-  posthog_privacy_mode: boolean
-  posthog_groups: string[]
+  posthog_properties?: Record<string, any>
+  posthog_privacy_mode?: boolean
+  posthog_groups?: string[]
 }
 
 export const createInstrumentationMiddleware = (
