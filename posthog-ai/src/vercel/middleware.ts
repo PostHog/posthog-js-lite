@@ -16,7 +16,7 @@ interface CreateInstrumentationMiddlewareOptions {
     posthog_groups: string[];
 }
 
-export const createInstrumentationMiddleware = (phClient: PostHog, model: LanguageModelV1, options: CreateInstrumentationMiddlewareOptions) => {
+export const createInstrumentationMiddleware = (phClient: PostHog, model: LanguageModelV1, options: CreateInstrumentationMiddlewareOptions): LanguageModelV1Middleware => {
     const middleware: LanguageModelV1Middleware = {
         wrapGenerate: async ({ doGenerate, params }) => {
             const startTime = Date.now();
@@ -140,7 +140,7 @@ export const wrapVercelLanguageModel = (
     model: LanguageModelV1,
     phClient: PostHog,
     options: CreateInstrumentationMiddlewareOptions
-) => {
+): LanguageModelV1 => {
     const traceId = options.posthog_trace_id ?? uuidv4();
     const middleware = createInstrumentationMiddleware(phClient, model, {
         ...options,
