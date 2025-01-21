@@ -7,9 +7,9 @@
     "url": "git+https://github.com/PostHog/posthog-js-lite.git",
     "directory": "posthog-ai"
   },
-  "main": "./lib/index.cjs.js",
-  "module": "./lib/index.esm.js",
-  "types": "./lib/index.d.ts",
+  "main": "lib/index.cjs.js",
+  "module": "lib/index.esm.js",
+  "types": "lib/index.d.ts",
   "license": "MIT",
   "devDependencies": {
     "@types/jest": "^28.1.5",
