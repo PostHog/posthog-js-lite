@@ -42,8 +42,8 @@ export const createInstrumentationMiddleware = (
           params: { posthog_properties: options } as any,
           httpStatus: 200,
           usage: {
-            input_tokens: 0,
-            output_tokens: 0,
+            input_tokens: result.usage.promptTokens,
+            output_tokens: result.usage.completionTokens,
           },
         })
 
@@ -73,6 +73,7 @@ export const createInstrumentationMiddleware = (
     wrapStream: async ({ doStream, params }) => {
       const startTime = Date.now()
       let generatedText = ''
+      let usage: { input_tokens?: number; output_tokens?: number } = {}
 
       try {
         const { stream, ...rest } = await doStream()
@@ -81,6 +82,12 @@ export const createInstrumentationMiddleware = (
           transform(chunk, controller) {
             if (chunk.type === 'text-delta') {
               generatedText += chunk.textDelta
+            }
+            if (chunk.type === 'finish') {
+                usage = {
+                    input_tokens: chunk.usage?.promptTokens,
+                    output_tokens: chunk.usage?.completionTokens,
+                }
             }
             controller.enqueue(chunk)
           },
@@ -99,10 +106,7 @@ export const createInstrumentationMiddleware = (
               baseURL: '',
               params: { posthog_properties: options } as any,
               httpStatus: 200,
-              usage: {
-                input_tokens: 0,
-                output_tokens: 0,
-              },
+              usage,
             })
           },
         })

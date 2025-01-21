@@ -123,7 +123,7 @@ export type SendEventToPosthogParams = {
   latency: number
   baseURL: string
   httpStatus: number
-  usage: { input_tokens?: number; output_tokens?: number }
+  usage?: { input_tokens?: number; output_tokens?: number }
   params: ChatCompletionCreateParamsBase & MonitoringParams
 }
 
