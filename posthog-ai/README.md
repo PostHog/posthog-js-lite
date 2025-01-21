@@ -11,7 +11,7 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || '',
 })
 
-client.chat.completions.create({
+await client.chat.completions.create({
   model: 'gpt-4',
   messages: [{ role: 'user', content: 'Hello, world!' }],
 })
@@ -21,25 +21,32 @@ client.chat.completions.create({
 
 ```typescript
 import { OpenAI } from 'posthog-node-ai'
+import { PostHog } from 'posthog-node'
+
+const phClient = new PostHog(
+  process.env.POSTHOG_API_KEY, {
+    host: process.env.POSTHOG_HOST || 'https://us.posthog.com',
+  }
+})
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || '',
   posthog: phClient,
 })
 
-client.chat.completions.create({
+await client.chat.completions.create({
   model: 'gpt-4',
   messages: [{ role: 'user', content: 'Hello, world!' }],
   posthog_distinct_id: 'test-user-id',
   posthog_properties: {
     test_property: 'test_value',
-  },
+  }
 })
+
+await phClient.shutdown()
 ```
 
 Please see the main [PostHog docs](https://www.posthog.com/docs).
-
-Specifically, the [Node.js docs](https://posthog.com/docs/libraries/node-ai) details.
 
 ## Questions?
 
