@@ -45,9 +45,9 @@ const client = new OpenAI({
 await client.chat.completions.create({
   model: 'gpt-4',
   messages: [{ role: 'user', content: 'Hello, world!' }],
-  posthog_distinct_id: 'test-user-id',
-  posthog_properties: {
-    test_property: 'test_value',
+  posthogDistinctId: 'test-user-id',
+  posthogProperties: {
+    testProperty: 'testValue',
   }
 })
 

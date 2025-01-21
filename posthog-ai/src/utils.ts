@@ -4,11 +4,11 @@ import OpenAIOrignal from 'openai'
 type ChatCompletionCreateParamsBase = OpenAIOrignal.Chat.Completions.ChatCompletionCreateParams
 
 export interface MonitoringParams {
-  posthog_distinct_id?: string
-  posthog_trace_id?: string
-  posthog_properties?: Record<string, any>
-  posthog_privacy_mode?: boolean
-  posthog_groups?: Record<string, any>
+  posthogDistinctId?: string
+  posthogTraceId?: string
+  posthogProperties?: Record<string, any>
+  posthogPrivacyMode?: boolean
+  posthogGroups?: Record<string, any>
 }
 
 export const getModelParams = (params: ChatCompletionCreateParamsBase & MonitoringParams): Record<string, any> => {
@@ -149,18 +149,18 @@ export const sendEventToPosthog = ({
         $ai_provider: provider,
         $ai_model: model,
         $ai_model_parameters: getModelParams(params),
-        $ai_input: withPrivacyMode(client, params.posthog_privacy_mode ?? false, input),
-        $ai_output_choices: withPrivacyMode(client, params.posthog_privacy_mode ?? false, output),
+        $ai_input: withPrivacyMode(client, params.posthogPrivacyMode ?? false, input),
+        $ai_output_choices: withPrivacyMode(client, params.posthogPrivacyMode ?? false, output),
         $ai_http_status: httpStatus,
         $ai_input_tokens: usage.input_tokens ?? 0,
         $ai_output_tokens: usage.output_tokens ?? 0,
         $ai_latency: latency,
         $ai_trace_id: traceId,
         $ai_base_url: baseURL,
-        ...params.posthog_properties,
+        ...params.posthogProperties,
         ...(distinctId ? {} : { $process_person_profile: false }),
       },
-      groups: params.posthog_groups,
+      groups: params.posthogGroups,
     })
   }
 }

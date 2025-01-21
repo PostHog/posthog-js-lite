@@ -6,7 +6,7 @@ jest.mock('posthog-node', () => {
     PostHog: jest.fn().mockImplementation(() => {
       return {
         capture: jest.fn(),
-        privacy_mode: false,
+        privacyMode: false,
       }
     }),
   }
@@ -90,8 +90,8 @@ describe('PostHogOpenAI - Jest test suite', () => {
     const response = await client.chat.completions.create({
       model: 'gpt-4',
       messages: [{ role: 'user', content: 'Hello' }],
-      posthog_distinct_id: 'test-id',
-      posthog_properties: { foo: 'bar' },
+      posthogDistinctId: 'test-id',
+      posthogProperties: { foo: 'bar' },
     })
 
     expect(response).toEqual(mockOpenAiChatResponse)
@@ -151,8 +151,8 @@ describe('PostHogOpenAI - Jest test suite', () => {
     await client.chat.completions.create({
       model: 'gpt-4',
       messages: [{ role: 'user', content: 'Hello' }],
-      posthog_distinct_id: 'test-id',
-      posthog_groups: { company: 'test_company' },
+      posthogDistinctId: 'test-id',
+      posthogGroups: { company: 'test_company' },
     })
     expect(mockPostHogClient.capture).toHaveBeenCalledTimes(1)
     const [captureArgs] = (mockPostHogClient.capture as jest.Mock).mock.calls
@@ -164,8 +164,8 @@ describe('PostHogOpenAI - Jest test suite', () => {
     await client.chat.completions.create({
       model: 'gpt-4',
       messages: [{ role: 'user', content: 'Hello' }],
-      posthog_distinct_id: 'test-id',
-      posthog_privacy_mode: true,
+      posthogDistinctId: 'test-id',
+      posthogPrivacyMode: true,
     })
 
     expect(mockPostHogClient.capture).toHaveBeenCalledTimes(1)
@@ -182,9 +182,9 @@ describe('PostHogOpenAI - Jest test suite', () => {
     await client.chat.completions.create({
       model: 'gpt-4',
       messages: [{ role: 'user', content: 'Hello' }],
-      posthog_distinct_id: 'test-id',
+      posthogDistinctId: 'test-id',
       // we attempt to override locally, but it should still be null if global is true
-      posthog_privacy_mode: false,
+      posthogPrivacyMode: false,
     })
 
     expect(mockPostHogClient.capture).toHaveBeenCalledTimes(1)
@@ -207,8 +207,8 @@ describe('PostHogOpenAI - Jest test suite', () => {
       max_completion_tokens: 100,
       stream: false,
       messages: [{ role: 'user', content: 'Hello' }],
-      posthog_distinct_id: 'test-id',
-      posthog_properties: { foo: 'bar' },
+      posthogDistinctId: 'test-id',
+      posthogProperties: { foo: 'bar' },
     })
 
     expect(mockPostHogClient.capture).toHaveBeenCalledTimes(1)
