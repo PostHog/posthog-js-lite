@@ -1,15 +1,15 @@
 {
   "name": "@posthog/ai",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "PostHog Node.js AI integrations",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/PostHog/posthog-js-lite.git",
     "directory": "posthog-ai"
   },
-  "main": "./lib/index.cjs.js",
-  "module": "./lib/index.esm.js",
-  "types": "./lib/index.d.ts",
+  "main": "lib/index.cjs.js",
+  "module": "lib/index.esm.js",
+  "types": "lib/index.d.ts",
   "license": "MIT",
   "devDependencies": {
     "@types/jest": "^28.1.5",
