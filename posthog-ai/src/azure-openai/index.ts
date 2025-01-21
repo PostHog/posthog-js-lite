@@ -31,7 +31,7 @@ export class PostHogAzureOpenAI extends AzureOpenAI {
   public chat: WrappedChat
 }
 
-export class WrappedChat extends OpenAIOrignal.Chat {
+export class WrappedChat extends AzureOpenAI.Chat {
   constructor(parentClient: PostHogAzureOpenAI, phClient: PostHog) {
     super(parentClient)
     this.completions = new WrappedCompletions(parentClient, phClient)
