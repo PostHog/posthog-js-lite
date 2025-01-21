@@ -1,4 +1,4 @@
-import OpenAIOrignal from 'openai'
+import OpenAIOrignal, { AzureOpenAI } from 'openai'
 import type { PostHog } from 'posthog-node'
 import { v4 as uuidv4 } from 'uuid'
 import { PassThrough } from 'stream'
@@ -18,7 +18,7 @@ interface MonitoringOpenAIConfig {
   baseURL?: string
 }
 
-export class PostHogOpenAI extends OpenAIOrignal {
+export class PostHogAzureOpenAI extends AzureOpenAI {
   private readonly phClient: PostHog
 
   constructor(config: MonitoringOpenAIConfig) {
@@ -32,7 +32,7 @@ export class PostHogOpenAI extends OpenAIOrignal {
 }
 
 export class WrappedChat extends OpenAIOrignal.Chat {
-  constructor(parentClient: PostHogOpenAI, phClient: PostHog) {
+  constructor(parentClient: PostHogAzureOpenAI, phClient: PostHog) {
     super(parentClient)
     this.completions = new WrappedCompletions(parentClient, phClient)
   }
@@ -40,10 +40,10 @@ export class WrappedChat extends OpenAIOrignal.Chat {
   public completions: WrappedCompletions
 }
 
-export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
+export class WrappedCompletions extends AzureOpenAI.Chat.Completions {
   private readonly phClient: PostHog
 
-  constructor(client: OpenAIOrignal, phClient: PostHog) {
+  constructor(client: AzureOpenAI, phClient: PostHog) {
     super(client)
     this.phClient = phClient
   }
@@ -201,5 +201,5 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
   }
 }
 
-export default PostHogOpenAI
+export default PostHogAzureOpenAI
 
