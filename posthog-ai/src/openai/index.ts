@@ -1,5 +1,5 @@
 import OpenAIOrignal from 'openai'
-import type { PostHog } from 'posthog-node'
+import { PostHog } from 'posthog-node'
 import { v4 as uuidv4 } from 'uuid'
 import { PassThrough } from 'stream'
 import { mergeSystemPrompt, type MonitoringParams, sendEventToPosthog } from '../utils'
