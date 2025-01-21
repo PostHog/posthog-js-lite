@@ -84,10 +84,10 @@ export const createInstrumentationMiddleware = (
               generatedText += chunk.textDelta
             }
             if (chunk.type === 'finish') {
-                usage = {
-                    input_tokens: chunk.usage?.promptTokens,
-                    output_tokens: chunk.usage?.completionTokens,
-                }
+              usage = {
+                input_tokens: chunk.usage?.promptTokens,
+                output_tokens: chunk.usage?.completionTokens,
+              }
             }
             controller.enqueue(chunk)
           },
