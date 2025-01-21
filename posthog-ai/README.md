@@ -2,7 +2,15 @@
 
 Initial Typescript SDK for LLM Observability
 
-// before
+## Installation
+
+```bash
+yarn add @posthog/posthog-ai
+```
+
+## Usage  
+
+### Before
 
 ```typescript
 import { OpenAI } from 'openai'
@@ -17,7 +25,7 @@ await client.chat.completions.create({
 })
 ```
 
-// after
+### After
 
 ```typescript
 import { OpenAI } from 'posthog-node-ai'
@@ -43,6 +51,7 @@ await client.chat.completions.create({
   }
 })
 
+// YOU HAVE TO HAVE THIS OR THE CLIENT MAY NOT SEND EVENTS
 await phClient.shutdown()
 ```
 
