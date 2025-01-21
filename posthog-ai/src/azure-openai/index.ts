@@ -202,4 +202,3 @@ export class WrappedCompletions extends AzureOpenAI.Chat.Completions {
 }
 
 export default PostHogAzureOpenAI
-

@@ -202,4 +202,3 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
 }
 
 export default PostHogOpenAI
-

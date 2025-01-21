@@ -8,7 +8,7 @@ Initial Typescript SDK for LLM Observability
 yarn add @posthog/posthog-ai
 ```
 
-## Usage  
+## Usage
 
 ### Before
 
