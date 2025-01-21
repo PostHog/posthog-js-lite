@@ -6,7 +6,8 @@
     "posthog-core",
     "posthog-node",
     "posthog-react-native",
-    "posthog-web"
+    "posthog-web",
+    "posthog-ai"
   ],
   "author": "PostHog",
   "private": true,
@@ -16,10 +17,11 @@
     "lint": "eslint -c .eslintrc.js --fix posthog-*",
     "prettier": "prettier --write \"./**/*.{ts,tsx}\"",
     "prettier:check": "prettier --check \"./**/*.{ts,tsx}\"",
-    "test": "jest posthog-core posthog-node posthog-web",
+    "test": "jest posthog-core posthog-node posthog-web posthog-ai",
     "test:node": "jest posthog-node",
     "test:core": "jest posthog-core",
     "test:web": "jest posthog-core",
+    "test:ai": "jest posthog-ai",
     "test:rn": "cd posthog-react-native && yarn test",
     "test:all": "jest posthog-core posthog-node posthog-web && yarn test:rn",
     "build-rollup": "rollup -c",
@@ -65,5 +67,6 @@
   },
   "lint-staged": {
     "*.{ts,js,css,scss}": "prettier --write"
-  }
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }

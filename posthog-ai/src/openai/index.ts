@@ -1,5 +1,3 @@
-import type { ChatCompletionCreateParamsBase } from 'openai/resources/chat/completions'
-import type { ChatCompletionCreateParamsStreaming } from 'openai/resources/chat/completions'
 import OpenAIOrignal from 'openai'
 import type { PostHog } from 'posthog-node'
 import { v4 as uuidv4 } from 'uuid'
@@ -8,7 +6,9 @@ import { mergeSystemPrompt, type MonitoringParams, sendEventToPosthog } from '..
 
 type ChatCompletion = OpenAIOrignal.ChatCompletion
 type ChatCompletionChunk = OpenAIOrignal.ChatCompletionChunk
-import type { ChatCompletionCreateParamsNonStreaming } from 'openai/resources/chat/completions'
+type ChatCompletionCreateParamsBase = OpenAIOrignal.Chat.Completions.ChatCompletionCreateParams
+type ChatCompletionCreateParamsNonStreaming = OpenAIOrignal.Chat.Completions.ChatCompletionCreateParamsNonStreaming
+type ChatCompletionCreateParamsStreaming = OpenAIOrignal.Chat.Completions.ChatCompletionCreateParamsStreaming
 import type { APIPromise, RequestOptions } from 'openai/core'
 import type { Stream } from 'openai/streaming'
 
@@ -126,6 +126,23 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
               passThroughStream.end()
             } catch (error) {
               // error handling
+              sendEventToPosthog({
+                client: this.phClient,
+                distinctId: posthog_distinct_id ?? traceId,
+                traceId,
+                model: openAIParams.model,
+                provider: 'openai',
+                input: posthog_privacy_mode ? '' : mergeSystemPrompt(openAIParams, 'openai'),
+                output: [],
+                latency: 0,
+                baseURL: (this as any).baseURL ?? '',
+                params: body,
+                httpStatus: 500,
+                usage: {
+                  input_tokens: 0,
+                  output_tokens: 0,
+                },
+              })
               passThroughStream.emit('error', error)
             }
           })()
@@ -158,6 +175,23 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
           return result
         },
         (error) => {
+          sendEventToPosthog({
+            client: this.phClient,
+            distinctId: posthog_distinct_id ?? traceId,
+            traceId,
+            model: openAIParams.model,
+            provider: 'openai',
+            input: posthog_privacy_mode ? '' : mergeSystemPrompt(openAIParams, 'openai'),
+            output: [],
+            latency: 0,
+            baseURL: (this as any).baseURL ?? '',
+            params: body,
+            httpStatus: 500,
+            usage: {
+              input_tokens: 0,
+              output_tokens: 0,
+            },
+          })
           throw error
         }
       ) as APIPromise<ChatCompletion>
