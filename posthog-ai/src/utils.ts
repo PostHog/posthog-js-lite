@@ -121,18 +121,6 @@ export const sendEventToPosthog = ({
   httpStatus = 200,
   usage = {},
 }: SendEventToPosthogParams): void => {
-  console.log('sendEventToPosthog', {
-    client,
-    distinctId,
-    traceId,
-    model,
-    provider,
-    input,
-    output,
-    latency,
-    baseURL,
-    params,
-  })
   if (client.capture) {
     client.capture({
       distinctId: distinctId ?? traceId,
