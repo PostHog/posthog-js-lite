@@ -9,7 +9,6 @@ type ChatCompletionChunk = OpenAIOrignal.ChatCompletionChunk
 type ChatCompletionCreateParamsBase = OpenAIOrignal.Chat.Completions.ChatCompletionCreateParams
 type ChatCompletionCreateParamsNonStreaming = OpenAIOrignal.Chat.Completions.ChatCompletionCreateParamsNonStreaming
 type ChatCompletionCreateParamsStreaming = OpenAIOrignal.Chat.Completions.ChatCompletionCreateParamsStreaming
-import type { ParsedChatCompletion, ChatCompletionParseParams } from 'openai/resources/beta/chat/completions'
 import type { APIPromise, RequestOptions } from 'openai/core'
 import type { Stream } from 'openai/streaming'
 
