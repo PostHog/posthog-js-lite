@@ -20,6 +20,7 @@ interface MonitoringOpenAIConfig {
 
 export class PostHogOpenAI extends OpenAIOrignal {
   private readonly phClient: PostHog
+  public chat: WrappedChat
 
   constructor(config: MonitoringOpenAIConfig) {
     const { posthog, ...openAIConfig } = config
@@ -27,8 +28,6 @@ export class PostHogOpenAI extends OpenAIOrignal {
     this.phClient = posthog
     this.chat = new WrappedChat(this, this.phClient)
   }
-
-  public chat: WrappedChat
 }
 
 export class WrappedChat extends OpenAIOrignal.Chat {
@@ -94,8 +93,8 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
           outputTokens: 0,
         }
         if ('tee' in value) {
-          const openAIStream = value
-          ;(async () => {
+          const openAIStream = value;
+          (async () => {
             try {
               for await (const chunk of openAIStream) {
                 const delta = chunk?.choices?.[0]?.delta?.content ?? ''
@@ -115,7 +114,7 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
                 traceId,
                 model: openAIParams.model,
                 provider: 'openai',
-                input: posthogPrivacyMode ? '' : mergeSystemPrompt(openAIParams, 'openai'),
+                input: mergeSystemPrompt(openAIParams, 'openai'),
                 output: [{ content: accumulatedContent, role: 'assistant' }],
                 latency,
                 baseURL: (this as any).baseURL ?? '',
@@ -132,7 +131,7 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
                 traceId,
                 model: openAIParams.model,
                 provider: 'openai',
-                input: posthogPrivacyMode ? '' : mergeSystemPrompt(openAIParams, 'openai'),
+                input: mergeSystemPrompt(openAIParams, 'openai'),
                 output: [],
                 latency: 0,
                 baseURL: (this as any).baseURL ?? '',
@@ -160,7 +159,7 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
               traceId,
               model: openAIParams.model,
               provider: 'openai',
-              input: posthogPrivacyMode ? '' : mergeSystemPrompt(openAIParams, 'openai'),
+              input: mergeSystemPrompt(openAIParams, 'openai'),
               output: [{ content: result.choices[0].message.content, role: 'assistant' }],
               latency,
               baseURL: (this as any).baseURL ?? '',
@@ -181,7 +180,7 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
             traceId,
             model: openAIParams.model,
             provider: 'openai',
-            input: posthogPrivacyMode ? '' : mergeSystemPrompt(openAIParams, 'openai'),
+            input: mergeSystemPrompt(openAIParams, 'openai'),
             output: [],
             latency: 0,
             baseURL: (this as any).baseURL ?? '',
@@ -199,6 +198,7 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
       return wrappedPromise
     }
   }
+
 }
 
 export default PostHogOpenAI
