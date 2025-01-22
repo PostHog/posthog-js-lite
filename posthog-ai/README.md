@@ -5,55 +5,30 @@ Initial Typescript SDK for LLM Observability
 ## Installation
 
 ```bash
-yarn add @posthog/posthog-ai
+npm install @posthog/ai
 ```
 
 ## Usage
-
-### Before
-
-```typescript
-import { OpenAI } from 'openai'
-
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || '',
-})
-
-await client.chat.completions.create({
-  model: 'gpt-4',
-  messages: [{ role: 'user', content: 'Hello, world!' }],
-})
-```
-
-### After
 
 ```typescript
 import { OpenAI } from '@posthog/ai'
 import { PostHog } from 'posthog-node'
 
 const phClient = new PostHog(
-  process.env.POSTHOG_API_KEY, {
-    host: process.env.POSTHOG_HOST || 'https://us.posthog.com',
-  }
-})
+  'sTMFPsFhdP1Ssg',
+  { host: 'https://us.i.posthog.com' }
+);
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || '',
+const openai = new OpenAI({
+  apiKey: 'your_openai_api_key',
   posthog: phClient,
-})
-
-await client.chat.completions.create({
-  model: 'gpt-4',
-  messages: [{ role: 'user', content: 'Hello, world!' }],
-  posthogDistinctId: 'test-user-id',
-  posthogProperties: {
-    testProperty: 'testValue',
-  }
-})
+});
 
 // YOU HAVE TO HAVE THIS OR THE CLIENT MAY NOT SEND EVENTS
 await phClient.shutdown()
 ```
+
+LLM Observability [docs](https://posthog.com/docs/ai-engineering/observability)
 
 Please see the main [PostHog docs](https://www.posthog.com/docs).
 
