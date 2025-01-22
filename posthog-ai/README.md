@@ -14,25 +14,22 @@ npm install @posthog/ai
 import { OpenAI } from '@posthog/ai'
 import { PostHog } from 'posthog-node'
 
-const phClient = new PostHog(
-  '<YOUR_PROJECT_API_KEY>',
-  { host: 'https://us.i.posthog.com' }
-);
+const phClient = new PostHog('<YOUR_PROJECT_API_KEY>', { host: 'https://us.i.posthog.com' })
 
 const client = new OpenAI({
   apiKey: '<YOUR_OPENAI_API_KEY>',
   posthog: phClient,
-});
+})
 
 const completion = await client.chat.completions.create({
-    model: "gpt-3.5-turbo",
-    messages: [{ role: "user", content: "Tell me a fun fact about hedgehogs" }],
-    posthogDistinctId: "user_123", // optional
-    posthogTraceId: "trace_123", // optional
-    posthogProperties: { conversation_id: "abc123", paid: true }, //optional
-    posthogGroups: { company: "company_id_in_your_db" }, // optional 
-    posthogPrivacyMode: false // optional
-});
+  model: 'gpt-3.5-turbo',
+  messages: [{ role: 'user', content: 'Tell me a fun fact about hedgehogs' }],
+  posthogDistinctId: 'user_123', // optional
+  posthogTraceId: 'trace_123', // optional
+  posthogProperties: { conversation_id: 'abc123', paid: true }, //optional
+  posthogGroups: { company: 'company_id_in_your_db' }, // optional
+  posthogPrivacyMode: false, // optional
+})
 
 console.log(completion.choices[0].message.content)
 
