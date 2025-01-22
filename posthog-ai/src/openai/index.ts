@@ -89,9 +89,9 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
       return parentPromise.then((value) => {
         const passThroughStream = new PassThrough({ objectMode: true })
         let accumulatedContent = ''
-        let usage: { input_tokens: number; output_tokens: number } = {
-          input_tokens: 0,
-          output_tokens: 0,
+        let usage: { inputTokens: number; outputTokens: number } = {
+          inputTokens: 0,
+          outputTokens: 0,
         }
         if ('tee' in value) {
           const openAIStream = value
@@ -102,8 +102,8 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
                 accumulatedContent += delta
                 if (chunk.usage) {
                   usage = {
-                    input_tokens: chunk.usage.prompt_tokens ?? 0,
-                    output_tokens: chunk.usage.completion_tokens ?? 0,
+                    inputTokens: chunk.usage.prompt_tokens ?? 0,
+                    outputTokens: chunk.usage.completion_tokens ?? 0,
                   }
                 }
                 passThroughStream.write(chunk)
@@ -139,8 +139,8 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
                 params: body,
                 httpStatus: 500,
                 usage: {
-                  input_tokens: 0,
-                  output_tokens: 0,
+                  inputTokens: 0,
+                  outputTokens: 0,
                 },
               })
               passThroughStream.emit('error', error)
@@ -167,8 +167,8 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
               params: body,
               httpStatus: 200,
               usage: {
-                input_tokens: result.usage?.prompt_tokens ?? 0,
-                output_tokens: result.usage?.completion_tokens ?? 0,
+                inputTokens: result.usage?.prompt_tokens ?? 0,
+                outputTokens: result.usage?.completion_tokens ?? 0,
               },
             })
           }
@@ -188,8 +188,8 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
             params: body,
             httpStatus: 500,
             usage: {
-              input_tokens: 0,
-              output_tokens: 0,
+              inputTokens: 0,
+              outputTokens: 0,
             },
           })
           throw error
