@@ -19,10 +19,22 @@ const phClient = new PostHog(
   { host: 'https://us.i.posthog.com' }
 );
 
-const openai = new OpenAI({
+const client = new OpenAI({
   apiKey: '<YOUR_OPENAI_API_KEY>',
   posthog: phClient,
 });
+
+const completion = await client.chat.completions.create({
+    model: "gpt-3.5-turbo",
+    messages: [{ role: "user", content: "Tell me a fun fact about hedgehogs" }],
+    posthogDistinctId: "user_123", // optional
+    posthogTraceId: "trace_123", // optional
+    posthogProperties: { conversation_id: "abc123", paid: true }, //optional
+    posthogGroups: { company: "company_id_in_your_db" }, // optional 
+    posthogPrivacyMode: false // optional
+});
+
+console.log(completion.choices[0].message.content)
 
 // YOU HAVE TO HAVE THIS OR THE CLIENT MAY NOT SEND EVENTS
 await phClient.shutdown()
