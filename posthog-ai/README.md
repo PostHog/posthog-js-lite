@@ -15,12 +15,12 @@ import { OpenAI } from '@posthog/ai'
 import { PostHog } from 'posthog-node'
 
 const phClient = new PostHog(
-  'sTMFPsFhdP1Ssg',
+  '<YOUR_PROJECT_API_KEY>',
   { host: 'https://us.i.posthog.com' }
 );
 
 const openai = new OpenAI({
-  apiKey: 'your_openai_api_key',
+  apiKey: '<YOUR_OPENAI_API_KEY>',
   posthog: phClient,
 });
 
