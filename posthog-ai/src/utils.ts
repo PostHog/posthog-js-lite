@@ -34,26 +34,6 @@ export const getModelParams = (params: ChatCompletionCreateParamsBase & Monitori
   return modelParams
 }
 
-export const getUsage = (response: any, provider: string): { input_tokens: number; output_tokens: number } => {
-  if (!response?.usage) {
-    return { input_tokens: 0, output_tokens: 0 }
-  }
-
-  if (provider === 'anthropic') {
-    return {
-      input_tokens: response.usage.input_tokens ?? 0,
-      output_tokens: response.usage.output_tokens ?? 0,
-    }
-  } else if (provider === 'openai') {
-    return {
-      input_tokens: response.usage.prompt_tokens ?? 0,
-      output_tokens: response.usage.completion_tokens ?? 0,
-    }
-  }
-
-  return { input_tokens: 0, output_tokens: 0 }
-}
-
 /**
  * Helper to format responses (non-streaming) for consumption, mirroring Python's openai vs. anthropic approach.
  */
@@ -123,7 +103,7 @@ export type SendEventToPosthogParams = {
   latency: number
   baseURL: string
   httpStatus: number
-  usage?: { input_tokens?: number; output_tokens?: number }
+  usage?: { inputTokens?: number; outputTokens?: number }
   params: ChatCompletionCreateParamsBase & MonitoringParams
 }
 
@@ -141,6 +121,18 @@ export const sendEventToPosthog = ({
   httpStatus = 200,
   usage = {},
 }: SendEventToPosthogParams): void => {
+  console.log('sendEventToPosthog', {
+    client,
+    distinctId,
+    traceId,
+    model,
+    provider,
+    input,
+    output,
+    latency,
+    baseURL,
+    params,
+  })
   if (client.capture) {
     client.capture({
       distinctId: distinctId ?? traceId,
@@ -152,8 +144,8 @@ export const sendEventToPosthog = ({
         $ai_input: withPrivacyMode(client, params.posthogPrivacyMode ?? false, input),
         $ai_output_choices: withPrivacyMode(client, params.posthogPrivacyMode ?? false, output),
         $ai_http_status: httpStatus,
-        $ai_input_tokens: usage.input_tokens ?? 0,
-        $ai_output_tokens: usage.output_tokens ?? 0,
+        $ai_input_tokens: usage.inputTokens ?? 0,
+        $ai_output_tokens: usage.outputTokens ?? 0,
         $ai_latency: latency,
         $ai_trace_id: traceId,
         $ai_base_url: baseURL,
