@@ -9,8 +9,16 @@ import { v4 as uuidv4 } from 'uuid'
 import { PostHog } from 'posthog-node'
 import { sendEventToPosthog } from '../utils'
 
-interface CreateInstrumentationMiddlewareOptions {
+interface ClientOptions {
   posthogDistinctId?: string
+  posthogTraceId?: string
+  posthogProperties?: Record<string, any>
+  posthogPrivacyMode?: boolean
+  posthogGroups?: Record<string, any>
+}
+
+interface CreateInstrumentationMiddlewareOptions {
+  posthogDistinctId: string
   posthogTraceId: string
   posthogProperties?: Record<string, any>
   posthogPrivacyMode?: boolean
@@ -72,12 +80,14 @@ export const createInstrumentationMiddleware = (
         const result = await doGenerate()
         const latency = (Date.now() - startTime) / 1000
 
+        const modelId = result.response?.modelId ? result.response.modelId : model.modelId
+
         sendEventToPosthog({
           client: phClient,
           distinctId: options.posthogDistinctId,
           traceId: options.posthogTraceId,
-          model: model.modelId,
-          provider: 'vercel',
+          model: modelId,
+          provider: model.provider,
           input: options.posthogPrivacyMode ? '' : mapVercelPrompt(params.prompt),
           output: [{ content: result.text, role: 'assistant' }],
           latency,
@@ -92,12 +102,13 @@ export const createInstrumentationMiddleware = (
 
         return result
       } catch (error) {
+        const modelId = model.modelId
         sendEventToPosthog({
           client: phClient,
           distinctId: options.posthogDistinctId,
           traceId: options.posthogTraceId,
-          model: model.modelId,
-          provider: 'vercel',
+          model: modelId,
+          provider: model.provider,
           input: options.posthogPrivacyMode ? '' : mapVercelPrompt(params.prompt),
           output: [],
           latency: 0,
@@ -145,7 +156,7 @@ export const createInstrumentationMiddleware = (
               distinctId: options.posthogDistinctId,
               traceId: options.posthogTraceId,
               model: model.modelId,
-              provider: 'vercel',
+              provider: model.provider,
               input: options.posthogPrivacyMode ? '' : mapVercelPrompt(params.prompt),
               output: [{ content: generatedText, role: 'assistant' }],
               latency,
@@ -167,7 +178,7 @@ export const createInstrumentationMiddleware = (
           distinctId: options.posthogDistinctId,
           traceId: options.posthogTraceId,
           model: model.modelId,
-          provider: 'vercel',
+          provider: model.provider,
           input: options.posthogPrivacyMode ? '' : mapVercelPrompt(params.prompt),
           output: [],
           latency: 0,
@@ -190,7 +201,7 @@ export const createInstrumentationMiddleware = (
 export const wrapVercelLanguageModel = (
   model: LanguageModelV1,
   phClient: PostHog,
-  options: CreateInstrumentationMiddlewareOptions
+  options: ClientOptions
 ): LanguageModelV1 => {
   const traceId = options.posthogTraceId ?? uuidv4()
   const middleware = createInstrumentationMiddleware(phClient, model, {
