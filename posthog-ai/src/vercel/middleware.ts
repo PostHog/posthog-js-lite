@@ -18,12 +18,12 @@ interface ClientOptions {
 }
 
 interface CreateInstrumentationMiddlewareOptions {
-    posthogDistinctId: string
-    posthogTraceId: string
-    posthogProperties?: Record<string, any>
-    posthogPrivacyMode?: boolean
-    posthogGroups?: Record<string, any>
-  }
+  posthogDistinctId: string
+  posthogTraceId: string
+  posthogProperties?: Record<string, any>
+  posthogPrivacyMode?: boolean
+  posthogGroups?: Record<string, any>
+}
 
 interface PostHogInput {
   content: string
