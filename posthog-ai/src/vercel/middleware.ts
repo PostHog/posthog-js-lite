@@ -80,7 +80,6 @@ export const createInstrumentationMiddleware = (
         const result = await doGenerate()
         const latency = (Date.now() - startTime) / 1000
 
-        // const languageModel = model.languageModel(model.modelId)
         const modelId = result.response?.modelId ? result.response.modelId : model.modelId
 
         sendEventToPosthog({
