@@ -85,7 +85,7 @@ export const mergeSystemPrompt = (params: ChatCompletionCreateParamsBase & Monit
     const systemMessage = (params as any).system
     return [{ role: 'system', content: systemMessage }, ...messages]
   }
-  return params.messages;
+  return params.messages
 }
 
 export const withPrivacyMode = (client: PostHog, privacyMode: boolean, input: any): any => {

@@ -93,8 +93,8 @@ export class WrappedCompletions extends AzureOpenAI.Chat.Completions {
         }
         let model = openAIParams.model
         if ('tee' in value) {
-          const openAIStream = value;
-          (async () => {
+          const openAIStream = value
+          ;(async () => {
             try {
               for await (const chunk of openAIStream) {
                 const delta = chunk?.choices?.[0]?.delta?.content ?? ''
