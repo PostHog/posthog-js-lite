@@ -132,7 +132,7 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
                 model: openAIParams.model,
                 provider: 'openai',
                 input: mergeSystemPrompt(openAIParams, 'openai'),
-                output: JSON.stringify(error),
+                output: [],
                 latency: 0,
                 baseURL: (this as any).baseURL ?? '',
                 params: body,
@@ -141,7 +141,8 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
                   inputTokens: 0,
                   outputTokens: 0,
                 },
-                error: true,
+                isError: true,
+                error: JSON.stringify(error),
               })
               passThroughStream.emit('error', error)
             }
@@ -182,7 +183,7 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
             model: openAIParams.model,
             provider: 'openai',
             input: mergeSystemPrompt(openAIParams, 'openai'),
-            output: JSON.stringify(error),
+            output: [],
             latency: 0,
             baseURL: (this as any).baseURL ?? '',
             params: body,
@@ -191,7 +192,8 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
               inputTokens: 0,
               outputTokens: 0,
             },
-            error: true,
+            isError: true,
+            error: JSON.stringify(error),
           })
           throw error
         }

@@ -105,7 +105,8 @@ export type SendEventToPosthogParams = {
   httpStatus: number
   usage?: { inputTokens?: number; outputTokens?: number }
   params: ChatCompletionCreateParamsBase & MonitoringParams
-  error?: boolean
+  isError?: boolean
+  error?: string
 }
 
 export const sendEventToPosthog = ({
@@ -121,9 +122,17 @@ export const sendEventToPosthog = ({
   params,
   httpStatus = 200,
   usage = {},
-  error = false,
+  isError = false,
+  error
 }: SendEventToPosthogParams): void => {
   if (client.capture) {
+    let errorData = {}
+    if (isError) {
+      errorData = {
+        $ai_is_error: true,
+        $ai_error: error,
+      }
+    }
     client.capture({
       distinctId: distinctId ?? traceId,
       event: '$ai_generation',
@@ -141,7 +150,7 @@ export const sendEventToPosthog = ({
         $ai_base_url: baseURL,
         ...params.posthogProperties,
         ...(distinctId ? {} : { $process_person_profile: false }),
-        $ai_error: error,
+        ...errorData,
       },
       groups: params.posthogGroups,
     })

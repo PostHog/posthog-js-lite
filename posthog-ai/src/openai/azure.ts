@@ -144,7 +144,8 @@ export class WrappedCompletions extends AzureOpenAI.Chat.Completions {
                   inputTokens: 0,
                   outputTokens: 0,
                 },
-                error: true,
+                isError: true,
+                error: JSON.stringify(error),
               })
               passThroughStream.emit('error', error)
             }
@@ -189,7 +190,7 @@ export class WrappedCompletions extends AzureOpenAI.Chat.Completions {
             model: openAIParams.model,
             provider: 'azure',
             input: mergeSystemPrompt(openAIParams, 'azure'),
-            output: JSON.stringify(error),
+            output: [],
             latency: 0,
             baseURL: (this as any).baseURL ?? '',
             params: body,
@@ -198,7 +199,8 @@ export class WrappedCompletions extends AzureOpenAI.Chat.Completions {
               inputTokens: 0,
               outputTokens: 0,
             },
-            error: true,
+            isError: true,
+            error: JSON.stringify(error),
           })
           throw error
         }

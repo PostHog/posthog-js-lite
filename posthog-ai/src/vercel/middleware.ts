@@ -110,7 +110,7 @@ export const createInstrumentationMiddleware = (
           model: modelId,
           provider: model.provider,
           input: options.posthogPrivacyMode ? '' : mapVercelPrompt(params.prompt),
-          output: JSON.stringify(error),
+          output: [],
           latency: 0,
           baseURL: '',
           params: mergedParams as any,
@@ -119,7 +119,8 @@ export const createInstrumentationMiddleware = (
             inputTokens: 0,
             outputTokens: 0,
           },
-          error: true,
+          isError: true,
+          error: JSON.stringify(error),
         })
         throw error
       }
@@ -181,7 +182,7 @@ export const createInstrumentationMiddleware = (
           model: model.modelId,
           provider: model.provider,
           input: options.posthogPrivacyMode ? '' : mapVercelPrompt(params.prompt),
-          output: JSON.stringify(error),
+          output: [],
           latency: 0,
           baseURL: '',
           params: mergedParams as any,
@@ -190,7 +191,8 @@ export const createInstrumentationMiddleware = (
             inputTokens: 0,
             outputTokens: 0,
           },
-          error: true,
+          isError: true,
+          error: JSON.stringify(error),
         })
         throw error
       }
