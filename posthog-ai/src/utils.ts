@@ -123,7 +123,7 @@ export const sendEventToPosthog = ({
   httpStatus = 200,
   usage = {},
   isError = false,
-  error
+  error,
 }: SendEventToPosthogParams): void => {
   if (client.capture) {
     let errorData = {}
