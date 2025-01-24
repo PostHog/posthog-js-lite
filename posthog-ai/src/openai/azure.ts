@@ -1,4 +1,4 @@
-import OpenAIOrignal from 'openai'
+import OpenAIOrignal, { AzureOpenAI } from 'openai'
 import { PostHog } from 'posthog-node'
 import { v4 as uuidv4 } from 'uuid'
 import { PassThrough } from 'stream'
@@ -18,7 +18,7 @@ interface MonitoringOpenAIConfig {
   baseURL?: string
 }
 
-export class PostHogOpenAI extends OpenAIOrignal {
+export class PostHogAzureOpenAI extends AzureOpenAI {
   private readonly phClient: PostHog
   public chat: WrappedChat
 
@@ -30,8 +30,8 @@ export class PostHogOpenAI extends OpenAIOrignal {
   }
 }
 
-export class WrappedChat extends OpenAIOrignal.Chat {
-  constructor(parentClient: PostHogOpenAI, phClient: PostHog) {
+export class WrappedChat extends AzureOpenAI.Chat {
+  constructor(parentClient: PostHogAzureOpenAI, phClient: PostHog) {
     super(parentClient)
     this.completions = new WrappedCompletions(parentClient, phClient)
   }
@@ -39,10 +39,10 @@ export class WrappedChat extends OpenAIOrignal.Chat {
   public completions: WrappedCompletions
 }
 
-export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
+export class WrappedCompletions extends AzureOpenAI.Chat.Completions {
   private readonly phClient: PostHog
 
-  constructor(client: OpenAIOrignal, phClient: PostHog) {
+  constructor(client: AzureOpenAI, phClient: PostHog) {
     super(client)
     this.phClient = phClient
   }
@@ -81,7 +81,6 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
 
     const traceId = posthogTraceId ?? uuidv4()
     const startTime = Date.now()
-
     const parentPromise = super.create(openAIParams, options)
 
     if (openAIParams.stream) {
@@ -92,6 +91,7 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
           inputTokens: 0,
           outputTokens: 0,
         }
+        let model = openAIParams.model
         if ('tee' in value) {
           const openAIStream = value
           ;(async () => {
@@ -100,6 +100,9 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
                 const delta = chunk?.choices?.[0]?.delta?.content ?? ''
                 accumulatedContent += delta
                 if (chunk.usage) {
+                  if (chunk.model != model) {
+                    model = chunk.model
+                  }
                   usage = {
                     inputTokens: chunk.usage.prompt_tokens ?? 0,
                     outputTokens: chunk.usage.completion_tokens ?? 0,
@@ -112,9 +115,9 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
                 client: this.phClient,
                 distinctId: posthogDistinctId ?? traceId,
                 traceId,
-                model: openAIParams.model,
-                provider: 'openai',
-                input: mergeSystemPrompt(openAIParams, 'openai'),
+                model,
+                provider: 'azure',
+                input: mergeSystemPrompt(openAIParams, 'azure'),
                 output: [{ content: accumulatedContent, role: 'assistant' }],
                 latency,
                 baseURL: (this as any).baseURL ?? '',
@@ -129,10 +132,10 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
                 client: this.phClient,
                 distinctId: posthogDistinctId ?? traceId,
                 traceId,
-                model: openAIParams.model,
-                provider: 'openai',
-                input: mergeSystemPrompt(openAIParams, 'openai'),
-                output: [],
+                model,
+                provider: 'azure',
+                input: mergeSystemPrompt(openAIParams, 'azure'),
+                output: JSON.stringify(error),
                 latency: 0,
                 baseURL: (this as any).baseURL ?? '',
                 params: body,
@@ -155,13 +158,17 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
         (result) => {
           if ('choices' in result) {
             const latency = (Date.now() - startTime) / 1000
+            let model = openAIParams.model
+            if (result.model != model) {
+              model = result.model
+            }
             sendEventToPosthog({
               client: this.phClient,
               distinctId: posthogDistinctId ?? traceId,
               traceId,
-              model: openAIParams.model,
-              provider: 'openai',
-              input: mergeSystemPrompt(openAIParams, 'openai'),
+              model,
+              provider: '1234',
+              input: mergeSystemPrompt(openAIParams, 'azure'),
               output: [{ content: result.choices[0].message.content, role: 'assistant' }],
               latency,
               baseURL: (this as any).baseURL ?? '',
@@ -181,8 +188,8 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
             distinctId: posthogDistinctId ?? traceId,
             traceId,
             model: openAIParams.model,
-            provider: 'openai',
-            input: mergeSystemPrompt(openAIParams, 'openai'),
+            provider: 'azure',
+            input: mergeSystemPrompt(openAIParams, 'azure'),
             output: [],
             latency: 0,
             baseURL: (this as any).baseURL ?? '',
@@ -204,4 +211,4 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
   }
 }
 
-export default PostHogOpenAI
+export default PostHogAzureOpenAI

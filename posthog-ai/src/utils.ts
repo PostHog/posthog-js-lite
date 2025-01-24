@@ -77,15 +77,15 @@ export const formatResponseOpenAI = (response: any): Array<{ role: string; conte
 }
 
 export const mergeSystemPrompt = (params: ChatCompletionCreateParamsBase & MonitoringParams, provider: string): any => {
-  if (provider !== 'anthropic') {
-    return params.messages
+  if (provider == 'anthropic') {
+    const messages = params.messages || []
+    if (!(params as any).system) {
+      return messages
+    }
+    const systemMessage = (params as any).system
+    return [{ role: 'system', content: systemMessage }, ...messages]
   }
-  const messages = params.messages || []
-  if (!(params as any).system) {
-    return messages
-  }
-  const systemMessage = (params as any).system
-  return [{ role: 'system', content: systemMessage }, ...messages]
+  return params.messages
 }
 
 export const withPrivacyMode = (client: PostHog, privacyMode: boolean, input: any): any => {
@@ -105,6 +105,8 @@ export type SendEventToPosthogParams = {
   httpStatus: number
   usage?: { inputTokens?: number; outputTokens?: number }
   params: ChatCompletionCreateParamsBase & MonitoringParams
+  isError?: boolean
+  error?: string
 }
 
 export const sendEventToPosthog = ({
@@ -120,8 +122,17 @@ export const sendEventToPosthog = ({
   params,
   httpStatus = 200,
   usage = {},
+  isError = false,
+  error,
 }: SendEventToPosthogParams): void => {
   if (client.capture) {
+    let errorData = {}
+    if (isError) {
+      errorData = {
+        $ai_is_error: true,
+        $ai_error: error,
+      }
+    }
     client.capture({
       distinctId: distinctId ?? traceId,
       event: '$ai_generation',
@@ -139,6 +150,7 @@ export const sendEventToPosthog = ({
         $ai_base_url: baseURL,
         ...params.posthogProperties,
         ...(distinctId ? {} : { $process_person_profile: false }),
+        ...errorData,
       },
       groups: params.posthogGroups,
     })

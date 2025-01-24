@@ -101,7 +101,7 @@ export const createInstrumentationMiddleware = (
         })
 
         return result
-      } catch (error) {
+      } catch (error: any) {
         const modelId = model.modelId
         sendEventToPosthog({
           client: phClient,
@@ -114,11 +114,13 @@ export const createInstrumentationMiddleware = (
           latency: 0,
           baseURL: '',
           params: mergedParams as any,
-          httpStatus: 500,
+          httpStatus: error?.status ? error.status : 500,
           usage: {
             inputTokens: 0,
             outputTokens: 0,
           },
+          isError: true,
+          error: JSON.stringify(error),
         })
         throw error
       }
@@ -172,7 +174,7 @@ export const createInstrumentationMiddleware = (
           stream: stream.pipeThrough(transformStream),
           ...rest,
         }
-      } catch (error) {
+      } catch (error: any) {
         sendEventToPosthog({
           client: phClient,
           distinctId: options.posthogDistinctId,
@@ -184,11 +186,13 @@ export const createInstrumentationMiddleware = (
           latency: 0,
           baseURL: '',
           params: mergedParams as any,
-          httpStatus: 500,
+          httpStatus: error?.status ? error.status : 500,
           usage: {
             inputTokens: 0,
             outputTokens: 0,
           },
+          isError: true,
+          error: JSON.stringify(error),
         })
         throw error
       }
