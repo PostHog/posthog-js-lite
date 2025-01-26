@@ -8,7 +8,6 @@ const SURVEY_SHOWN_EVENT_NAME = 'survey shown'
 
 export function useActivatedSurveys(posthog: PostHog, surveys: Survey[]): ReadonlySet<string> {
   const [activatedSurveys, setActivatedSurveys] = useState<ReadonlySet<string>>(new Set())
-  //TODO Support Action activation
 
   const eventMap = useMemo(() => {
     const newEventMap = new Map<string, string[]>()
