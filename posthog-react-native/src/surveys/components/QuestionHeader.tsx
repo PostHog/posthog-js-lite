@@ -1,7 +1,7 @@
 import React from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 
-import { SurveyQuestionDescriptionContentType } from '../posthog-surveys-types'
+import { SurveyQuestionDescriptionContentType } from '../../../../posthog-core/src/posthog-surveys-types'
 
 export function QuestionHeader({
   question,

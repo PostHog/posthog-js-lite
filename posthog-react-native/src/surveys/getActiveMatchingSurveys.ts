@@ -1,5 +1,5 @@
 import { canActivateRepeatedly, hasActions, hasEvents } from './surveys-utils'
-import { Survey } from './posthog-surveys-types'
+import { Survey } from '../../../posthog-core/src/posthog-surveys-types'
 
 export function getActiveMatchingSurveys(
   surveys: Survey[],

@@ -7,7 +7,7 @@ import { useSurveyStorage } from './useSurveyStorage'
 import { useActivatedSurveys } from './useActivatedSurveys'
 import { SurveyModal } from './components/SurveyModal'
 import { defaultSurveyAppearance, getContrastingTextColor, SurveyAppearanceTheme } from './surveys-utils'
-import { Survey, SurveyAppearance } from './posthog-surveys-types'
+import { Survey, SurveyAppearance } from '../../../posthog-core/src/posthog-surveys-types'
 import { usePostHog } from '../hooks/usePostHog'
 import { useFeatureFlags } from '../hooks/useFeatureFlags'
 
@@ -82,7 +82,7 @@ export function PostHogSurveyProvider(props: PostHogSurveyProviderProps): JSX.El
   // Load surveys once
   useEffect(() => {
     posthog
-      .fetchSurveys()
+      .getSurveys()
       .then(setSurveys)
       .catch((error: unknown) => {
         posthog.capture('PostHogSurveyProvider failed to fetch surveys', { error })

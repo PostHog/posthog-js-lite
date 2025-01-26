@@ -6,7 +6,7 @@ import { ConfirmationMessage } from './ConfirmationMessage'
 import { Questions } from './Surveys'
 
 import { SurveyAppearanceTheme } from '../surveys-utils'
-import { Survey } from '../posthog-surveys-types'
+import { Survey } from '../../../../posthog-core/src/posthog-surveys-types'
 
 export type SlypModalProps = {
   survey: Survey

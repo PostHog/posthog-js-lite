@@ -1,4 +1,9 @@
-import { MultipleSurveyQuestion, Survey, SurveyAppearance, SurveyQuestion } from './posthog-surveys-types'
+import {
+  MultipleSurveyQuestion,
+  Survey,
+  SurveyAppearance,
+  SurveyQuestion,
+} from '../../../posthog-core/src/posthog-surveys-types'
 
 export const defaultBackgroundColor = '#eeeded' as const
 
