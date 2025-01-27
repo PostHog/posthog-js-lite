@@ -7,6 +7,7 @@ import { Questions } from './Surveys'
 
 import { SurveyAppearanceTheme } from '../surveys-utils'
 import { Survey } from '../../../../posthog-core/src/posthog-surveys-types'
+import { useOptionalSafeAreaInsets } from '../../optional/OptionalReactNativeSafeArea'
 
 export type SlypModalProps = {
   survey: Survey
@@ -19,6 +20,7 @@ export function SurveyModal(props: SlypModalProps): JSX.Element | null {
   const { survey, appearance, onShow } = props
   const [isSurveySent, setIsSurveySent] = useState(false)
   const onClose = useCallback(() => props.onClose(isSurveySent), [isSurveySent, props])
+  const insets = useOptionalSafeAreaInsets()
 
   const surveyPopupDelayMilliseconds = appearance.surveyPopupDelaySeconds * 1000
   const [isVisible, setIsVisible] = useState(surveyPopupDelayMilliseconds === 0)
@@ -52,7 +54,11 @@ export function SurveyModal(props: SlypModalProps): JSX.Element | null {
 
   return (
     <Modal animationType="fade" transparent onRequestClose={onClose} statusBarTranslucent={true}>
-      <Pressable style={styles.modalContainer} onPress={onClose} accessible={false}>
+      <Pressable
+        style={[styles.modalContainer, { marginBottom: insets.bottom + 20 }]}
+        onPress={onClose}
+        accessible={false}
+      >
         <TouchableWithoutFeedback accessible={false}>
           <View
             style={[
@@ -87,7 +93,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'flex-end',
-    marginVertical: 40, // TODO Plus safe area?
     marginHorizontal: 20,
   },
   modalContent: {
