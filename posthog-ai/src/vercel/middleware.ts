@@ -15,6 +15,8 @@ interface ClientOptions {
   posthogProperties?: Record<string, any>
   posthogPrivacyMode?: boolean
   posthogGroups?: Record<string, any>
+  posthogModelOverride?: string
+  posthogProviderOverride?: string
 }
 
 interface CreateInstrumentationMiddlewareOptions {
@@ -23,6 +25,8 @@ interface CreateInstrumentationMiddlewareOptions {
   posthogProperties?: Record<string, any>
   posthogPrivacyMode?: boolean
   posthogGroups?: Record<string, any>
+  posthogModelOverride?: string
+  posthogProviderOverride?: string
 }
 
 interface PostHogInput {
@@ -80,14 +84,15 @@ export const createInstrumentationMiddleware = (
         const result = await doGenerate()
         const latency = (Date.now() - startTime) / 1000
 
-        const modelId = result.response?.modelId ? result.response.modelId : model.modelId
+        const modelId = options.posthogModelOverride ?? (result.response?.modelId ? result.response.modelId : model.modelId)
+        const provider = options.posthogProviderOverride ?? model.provider
 
         sendEventToPosthog({
           client: phClient,
           distinctId: options.posthogDistinctId,
           traceId: options.posthogTraceId,
           model: modelId,
-          provider: model.provider,
+          provider: provider,
           input: options.posthogPrivacyMode ? '' : mapVercelPrompt(params.prompt),
           output: [{ content: result.text, role: 'assistant' }],
           latency,
@@ -134,6 +139,9 @@ export const createInstrumentationMiddleware = (
         ...options,
         ...mapVercelParams(params),
       }
+
+      const modelId = options.posthogModelOverride ?? model.modelId
+      const provider = options.posthogProviderOverride ?? model.provider
       try {
         const { stream, ...rest } = await doStream()
 
@@ -157,8 +165,8 @@ export const createInstrumentationMiddleware = (
               client: phClient,
               distinctId: options.posthogDistinctId,
               traceId: options.posthogTraceId,
-              model: model.modelId,
-              provider: model.provider,
+              model: modelId,
+              provider: provider,
               input: options.posthogPrivacyMode ? '' : mapVercelPrompt(params.prompt),
               output: [{ content: generatedText, role: 'assistant' }],
               latency,
@@ -179,8 +187,8 @@ export const createInstrumentationMiddleware = (
           client: phClient,
           distinctId: options.posthogDistinctId,
           traceId: options.posthogTraceId,
-          model: model.modelId,
-          provider: model.provider,
+          model: modelId,
+          provider: provider,
           input: options.posthogPrivacyMode ? '' : mapVercelPrompt(params.prompt),
           output: [],
           latency: 0,
