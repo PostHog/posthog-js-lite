@@ -74,6 +74,7 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
       posthogDistinctId,
       posthogTraceId,
       posthogProperties,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       posthogPrivacyMode = false,
       posthogGroups,
       ...openAIParams
