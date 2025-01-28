@@ -90,7 +90,8 @@ export const createInstrumentationMiddleware = (
       try {
         const result = await doGenerate()
         const latency = (Date.now() - startTime) / 1000
-        const modelId = options.posthogModelOverride ?? (result.response?.modelId ? result.response.modelId : model.modelId)
+        const modelId =
+          options.posthogModelOverride ?? (result.response?.modelId ? result.response.modelId : model.modelId)
         const provider = options.posthogProviderOverride ?? extractProvider(model)
         const baseURL = '' // cannot currently get baseURL from vercel
 
