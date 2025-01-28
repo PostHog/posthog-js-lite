@@ -2,6 +2,8 @@
 
 Initial Typescript SDK for LLM Observability
 
+[SEE FULL DOCS](https://posthog.com/docs/ai-engineering/observability)
+
 ## Installation
 
 ```bash
