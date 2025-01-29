@@ -68,6 +68,13 @@ const mapVercelPrompt = (prompt: LanguageModelV1Prompt): PostHogInput[] => {
   })
 }
 
+const extractProvider = (model: LanguageModelV1): string => {
+  // vercel provider is in the format of provider.endpoint
+  const provider = model.provider.toLowerCase()
+  const providerName = provider.split('.')[0]
+  return providerName
+}
+
 export const createInstrumentationMiddleware = (
   phClient: PostHog,
   model: LanguageModelV1,
@@ -83,9 +90,10 @@ export const createInstrumentationMiddleware = (
       try {
         const result = await doGenerate()
         const latency = (Date.now() - startTime) / 1000
-
-        const modelId = options.posthogModelOverride ?? (result.response?.modelId ? result.response.modelId : model.modelId)
-        const provider = options.posthogProviderOverride ?? model.provider
+        const modelId =
+          options.posthogModelOverride ?? (result.response?.modelId ? result.response.modelId : model.modelId)
+        const provider = options.posthogProviderOverride ?? extractProvider(model)
+        const baseURL = '' // cannot currently get baseURL from vercel
 
         sendEventToPosthog({
           client: phClient,
@@ -96,7 +104,7 @@ export const createInstrumentationMiddleware = (
           input: options.posthogPrivacyMode ? '' : mapVercelPrompt(params.prompt),
           output: [{ content: result.text, role: 'assistant' }],
           latency,
-          baseURL: '',
+          baseURL,
           params: mergedParams as any,
           httpStatus: 200,
           usage: {
@@ -141,10 +149,10 @@ export const createInstrumentationMiddleware = (
       }
 
       const modelId = options.posthogModelOverride ?? model.modelId
-      const provider = options.posthogProviderOverride ?? model.provider
+      const provider = options.posthogProviderOverride ?? extractProvider(model)
+      const baseURL = '' // cannot currently get baseURL from vercel
       try {
         const { stream, ...rest } = await doStream()
-
         const transformStream = new TransformStream<LanguageModelV1StreamPart, LanguageModelV1StreamPart>({
           transform(chunk, controller) {
             if (chunk.type === 'text-delta') {
@@ -170,7 +178,7 @@ export const createInstrumentationMiddleware = (
               input: options.posthogPrivacyMode ? '' : mapVercelPrompt(params.prompt),
               output: [{ content: generatedText, role: 'assistant' }],
               latency,
-              baseURL: '',
+              baseURL,
               params: mergedParams as any,
               httpStatus: 200,
               usage,
