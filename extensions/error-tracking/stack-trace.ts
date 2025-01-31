@@ -47,7 +47,7 @@ function createFrame(filename: string, func: string, lineno?: number, colno?: nu
     in_app: true, // All browser frames are considered in_app
   }
 
-  if (!lineno === undefined) {
+  if (lineno !== undefined) {
     frame.lineno = lineno
   }
 
