@@ -1398,7 +1398,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
    */
   captureTraceFeedback(traceId: string | number, userFeedback: string): void {
     this.capture('$ai_feedback', {
-      $ai_feedback: userFeedback,
+      $ai_feedback_text: userFeedback,
       $ai_trace_id: String(traceId),
     })
   }

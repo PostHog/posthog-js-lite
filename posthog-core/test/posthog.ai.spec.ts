@@ -26,7 +26,7 @@ describe('PostHog Core', () => {
           {
             event: '$ai_feedback',
             properties: {
-              $ai_feedback: 'feedback',
+              $ai_feedback_text: 'feedback',
               $ai_trace_id: 'trace-id',
             },
           },
@@ -48,7 +48,7 @@ describe('PostHog Core', () => {
           {
             event: '$ai_feedback',
             properties: {
-              $ai_feedback: 'feedback',
+              $ai_feedback_text: 'feedback',
               $ai_trace_id: '10',
             },
           },
