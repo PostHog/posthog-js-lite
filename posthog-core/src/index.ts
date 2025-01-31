@@ -1395,7 +1395,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
    *** ERROR TRACKING
    ***/
   captureException(error: Error, additionalProperties?: { [key: string]: any }): void {
-    const properties = {
+    const properties: { [key: string]: any } = {
       $exception_level: 'error',
       $exception_list: [
         {
@@ -1409,6 +1409,11 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       ],
       ...additionalProperties,
     }
+
+    properties.$exception_personURL = new URL(
+      `/project/${this.apiKey}/person/${this.getDistinctId()}`,
+      this.host
+    ).toString()
 
     this.capture('$exception', properties)
   }
