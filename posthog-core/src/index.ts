@@ -1390,6 +1390,13 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       return this.setPersistedProperty(PostHogPersistedProperty.OverrideFeatureFlags, flags)
     })
   }
+
+  /***
+   *** ERROR TRACKING
+   ***/
+  captureException(properties?: { [key: string]: any }): void {
+    this.capture('$exception', properties)
+  }
 }
 
 export * from './types'

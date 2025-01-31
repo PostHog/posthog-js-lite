@@ -84,4 +84,23 @@ export class PostHog extends PostHogCore {
       ...getContext(this.getWindow()),
     }
   }
+
+  captureException(error: Error, additionalProperties?: { [key: string]: any }): void {
+    const properties = {
+      $exception_level: 'error',
+      $exception_list: [
+        {
+          type: error.name,
+          value: error.message,
+          mechanism: {
+            handled: true,
+            synthetic: false,
+          },
+        },
+      ],
+      ...additionalProperties,
+    }
+
+    super.captureException(properties)
+  }
 }
