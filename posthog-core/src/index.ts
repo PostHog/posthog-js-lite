@@ -1443,7 +1443,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
    * @param metricName The name of the metric to capture.
    * @param metricValue The value of the metric to capture.
    */
-  captureTraceMetric(traceId: string | number, metricName: string, metricValue: string | number): void {
+  captureTraceMetric(traceId: string | number, metricName: string, metricValue: string | number | boolean): void {
     this.capture('$ai_metric', {
       $ai_metric_name: metricName,
       $ai_metric_value: String(metricValue),
