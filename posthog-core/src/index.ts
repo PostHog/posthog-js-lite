@@ -1394,7 +1394,22 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   /***
    *** ERROR TRACKING
    ***/
-  captureException(properties?: { [key: string]: any }): void {
+  captureException(error: Error, additionalProperties?: { [key: string]: any }): void {
+    const properties = {
+      $exception_level: 'error',
+      $exception_list: [
+        {
+          type: error.name,
+          value: error.message,
+          mechanism: {
+            handled: true,
+            synthetic: false,
+          },
+        },
+      ],
+      ...additionalProperties,
+    }
+
     this.capture('$exception', properties)
   }
 }
