@@ -22,10 +22,8 @@
  * @param {SeverityLevel[] | '*'} [severityAllowList] Optional: send events matching the provided levels. Use '*' to send all events (default: ['error'])
  */
 
+import { SeverityLevel } from 'extensions/error-tracking/types'
 import { type PostHog } from '../posthog-node'
-
-export const severityLevels = ['fatal', 'error', 'warning', 'log', 'info', 'debug'] as const
-export declare type SeverityLevel = (typeof severityLevels)[number]
 
 // NOTE - we can't import from @sentry/types because it changes frequently and causes clashes
 // We only use a small subset of the types, so we can just define the integration overall and use any for the rest

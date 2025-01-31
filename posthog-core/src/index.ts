@@ -1390,6 +1390,33 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       return this.setPersistedProperty(PostHogPersistedProperty.OverrideFeatureFlags, flags)
     })
   }
+
+  /***
+   *** ERROR TRACKING
+   ***/
+  captureException(error: Error, additionalProperties?: { [key: string]: any }): void {
+    const properties: { [key: string]: any } = {
+      $exception_level: 'error',
+      $exception_list: [
+        {
+          type: error.name,
+          value: error.message,
+          mechanism: {
+            handled: true,
+            synthetic: false,
+          },
+        },
+      ],
+      ...additionalProperties,
+    }
+
+    properties.$exception_personURL = new URL(
+      `/project/${this.apiKey}/person/${this.getDistinctId()}`,
+      this.host
+    ).toString()
+
+    this.capture('$exception', properties)
+  }
 }
 
 export * from './types'

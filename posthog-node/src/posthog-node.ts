@@ -14,11 +14,14 @@ import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
 import { EventMessage, GroupIdentifyMessage, IdentifyMessage, PostHogNodeV1 } from './types'
 import { FeatureFlagsPoller } from './feature-flags'
 import fetch from './fetch'
+import ExceptionObserver from './error-tracking'
+import { errorToProperties } from '../../extensions/error-tracking/error-conversion'
 
 export type PostHogOptions = PostHogCoreOptions & {
   persistence?: 'memory'
   personalApiKey?: string
   privacyMode?: boolean
+  enableExceptionAutocapture?: boolean
   // The interval in milliseconds between polls for refreshing feature flag definitions. Defaults to 30 seconds.
   featureFlagsPollingInterval?: number
   // Maximum size of cache that deduplicates $feature_flag_called calls per user.
@@ -61,6 +64,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         customHeaders: this.getCustomHeaders(),
       })
     }
+    new ExceptionObserver(this, options)
     this.distinctIdHasSentFlagCalls = {}
     this.maxCacheSize = options.maxCacheSize || MAX_CACHE_SIZE
   }
@@ -480,5 +484,22 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     }
 
     return { allPersonProperties, allGroupProperties }
+  }
+
+  captureException(error: Error, distinctId: string, additionalProperties?: Record<string | number, any>): void {
+    const syntheticException = new Error('PostHog syntheticException')
+
+    const properties = {
+      ...errorToProperties(
+        [error.message, undefined, undefined, undefined, error],
+        // create synthetic error to get stack in cases where user input does not contain one
+        // creating the exceptions soon into our code as possible means we should only have to
+        // remove a single frame (this 'captureException' method) from the resultant stack
+        { syntheticException }
+      ),
+      ...additionalProperties,
+    }
+
+    this.capture({ event: '$exception', distinctId, properties })
   }
 }
