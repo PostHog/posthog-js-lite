@@ -1,7 +1,7 @@
 import { ErrorEvent } from './types'
 
 export function isEvent(candidate: unknown): candidate is Event {
-  return Event != undefined && isInstanceOf(candidate, Event)
+  return Event !== undefined && isInstanceOf(candidate, Event)
 }
 
 export function isPlainObject(candidate: unknown): candidate is Record<string, unknown> {
