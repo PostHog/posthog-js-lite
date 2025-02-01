@@ -1,5 +1,3 @@
-import { ErrorEvent } from './types'
-
 export function isEvent(candidate: unknown): candidate is Event {
   return Event != undefined && isInstanceOf(candidate, Event)
 }
@@ -20,13 +18,15 @@ export function isError(candidate: unknown): candidate is Error {
   switch (Object.prototype.toString.call(candidate)) {
     case '[object Error]':
     case '[object Exception]':
+    case '[object DOMException]':
+    case '[object WebAssembly.Exception]':
       return true
     default:
       return isInstanceOf(candidate, Error)
   }
 }
 
-export function isErrorEvent(event: string | Error | Event): event is ErrorEvent {
+export function isErrorEvent(event: unknown): boolean {
   return isBuiltin(event, 'ErrorEvent')
 }
 

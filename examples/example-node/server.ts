@@ -7,9 +7,9 @@ import * as Sentry from '@sentry/node'
 const app = express()
 
 const {
-  PH_API_KEY = 'YOUR API KEY',
+  PH_API_KEY = 'phc_oNgsfA22FuAyUDLFmVvS7SWeBrZ6RPHbtl9QJIEobZJ',
   PH_HOST = 'http://127.0.0.1:8000',
-  PH_PERSONAL_API_KEY = 'YOUR PERSONAL API KEY',
+  PH_PERSONAL_API_KEY = 'phx_MtSzPxseihPi9Ftnsc2vqpfZgi4XAquWefA8iJg03nnUi2u',
 } = process.env
 
 const posthog = new PostHog(PH_API_KEY, {

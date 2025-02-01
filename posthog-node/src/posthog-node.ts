@@ -15,7 +15,8 @@ import { EventMessage, GroupIdentifyMessage, IdentifyMessage, PostHogNodeV1 } fr
 import { FeatureFlagsPoller } from './feature-flags'
 import fetch from './fetch'
 import ExceptionObserver from './error-tracking'
-import { errorToProperties } from '../../extensions/error-tracking/error-conversion'
+import { propertiesFromUnknownInput } from '../../extensions/error-tracking/error-conversion'
+import { defaultStackParser } from 'extensions/error-tracking/stack-trace'
 
 export type PostHogOptions = PostHogCoreOptions & {
   persistence?: 'memory'
@@ -490,13 +491,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     const syntheticException = new Error('PostHog syntheticException')
 
     const properties = {
-      ...errorToProperties(
-        [error.message, undefined, undefined, undefined, error],
-        // create synthetic error to get stack in cases where user input does not contain one
-        // creating the exceptions soon into our code as possible means we should only have to
-        // remove a single frame (this 'captureException' method) from the resultant stack
-        { syntheticException }
-      ),
+      ...propertiesFromUnknownInput(defaultStackParser, error, { syntheticException }),
       ...additionalProperties,
     }
 

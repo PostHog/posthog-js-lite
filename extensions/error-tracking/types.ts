@@ -4,14 +4,6 @@
 export const severityLevels = ['fatal', 'error', 'warning', 'log', 'info', 'debug'] as const
 export declare type SeverityLevel = (typeof severityLevels)[number]
 
-export interface ErrorEvent extends Event {
-  readonly colno: number
-  readonly error: any
-  readonly filename: string
-  readonly lineno: number
-  readonly message: string
-}
-
 export type ErrorEventArgs = [
   event: string | Event,
   source?: string | undefined,
@@ -20,14 +12,19 @@ export type ErrorEventArgs = [
   error?: Error | undefined
 ]
 
-export type ErrorMetadata = {
-  handled?: boolean
-  synthetic?: boolean
-  syntheticException?: Error
-  overrideExceptionType?: string
-  overrideExceptionMessage?: string
-  defaultExceptionType?: string
-  defaultExceptionMessage?: string
+// export type ErrorMetadata = {
+//   handled?: boolean
+//   synthetic?: boolean
+//   syntheticException?: Error
+//   overrideExceptionType?: string
+//   overrideExceptionMessage?: string
+//   defaultExceptionType?: string
+//   defaultExceptionMessage?: string
+// }
+
+export interface EventHint {
+  mechanism?: Partial<Mechanism>
+  syntheticException?: Error | null
 }
 
 export interface ErrorProperties {
@@ -40,27 +37,29 @@ export interface ErrorProperties {
 export interface Exception {
   type?: string
   value?: string
-  mechanism?: {
-    /**
-     * In theory, whether or not the exception has been handled by the user. In practice, whether or not we see it before
-     * it hits the global error/rejection handlers, whether through explicit handling by the user or auto instrumentation.
-     */
-    handled?: boolean
-    type?: string
-    source?: string
-    /**
-     * True when `captureException` is called with anything other than an instance of `Error` (or, in the case of browser,
-     * an instance of `ErrorEvent`, `DOMError`, or `DOMException`). causing us to create a synthetic error in an attempt
-     * to recreate the stacktrace.
-     */
-    synthetic?: boolean
-  }
+  mechanism?: Mechanism
   module?: string
   thread_id?: number
   stacktrace?: {
     frames?: StackFrame[]
     type: 'raw'
   }
+}
+
+export interface Mechanism {
+  /**
+   * In theory, whether or not the exception has been handled by the user. In practice, whether or not we see it before
+   * it hits the global error/rejection handlers, whether through explicit handling by the user or auto instrumentation.
+   */
+  handled?: boolean
+  type?: string
+  source?: string
+  /**
+   * True when `captureException` is called with anything other than an instance of `Error` (or, in the case of browser,
+   * an instance of `ErrorEvent`, `DOMError`, or `DOMException`). causing us to create a synthetic error in an attempt
+   * to recreate the stacktrace.
+   */
+  synthetic?: boolean
 }
 
 export type StackParser = (stack: string, skipFirstLines?: number) => StackFrame[]
