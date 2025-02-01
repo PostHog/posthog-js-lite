@@ -2,7 +2,7 @@ import OpenAIOrignal, { AzureOpenAI } from 'openai'
 import { PostHog } from 'posthog-node'
 import { v4 as uuidv4 } from 'uuid'
 import { PassThrough } from 'stream'
-import { mergeSystemPrompt, MonitoringParams, sendEventToPosthog } from '../utils'
+import { formatResponseOpenAI, MonitoringParams, sendEventToPosthog } from '../utils'
 
 type ChatCompletion = OpenAIOrignal.ChatCompletion
 type ChatCompletionChunk = OpenAIOrignal.ChatCompletionChunk
@@ -118,7 +118,7 @@ export class WrappedCompletions extends AzureOpenAI.Chat.Completions {
                 traceId,
                 model,
                 provider: 'azure',
-                input: mergeSystemPrompt(openAIParams, 'azure'),
+                input: openAIParams.messages,
                 output: [{ content: accumulatedContent, role: 'assistant' }],
                 latency,
                 baseURL: (this as any).baseURL ?? '',
@@ -135,7 +135,7 @@ export class WrappedCompletions extends AzureOpenAI.Chat.Completions {
                 traceId,
                 model,
                 provider: 'azure',
-                input: mergeSystemPrompt(openAIParams, 'azure'),
+                input: openAIParams.messages,
                 output: JSON.stringify(error),
                 latency: 0,
                 baseURL: (this as any).baseURL ?? '',
@@ -168,9 +168,9 @@ export class WrappedCompletions extends AzureOpenAI.Chat.Completions {
               distinctId: posthogDistinctId ?? traceId,
               traceId,
               model,
-              provider: '1234',
-              input: mergeSystemPrompt(openAIParams, 'azure'),
-              output: [{ content: result.choices[0].message.content, role: 'assistant' }],
+              provider: 'azure',
+              input: openAIParams.messages,
+              output: formatResponseOpenAI(result),
               latency,
               baseURL: (this as any).baseURL ?? '',
               params: body,
@@ -190,7 +190,7 @@ export class WrappedCompletions extends AzureOpenAI.Chat.Completions {
             traceId,
             model: openAIParams.model,
             provider: 'azure',
-            input: mergeSystemPrompt(openAIParams, 'azure'),
+            input: openAIParams.messages,
             output: [],
             latency: 0,
             baseURL: (this as any).baseURL ?? '',

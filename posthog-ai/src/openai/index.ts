@@ -2,7 +2,7 @@ import OpenAIOrignal from 'openai'
 import { PostHog } from 'posthog-node'
 import { v4 as uuidv4 } from 'uuid'
 import { PassThrough } from 'stream'
-import { mergeSystemPrompt, MonitoringParams, sendEventToPosthog } from '../utils'
+import { formatResponseOpenAI, MonitoringParams, sendEventToPosthog } from '../utils'
 
 type ChatCompletion = OpenAIOrignal.ChatCompletion
 type ChatCompletionChunk = OpenAIOrignal.ChatCompletionChunk
@@ -115,7 +115,7 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
                 traceId,
                 model: openAIParams.model,
                 provider: 'openai',
-                input: mergeSystemPrompt(openAIParams, 'openai'),
+                input: openAIParams.messages,
                 output: [{ content: accumulatedContent, role: 'assistant' }],
                 latency,
                 baseURL: (this as any).baseURL ?? '',
@@ -132,7 +132,7 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
                 traceId,
                 model: openAIParams.model,
                 provider: 'openai',
-                input: mergeSystemPrompt(openAIParams, 'openai'),
+                input: openAIParams.messages,
                 output: [],
                 latency: 0,
                 baseURL: (this as any).baseURL ?? '',
@@ -162,8 +162,8 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
               traceId,
               model: openAIParams.model,
               provider: 'openai',
-              input: mergeSystemPrompt(openAIParams, 'openai'),
-              output: [{ content: result.choices[0].message.content, role: 'assistant' }],
+              input: openAIParams.messages,
+              output: formatResponseOpenAI(result),
               latency,
               baseURL: (this as any).baseURL ?? '',
               params: body,
@@ -183,7 +183,7 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
             traceId,
             model: openAIParams.model,
             provider: 'openai',
-            input: mergeSystemPrompt(openAIParams, 'openai'),
+            input: openAIParams.messages,
             output: [],
             latency: 0,
             baseURL: (this as any).baseURL ?? '',
