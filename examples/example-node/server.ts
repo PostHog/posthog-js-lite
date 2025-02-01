@@ -1,5 +1,6 @@
+import './instrument'
 import express from 'express'
-import { PostHog, PostHogSentryIntegration } from 'posthog-node'
+import { PostHog, sentryIntegration, PostHogSentryIntegration } from 'posthog-node'
 import undici from 'undici'
 
 import * as Sentry from '@sentry/node'
@@ -27,7 +28,7 @@ posthog.debug()
 
 Sentry.init({
   dsn: 'https://examplePublicKey@o0.ingest.sentry.io/0',
-  integrations: [new PostHogSentryIntegration(posthog)],
+  integrations: [sentryIntegration(posthog)],
 })
 
 app.get('/', (req, res) => {
