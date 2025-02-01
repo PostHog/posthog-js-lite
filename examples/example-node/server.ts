@@ -1,4 +1,3 @@
-import './instrument'
 import express from 'express'
 import { PostHog, sentryIntegration, PostHogSentryIntegration } from 'posthog-node'
 import undici from 'undici'
