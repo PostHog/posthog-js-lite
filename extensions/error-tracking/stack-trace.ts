@@ -41,7 +41,7 @@ const GECKO_PRIORITY = 50
 
 function createFrame(filename: string, func: string, lineno?: number, colno?: number): StackFrame {
   const frame: StackFrame = {
-    platform: 'web:javascript',
+    platform: 'node:javascript',
     filename,
     function: func === '<anonymous>' ? UNKNOWN_FUNCTION : func,
     in_app: true, // All browser frames are considered in_app

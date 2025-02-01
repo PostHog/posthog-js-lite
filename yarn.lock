@@ -7,40 +7,40 @@
   resolved "https://registry.yarnpkg.com/@0no-co/graphql.web/-/graphql.web-1.0.9.tgz#b0d053a5b892ea3e2f42a4ea2a92315b517d65d3"
   integrity sha512-lXSg4bDHvP8CiMdpQf9f/rca12IIjXHN/p0Rc5mgzgLe4JBlIoA1zFa9NKhfG1bW0OyI2hgaOldFCfkEQwZuEQ==
 
-"@ai-sdk/provider-utils@2.1.0":
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/provider-utils/-/provider-utils-2.1.0.tgz#40f060252a192a31063300dd277a04df0eba604e"
-  integrity sha512-rBUabNoyB25PBUjaiMSk86fHNSCqTngNZVvXxv8+6mvw47JX5OexW+ZHRsEw8XKTE8+hqvNFVzctaOrRZ2i9Zw==
+"@ai-sdk/provider-utils@2.1.6":
+  version "2.1.6"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/provider-utils/-/provider-utils-2.1.6.tgz#5b2bff2d44ffa8ec629109ea2b28d2a7528104b4"
+  integrity sha512-Pfyaj0QZS22qyVn5Iz7IXcJ8nKIKlu2MeSAdKJzTwkAks7zdLaKVB+396Rqcp1bfQnxl7vaduQVMQiXUrgK8Gw==
   dependencies:
-    "@ai-sdk/provider" "1.0.4"
+    "@ai-sdk/provider" "1.0.7"
     eventsource-parser "^3.0.0"
     nanoid "^3.3.8"
     secure-json-parse "^2.7.0"
 
-"@ai-sdk/provider@1.0.4":
-  version "1.0.4"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/provider/-/provider-1.0.4.tgz#fe041f09e053235922ab9706be29fedf63c53bd0"
-  integrity sha512-lJi5zwDosvvZER3e/pB8lj1MN3o3S7zJliQq56BRr4e9V3fcRyFtwP0JRxaRS5vHYX3OJ154VezVoQNrk0eaKw==
+"@ai-sdk/provider@1.0.7":
+  version "1.0.7"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/provider/-/provider-1.0.7.tgz#66e07407678153b514aebf3f1c3c035e5e833380"
+  integrity sha512-q1PJEZ0qD9rVR+8JFEd01/QM++csMT5UVwYXSN2u54BrVw/D8TZLTeg2FEfKK00DgAx0UtWd8XOhhwITP9BT5g==
   dependencies:
     json-schema "^0.4.0"
 
-"@ai-sdk/react@1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/react/-/react-1.1.0.tgz#7059fb3981818667856d3f9afff312e429c0d6b8"
-  integrity sha512-U5lBbLyf1pw79xsk5dgHSkBv9Jta3xzWlOLpxsmHlxh1X94QOH3e1gm+nioQ/JvTuHLm23j2tz3i4MpMdchwXQ==
+"@ai-sdk/react@1.1.8":
+  version "1.1.8"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/react/-/react-1.1.8.tgz#3cf160e6932d81b5eb3f777b95ddcc56affaf59c"
+  integrity sha512-buHm7hP21xEOksnRQtJX9fKbi7cAUwanEBa5niddTDibCDKd+kIXP2vaJGy8+heB3rff+XSW3BWlA8pscK+n1g==
   dependencies:
-    "@ai-sdk/provider-utils" "2.1.0"
-    "@ai-sdk/ui-utils" "1.1.0"
+    "@ai-sdk/provider-utils" "2.1.6"
+    "@ai-sdk/ui-utils" "1.1.8"
     swr "^2.2.5"
     throttleit "2.1.0"
 
-"@ai-sdk/ui-utils@1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@ai-sdk/ui-utils/-/ui-utils-1.1.0.tgz#4c31029bae0d06fd2c2530dd214eff434c5a3787"
-  integrity sha512-ETXwdHaHwzC7NIehbthDFGwsTFk+gNtRL/lm85nR4WDFvvYQptoM/7wTANs0p0H7zumB3Ep5hKzv0Encu8vSRw==
+"@ai-sdk/ui-utils@1.1.8":
+  version "1.1.8"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/ui-utils/-/ui-utils-1.1.8.tgz#8937ff092f48ce5421e27d1d4ebe09ced69b0ef4"
+  integrity sha512-nbok53K1EalO2sZjBLFB33cqs+8SxiL6pe7ekZ7+5f2MJTwdvpShl6d9U4O8fO3DnZ9pYLzaVC0XNMxnJt030Q==
   dependencies:
-    "@ai-sdk/provider" "1.0.4"
-    "@ai-sdk/provider-utils" "2.1.0"
+    "@ai-sdk/provider" "1.0.7"
+    "@ai-sdk/provider-utils" "2.1.6"
     zod-to-json-schema "^3.24.1"
 
 "@ampproject/remapping@^2.2.0":
@@ -2927,15 +2927,15 @@ aggregate-error@^3.0.0:
     clean-stack "^2.0.0"
     indent-string "^4.0.0"
 
-ai@^4.1.0:
-  version "4.1.0"
-  resolved "https://registry.yarnpkg.com/ai/-/ai-4.1.0.tgz#3150a91da72fb9dd7df25a781554f9a77114ca4a"
-  integrity sha512-95nI9hBSSAKPrMnpJbaB3yqvh+G8BS4/EtFz3HR0HgEDJpxC0R6JAlB8+B/BXHd/roNGBrS08Z3Zain/6OFSYA==
+ai@^4.0.0:
+  version "4.1.16"
+  resolved "https://registry.yarnpkg.com/ai/-/ai-4.1.16.tgz#6cbac391e36655def0ccab61bd46f847d0c966fb"
+  integrity sha512-4l8Dl2+reG210/l19E/D9NrpfumJuiyih7EehVm1wdMhz4/rSLjVewxkcmdcTczPee3/axB5Rp5h8q5hyIYB/g==
   dependencies:
-    "@ai-sdk/provider" "1.0.4"
-    "@ai-sdk/provider-utils" "2.1.0"
-    "@ai-sdk/react" "1.1.0"
-    "@ai-sdk/ui-utils" "1.1.0"
+    "@ai-sdk/provider" "1.0.7"
+    "@ai-sdk/provider-utils" "2.1.6"
+    "@ai-sdk/react" "1.1.8"
+    "@ai-sdk/ui-utils" "1.1.8"
     "@opentelemetry/api" "1.9.0"
     jsondiffpatch "0.6.0"
 
@@ -8447,10 +8447,10 @@ open@^8.0.4, open@^8.3.0:
     is-docker "^2.1.1"
     is-wsl "^2.2.0"
 
-openai@^4.79.1:
-  version "4.79.1"
-  resolved "https://registry.yarnpkg.com/openai/-/openai-4.79.1.tgz#2976f4d20d577cb5f9b7c6664de08745348d5461"
-  integrity sha512-M7P5/PKnT/S/B5v0D64giC9mjyxFYkqlCuQFzR5hkdzMdqUuHf8T1gHhPGPF5oAvu4+PO3TvJv/qhZoS2bqAkw==
+openai@^4.0.0:
+  version "4.82.0"
+  resolved "https://registry.yarnpkg.com/openai/-/openai-4.82.0.tgz#9a28ba6552f94639c2de4278255ad669940b6267"
+  integrity sha512-1bTxOVGZuVGsKKUWbh3BEwX1QxIXUftJv+9COhhGGVDTFwiaOd4gWsMynF2ewj1mg6by3/O+U8+EEHpWRdPaJg==
   dependencies:
     "@types/node" "^18.11.18"
     "@types/node-fetch" "^2.6.4"

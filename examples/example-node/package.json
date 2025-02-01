@@ -5,7 +5,6 @@
   "license": "MIT",
   "scripts": {
     "preinstall": "yarn build:posthog",
-    "prestart": "yarn build:posthog",
     "start": "ts-node server.ts",
     "build:posthog": "yarn build:posthog:publish && yarn build:posthog:link",
     "build:posthog:publish": "cd ../../posthog-node && yalc publish --replace",

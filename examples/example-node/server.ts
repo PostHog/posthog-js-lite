@@ -36,11 +36,13 @@ app.get('/', (req, res) => {
 })
 
 app.get('/error', (req, res) => {
-  Sentry.captureException(new Error('example error'), {
+  const error = new Error('example error')
+  Sentry.captureException(error, {
     tags: {
       [PostHogSentryIntegration.POSTHOG_ID_TAG]: 'EXAMPLE_APP_GLOBAL',
     },
   })
+  posthog.captureException(error, 'EXAMPLE_APP_GLOBAL')
   res.send({ status: 'error!!' })
 })
 
@@ -56,8 +58,8 @@ app.get('/user/:userId/flags/:flagId', async (req, res) => {
   res.send({ [req.params.flagId]: flag })
 })
 
-const server = app.listen(8010, () => {
-  console.log('⚡: Server is running at http://localhost:8010')
+const server = app.listen(8020, () => {
+  console.log('⚡: Server is running at http://localhost:8020')
 })
 
 async function handleExit(signal: any) {

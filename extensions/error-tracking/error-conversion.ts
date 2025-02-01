@@ -180,7 +180,7 @@ function errorPropertiesFromObject(candidate: Record<string, unknown>, metadata?
     : 'Error'
   const exceptionMessage = metadata?.overrideExceptionMessage
     ? metadata.overrideExceptionMessage
-    : `Non-Error ${'exception'} captured with keys: ${extractExceptionKeysForMessage(candidate)}`
+    : `Non-Error 'exception' captured with keys: ${extractExceptionKeysForMessage(candidate)}`
 
   const exception: Exception = {
     type: exceptionType,
@@ -194,7 +194,7 @@ function errorPropertiesFromObject(candidate: Record<string, unknown>, metadata?
   if (metadata?.syntheticException) {
     // Kludge: strip the last frame from a synthetically created error
     // so that it does not appear in a users stack trace
-    const frames = parseStackFrames(metadata?.syntheticException, 1)
+    const frames = parseStackFrames(metadata.syntheticException, 1)
     if (frames.length) {
       exception.stacktrace = { frames, type: 'raw' }
     }
