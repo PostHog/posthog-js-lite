@@ -40,18 +40,18 @@ export class WrappedMessages extends AnthropicOriginal.Messages {
     this.phClient = phClient
   }
 
-  public create(body: MessageCreateParamsNonStreaming, options?: RequestOptions): APIPromise<Message>;
+  public create(body: MessageCreateParamsNonStreaming, options?: RequestOptions): APIPromise<Message>
   public create(
     body: MessageCreateParamsStreaming & MonitoringParams,
-    options?: RequestOptions,
-  ): APIPromise<Stream<RawMessageStreamEvent>>;
+    options?: RequestOptions
+  ): APIPromise<Stream<RawMessageStreamEvent>>
   public create(
     body: MessageCreateParamsBase & MonitoringParams,
-    options?: RequestOptions,
-  ): APIPromise<Stream<RawMessageStreamEvent> | Message>;
+    options?: RequestOptions
+  ): APIPromise<Stream<RawMessageStreamEvent> | Message>
   public create(
     body: MessageCreateParams & MonitoringParams,
-    options?: RequestOptions,
+    options?: RequestOptions
   ): APIPromise<Message> | APIPromise<Stream<RawMessageStreamEvent>> {
     const {
       posthogDistinctId,
@@ -77,20 +77,20 @@ export class WrappedMessages extends AnthropicOriginal.Messages {
           outputTokens: 0,
         }
         if ('tee' in value) {
-          const anthropicStream = value;
-          (async () => {
+          const anthropicStream = value
+          ;(async () => {
             try {
               for await (const chunk of anthropicStream) {
-                if ("delta" in chunk) {
-                  if ("text" in chunk.delta) {
+                if ('delta' in chunk) {
+                  if ('text' in chunk.delta) {
                     const delta = chunk?.delta?.text ?? ''
                     accumulatedContent += delta
                   }
                 }
-                if (chunk.type == "message_start") {
+                if (chunk.type == 'message_start') {
                   usage.inputTokens = chunk.message.usage.input_tokens ?? 0
                 }
-                if ("usage" in chunk) {
+                if ('usage' in chunk) {
                   usage.outputTokens = chunk.usage.output_tokens ?? 0
                 }
                 passThroughStream.write(chunk)
@@ -141,7 +141,7 @@ export class WrappedMessages extends AnthropicOriginal.Messages {
     } else {
       const wrappedPromise = parentPromise.then(
         (result) => {
-          if ("content" in result) {
+          if ('content' in result) {
             const latency = (Date.now() - startTime) / 1000
             sendEventToPosthog({
               client: this.phClient,
@@ -193,4 +193,3 @@ export class WrappedMessages extends AnthropicOriginal.Messages {
 }
 
 export default PostHogAnthropic
-

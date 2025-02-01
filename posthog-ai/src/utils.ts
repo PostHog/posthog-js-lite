@@ -13,7 +13,9 @@ export interface MonitoringParams {
   posthogGroups?: Record<string, any>
 }
 
-export const getModelParams = (params: (ChatCompletionCreateParamsBase | MessageCreateParams) & MonitoringParams): Record<string, any> => {
+export const getModelParams = (
+  params: (ChatCompletionCreateParamsBase | MessageCreateParams) & MonitoringParams
+): Record<string, any> => {
   const modelParams: Record<string, any> = {}
   const paramKeys = [
     'temperature',
