@@ -1,75 +1,58 @@
-import OpenAIOrignal from 'openai'
+import AnthropicOriginal from '@anthropic-ai/sdk'
 import { PostHog } from 'posthog-node'
 import { v4 as uuidv4 } from 'uuid'
 import { PassThrough } from 'stream'
-import { formatResponseOpenAI, MonitoringParams, sendEventToPosthog } from '../utils'
+import { formatResponseAnthropic, mergeSystemPrompt, MonitoringParams, sendEventToPosthog } from '../utils'
 
-type ChatCompletion = OpenAIOrignal.ChatCompletion
-type ChatCompletionChunk = OpenAIOrignal.ChatCompletionChunk
-type ChatCompletionCreateParamsBase = OpenAIOrignal.Chat.Completions.ChatCompletionCreateParams
-type ChatCompletionCreateParamsNonStreaming = OpenAIOrignal.Chat.Completions.ChatCompletionCreateParamsNonStreaming
-type ChatCompletionCreateParamsStreaming = OpenAIOrignal.Chat.Completions.ChatCompletionCreateParamsStreaming
-import type { APIPromise, RequestOptions } from 'openai/core'
-import type { Stream } from 'openai/streaming'
+type MessageCreateParamsNonStreaming = AnthropicOriginal.Messages.MessageCreateParamsNonStreaming
+type MessageCreateParamsStreaming = AnthropicOriginal.Messages.MessageCreateParamsStreaming
+type MessageCreateParams = AnthropicOriginal.Messages.MessageCreateParams
+type Message = AnthropicOriginal.Messages.Message
+type RawMessageStreamEvent = AnthropicOriginal.Messages.RawMessageStreamEvent
+type MessageCreateParamsBase = AnthropicOriginal.Messages.MessageCreateParams
 
-interface MonitoringOpenAIConfig {
+import type { APIPromise, RequestOptions } from '@anthropic-ai/sdk/core'
+import type { Stream } from '@anthropic-ai/sdk/streaming'
+
+interface MonitoringAnthropicConfig {
   apiKey: string
   posthog: PostHog
   baseURL?: string
 }
 
-export class PostHogOpenAI extends OpenAIOrignal {
+export class PostHogAnthropic extends AnthropicOriginal {
   private readonly phClient: PostHog
-  public chat: WrappedChat
+  public messages: WrappedMessages
 
-  constructor(config: MonitoringOpenAIConfig) {
-    const { posthog, ...openAIConfig } = config
-    super(openAIConfig)
+  constructor(config: MonitoringAnthropicConfig) {
+    const { posthog, ...anthropicConfig } = config
+    super(anthropicConfig)
     this.phClient = posthog
-    this.chat = new WrappedChat(this, this.phClient)
+    this.messages = new WrappedMessages(this, this.phClient)
   }
 }
 
-export class WrappedChat extends OpenAIOrignal.Chat {
-  constructor(parentClient: PostHogOpenAI, phClient: PostHog) {
-    super(parentClient)
-    this.completions = new WrappedCompletions(parentClient, phClient)
-  }
-
-  public completions: WrappedCompletions
-}
-
-export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
+export class WrappedMessages extends AnthropicOriginal.Messages {
   private readonly phClient: PostHog
 
-  constructor(client: OpenAIOrignal, phClient: PostHog) {
-    super(client)
+  constructor(parentClient: PostHogAnthropic, phClient: PostHog) {
+    super(parentClient)
     this.phClient = phClient
   }
 
-  // --- Overload #1: Non-streaming
+  public create(body: MessageCreateParamsNonStreaming, options?: RequestOptions): APIPromise<Message>
   public create(
-    body: ChatCompletionCreateParamsNonStreaming & MonitoringParams,
+    body: MessageCreateParamsStreaming & MonitoringParams,
     options?: RequestOptions
-  ): APIPromise<ChatCompletion>
-
-  // --- Overload #2: Streaming
+  ): APIPromise<Stream<RawMessageStreamEvent>>
   public create(
-    body: ChatCompletionCreateParamsStreaming & MonitoringParams,
+    body: MessageCreateParamsBase & MonitoringParams,
     options?: RequestOptions
-  ): APIPromise<Stream<ChatCompletionChunk>>
-
-  // --- Overload #3: Generic base
+  ): APIPromise<Stream<RawMessageStreamEvent> | Message>
   public create(
-    body: ChatCompletionCreateParamsBase & MonitoringParams,
+    body: MessageCreateParams & MonitoringParams,
     options?: RequestOptions
-  ): APIPromise<ChatCompletion | Stream<ChatCompletionChunk>>
-
-  // --- Implementation Signature
-  public create(
-    body: ChatCompletionCreateParamsBase & MonitoringParams,
-    options?: RequestOptions
-  ): APIPromise<ChatCompletion | Stream<ChatCompletionChunk>> {
+  ): APIPromise<Message> | APIPromise<Stream<RawMessageStreamEvent>> {
     const {
       posthogDistinctId,
       posthogTraceId,
@@ -77,15 +60,15 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       posthogPrivacyMode = false,
       posthogGroups,
-      ...openAIParams
+      ...anthropicParams
     } = body
 
     const traceId = posthogTraceId ?? uuidv4()
     const startTime = Date.now()
 
-    const parentPromise = super.create(openAIParams, options)
+    const parentPromise = super.create(anthropicParams, options)
 
-    if (openAIParams.stream) {
+    if (anthropicParams.stream) {
       return parentPromise.then((value) => {
         const passThroughStream = new PassThrough({ objectMode: true })
         let accumulatedContent = ''
@@ -94,17 +77,21 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
           outputTokens: 0,
         }
         if ('tee' in value) {
-          const openAIStream = value
+          const anthropicStream = value
           ;(async () => {
             try {
-              for await (const chunk of openAIStream) {
-                const delta = chunk?.choices?.[0]?.delta?.content ?? ''
-                accumulatedContent += delta
-                if (chunk.usage) {
-                  usage = {
-                    inputTokens: chunk.usage.prompt_tokens ?? 0,
-                    outputTokens: chunk.usage.completion_tokens ?? 0,
+              for await (const chunk of anthropicStream) {
+                if ('delta' in chunk) {
+                  if ('text' in chunk.delta) {
+                    const delta = chunk?.delta?.text ?? ''
+                    accumulatedContent += delta
                   }
+                }
+                if (chunk.type == 'message_start') {
+                  usage.inputTokens = chunk.message.usage.input_tokens ?? 0
+                }
+                if ('usage' in chunk) {
+                  usage.outputTokens = chunk.usage.output_tokens ?? 0
                 }
                 passThroughStream.write(chunk)
               }
@@ -113,9 +100,9 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
                 client: this.phClient,
                 distinctId: posthogDistinctId ?? traceId,
                 traceId,
-                model: openAIParams.model,
-                provider: 'openai',
-                input: openAIParams.messages,
+                model: anthropicParams.model,
+                provider: 'anthropic',
+                input: mergeSystemPrompt(anthropicParams, 'anthropic'),
                 output: [{ content: accumulatedContent, role: 'assistant' }],
                 latency,
                 baseURL: (this as any).baseURL ?? '',
@@ -130,9 +117,9 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
                 client: this.phClient,
                 distinctId: posthogDistinctId ?? traceId,
                 traceId,
-                model: openAIParams.model,
-                provider: 'openai',
-                input: openAIParams.messages,
+                model: anthropicParams.model,
+                provider: 'anthropic',
+                input: mergeSystemPrompt(anthropicParams, 'anthropic'),
                 output: [],
                 latency: 0,
                 baseURL: (this as any).baseURL ?? '',
@@ -149,28 +136,28 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
             }
           })()
         }
-        return passThroughStream as unknown as Stream<ChatCompletionChunk>
-      }) as APIPromise<Stream<ChatCompletionChunk>>
+        return passThroughStream as unknown as Stream<RawMessageStreamEvent>
+      }) as APIPromise<Stream<RawMessageStreamEvent>>
     } else {
       const wrappedPromise = parentPromise.then(
         (result) => {
-          if ('choices' in result) {
+          if ('content' in result) {
             const latency = (Date.now() - startTime) / 1000
             sendEventToPosthog({
               client: this.phClient,
               distinctId: posthogDistinctId ?? traceId,
               traceId,
-              model: openAIParams.model,
-              provider: 'openai',
-              input: openAIParams.messages,
-              output: formatResponseOpenAI(result),
+              model: anthropicParams.model,
+              provider: 'anthropic',
+              input: mergeSystemPrompt(anthropicParams, 'anthropic'),
+              output: formatResponseAnthropic(result),
               latency,
               baseURL: (this as any).baseURL ?? '',
               params: body,
               httpStatus: 200,
               usage: {
-                inputTokens: result.usage?.prompt_tokens ?? 0,
-                outputTokens: result.usage?.completion_tokens ?? 0,
+                inputTokens: result.usage.input_tokens ?? 0,
+                outputTokens: result.usage.output_tokens ?? 0,
               },
             })
           }
@@ -181,9 +168,9 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
             client: this.phClient,
             distinctId: posthogDistinctId ?? traceId,
             traceId,
-            model: openAIParams.model,
-            provider: 'openai',
-            input: openAIParams.messages,
+            model: anthropicParams.model,
+            provider: 'anthropic',
+            input: mergeSystemPrompt(anthropicParams, 'anthropic'),
             output: [],
             latency: 0,
             baseURL: (this as any).baseURL ?? '',
@@ -198,11 +185,11 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
           })
           throw error
         }
-      ) as APIPromise<ChatCompletion>
+      ) as APIPromise<Message>
 
       return wrappedPromise
     }
   }
 }
 
-export default PostHogOpenAI
+export default PostHogAnthropic
