@@ -1,8 +1,8 @@
-import { EventHint } from 'extensions/error-tracking/types'
-import { addUncaughtExceptionListener, addUnhandledRejectionListener } from './extensions/exception-autocapture'
+import { EventHint } from 'posthog-node/src/extensions/error-tracking/types'
+import { addUncaughtExceptionListener, addUnhandledRejectionListener } from './extensions/error-tracking/autocapture'
 import { PostHog, PostHogOptions } from './posthog-node'
 import { uuidv7 } from 'posthog-core/src/vendor/uuidv7'
-import { errorToEvent } from 'extensions/error-tracking/error-conversion'
+import { errorToEvent } from 'posthog-node/src/extensions/error-tracking/error-conversion'
 
 const SHUTDOWN_TIMEOUT = 2000
 

@@ -15,7 +15,7 @@ import { EventMessage, GroupIdentifyMessage, IdentifyMessage, PostHogNodeV1 } fr
 import { FeatureFlagsPoller } from './feature-flags'
 import fetch from './fetch'
 import ExceptionObserver from './error-tracking'
-import { errorToEvent } from 'extensions/error-tracking/error-conversion'
+import { errorToEvent } from 'posthog-node/src/extensions/error-tracking/error-conversion'
 
 export type PostHogOptions = PostHogCoreOptions & {
   persistence?: 'memory'

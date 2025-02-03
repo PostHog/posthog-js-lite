@@ -1,4 +1,4 @@
-import { EventHint } from 'extensions/error-tracking/types'
+import { EventHint } from 'posthog-node/src/extensions/error-tracking/types'
 
 type ErrorHandler = { _errorHandler: boolean } & ((error: Error) => void)
 type TaggedListener = NodeJS.UncaughtExceptionListener & {

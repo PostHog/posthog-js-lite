@@ -249,7 +249,7 @@ function getObjectClassName(obj: unknown): string | undefined | void {
 }
 
 /**
- * Extracts stack frames from the error and builds a Sentry Exception
+ * Extracts stack frames from the error and builds an Exception
  */
 export function exceptionFromError(stackParser: StackParser, error: Error): Exception {
   const exception: Exception = {

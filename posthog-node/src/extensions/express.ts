@@ -1,4 +1,4 @@
-import { errorToEvent } from 'extensions/error-tracking/error-conversion'
+import { errorToEvent } from 'posthog-node/src/extensions/error-tracking/error-conversion'
 import type * as http from 'node:http'
 import { uuidv7 } from 'posthog-core/src/vendor/uuidv7'
 import { PostHog } from 'posthog-node/lib'
