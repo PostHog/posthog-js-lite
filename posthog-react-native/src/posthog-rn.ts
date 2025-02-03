@@ -336,7 +336,7 @@ export class PostHog extends PostHogCore {
     )
 
     let recordingActive = true
-    const linkedFlag = decideReplayConfig['linkedFlag'] as string | { [key: string]: JsonType } | undefined
+    const linkedFlag = decideReplayConfig['linkedFlag'] as string | { [key: string]: JsonType } | null | undefined
     if (typeof linkedFlag === 'string') {
       const value = decideFeatureFlags[linkedFlag]
       if (typeof value === 'boolean') {
@@ -344,7 +344,7 @@ export class PostHog extends PostHogCore {
       }
 
       this.logMsgIfDebug(() => console.log('PostHog Debug', `Session replay ${linkedFlag} linked flag value: ${value}`))
-    } else if (typeof linkedFlag === 'object') {
+    } else if (linkedFlag && typeof linkedFlag === 'object') {
       const flag = linkedFlag['flag'] as string | undefined
       const variant = linkedFlag['variant'] as string | undefined
       if (flag && variant) {
