@@ -27,7 +27,7 @@
 # 3.4.0 - 2024-11-26
 
 1. feat: automatically mask out user photos and sandboxed views like photo picker (iOS Only)
-1. To disable masking set `maskAllSandboxedViews` and `maskPhotoLibraryImages` to false
+   1. To disable masking set `maskAllSandboxedViews` and `maskPhotoLibraryImages` to false
 
 ```js
 export const posthog = new PostHog(
