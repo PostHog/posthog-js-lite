@@ -37,7 +37,7 @@ export const isEmptyObject = (x: unknown): boolean => {
 export const isUndefined = (x: unknown): x is undefined => x === void 0
 
 export const isString = (x: unknown): x is string => {
-  return toString.call(x) == '[object String]'
+  return toString.call(x) === '[object String]'
 }
 
 export const isEmptyString = (x: unknown): boolean => isString(x) && x.trim().length === 0
@@ -53,7 +53,7 @@ export const isNull = (x: unknown): x is null => {
 export const isNullish = (x: unknown): x is null | undefined => isUndefined(x) || isNull(x)
 
 export const isNumber = (x: unknown): x is number => {
-  return toString.call(x) == '[object Number]'
+  return toString.call(x) === '[object Number]'
 }
 export const isBoolean = (x: unknown): x is boolean => {
   return toString.call(x) === '[object Boolean]'

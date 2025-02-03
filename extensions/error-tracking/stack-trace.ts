@@ -44,11 +44,11 @@ const UNKNOWN_FUNCTION = '?'
 //     in_app: true, // All browser frames are considered in_app
 //   }
 
-//   if (!lineno === undefined) {
+//   if (lineno !== undefined) {
 //     frame.lineno = lineno
 //   }
 
-//   if (!colno === undefined) {
+//   if (colno !== undefined) {
 //     frame.colno = colno
 //   }
 
