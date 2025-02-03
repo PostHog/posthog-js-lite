@@ -1,7 +1,9 @@
 import { PostHog } from 'posthog-node'
 import OpenAIOrignal from 'openai'
+import AnthropicOriginal from '@anthropic-ai/sdk'
 
 type ChatCompletionCreateParamsBase = OpenAIOrignal.Chat.Completions.ChatCompletionCreateParams
+type MessageCreateParams = AnthropicOriginal.Messages.MessageCreateParams
 
 export interface MonitoringParams {
   posthogDistinctId?: string
@@ -11,7 +13,9 @@ export interface MonitoringParams {
   posthogGroups?: Record<string, any>
 }
 
-export const getModelParams = (params: ChatCompletionCreateParamsBase & MonitoringParams): Record<string, any> => {
+export const getModelParams = (
+  params: (ChatCompletionCreateParamsBase | MessageCreateParams) & MonitoringParams
+): Record<string, any> => {
   const modelParams: Record<string, any> = {}
   const paramKeys = [
     'temperature',
@@ -76,7 +80,7 @@ export const formatResponseOpenAI = (response: any): Array<{ role: string; conte
   return output
 }
 
-export const mergeSystemPrompt = (params: ChatCompletionCreateParamsBase & MonitoringParams, provider: string): any => {
+export const mergeSystemPrompt = (params: MessageCreateParams & MonitoringParams, provider: string): any => {
   if (provider == 'anthropic') {
     const messages = params.messages || []
     if (!(params as any).system) {
@@ -104,7 +108,7 @@ export type SendEventToPosthogParams = {
   baseURL: string
   httpStatus: number
   usage?: { inputTokens?: number; outputTokens?: number }
-  params: ChatCompletionCreateParamsBase & MonitoringParams
+  params: (ChatCompletionCreateParamsBase | MessageCreateParams) & MonitoringParams
   isError?: boolean
   error?: string
 }
