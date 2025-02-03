@@ -488,7 +488,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
 
   captureException(error: unknown, distinctId: string, additionalProperties?: Record<string | number, any>): void {
     const syntheticException = new Error('PostHog syntheticException')
-    this.errorTracking.captureException(error, distinctId, { syntheticException }, additionalProperties)
+    ErrorTracking.captureException(this, error, distinctId, { syntheticException }, additionalProperties)
     // ExceptionObserver.captureException(this, error, distinctId, { syntheticException }, additionalProperties)
   }
 }

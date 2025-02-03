@@ -43,15 +43,6 @@ export default class ErrorTracking {
     this.startAutocaptureIfEnabled()
   }
 
-  async captureException(
-    error: unknown,
-    distinctId: string,
-    hint: EventHint,
-    additionalProperties?: Record<string | number, any>
-  ): Promise<void> {
-    ErrorTracking.captureException(this.client, error, distinctId, hint, additionalProperties)
-  }
-
   private startAutocaptureIfEnabled(): void {
     if (this.isEnabled()) {
       addUncaughtExceptionListener(this.onException.bind(this), this.onFatalError.bind(this))
@@ -62,12 +53,11 @@ export default class ErrorTracking {
   private onException(exception: unknown, hint: EventHint): void {
     // Given stateless nature of Node SDK we capture exceptions using personless processing
     // when no user can be determined e.g. in the case of exception autocapture
-    this.captureException(exception, uuidv7(), hint, { $process_person_profile: false })
+    ErrorTracking.captureException(this.client, exception, uuidv7(), hint, { $process_person_profile: false })
   }
 
   private async onFatalError(): Promise<void> {
     await this.client.shutdown(SHUTDOWN_TIMEOUT)
-    global.process.exit(1)
   }
 
   isEnabled(): boolean {
