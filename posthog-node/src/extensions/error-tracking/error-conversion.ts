@@ -1,8 +1,6 @@
-import { EventMessage } from 'posthog-node/src/types'
-import { defaultStackParser } from './stack-trace'
 import { isError, isErrorEvent, isEvent, isPlainObject } from './type-checking'
 import { ErrorProperties, EventHint, Exception, Mechanism, StackFrame, StackParser } from './types'
-import { uuidv7 } from 'posthog-core/src/vendor/uuidv7'
+import { addSourceContext } from './context-lines'
 
 /**
  * based on the very wonderful MIT licensed Sentry SDK
@@ -127,40 +125,19 @@ function serializeEventTarget(target: unknown): string {
   }
 }
 
-export function errorToEvent(
-  error: unknown,
-  distinctId: string,
-  hint: EventHint,
-  additionalProperties?: Record<string | number, any>
-): EventMessage {
-  const properties: EventMessage['properties'] = { ...additionalProperties }
-  if (!distinctId) {
-    properties.$process_person_profile = false
-  }
-
-  return {
-    event: '$exception',
-    distinctId: distinctId || uuidv7(),
-    properties: {
-      ...properties,
-      ...propertiesFromUnknownInput(defaultStackParser, error, hint),
-    },
-  }
-}
-
-export function propertiesFromUnknownInput(
+export async function propertiesFromUnknownInput(
   stackParser: StackParser,
   input: unknown,
   hint?: EventHint
-): ErrorProperties {
+): Promise<ErrorProperties> {
   const providedMechanism = hint && hint.mechanism
   const mechanism = providedMechanism || {
     handled: true,
     type: 'generic',
   }
 
-  const error = getException(mechanism, input, hint)
-  const exception = exceptionFromError(stackParser, error)
+  const error = getError(mechanism, input, hint)
+  const exception = await exceptionFromError(stackParser, error)
 
   exception.value = exception.value || ''
   exception.type = exception.type || 'Error'
@@ -171,7 +148,7 @@ export function propertiesFromUnknownInput(
   return properties
 }
 
-function getException(mechanism: Mechanism, exception: unknown, hint?: EventHint): any {
+function getError(mechanism: Mechanism, exception: unknown, hint?: EventHint): Error {
   if (isError(exception)) {
     return exception
   }
@@ -196,7 +173,7 @@ function getException(mechanism: Mechanism, exception: unknown, hint?: EventHint
   const ex = hint?.syntheticException || new Error(exception as string)
   ex.message = `${exception}`
 
-  return [ex, undefined]
+  return ex
 }
 
 /** If a plain object has a property that is an `Error`, return this error. */
@@ -251,13 +228,13 @@ function getObjectClassName(obj: unknown): string | undefined | void {
 /**
  * Extracts stack frames from the error and builds an Exception
  */
-export function exceptionFromError(stackParser: StackParser, error: Error): Exception {
+export async function exceptionFromError(stackParser: StackParser, error: Error): Promise<Exception> {
   const exception: Exception = {
     type: error.name || error.constructor.name,
     value: error.message,
   }
 
-  const frames = parseStackFrames(stackParser, error)
+  const frames = await addSourceContext(parseStackFrames(stackParser, error))
   if (frames.length) {
     exception.stacktrace = { frames, type: 'raw' }
   }
