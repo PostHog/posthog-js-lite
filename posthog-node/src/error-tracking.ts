@@ -8,7 +8,7 @@ import { defaultStackParser } from './extensions/error-tracking/stack-trace'
 
 const SHUTDOWN_TIMEOUT = 2000
 
-export default class ExceptionObserver {
+export default class ErrorTracking {
   private client: PostHog
   private _exceptionAutocaptureEnabled: boolean
 
@@ -43,25 +43,34 @@ export default class ExceptionObserver {
     this.startAutocaptureIfEnabled()
   }
 
-  isEnabled(): boolean {
-    return !this.client.isDisabled && this._exceptionAutocaptureEnabled
+  async captureException(
+    error: unknown,
+    distinctId: string,
+    hint: EventHint,
+    additionalProperties?: Record<string | number, any>
+  ): Promise<void> {
+    ErrorTracking.captureException(this.client, error, distinctId, hint, additionalProperties)
   }
 
   private startAutocaptureIfEnabled(): void {
     if (this.isEnabled()) {
-      addUncaughtExceptionListener(this.autocaptureException.bind(this), this.onFatalError.bind(this))
-      addUnhandledRejectionListener(this.autocaptureException.bind(this))
+      addUncaughtExceptionListener(this.onException.bind(this), this.onFatalError.bind(this))
+      addUnhandledRejectionListener(this.onException.bind(this))
     }
   }
 
-  private autocaptureException(exception: unknown, hint: EventHint): void {
+  private onException(exception: unknown, hint: EventHint): void {
     // Given stateless nature of Node SDK we capture exceptions using personless processing
     // when no user can be determined e.g. in the case of exception autocapture
-    ExceptionObserver.captureException(this.client, exception, uuidv7(), hint, { $process_person_profile: false })
+    this.captureException(exception, uuidv7(), hint, { $process_person_profile: false })
   }
 
   private async onFatalError(): Promise<void> {
     await this.client.shutdown(SHUTDOWN_TIMEOUT)
     global.process.exit(1)
+  }
+
+  isEnabled(): boolean {
+    return !this.client.isDisabled && this._exceptionAutocaptureEnabled
   }
 }

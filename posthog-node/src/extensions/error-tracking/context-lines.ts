@@ -83,80 +83,6 @@ export async function addSourceContext(frames: StackFrame[]): Promise<StackFrame
   return frames
 }
 
-/** Adds context lines to frames */
-function addSourceContextToFrames(frames: StackFrame[], cache: LRUMap<string, Record<number, string>>): void {
-  for (const frame of frames) {
-    // Only add context if we have a filename and it hasn't already been added
-    if (frame.filename && frame.context_line === undefined && typeof frame.lineno === 'number') {
-      const contents = cache.get(frame.filename)
-      if (contents === undefined) {
-        continue
-      }
-
-      addContextToFrame(frame.lineno, frame, contents)
-    }
-  }
-}
-
-/**
- * Resolves context lines before and after the given line number and appends them to the frame;
- */
-export function addContextToFrame(
-  lineno: number,
-  frame: StackFrame,
-  contents: Record<number, string> | undefined
-): void {
-  // When there is no line number in the frame, attaching context is nonsensical and will even break grouping.
-  // We already check for lineno before calling this, but since StackFrame lineno is optional, we check it again.
-  if (frame.lineno === undefined || contents === undefined) {
-    return
-  }
-
-  frame.pre_context = []
-  for (let i = makeRangeStart(lineno); i < lineno; i++) {
-    // We always expect the start context as line numbers cannot be negative. If we dont find a line, then
-    // something went wrong somewhere. Clear the context and return without adding any linecontext.
-    const line = contents[i]
-    if (line === undefined) {
-      clearLineContext(frame)
-      return
-    }
-
-    frame.pre_context.push(line)
-  }
-
-  // We should always have the context line. If we dont, something went wrong, so we clear the context and return
-  // without adding any linecontext.
-  if (contents[lineno] === undefined) {
-    clearLineContext(frame)
-    return
-  }
-
-  frame.context_line = contents[lineno]
-
-  const end = makeRangeEnd(lineno)
-  frame.post_context = []
-  for (let i = lineno + 1; i <= end; i++) {
-    // Since we dont track when the file ends, we cant clear the context if we dont find a line as it could
-    // just be that we reached the end of the file.
-    const line = contents[i]
-    if (line === undefined) {
-      break
-    }
-    frame.post_context.push(line)
-  }
-}
-
-/**
- * Clears the context lines from a frame, used to reset a frame to its original state
- * if we fail to resolve all context lines for it.
- */
-function clearLineContext(frame: StackFrame): void {
-  delete frame.pre_context
-  delete frame.context_line
-  delete frame.post_context
-}
-
 /**
  * Extracts lines from a file and stores them in a cache.
  */
@@ -235,6 +161,76 @@ function getContextLinesFromFile(path: string, ranges: ReadlineRange[], output: 
       }
     })
   })
+}
+
+/** Adds context lines to frames */
+function addSourceContextToFrames(frames: StackFrame[], cache: LRUMap<string, Record<number, string>>): void {
+  for (const frame of frames) {
+    // Only add context if we have a filename and it hasn't already been added
+    if (frame.filename && frame.context_line === undefined && typeof frame.lineno === 'number') {
+      const contents = cache.get(frame.filename)
+      if (contents === undefined) {
+        continue
+      }
+
+      addContextToFrame(frame.lineno, frame, contents)
+    }
+  }
+}
+
+/**
+ * Resolves context lines before and after the given line number and appends them to the frame;
+ */
+function addContextToFrame(lineno: number, frame: StackFrame, contents: Record<number, string> | undefined): void {
+  // When there is no line number in the frame, attaching context is nonsensical and will even break grouping.
+  // We already check for lineno before calling this, but since StackFrame lineno is optional, we check it again.
+  if (frame.lineno === undefined || contents === undefined) {
+    return
+  }
+
+  frame.pre_context = []
+  for (let i = makeRangeStart(lineno); i < lineno; i++) {
+    // We always expect the start context as line numbers cannot be negative. If we dont find a line, then
+    // something went wrong somewhere. Clear the context and return without adding any linecontext.
+    const line = contents[i]
+    if (line === undefined) {
+      clearLineContext(frame)
+      return
+    }
+
+    frame.pre_context.push(line)
+  }
+
+  // We should always have the context line. If we dont, something went wrong, so we clear the context and return
+  // without adding any linecontext.
+  if (contents[lineno] === undefined) {
+    clearLineContext(frame)
+    return
+  }
+
+  frame.context_line = contents[lineno]
+
+  const end = makeRangeEnd(lineno)
+  frame.post_context = []
+  for (let i = lineno + 1; i <= end; i++) {
+    // Since we dont track when the file ends, we cant clear the context if we dont find a line as it could
+    // just be that we reached the end of the file.
+    const line = contents[i]
+    if (line === undefined) {
+      break
+    }
+    frame.post_context.push(line)
+  }
+}
+
+/**
+ * Clears the context lines from a frame, used to reset a frame to its original state
+ * if we fail to resolve all context lines for it.
+ */
+function clearLineContext(frame: StackFrame): void {
+  delete frame.pre_context
+  delete frame.context_line
+  delete frame.post_context
 }
 
 /**
@@ -354,7 +350,7 @@ function emplace<T extends LRUMap<K, V>, K extends string, V>(map: T, key: K, co
   return value
 }
 
-export function snipLine(line: string, colno: number): string {
+function snipLine(line: string, colno: number): string {
   let newLine = line
   const lineLength = newLine.length
   if (lineLength <= 150) {

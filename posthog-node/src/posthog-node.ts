@@ -14,7 +14,7 @@ import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
 import { EventMessage, GroupIdentifyMessage, IdentifyMessage, PostHogNodeV1 } from './types'
 import { FeatureFlagsPoller } from './feature-flags'
 import fetch from './fetch'
-import ExceptionObserver from './error-tracking'
+import ErrorTracking from './error-tracking'
 
 export type PostHogOptions = PostHogCoreOptions & {
   persistence?: 'memory'
@@ -36,6 +36,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
   private _memoryStorage = new PostHogMemoryStorage()
 
   private featureFlagsPoller?: FeatureFlagsPoller
+  protected errorTracking: ErrorTracking
   private maxCacheSize: number
   public readonly options: PostHogOptions
 
@@ -63,7 +64,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         customHeaders: this.getCustomHeaders(),
       })
     }
-    new ExceptionObserver(this, options)
+    this.errorTracking = new ErrorTracking(this, options)
     this.distinctIdHasSentFlagCalls = {}
     this.maxCacheSize = options.maxCacheSize || MAX_CACHE_SIZE
   }
@@ -487,6 +488,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
 
   captureException(error: unknown, distinctId: string, additionalProperties?: Record<string | number, any>): void {
     const syntheticException = new Error('PostHog syntheticException')
-    ExceptionObserver.captureException(this, error, distinctId, { syntheticException }, additionalProperties)
+    this.errorTracking.captureException(error, distinctId, { syntheticException }, additionalProperties)
+    // ExceptionObserver.captureException(this, error, distinctId, { syntheticException }, additionalProperties)
   }
 }

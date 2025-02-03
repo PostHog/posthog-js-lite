@@ -1,17 +1,11 @@
-export function isEvent(candidate: unknown): candidate is Event {
-  return Event !== undefined && isInstanceOf(candidate, Event)
+import { PolymorphicEvent } from './types'
+
+export function isEvent(candidate: unknown): candidate is PolymorphicEvent {
+  return typeof Event !== 'undefined' && isInstanceOf(candidate, Event)
 }
 
 export function isPlainObject(candidate: unknown): candidate is Record<string, unknown> {
   return isBuiltin(candidate, 'Object')
-}
-
-export function isInstanceOf(candidate: unknown, base: any): boolean {
-  try {
-    return candidate instanceof base
-  } catch {
-    return false
-  }
 }
 
 export function isError(candidate: unknown): candidate is Error {
@@ -23,6 +17,14 @@ export function isError(candidate: unknown): candidate is Error {
       return true
     default:
       return isInstanceOf(candidate, Error)
+  }
+}
+
+export function isInstanceOf(candidate: unknown, base: any): boolean {
+  try {
+    return candidate instanceof base
+  } catch {
+    return false
   }
 }
 

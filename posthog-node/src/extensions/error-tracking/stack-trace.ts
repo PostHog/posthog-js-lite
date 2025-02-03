@@ -36,25 +36,6 @@ const STACKTRACE_FRAME_LIMIT = 50
 
 const UNKNOWN_FUNCTION = '?'
 
-// function createFrame(filename: string, func: string, lineno?: number, colno?: number): StackFrame {
-//   const frame: StackFrame = {
-//     platform: 'node:javascript',
-//     filename,
-//     function: func === '<anonymous>' ? UNKNOWN_FUNCTION : func,
-//     in_app: true, // All browser frames are considered in_app
-//   }
-
-//   if (lineno !== undefined) {
-//     frame.lineno = lineno
-//   }
-
-//   if (colno !== undefined) {
-//     frame.colno = colno
-//   }
-
-//   return frame
-// }
-
 /** Node Stack line parser */
 export function node(getModule?: GetModuleFn): StackLineParserFn {
   const FILENAME_MATCH = /^\s*[-]{4,}$/
@@ -172,71 +153,6 @@ export function nodeStackLineParser(getModule?: GetModuleFn): StackLineParser {
 
 export const defaultStackParser: StackParser = createStackParser(nodeStackLineParser(createGetModuleFromFilename()))
 
-export function createStackParser(...parsers: StackLineParser[]): StackParser {
-  const sortedParsers = parsers.sort((a, b) => a[0] - b[0]).map((p) => p[1])
-
-  return (stack: string, skipFirstLines: number = 0): StackFrame[] => {
-    const frames: StackFrame[] = []
-    const lines = stack.split('\n')
-
-    for (let i = skipFirstLines; i < lines.length; i++) {
-      const line = lines[i] as string
-      // Ignore lines over 1kb as they are unlikely to be stack frames.
-      // Many of the regular expressions use backtracking which results in run time that increases exponentially with
-      // input size. Huge strings can result in hangs/Denial of Service:
-      // https://github.com/getsentry/sentry-javascript/issues/2286
-      if (line.length > 1024) {
-        continue
-      }
-
-      // https://github.com/getsentry/sentry-javascript/issues/5459
-      // Remove webpack (error: *) wrappers
-      const cleanedLine = WEBPACK_ERROR_REGEXP.test(line) ? line.replace(WEBPACK_ERROR_REGEXP, '$1') : line
-
-      // https://github.com/getsentry/sentry-javascript/issues/7813
-      // Skip Error: lines
-      if (cleanedLine.match(/\S*Error: /)) {
-        continue
-      }
-
-      for (const parser of sortedParsers) {
-        const frame = parser(cleanedLine)
-
-        if (frame) {
-          frames.push(frame)
-          break
-        }
-      }
-
-      if (frames.length >= STACKTRACE_FRAME_LIMIT) {
-        break
-      }
-    }
-
-    return reverseAndStripFrames(frames)
-  }
-}
-
-export function reverseAndStripFrames(stack: ReadonlyArray<StackFrame>): StackFrame[] {
-  if (!stack.length) {
-    return []
-  }
-
-  const localStack = Array.from(stack)
-
-  localStack.reverse()
-
-  return localStack.slice(0, STACKTRACE_FRAME_LIMIT).map((frame) => ({
-    ...frame,
-    filename: frame.filename || getLastStackFrame(localStack).filename,
-    function: frame.function || UNKNOWN_FUNCTION,
-  }))
-}
-
-function getLastStackFrame(arr: StackFrame[]): StackFrame {
-  return arr[arr.length - 1] || {}
-}
-
 /** Creates a function that gets the module name from a filename */
 export function createGetModuleFromFilename(
   basePath: string = process.argv[1] ? dirname(process.argv[1]) : process.cwd(),
@@ -288,4 +204,66 @@ function normalizeWindowsPath(path: string): string {
   return path
     .replace(/^[A-Z]:/, '') // remove Windows-style prefix
     .replace(/\\/g, '/') // replace all `\` instances with `/`
+}
+
+export function createStackParser(...parsers: StackLineParser[]): StackParser {
+  const sortedParsers = parsers.sort((a, b) => a[0] - b[0]).map((p) => p[1])
+
+  return (stack: string, skipFirstLines: number = 0): StackFrame[] => {
+    const frames: StackFrame[] = []
+    const lines = stack.split('\n')
+
+    for (let i = skipFirstLines; i < lines.length; i++) {
+      const line = lines[i] as string
+      // Ignore lines over 1kb as they are unlikely to be stack frames.
+      if (line.length > 1024) {
+        continue
+      }
+
+      // https://github.com/getsentry/sentry-javascript/issues/5459
+      // Remove webpack (error: *) wrappers
+      const cleanedLine = WEBPACK_ERROR_REGEXP.test(line) ? line.replace(WEBPACK_ERROR_REGEXP, '$1') : line
+
+      // https://github.com/getsentry/sentry-javascript/issues/7813
+      // Skip Error: lines
+      if (cleanedLine.match(/\S*Error: /)) {
+        continue
+      }
+
+      for (const parser of sortedParsers) {
+        const frame = parser(cleanedLine)
+
+        if (frame) {
+          frames.push(frame)
+          break
+        }
+      }
+
+      if (frames.length >= STACKTRACE_FRAME_LIMIT) {
+        break
+      }
+    }
+
+    return reverseAndStripFrames(frames)
+  }
+}
+
+export function reverseAndStripFrames(stack: ReadonlyArray<StackFrame>): StackFrame[] {
+  if (!stack.length) {
+    return []
+  }
+
+  const localStack = Array.from(stack)
+
+  localStack.reverse()
+
+  return localStack.slice(0, STACKTRACE_FRAME_LIMIT).map((frame) => ({
+    ...frame,
+    filename: frame.filename || getLastStackFrame(localStack).filename,
+    function: frame.function || UNKNOWN_FUNCTION,
+  }))
+}
+
+function getLastStackFrame(arr: StackFrame[]): StackFrame {
+  return arr[arr.length - 1] || {}
 }

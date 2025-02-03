@@ -6,12 +6,112 @@ import { addSourceContext } from './context-lines'
  * based on the very wonderful MIT licensed Sentry SDK
  */
 
+export async function propertiesFromUnknownInput(
+  stackParser: StackParser,
+  input: unknown,
+  hint?: EventHint
+): Promise<ErrorProperties> {
+  const providedMechanism = hint && hint.mechanism
+  const mechanism = providedMechanism || {
+    handled: true,
+    type: 'generic',
+  }
+
+  const error = getError(mechanism, input, hint)
+  const exception = await exceptionFromError(stackParser, error)
+
+  exception.value = exception.value || ''
+  exception.type = exception.type || 'Error'
+  exception.mechanism = mechanism
+
+  const properties = { $exception_list: [exception] }
+
+  return properties
+}
+
+function getError(mechanism: Mechanism, exception: unknown, hint?: EventHint): Error {
+  if (isError(exception)) {
+    return exception
+  }
+
+  mechanism.synthetic = true
+
+  if (isPlainObject(exception)) {
+    const errorFromProp = getErrorPropertyFromObject(exception)
+    if (errorFromProp) {
+      return errorFromProp
+    }
+
+    const message = getMessageForObject(exception)
+    const ex = hint?.syntheticException || new Error(message)
+    ex.message = message
+
+    return ex
+  }
+
+  // This handles when someone does: `throw "something awesome";`
+  // We use synthesized Error here so we can extract a (rough) stack trace.
+  const ex = hint?.syntheticException || new Error(exception as string)
+  ex.message = `${exception}`
+
+  return ex
+}
+
+/** If a plain object has a property that is an `Error`, return this error. */
+function getErrorPropertyFromObject(obj: Record<string, unknown>): Error | undefined {
+  for (const prop in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, prop)) {
+      const value = obj[prop]
+      if (value instanceof Error) {
+        return value
+      }
+    }
+  }
+
+  return undefined
+}
+
+function getMessageForObject(exception: Record<string, unknown>): string {
+  if ('name' in exception && typeof exception.name === 'string') {
+    let message = `'${exception.name}' captured as exception`
+
+    if ('message' in exception && typeof exception.message === 'string') {
+      message += ` with message '${exception.message}'`
+    }
+
+    return message
+  } else if ('message' in exception && typeof exception.message === 'string') {
+    return exception.message
+  }
+
+  const keys = extractExceptionKeysForMessage(exception)
+
+  // Some ErrorEvent instances do not have an `error` property, which is why they are not handled before
+  // We still want to try to get a decent message for these cases
+  if (isErrorEvent(exception)) {
+    return `Event \`ErrorEvent\` captured as exception with message \`${exception.message}\``
+  }
+
+  const className = getObjectClassName(exception)
+
+  return `${className && className !== 'Object' ? `'${className}'` : 'Object'} captured as exception with keys: ${keys}`
+}
+
+function getObjectClassName(obj: unknown): string | undefined | void {
+  try {
+    const prototype: unknown | null = Object.getPrototypeOf(obj)
+    return prototype ? prototype.constructor.name : undefined
+  } catch (e) {
+    // ignore errors here
+  }
+}
+
 /**
  * Given any captured exception, extract its keys and create a sorted
  * and truncated list that will be used inside the event message.
  * eg. `Non-error exception captured with keys: foo, bar, baz`
  */
-export function extractExceptionKeysForMessage(exception: Record<string, unknown>, maxLength: number = 40): string {
+function extractExceptionKeysForMessage(exception: Record<string, unknown>, maxLength: number = 40): string {
   const keys = Object.keys(convertToPlainObject(exception))
   keys.sort()
 
@@ -125,110 +225,10 @@ function serializeEventTarget(target: unknown): string {
   }
 }
 
-export async function propertiesFromUnknownInput(
-  stackParser: StackParser,
-  input: unknown,
-  hint?: EventHint
-): Promise<ErrorProperties> {
-  const providedMechanism = hint && hint.mechanism
-  const mechanism = providedMechanism || {
-    handled: true,
-    type: 'generic',
-  }
-
-  const error = getError(mechanism, input, hint)
-  const exception = await exceptionFromError(stackParser, error)
-
-  exception.value = exception.value || ''
-  exception.type = exception.type || 'Error'
-  exception.mechanism = mechanism
-
-  const properties = { $exception_list: [exception] }
-
-  return properties
-}
-
-function getError(mechanism: Mechanism, exception: unknown, hint?: EventHint): Error {
-  if (isError(exception)) {
-    return exception
-  }
-
-  mechanism.synthetic = true
-
-  if (isPlainObject(exception)) {
-    const errorFromProp = getErrorPropertyFromObject(exception)
-    if (errorFromProp) {
-      return errorFromProp
-    }
-
-    const message = getMessageForObject(exception)
-    const ex = hint?.syntheticException || new Error(message)
-    ex.message = message
-
-    return ex
-  }
-
-  // This handles when someone does: `throw "something awesome";`
-  // We use synthesized Error here so we can extract a (rough) stack trace.
-  const ex = hint?.syntheticException || new Error(exception as string)
-  ex.message = `${exception}`
-
-  return ex
-}
-
-/** If a plain object has a property that is an `Error`, return this error. */
-function getErrorPropertyFromObject(obj: Record<string, unknown>): Error | undefined {
-  for (const prop in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, prop)) {
-      const value = obj[prop]
-      if (value instanceof Error) {
-        return value
-      }
-    }
-  }
-
-  return undefined
-}
-
-function getMessageForObject(exception: Record<string, unknown>): string {
-  if ('name' in exception && typeof exception.name === 'string') {
-    let message = `'${exception.name}' captured as exception`
-
-    if ('message' in exception && typeof exception.message === 'string') {
-      message += ` with message '${exception.message}'`
-    }
-
-    return message
-  } else if ('message' in exception && typeof exception.message === 'string') {
-    return exception.message
-  }
-
-  const keys = extractExceptionKeysForMessage(exception)
-
-  // Some ErrorEvent instances do not have an `error` property, which is why they are not handled before
-  // We still want to try to get a decent message for these cases
-  if (isErrorEvent(exception)) {
-    return `Event \`ErrorEvent\` captured as exception with message \`${exception.message}\``
-  }
-
-  const className = getObjectClassName(exception)
-
-  return `${className && className !== 'Object' ? `'${className}'` : 'Object'} captured as exception with keys: ${keys}`
-}
-
-function getObjectClassName(obj: unknown): string | undefined | void {
-  try {
-    const prototype: unknown | null = Object.getPrototypeOf(obj)
-    return prototype ? prototype.constructor.name : undefined
-  } catch (e) {
-    // ignore errors here
-  }
-}
-
 /**
  * Extracts stack frames from the error and builds an Exception
  */
-export async function exceptionFromError(stackParser: StackParser, error: Error): Promise<Exception> {
+async function exceptionFromError(stackParser: StackParser, error: Error): Promise<Exception> {
   const exception: Exception = {
     type: error.name || error.constructor.name,
     value: error.message,
@@ -245,6 +245,6 @@ export async function exceptionFromError(stackParser: StackParser, error: Error)
 /**
  * Extracts stack frames from the error.stack string
  */
-export function parseStackFrames(stackParser: StackParser, error: Error): StackFrame[] {
+function parseStackFrames(stackParser: StackParser, error: Error): StackFrame[] {
   return stackParser(error.stack || '', 1)
 }

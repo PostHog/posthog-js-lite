@@ -7,16 +7,16 @@ import * as Sentry from '@sentry/node'
 const app = express()
 
 const {
-  PH_API_KEY = 'phc_oNgsfA22FuAyUDLFmVvS7SWeBrZ6RPHbtl9QJIEobZJ',
+  PH_API_KEY = 'YOUR API KEY',
   PH_HOST = 'http://127.0.0.1:8000',
-  PH_PERSONAL_API_KEY = 'phx_MtSzPxseihPi9Ftnsc2vqpfZgi4XAquWefA8iJg03nnUi2u',
+  PH_PERSONAL_API_KEY = 'YOUR PERSONAL API KEY',
 } = process.env
 
 const posthog = new PostHog(PH_API_KEY, {
   host: PH_HOST,
   flushAt: 10,
   personalApiKey: PH_PERSONAL_API_KEY,
-  // enableExceptionAutocapture: true,
+  enableExceptionAutocapture: true,
   // By default PostHog uses axios for fetch but you can specify your own implementation if preferred
   fetch(url, options) {
     console.log(url, options)
@@ -29,7 +29,6 @@ posthog.debug()
 Sentry.init({
   dsn: 'https://examplePublicKey@o0.ingest.sentry.io/0',
   integrations: [sentryIntegration(posthog)],
-  debug: true,
 })
 
 app.get('/', (req, res) => {
@@ -64,6 +63,8 @@ app.get('/user/:userId/flags/:flagId', async (req, res) => {
   res.send({ [req.params.flagId]: flag })
 })
 
+// Because express has its own error handlers there
+// is some additional setup required to hook into them
 Sentry.setupExpressErrorHandler(app)
 setupExpressErrorHandler(posthog, app)
 
