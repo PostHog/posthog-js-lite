@@ -1,9 +1,14 @@
+import { EventHint } from 'extensions/error-tracking/types'
+
 type ErrorHandler = { _errorHandler: boolean } & ((error: Error) => void)
 type TaggedListener = NodeJS.UncaughtExceptionListener & {
   tag?: string
 }
 
-function makeUncaughtExceptionHandler(captureFn: (exception: Error) => void, onFatalFn: () => void): ErrorHandler {
+function makeUncaughtExceptionHandler(
+  captureFn: (exception: Error, hint: EventHint) => void,
+  onFatalFn: () => void
+): ErrorHandler {
   let calledFatalError: boolean = false
 
   return Object.assign(
@@ -27,7 +32,12 @@ function makeUncaughtExceptionHandler(captureFn: (exception: Error) => void, onF
 
       const processWouldExit = userProvidedListenersCount === 0
 
-      captureFn(error)
+      captureFn(error, {
+        mechanism: {
+          type: 'onuncaughtexception',
+          handled: false,
+        },
+      })
 
       if (!calledFatalError && processWouldExit) {
         calledFatalError = true
@@ -38,10 +48,20 @@ function makeUncaughtExceptionHandler(captureFn: (exception: Error) => void, onF
   )
 }
 
-export function addUncaughtExceptionListener(captureFn: (exception: Error) => void, onFatalFn: () => void): void {
+export function addUncaughtExceptionListener(
+  captureFn: (exception: Error, hint: EventHint) => void,
+  onFatalFn: () => void
+): void {
   global.process.on('uncaughtException', makeUncaughtExceptionHandler(captureFn, onFatalFn))
 }
 
-export function addUnhandledRejectionListener(captureFn: (exception: Error) => void): void {
-  global.process.on('unhandledRejection', captureFn)
+export function addUnhandledRejectionListener(captureFn: (exception: unknown, hint: EventHint) => void): void {
+  global.process.on('unhandledRejection', (reason: unknown) => {
+    captureFn(reason, {
+      mechanism: {
+        type: 'onunhandledrejection',
+        handled: false,
+      },
+    })
+  })
 }

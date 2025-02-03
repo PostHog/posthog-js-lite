@@ -1,5 +1,5 @@
 import express from 'express'
-import { PostHog, sentryIntegration, PostHogSentryIntegration } from 'posthog-node'
+import { PostHog, sentryIntegration, PostHogSentryIntegration, setupExpressErrorHandler } from 'posthog-node'
 import undici from 'undici'
 
 import * as Sentry from '@sentry/node'
@@ -16,6 +16,7 @@ const posthog = new PostHog(PH_API_KEY, {
   host: PH_HOST,
   flushAt: 10,
   personalApiKey: PH_PERSONAL_API_KEY,
+  // enableExceptionAutocapture: true,
   // By default PostHog uses axios for fetch but you can specify your own implementation if preferred
   fetch(url, options) {
     console.log(url, options)
@@ -28,11 +29,16 @@ posthog.debug()
 Sentry.init({
   dsn: 'https://examplePublicKey@o0.ingest.sentry.io/0',
   integrations: [sentryIntegration(posthog)],
+  debug: true,
 })
 
 app.get('/', (req, res) => {
   posthog.capture({ distinctId: 'EXAMPLE_APP_GLOBAL', event: 'legacy capture' })
   res.send({ hello: 'world' })
+})
+
+app.get('/unhandled-error', () => {
+  throw new Error('unhandled error')
 })
 
 app.get('/error', (req, res) => {
@@ -57,6 +63,9 @@ app.get('/user/:userId/flags/:flagId', async (req, res) => {
 
   res.send({ [req.params.flagId]: flag })
 })
+
+Sentry.setupExpressErrorHandler(app)
+setupExpressErrorHandler(posthog, app)
 
 const server = app.listen(8020, () => {
   console.log('⚡: Server is running at http://localhost:8020')

@@ -15,8 +15,7 @@ import { EventMessage, GroupIdentifyMessage, IdentifyMessage, PostHogNodeV1 } fr
 import { FeatureFlagsPoller } from './feature-flags'
 import fetch from './fetch'
 import ExceptionObserver from './error-tracking'
-import { propertiesFromUnknownInput } from '../../extensions/error-tracking/error-conversion'
-import { defaultStackParser } from 'extensions/error-tracking/stack-trace'
+import { errorToEvent } from 'extensions/error-tracking/error-conversion'
 
 export type PostHogOptions = PostHogCoreOptions & {
   persistence?: 'memory'
@@ -487,14 +486,8 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     return { allPersonProperties, allGroupProperties }
   }
 
-  captureException(error: Error, distinctId: string, additionalProperties?: Record<string | number, any>): void {
+  captureException(error: unknown, distinctId: string, additionalProperties?: Record<string | number, any>): void {
     const syntheticException = new Error('PostHog syntheticException')
-
-    const properties = {
-      ...propertiesFromUnknownInput(defaultStackParser, error, { syntheticException }),
-      ...additionalProperties,
-    }
-
-    this.capture({ event: '$exception', distinctId, properties })
+    this.capture(errorToEvent(error, distinctId, { syntheticException }, additionalProperties))
   }
 }

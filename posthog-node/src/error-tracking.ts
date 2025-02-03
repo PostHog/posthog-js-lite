@@ -1,6 +1,8 @@
+import { EventHint } from 'extensions/error-tracking/types'
 import { addUncaughtExceptionListener, addUnhandledRejectionListener } from './extensions/exception-autocapture'
 import { PostHog, PostHogOptions } from './posthog-node'
 import { uuidv7 } from 'posthog-core/src/vendor/uuidv7'
+import { errorToEvent } from 'extensions/error-tracking/error-conversion'
 
 const SHUTDOWN_TIMEOUT = 2000
 
@@ -26,10 +28,10 @@ export default class ExceptionObserver {
     }
   }
 
-  private captureException(exception: Error): void {
+  private captureException(exception: unknown, hint: EventHint): void {
     // Given stateless nature of Node SDK we capture exceptions using personless processing
     // when no user can be determined e.g. in the case of exception autocapture
-    this.client.captureException(exception, uuidv7(), { $process_person_profile: false })
+    this.client.capture(errorToEvent(exception, uuidv7(), hint, { $process_person_profile: false }))
   }
 
   private async onFatalError(): Promise<void> {

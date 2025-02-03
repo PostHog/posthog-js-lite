@@ -1,5 +1,8 @@
-import { isError, isErrorEvent, isEvent, isInstanceOf, isPlainObject } from './type-checking'
+import { EventMessage } from 'posthog-node/src/types'
+import { defaultStackParser } from './stack-trace'
+import { isError, isErrorEvent, isEvent, isPlainObject } from './type-checking'
 import { ErrorProperties, EventHint, Exception, Mechanism, StackFrame, StackParser } from './types'
+import { uuidv7 } from 'posthog-core/src/vendor/uuidv7'
 
 /**
  * based on the very wonderful MIT licensed Sentry SDK
@@ -89,9 +92,10 @@ function convertToPlainObject<V>(value: V):
       ...getOwnProperties(value),
     }
 
-    if (typeof CustomEvent !== 'undefined' && isInstanceOf(value, CustomEvent)) {
-      newObj.detail = (value as unknown as CustomEvent).detail
-    }
+    // TODO: figure out why this fails typing (I think CustomEvent is only supported in Node 19 onwards)
+    // if (typeof CustomEvent !== 'undefined' && isInstanceOf(value, CustomEvent)) {
+    //   newObj.detail = (value as unknown as CustomEvent).detail
+    // }
 
     return newObj
   } else {
@@ -120,6 +124,27 @@ function serializeEventTarget(target: unknown): string {
     return Object.prototype.toString.call(target)
   } catch (_oO) {
     return '<unknown>'
+  }
+}
+
+export function errorToEvent(
+  error: unknown,
+  distinctId: string,
+  hint: EventHint,
+  additionalProperties?: Record<string | number, any>
+): EventMessage {
+  const properties: EventMessage['properties'] = { ...additionalProperties }
+  if (!distinctId) {
+    properties.$process_person_profile = false
+  }
+
+  return {
+    event: '$exception',
+    distinctId: distinctId || uuidv7(),
+    properties: {
+      ...properties,
+      ...propertiesFromUnknownInput(defaultStackParser, error, hint),
+    },
   }
 }
 
