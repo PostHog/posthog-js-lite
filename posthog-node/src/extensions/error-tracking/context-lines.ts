@@ -1,7 +1,7 @@
 import { createReadStream } from 'node:fs'
 import { createInterface } from 'node:readline'
 import { StackFrame } from './types'
-import { LRUMap } from './utils'
+import { LRUMap } from './lru-map'
 
 const LRU_FILE_CONTENTS_CACHE = new LRUMap<string, Record<number, string>>(10)
 const LRU_FILE_CONTENTS_FS_READ_FAILED = new LRUMap<string, 1>(20)
