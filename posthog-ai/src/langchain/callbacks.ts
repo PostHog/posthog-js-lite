@@ -1,6 +1,12 @@
 import { PostHog } from 'posthog-node'
 import { withPrivacyMode, getModelParams } from '../utils'
 import { BaseCallbackHandler } from '@langchain/core/callbacks/base'
+import type { Serialized } from '@langchain/core/load/serializable'
+import type { ChainValues } from '@langchain/core/utils/types'
+import type { BaseMessage } from '@langchain/core/messages'
+import type { LLMResult } from '@langchain/core/outputs'
+import type { AgentAction, AgentFinish } from '@langchain/core/agents'
+import type { DocumentInterface } from '@langchain/core/documents'
 
 interface SpanMetadata {
   /** Name of the trace/span (e.g. chain name) */
@@ -29,96 +35,6 @@ type RunMetadata = SpanMetadata | GenerationMetadata
 
 /** Storage for run metadata */
 type RunMetadataStorage = { [runId: string]: RunMetadata }
-
-interface UsageMetadata {
-  input_tokens?: number
-  output_tokens?: number
-  prompt_token_count?: number
-  candidates_token_count?: number
-  inputTokenCount?: number | number[]
-  outputTokenCount?: number | number[]
-  input_token_count?: number
-  generated_token_count?: number
-  [key: string]: any
-}
-
-function parseUsageModel(usage: UsageMetadata): [number | null, number | null] {
-  const conversionList: [string, 'input' | 'output'][] = [
-    // langchain-anthropic (works also for Bedrock-Anthropic)
-    ['input_tokens', 'input'],
-    ['output_tokens', 'output'],
-    // Google Vertex AI
-    ['prompt_token_count', 'input'],
-    ['candidates_token_count', 'output'],
-    // Bedrock
-    ['inputTokenCount', 'input'],
-    ['outputTokenCount', 'output'],
-    // langchain-ibm
-    ['input_token_count', 'input'],
-    ['generated_token_count', 'output'],
-  ]
-
-  const parsedUsage: { input?: number; output?: number } = {}
-
-  for (const [modelKey, typeKey] of conversionList) {
-    if (modelKey in usage) {
-      const capturedCount = usage[modelKey]
-      // For Bedrock, the token count is a list when streamed
-      const finalCount = Array.isArray(capturedCount)
-        ? capturedCount.reduce((sum, count) => sum + count, 0)
-        : capturedCount
-
-      parsedUsage[typeKey] = finalCount
-    }
-  }
-
-  return [parsedUsage.input ?? null, parsedUsage.output ?? null]
-}
-
-function parseUsage(response: any): [number | null, number | null] {
-  // langchain-anthropic uses the usage field
-  const llmUsageKeys = ['token_usage', 'usage']
-  let llmUsage: [number | null, number | null] = [null, null]
-
-  if (response.llm_output) {
-    for (const key of llmUsageKeys) {
-      if (response.llm_output[key]) {
-        llmUsage = parseUsageModel(response.llm_output[key])
-        break
-      }
-    }
-  }
-
-  if (response.generations) {
-    for (const generation of response.generations) {
-      for (const generationChunk of generation) {
-        if (generationChunk.generation_info?.usage_metadata) {
-          llmUsage = parseUsageModel(generationChunk.generation_info.usage_metadata)
-          break
-        }
-
-        const messageChunk = generationChunk.message || {}
-        const responseMetadata = messageChunk.response_metadata || {}
-
-        // for Bedrock-Anthropic
-        const bedrockAnthropicUsage = typeof responseMetadata === 'object' ? responseMetadata.usage : null
-        // for Bedrock-Titan
-        const bedrockTitanUsage =
-          typeof responseMetadata === 'object' ? responseMetadata['amazon-bedrock-invocationMetrics'] : null
-        // for Ollama
-        const ollamaUsage = messageChunk.usage_metadata
-
-        const chunkUsage = bedrockAnthropicUsage || bedrockTitanUsage || ollamaUsage
-        if (chunkUsage) {
-          llmUsage = parseUsageModel(chunkUsage)
-          break
-        }
-      }
-    }
-  }
-
-  return llmUsage
-}
 
 export class LangChainCallbackHandler extends BaseCallbackHandler {
   public name = 'PosthogCallbackHandler'
@@ -158,117 +74,181 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
   // ===== CALLBACK METHODS =====
 
   public handleChainStart(
-    serialized: any,
-    inputs: any,
+    chain: Serialized,
+    inputs: ChainValues,
     runId: string,
     parentRunId?: string,
-    metadata?: any,
-    ...args: any[]
+    tags?: string[],
+    metadata?: Record<string, unknown>,
+    runType?: string,
+    runName?: string
   ): void {
-    this._logDebugEvent('on_chain_start', runId, parentRunId, { inputs })
+    this._logDebugEvent('on_chain_start', runId, parentRunId, { inputs, tags })
     this._setParentOfRun(runId, parentRunId)
-    this._setTraceOrSpanMetadata(serialized, inputs, runId, parentRunId, ...args)
+    this._setTraceOrSpanMetadata(chain, inputs, runId, parentRunId, metadata, tags, runName)
   }
 
-  public handleChainEnd(outputs: any, runId: string, parentRunId?: string, ...args: any[]): void {
-    this._logDebugEvent('on_chain_end', runId, parentRunId, { outputs })
+  public handleChainEnd(
+    outputs: ChainValues,
+    runId: string,
+    parentRunId?: string,
+    tags?: string[],
+    kwargs?: { inputs?: Record<string, unknown> }
+  ): void {
+    this._logDebugEvent('on_chain_end', runId, parentRunId, { outputs, tags })
     this._popRunAndCaptureTraceOrSpan(runId, parentRunId, outputs)
   }
 
-  public handleChainError(error: Error, runId: string, parentRunId?: string, ...args: any[]): void {
-    this._logDebugEvent('on_chain_error', runId, parentRunId, { error })
-    this._popRunAndCaptureTraceOrSpan(runId, parentRunId, error)
-  }
-
-  public handleChatModelStart(
-    serialized: any,
-    messages: any[][],
-    runId: string,
-    parentRunId?: string,
-    ...args: any[]
-  ): void {
-    this._logDebugEvent('on_chat_model_start', runId, parentRunId, { messages })
-    this._setParentOfRun(runId, parentRunId)
-    // Flatten the two-dimensional messages and convert each message to a plain object
-    const input = messages.flat().map((m) => this._convertMessageToDict(m))
-    this._setLLMMetadata(serialized, runId, input, ...args)
-  }
-
-  public handleLLMStart(serialized: any, prompts: string[], runId: string, parentRunId?: string, ...args: any[]): void {
-    this._logDebugEvent('on_llm_start', runId, parentRunId, { prompts })
-    this._setParentOfRun(runId, parentRunId)
-    this._setLLMMetadata(serialized, runId, prompts, ...args)
-  }
-
-  public handleLLMEnd(response: any, runId: string, parentRunId?: string, ...args: any[]): void {
-    this._logDebugEvent('on_llm_end', runId, parentRunId, { response })
-    this._popRunAndCaptureGeneration(runId, parentRunId, response)
-  }
-
-  public handleLLMError(error: Error, runId: string, parentRunId?: string, ...args: any[]): void {
-    this._logDebugEvent('on_llm_error', runId, parentRunId, { error })
-    this._popRunAndCaptureGeneration(runId, parentRunId, error)
-  }
-
-  public handleToolStart(
-    serialized: any,
-    inputStr: string,
-    runId: string,
-    parentRunId?: string,
-    metadata?: any,
-    ...args: any[]
-  ): void {
-    this._logDebugEvent('on_tool_start', runId, parentRunId, { inputStr })
-    this._setTraceOrSpanMetadata(serialized, inputStr, runId, parentRunId, ...args)
-  }
-
-  public handleToolEnd(output: string, runId: string, parentRunId?: string, ...args: any[]): void {
-    this._logDebugEvent('on_tool_end', runId, parentRunId, { output })
-    this._popRunAndCaptureTraceOrSpan(runId, parentRunId, output)
-  }
-
-  public handleToolError(error: Error, runId: string, parentRunId?: string, tags?: string[], ...args: any[]): void {
-    this._logDebugEvent('on_tool_error', runId, parentRunId, { error, tags })
-    this._popRunAndCaptureTraceOrSpan(runId, parentRunId, error)
-  }
-
-  public handleRetrieverStart(
-    serialized: any,
-    query: string,
-    runId: string,
-    parentRunId?: string,
-    metadata?: any,
-    ...args: any[]
-  ): void {
-    this._logDebugEvent('on_retriever_start', runId, parentRunId, { query })
-    this._setTraceOrSpanMetadata(serialized, query, runId, parentRunId, ...args)
-  }
-
-  public handleRetrieverEnd(documents: any[], runId: string, parentRunId?: string, ...args: any[]): void {
-    this._logDebugEvent('on_retriever_end', runId, parentRunId, { documents })
-    this._popRunAndCaptureTraceOrSpan(runId, parentRunId, documents)
-  }
-
-  public handleRetrieverError(
+  public handleChainError(
     error: Error,
     runId: string,
     parentRunId?: string,
     tags?: string[],
-    ...args: any[]
+    kwargs?: { inputs?: Record<string, unknown> }
   ): void {
-    this._logDebugEvent('on_retriever_error', runId, parentRunId, { error, tags })
+    this._logDebugEvent('on_chain_error', runId, parentRunId, { error, tags })
     this._popRunAndCaptureTraceOrSpan(runId, parentRunId, error)
   }
 
-  public handleAgentAction(action: any, runId: string, parentRunId?: string, ...args: any[]): void {
-    this._logDebugEvent('on_agent_action', runId, parentRunId, { action })
+  public handleChatModelStart(
+    serialized: Serialized,
+    messages: BaseMessage[][],
+    runId: string,
+    parentRunId?: string,
+    extraParams?: Record<string, unknown>,
+    tags?: string[],
+    metadata?: Record<string, unknown>,
+    runName?: string
+  ): void {
+    this._logDebugEvent('on_chat_model_start', runId, parentRunId, { messages, tags })
     this._setParentOfRun(runId, parentRunId)
-    this._setTraceOrSpanMetadata(null, action, runId, parentRunId, ...args)
+    // Flatten the two-dimensional messages and convert each message to a plain object
+    const input = messages.flat().map((m) => this._convertMessageToDict(m))
+    this._setLLMMetadata(serialized, runId, input, metadata, extraParams, runName)
   }
 
-  public handleAgentEnd(finish: any, runId: string, parentRunId?: string, ...args: any[]): void {
-    this._logDebugEvent('on_agent_finish', runId, parentRunId, { finish })
-    this._popRunAndCaptureTraceOrSpan(runId, parentRunId, finish)
+  public handleLLMStart(
+    serialized: Serialized,
+    prompts: string[],
+    runId: string,
+    parentRunId?: string,
+    extraParams?: Record<string, unknown>,
+    tags?: string[],
+    metadata?: Record<string, unknown>,
+    runName?: string
+  ): void {
+    this._logDebugEvent('on_llm_start', runId, parentRunId, { prompts, tags })
+    this._setParentOfRun(runId, parentRunId)
+    this._setLLMMetadata(serialized, runId, prompts, metadata, extraParams, runName)
+  }
+
+  public handleLLMEnd(
+    output: LLMResult,
+    runId: string,
+    parentRunId?: string,
+    tags?: string[],
+    extraParams?: Record<string, unknown>
+  ): void {
+    this._logDebugEvent('on_llm_end', runId, parentRunId, { output, tags })
+    this._popRunAndCaptureGeneration(runId, parentRunId, output)
+  }
+
+  public handleLLMError(
+    err: Error,
+    runId: string,
+    parentRunId?: string,
+    tags?: string[],
+    extraParams?: Record<string, unknown>
+  ): void {
+    this._logDebugEvent('on_llm_error', runId, parentRunId, { err, tags })
+    this._popRunAndCaptureGeneration(runId, parentRunId, err)
+  }
+
+  public handleToolStart(
+    tool: Serialized,
+    input: string,
+    runId: string,
+    parentRunId?: string,
+    tags?: string[],
+    metadata?: Record<string, unknown>,
+    runName?: string
+  ): void {
+    this._logDebugEvent('on_tool_start', runId, parentRunId, { input, tags })
+    this._setTraceOrSpanMetadata(tool, input, runId, parentRunId, metadata, tags, runName)
+  }
+
+  public handleToolEnd(
+    output: any,
+    runId: string,
+    parentRunId?: string,
+    tags?: string[]
+  ): void {
+    this._logDebugEvent('on_tool_end', runId, parentRunId, { output, tags })
+    this._popRunAndCaptureTraceOrSpan(runId, parentRunId, output)
+  }
+
+  public handleToolError(
+    err: Error,
+    runId: string,
+    parentRunId?: string,
+    tags?: string[]
+  ): void {
+    this._logDebugEvent('on_tool_error', runId, parentRunId, { err, tags })
+    this._popRunAndCaptureTraceOrSpan(runId, parentRunId, err)
+  }
+
+  public handleRetrieverStart(
+    retriever: Serialized,
+    query: string,
+    runId: string,
+    parentRunId?: string,
+    tags?: string[],
+    metadata?: Record<string, unknown>,
+    name?: string
+  ): void {
+    this._logDebugEvent('on_retriever_start', runId, parentRunId, { query, tags })
+    this._setTraceOrSpanMetadata(retriever, query, runId, parentRunId, metadata, tags, name)
+  }
+
+  public handleRetrieverEnd(
+    documents: DocumentInterface[],
+    runId: string,
+    parentRunId?: string,
+    tags?: string[]
+  ): void {
+    this._logDebugEvent('on_retriever_end', runId, parentRunId, { documents, tags })
+    this._popRunAndCaptureTraceOrSpan(runId, parentRunId, documents)
+  }
+
+  public handleRetrieverError(
+    err: Error,
+    runId: string,
+    parentRunId?: string,
+    tags?: string[]
+  ): void {
+    this._logDebugEvent('on_retriever_error', runId, parentRunId, { err, tags })
+    this._popRunAndCaptureTraceOrSpan(runId, parentRunId, err)
+  }
+
+  public handleAgentAction(
+    action: AgentAction,
+    runId: string,
+    parentRunId?: string,
+    tags?: string[]
+  ): void {
+    this._logDebugEvent('on_agent_action', runId, parentRunId, { action, tags })
+    this._setParentOfRun(runId, parentRunId)
+    this._setTraceOrSpanMetadata(null, action, runId, parentRunId)
+  }
+
+  public handleAgentEnd(
+    action: AgentFinish,
+    runId: string,
+    parentRunId?: string,
+    tags?: string[]
+  ): void {
+    this._logDebugEvent('on_agent_finish', runId, parentRunId, { action, tags })
+    this._popRunAndCaptureTraceOrSpan(runId, parentRunId, action)
   }
 
   // ===== PRIVATE HELPERS =====
@@ -298,6 +278,7 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     parentRunId?: string,
     ...args: any[]
   ): void {
+    // Use default names if not provided: if this is a top-level run, we mark it as a trace, otherwise as a span.
     const defaultName = parentRunId ? 'span' : 'trace'
     const runName = this._getLangchainRunName(serialized, ...args) || defaultName
     this.runs[runId] = {
@@ -308,30 +289,31 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
   }
 
   private _setLLMMetadata(
-    serialized: any,
+    serialized: Serialized | null,
     runId: string,
     messages: any,
     metadata?: any,
-    invocationParams?: any,
-    ...args: any[]
+    extraParams?: any,
+    runName?: string
   ): void {
-    const runName = this._getLangchainRunName(serialized, ...args) || 'generation'
+    const runNameFound = this._getLangchainRunName(serialized, { extraParams, runName }) || 'generation'
     const generation: GenerationMetadata = {
-      name: runName,
+      name: runNameFound,
       input: messages,
       startTime: Date.now(),
     }
+    if (extraParams) {
+      generation.modelParams = getModelParams(extraParams.invocation_params)
+    }
     if (metadata) {
-      generation.modelParams = getModelParams(metadata.invocation_params)
+      if (metadata.ls_model_name) {
+        generation.model = metadata.ls_model_name
+      }
+      if (metadata.ls_provider) {
+        generation.provider = metadata.ls_provider
+      }
     }
-    let modelData = args[0]
-    if (modelData.ls_model_name) {
-      generation.model = modelData.ls_model_name
-    }
-    if (modelData.ls_provider) {
-      generation.provider = modelData.ls_provider
-    }
-    if (serialized && serialized.kwargs && serialized.kwargs.openai_api_base) {
+    if (serialized && 'kwargs' in serialized && serialized.kwargs.openai_api_base) {
       generation.baseUrl = serialized.kwargs.openai_api_base
     }
     this.runs[runId] = generation
@@ -361,7 +343,7 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     return parentRunId
   }
 
-  private _popRunAndCaptureTraceOrSpan(runId: string, parentRunId: string | undefined, outputs: any): void {
+  private _popRunAndCaptureTraceOrSpan(runId: string, parentRunId: string | undefined, outputs: ChainValues | DocumentInterface[] | AgentFinish | Error | any): void {
     const traceId = this._getTraceId(runId)
     this._popParentOfRun(runId)
     const run = this._popRunMetadata(runId)
@@ -378,7 +360,7 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     traceId: string,
     runId: string,
     run: SpanMetadata,
-    outputs: any,
+    outputs: ChainValues | DocumentInterface[] | AgentFinish | Error | any,
     parentRunId?: string
   ): void {
     const eventName = parentRunId ? '$ai_span' : '$ai_trace'
@@ -411,7 +393,7 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     })
   }
 
-  private _popRunAndCaptureGeneration(runId: string, parentRunId: string | undefined, response: any): void {
+  private _popRunAndCaptureGeneration(runId: string, parentRunId: string | undefined, response: LLMResult | Error): void {
     const traceId = this._getTraceId(runId)
     this._popParentOfRun(runId)
     const run = this._popRunMetadata(runId)
@@ -427,9 +409,10 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     traceId: string,
     runId: string,
     run: GenerationMetadata,
-    output: any,
+    output: LLMResult | Error,
     parentRunId?: string
   ): void {
+    console.log('CAPTURE RUN', run)
     const latency = run.endTime ? (run.endTime - run.startTime) / 1000 : 0
     const eventProperties: Record<string, any> = {
       $ai_trace_id: traceId,
@@ -451,7 +434,7 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
       eventProperties['$ai_is_error'] = true
     } else {
       // Handle token usage
-      const [inputTokens, outputTokens] = parseUsage(output)
+      const [inputTokens, outputTokens] = this.parseUsage(output)
       eventProperties['$ai_input_tokens'] = inputTokens
       eventProperties['$ai_output_tokens'] = outputTokens
 
@@ -461,18 +444,9 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
         const lastGeneration = output.generations[output.generations.length - 1]
         if (Array.isArray(lastGeneration)) {
           completions = lastGeneration.map((gen) => {
-            if (gen.message) {
-              // Handle ChatGeneration
-              return this._convertMessageToDict(gen.message)
-            } else {
-              // Handle regular Generation
-              return { role: 'assistant', content: gen.text || gen.content }
-            }
+            return { role: 'assistant', content: gen.text }
           })
         }
-      } else if (output.content) {
-        // Simple content response
-        completions = [{ role: 'assistant', content: output.content }]
       }
 
       if (completions) {
@@ -542,5 +516,73 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
       messageDict = { ...messageDict, ...message.additional_kwargs }
     }
     return messageDict
+  }
+
+  private _parseUsageModel(usage: any): [number, number] {
+    const conversionList: Array<[string, 'input' | 'output']> = [
+      ["promptTokens", "input"],
+      ["completionTokens", "output"],
+      ["input_tokens", "input"],
+      ["output_tokens", "output"],
+      ["prompt_token_count", "input"],
+      ["candidates_token_count", "output"],
+      ["inputTokenCount", "input"],
+      ["outputTokenCount", "output"],
+      ["input_token_count", "input"],
+      ["generated_token_count", "output"],
+    ];
+
+    const parsedUsage = conversionList.reduce(
+      (acc: { input: number; output: number }, [modelKey, typeKey]) => {
+        const value = usage[modelKey];
+        if (value != null) {
+          const finalCount = Array.isArray(value)
+            ? value.reduce((sum: number, tokenCount: number) => sum + tokenCount, 0)
+            : value;
+          acc[typeKey] = finalCount;
+        }
+        return acc;
+      },
+      { input: 0, output: 0 }
+    );
+
+    return [parsedUsage.input, parsedUsage.output];
+  }
+
+  private parseUsage(response: LLMResult): [number, number] {
+    let llmUsage: [number, number] = [0, 0];
+    const llmUsageKeys = ["token_usage", "usage", "tokenUsage"];
+
+    if (response.llmOutput != null) {
+      const key = llmUsageKeys.find((k) => response.llmOutput![k] != null);
+      if (key) {
+        llmUsage = this._parseUsageModel(response.llmOutput[key]);
+      }
+    }
+
+    // If top-level usage info was not found, try checking the generations.
+    if ((llmUsage[0] === null && llmUsage[1] === null) && response.generations) {
+      for (const generation of response.generations) {
+        for (const genChunk of generation) {
+          if (genChunk.generationInfo?.usage_metadata) {
+            llmUsage = this._parseUsageModel(genChunk.generationInfo.usage_metadata);
+            return llmUsage;
+          }
+
+          const messageChunk = genChunk.generationInfo ?? {};
+          const responseMetadata = messageChunk.response_metadata ?? {};
+          const chunkUsage =
+            responseMetadata["usage"] ??
+            responseMetadata["amazon-bedrock-invocationMetrics"] ??
+            messageChunk.usage_metadata;
+          if (chunkUsage) {
+            llmUsage = this._parseUsageModel(chunkUsage);
+            return llmUsage;
+          }
+        }
+      }
+    }
+
+    return llmUsage;
   }
 }

@@ -17,7 +17,13 @@ interface ClientOptions {
   posthogGroups?: Record<string, any>
   posthogModelOverride?: string
   posthogProviderOverride?: string
+  posthogCostOverride?: CostOverride
 }
+
+interface CostOverride {
+  inputTokens: number
+  outputTokens: number
+} 
 
 interface CreateInstrumentationMiddlewareOptions {
   posthogDistinctId: string
@@ -27,6 +33,7 @@ interface CreateInstrumentationMiddlewareOptions {
   posthogGroups?: Record<string, any>
   posthogModelOverride?: string
   posthogProviderOverride?: string
+  posthogCostOverride?: CostOverride
 }
 
 interface PostHogInput {
