@@ -18,8 +18,7 @@ jobs:
           node-version: 18
 
       - run: yarn install
-      - run: yarn test
-      - run: yarn test:rn
+      - run: yarn test:all
 
   lint:
     timeout-minutes: 3
