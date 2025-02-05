@@ -179,7 +179,6 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
   }
 
   public handleToolEnd(output: any, runId: string, parentRunId?: string, tags?: string[]): void {
-    console.log('TOOL END', { runId, parentRunId })
     this._logDebugEvent('on_tool_end', runId, parentRunId, { output, tags })
     this._popRunAndCaptureTraceOrSpan(runId, parentRunId, output)
   }
@@ -358,9 +357,6 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
       eventProperties['$ai_parent_id'] = parentRunId
     }
 
-    if (traceId == runId) {
-      console.log('CAPTURE RUN', { run, outputs, runId, traceId })
-    }
     Object.assign(eventProperties, this.properties)
     if (!this.distinctId) {
       eventProperties['$process_person_profile'] = false
