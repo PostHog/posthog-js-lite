@@ -550,7 +550,7 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     }
 
     // If top-level usage info was not found, try checking the generations.
-    if (llmUsage[0] === null && llmUsage[1] === null && response.generations) {
+    if (llmUsage[0] === 0 && llmUsage[1] === 0 && response.generations) {
       for (const generation of response.generations) {
         for (const genChunk of generation) {
           if (genChunk.generationInfo?.usage_metadata) {

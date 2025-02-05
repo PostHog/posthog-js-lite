@@ -1,10 +1,5 @@
 import { wrapLanguageModel } from 'ai'
-import type {
-  LanguageModelV1,
-  LanguageModelV1Middleware,
-  LanguageModelV1Prompt,
-  LanguageModelV1StreamPart,
-} from 'ai'
+import type { LanguageModelV1, LanguageModelV1Middleware, LanguageModelV1Prompt, LanguageModelV1StreamPart } from 'ai'
 import { v4 as uuidv4 } from 'uuid'
 import { PostHog } from 'posthog-node'
 import { sendEventToPosthog } from '../utils'
