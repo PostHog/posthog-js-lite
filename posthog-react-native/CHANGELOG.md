@@ -1,5 +1,7 @@
 # Next
 
+# 3.7.0 - 2025-02-05
+
 1. chore: set locale and timezone using the react-native-localize library
 
 # 3.6.4 - 2025-02-03
