@@ -80,6 +80,7 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     parentRunId?: string,
     tags?: string[],
     metadata?: Record<string, unknown>,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     runType?: string,
     runName?: string
   ): void {
@@ -93,6 +94,7 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     runId: string,
     parentRunId?: string,
     tags?: string[],
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     kwargs?: { inputs?: Record<string, unknown> }
   ): void {
     this._logDebugEvent('on_chain_end', runId, parentRunId, { outputs, tags })
@@ -104,6 +106,7 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     runId: string,
     parentRunId?: string,
     tags?: string[],
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     kwargs?: { inputs?: Record<string, unknown> }
   ): void {
     this._logDebugEvent('on_chain_error', runId, parentRunId, { error, tags })
@@ -147,6 +150,7 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     runId: string,
     parentRunId?: string,
     tags?: string[],
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     extraParams?: Record<string, unknown>
   ): void {
     this._logDebugEvent('on_llm_end', runId, parentRunId, { output, tags })
@@ -158,6 +162,7 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     runId: string,
     parentRunId?: string,
     tags?: string[],
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     extraParams?: Record<string, unknown>
   ): void {
     this._logDebugEvent('on_llm_error', runId, parentRunId, { err, tags })
