@@ -20,7 +20,7 @@
     "test": "jest posthog-core posthog-node posthog-web posthog-ai",
     "test:node": "jest posthog-node",
     "test:core": "jest posthog-core",
-    "test:web": "jest posthog-core",
+    "test:web": "jest posthog-web",
     "test:ai": "jest posthog-ai",
     "test:rn": "cd posthog-react-native && yarn test",
     "test:all": "jest posthog-core posthog-node posthog-ai posthog-web && yarn test:rn",

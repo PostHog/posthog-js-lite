@@ -7,4 +7,4 @@ Find the changelogs for the respective libraries in their folders:
 3. [posthog-web](https://github.com/PostHog/posthog-js-lite/blob/main/posthog-web/CHANGELOG.md)
 4. [posthog-ai](https://github.com/PostHog/posthog-js-lite/blob/main/posthog-ai/CHANGELOG.md)
 
-For Session Replay, See [posthog-react-native-session-replay](https://github.com/PostHog/posthog-react-native-session-replay/CHANGELOG.md)
+For Session Replay, See [posthog-react-native-session-replay](https://github.com/PostHog/posthog-react-native-session-replay/blob/main/CHANGELOG.md)
