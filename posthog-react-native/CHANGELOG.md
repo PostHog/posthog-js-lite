@@ -1,5 +1,7 @@
 # Next
 
+1. chore: set locale and timezone using the react-native-localize library
+
 # 3.6.4 - 2025-02-03
 
 1. fix: improve session replay linked flag type handling
