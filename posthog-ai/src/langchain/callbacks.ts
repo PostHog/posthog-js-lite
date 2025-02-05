@@ -373,7 +373,7 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
       eventProperties['$ai_output_state'] = withPrivacyMode(this.client, this.privacyMode, outputs)
     }
     this.client.capture({
-      distinctId: (this.distinctId as string) || runId,
+      distinctId: this.distinctId ? this.distinctId.toString() : runId,
       event: eventName,
       properties: eventProperties,
       groups: this.groups,
@@ -388,7 +388,7 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     const traceId = this._getTraceId(runId)
     this._popParentOfRun(runId)
     const run = this._popRunMetadata(runId)
-    if (!run || !('modelParams' in run)) {
+    if (!run || typeof run !== 'object' || !('modelParams' in run)) {
       console.warn(`Run ${runId} is not a generation, but attempted to be captured as such.`)
       return
     }
@@ -450,7 +450,7 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     }
 
     this.client.capture({
-      distinctId: (this.distinctId as string) || traceId,
+      distinctId: this.distinctId ? this.distinctId.toString() : traceId,
       event: '$ai_generation',
       properties: eventProperties,
       groups: this.groups,
@@ -466,7 +466,7 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
   private _getLangchainRunName(serialized: any, ...args: any[]): string | undefined {
     if (args && args.length > 0) {
       for (const arg of args) {
-        if (arg && arg.name) return arg.name
+        if (arg && typeof arg === 'object' && 'name' in arg) return arg.name
       }
     }
     if (serialized && serialized.name) return serialized.name
@@ -544,7 +544,7 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     const llmUsageKeys = ['token_usage', 'usage', 'tokenUsage']
 
     if (response.llmOutput != null) {
-      const key = llmUsageKeys.find((k) => response.llmOutput![k] != null)
+      const key = llmUsageKeys.find((k) => response.llmOutput?.[k] != null)
       if (key) {
         llmUsage = this._parseUsageModel(response.llmOutput[key])
       }
