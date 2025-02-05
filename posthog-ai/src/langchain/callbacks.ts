@@ -178,23 +178,13 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     this._setTraceOrSpanMetadata(tool, input, runId, parentRunId, metadata, tags, runName)
   }
 
-  public handleToolEnd(
-    output: any,
-    runId: string,
-    parentRunId?: string,
-    tags?: string[]
-  ): void {
+  public handleToolEnd(output: any, runId: string, parentRunId?: string, tags?: string[]): void {
     console.log('TOOL END', { runId, parentRunId })
     this._logDebugEvent('on_tool_end', runId, parentRunId, { output, tags })
     this._popRunAndCaptureTraceOrSpan(runId, parentRunId, output)
   }
 
-  public handleToolError(
-    err: Error,
-    runId: string,
-    parentRunId?: string,
-    tags?: string[]
-  ): void {
+  public handleToolError(err: Error, runId: string, parentRunId?: string, tags?: string[]): void {
     this._logDebugEvent('on_tool_error', runId, parentRunId, { err, tags })
     this._popRunAndCaptureTraceOrSpan(runId, parentRunId, err)
   }
@@ -223,33 +213,18 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     this._popRunAndCaptureTraceOrSpan(runId, parentRunId, documents)
   }
 
-  public handleRetrieverError(
-    err: Error,
-    runId: string,
-    parentRunId?: string,
-    tags?: string[]
-  ): void {
+  public handleRetrieverError(err: Error, runId: string, parentRunId?: string, tags?: string[]): void {
     this._logDebugEvent('on_retriever_error', runId, parentRunId, { err, tags })
     this._popRunAndCaptureTraceOrSpan(runId, parentRunId, err)
   }
 
-  public handleAgentAction(
-    action: AgentAction,
-    runId: string,
-    parentRunId?: string,
-    tags?: string[]
-  ): void {
+  public handleAgentAction(action: AgentAction, runId: string, parentRunId?: string, tags?: string[]): void {
     this._logDebugEvent('on_agent_action', runId, parentRunId, { action, tags })
     this._setParentOfRun(runId, parentRunId)
     this._setTraceOrSpanMetadata(null, action, runId, parentRunId)
   }
 
-  public handleAgentEnd(
-    action: AgentFinish,
-    runId: string,
-    parentRunId?: string,
-    tags?: string[]
-  ): void {
+  public handleAgentEnd(action: AgentFinish, runId: string, parentRunId?: string, tags?: string[]): void {
     this._logDebugEvent('on_agent_finish', runId, parentRunId, { action, tags })
     this._popRunAndCaptureTraceOrSpan(runId, parentRunId, action)
   }
@@ -346,7 +321,11 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     return parentRunId
   }
 
-  private _popRunAndCaptureTraceOrSpan(runId: string, parentRunId: string | undefined, outputs: ChainValues | DocumentInterface[] | AgentFinish | Error | any): void {
+  private _popRunAndCaptureTraceOrSpan(
+    runId: string,
+    parentRunId: string | undefined,
+    outputs: ChainValues | DocumentInterface[] | AgentFinish | Error | any
+  ): void {
     const traceId = this._getTraceId(runId)
     this._popParentOfRun(runId)
     const run = this._popRunMetadata(runId)
@@ -400,7 +379,11 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     })
   }
 
-  private _popRunAndCaptureGeneration(runId: string, parentRunId: string | undefined, response: LLMResult | Error): void {
+  private _popRunAndCaptureGeneration(
+    runId: string,
+    parentRunId: string | undefined,
+    response: LLMResult | Error
+  ): void {
     const traceId = this._getTraceId(runId)
     this._popParentOfRun(runId)
     const run = this._popRunMetadata(runId)
@@ -526,69 +509,69 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
 
   private _parseUsageModel(usage: any): [number, number] {
     const conversionList: Array<[string, 'input' | 'output']> = [
-      ["promptTokens", "input"],
-      ["completionTokens", "output"],
-      ["input_tokens", "input"],
-      ["output_tokens", "output"],
-      ["prompt_token_count", "input"],
-      ["candidates_token_count", "output"],
-      ["inputTokenCount", "input"],
-      ["outputTokenCount", "output"],
-      ["input_token_count", "input"],
-      ["generated_token_count", "output"],
-    ];
+      ['promptTokens', 'input'],
+      ['completionTokens', 'output'],
+      ['input_tokens', 'input'],
+      ['output_tokens', 'output'],
+      ['prompt_token_count', 'input'],
+      ['candidates_token_count', 'output'],
+      ['inputTokenCount', 'input'],
+      ['outputTokenCount', 'output'],
+      ['input_token_count', 'input'],
+      ['generated_token_count', 'output'],
+    ]
 
     const parsedUsage = conversionList.reduce(
       (acc: { input: number; output: number }, [modelKey, typeKey]) => {
-        const value = usage[modelKey];
+        const value = usage[modelKey]
         if (value != null) {
           const finalCount = Array.isArray(value)
             ? value.reduce((sum: number, tokenCount: number) => sum + tokenCount, 0)
-            : value;
-          acc[typeKey] = finalCount;
+            : value
+          acc[typeKey] = finalCount
         }
-        return acc;
+        return acc
       },
       { input: 0, output: 0 }
-    );
+    )
 
-    return [parsedUsage.input, parsedUsage.output];
+    return [parsedUsage.input, parsedUsage.output]
   }
 
   private parseUsage(response: LLMResult): [number, number] {
-    let llmUsage: [number, number] = [0, 0];
-    const llmUsageKeys = ["token_usage", "usage", "tokenUsage"];
+    let llmUsage: [number, number] = [0, 0]
+    const llmUsageKeys = ['token_usage', 'usage', 'tokenUsage']
 
     if (response.llmOutput != null) {
-      const key = llmUsageKeys.find((k) => response.llmOutput![k] != null);
+      const key = llmUsageKeys.find((k) => response.llmOutput![k] != null)
       if (key) {
-        llmUsage = this._parseUsageModel(response.llmOutput[key]);
+        llmUsage = this._parseUsageModel(response.llmOutput[key])
       }
     }
 
     // If top-level usage info was not found, try checking the generations.
-    if ((llmUsage[0] === null && llmUsage[1] === null) && response.generations) {
+    if (llmUsage[0] === null && llmUsage[1] === null && response.generations) {
       for (const generation of response.generations) {
         for (const genChunk of generation) {
           if (genChunk.generationInfo?.usage_metadata) {
-            llmUsage = this._parseUsageModel(genChunk.generationInfo.usage_metadata);
-            return llmUsage;
+            llmUsage = this._parseUsageModel(genChunk.generationInfo.usage_metadata)
+            return llmUsage
           }
 
-          const messageChunk = genChunk.generationInfo ?? {};
-          const responseMetadata = messageChunk.response_metadata ?? {};
+          const messageChunk = genChunk.generationInfo ?? {}
+          const responseMetadata = messageChunk.response_metadata ?? {}
           const chunkUsage =
-            responseMetadata["usage"] ??
-            responseMetadata["amazon-bedrock-invocationMetrics"] ??
-            messageChunk.usage_metadata;
+            responseMetadata['usage'] ??
+            responseMetadata['amazon-bedrock-invocationMetrics'] ??
+            messageChunk.usage_metadata
           if (chunkUsage) {
-            llmUsage = this._parseUsageModel(chunkUsage);
-            return llmUsage;
+            llmUsage = this._parseUsageModel(chunkUsage)
+            return llmUsage
           }
         }
       }
     }
 
-    return llmUsage;
+    return llmUsage
   }
 }

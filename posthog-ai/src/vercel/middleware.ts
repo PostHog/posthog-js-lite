@@ -1,7 +1,7 @@
-import { experimental_wrapLanguageModel as wrapLanguageModel } from 'ai'
+import { wrapLanguageModel } from 'ai'
 import type {
   LanguageModelV1,
-  Experimental_LanguageModelV1Middleware as LanguageModelV1Middleware,
+  LanguageModelV1Middleware,
   LanguageModelV1Prompt,
   LanguageModelV1StreamPart,
 } from 'ai'
@@ -23,7 +23,7 @@ interface ClientOptions {
 interface CostOverride {
   inputTokens: number
   outputTokens: number
-} 
+}
 
 interface CreateInstrumentationMiddlewareOptions {
   posthogDistinctId: string

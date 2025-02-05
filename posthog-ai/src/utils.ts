@@ -14,7 +14,7 @@ export interface MonitoringParams {
 }
 
 export const getModelParams = (
-  params: (ChatCompletionCreateParamsBase | MessageCreateParams) & MonitoringParams | null
+  params: ((ChatCompletionCreateParamsBase | MessageCreateParams) & MonitoringParams) | null
 ): Record<string, any> => {
   if (!params) {
     return {}
