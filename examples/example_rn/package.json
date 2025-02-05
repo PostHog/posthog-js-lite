@@ -24,6 +24,7 @@
     "react-native": "0.73.2",
     "react-native-device-info": "^10.12.0",
     "react-native-navigation": "^7.37.2",
+    "react-native-localize": "^3.0.0",
     "posthog-react-native-session-replay": "^0.1"
   },
   "devDependencies": {

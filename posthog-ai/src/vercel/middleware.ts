@@ -85,7 +85,7 @@ export const createInstrumentationMiddleware = (
   const middleware: LanguageModelV1Middleware = {
     wrapGenerate: async ({ doGenerate, params }) => {
       const startTime = Date.now()
-      let mergedParams = {
+      const mergedParams = {
         ...options,
         ...mapVercelParams(params),
       }
@@ -145,7 +145,7 @@ export const createInstrumentationMiddleware = (
       const startTime = Date.now()
       let generatedText = ''
       let usage: { inputTokens?: number; outputTokens?: number } = {}
-      let mergedParams = {
+      const mergedParams = {
         ...options,
         ...mapVercelParams(params),
       }
