@@ -33,6 +33,7 @@
     "react-native": "^0.69.1",
     "react-native-device-info": "^10.3.0",
     "react-native-navigation": "^6.0.0",
+    "react-native-localize": "^3.0.0",
     "posthog-react-native-session-replay": "^0.1"
   },
   "peerDependencies": {

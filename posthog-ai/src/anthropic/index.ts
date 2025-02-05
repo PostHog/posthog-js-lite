@@ -72,7 +72,7 @@ export class WrappedMessages extends AnthropicOriginal.Messages {
       return parentPromise.then((value) => {
         const passThroughStream = new PassThrough({ objectMode: true })
         let accumulatedContent = ''
-        let usage: { inputTokens: number; outputTokens: number } = {
+        const usage: { inputTokens: number; outputTokens: number } = {
           inputTokens: 0,
           outputTokens: 0,
         }
