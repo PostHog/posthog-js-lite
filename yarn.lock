@@ -24,6 +24,7 @@
   dependencies:
     json-schema "^0.4.0"
 
+<<<<<<< HEAD
 "@ai-sdk/react@1.1.8":
   version "1.1.8"
   resolved "https://registry.yarnpkg.com/@ai-sdk/react/-/react-1.1.8.tgz#3cf160e6932d81b5eb3f777b95ddcc56affaf59c"
@@ -38,6 +39,22 @@
   version "1.1.8"
   resolved "https://registry.yarnpkg.com/@ai-sdk/ui-utils/-/ui-utils-1.1.8.tgz#8937ff092f48ce5421e27d1d4ebe09ced69b0ef4"
   integrity sha512-nbok53K1EalO2sZjBLFB33cqs+8SxiL6pe7ekZ7+5f2MJTwdvpShl6d9U4O8fO3DnZ9pYLzaVC0XNMxnJt030Q==
+=======
+"@ai-sdk/react@1.1.9":
+  version "1.1.9"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/react/-/react-1.1.9.tgz#9ec1f2637071a8e65108d10c4774e2cd31f1f013"
+  integrity sha512-2si293+NYs3WbPfHXSZ4/71NtYV0zxYhhHSL4H1EPyHU9Gf/H81rhjsslvt45mguPecPkMG19/VIXDjJ4uTwsw==
+  dependencies:
+    "@ai-sdk/provider-utils" "2.1.6"
+    "@ai-sdk/ui-utils" "1.1.9"
+    swr "^2.2.5"
+    throttleit "2.1.0"
+
+"@ai-sdk/ui-utils@1.1.9":
+  version "1.1.9"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/ui-utils/-/ui-utils-1.1.9.tgz#37d9125c359c5de85026a9c5cb17b42e81d9dcd6"
+  integrity sha512-o0tDopdtHqgr9FAx0qSkdwPUDSdX+4l42YOn70zvs6+O+PILeTpf2YYV5Xr32TbNfSUq1DWLLhU1O7/3Dsxm1Q==
+>>>>>>> main
   dependencies:
     "@ai-sdk/provider" "1.0.7"
     "@ai-sdk/provider-utils" "2.1.6"
@@ -2941,6 +2958,7 @@ aggregate-error@^3.0.0:
     indent-string "^4.0.0"
 
 ai@^4.0.0:
+<<<<<<< HEAD
   version "4.1.16"
   resolved "https://registry.yarnpkg.com/ai/-/ai-4.1.16.tgz#6cbac391e36655def0ccab61bd46f847d0c966fb"
   integrity sha512-4l8Dl2+reG210/l19E/D9NrpfumJuiyih7EehVm1wdMhz4/rSLjVewxkcmdcTczPee3/axB5Rp5h8q5hyIYB/g==
@@ -2949,6 +2967,16 @@ ai@^4.0.0:
     "@ai-sdk/provider-utils" "2.1.6"
     "@ai-sdk/react" "1.1.8"
     "@ai-sdk/ui-utils" "1.1.8"
+=======
+  version "4.1.19"
+  resolved "https://registry.yarnpkg.com/ai/-/ai-4.1.19.tgz#bd67eb2d502c6df5c20f7fe4d18f3c8d2d9a564e"
+  integrity sha512-Xx498vbFVN4Y3F4kWF59ojLyn/d++NbSZwENq1zuSFW4OjwzTf79jtMxD+BYeMiDH+mgIrmROY/ONtqMOchZGw==
+  dependencies:
+    "@ai-sdk/provider" "1.0.7"
+    "@ai-sdk/provider-utils" "2.1.6"
+    "@ai-sdk/react" "1.1.9"
+    "@ai-sdk/ui-utils" "1.1.9"
+>>>>>>> main
     "@opentelemetry/api" "1.9.0"
     jsondiffpatch "0.6.0"
 
@@ -8996,6 +9024,11 @@ react-native-gradle-plugin@^0.0.7:
   version "0.0.7"
   resolved "https://registry.yarnpkg.com/react-native-gradle-plugin/-/react-native-gradle-plugin-0.0.7.tgz#96602f909745239deab7b589443f14fce5da2056"
   integrity sha512-+4JpbIx42zGTONhBTIXSyfyHICHC29VTvhkkoUOJAh/XHPEixpuBduYgf6Y4y9wsN1ARlQhBBoptTvXvAFQf5g==
+
+react-native-localize@^3.0.0:
+  version "3.4.1"
+  resolved "https://registry.yarnpkg.com/react-native-localize/-/react-native-localize-3.4.1.tgz#df07c13231b4e8cc949e68513b124105f861229c"
+  integrity sha512-NJqJGBUpHtD/MpLCCkrNiqNZ+xFwbHCivxaoN1Oeb8tBAiZr/IqgP3E+MgnqmmdTMOJ33llUfiW3EM6pEIb33w==
 
 react-native-navigation@^6.0.0:
   version "6.12.2"
