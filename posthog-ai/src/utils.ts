@@ -11,6 +11,9 @@ export interface MonitoringParams {
   posthogProperties?: Record<string, any>
   posthogPrivacyMode?: boolean
   posthogGroups?: Record<string, any>
+  posthogModelOverride?: string
+  posthogProviderOverride?: string
+  posthogCostOverride?: CostOverride
 }
 
 export interface CostOverride {
@@ -119,7 +122,6 @@ export type SendEventToPosthogParams = {
   params: (ChatCompletionCreateParamsBase | MessageCreateParams) & MonitoringParams
   isError?: boolean
   error?: string
-  costOverride?: CostOverride
 }
 
 export const sendEventToPosthog = ({
@@ -137,7 +139,6 @@ export const sendEventToPosthog = ({
   usage = {},
   isError = false,
   error,
-  costOverride,
 }: SendEventToPosthogParams): void => {
   if (client.capture) {
     let errorData = {}
@@ -148,9 +149,9 @@ export const sendEventToPosthog = ({
       }
     }
     let costOverrideData = {}
-    if (costOverride) {
-      const inputCostUSD = costOverride.inputCost ?? 0 * (usage.inputTokens ?? 0)
-      const outputCostUSD = costOverride.outputCost ?? 0 * (usage.outputTokens ?? 0)
+    if (params.posthogCostOverride) {
+      const inputCostUSD = (params.posthogCostOverride.inputCost ?? 0) * (usage.inputTokens ?? 0)
+      const outputCostUSD = (params.posthogCostOverride.outputCost ?? 0) * (usage.outputTokens ?? 0)
       costOverrideData = {
         $ai_input_cost_usd: inputCostUSD,
         $ai_output_cost_usd: outputCostUSD,
@@ -162,8 +163,8 @@ export const sendEventToPosthog = ({
       distinctId: distinctId ?? traceId,
       event: '$ai_generation',
       properties: {
-        $ai_provider: provider,
-        $ai_model: model,
+        $ai_provider: params.posthogProviderOverride ?? provider,
+        $ai_model: params.posthogModelOverride ?? model,
         $ai_model_parameters: getModelParams(params),
         $ai_input: withPrivacyMode(client, params.posthogPrivacyMode ?? false, input),
         $ai_output_choices: withPrivacyMode(client, params.posthogPrivacyMode ?? false, output),
