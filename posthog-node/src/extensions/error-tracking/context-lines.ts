@@ -1,10 +1,10 @@
 import { createReadStream } from 'node:fs'
 import { createInterface } from 'node:readline'
 import { StackFrame } from './types'
-import { LRUMap } from './lru-map'
+import { ReduceableCache } from './reduceable-cache'
 
-const LRU_FILE_CONTENTS_CACHE = new LRUMap<string, Record<number, string>>(10)
-const LRU_FILE_CONTENTS_FS_READ_FAILED = new LRUMap<string, 1>(20)
+const LRU_FILE_CONTENTS_CACHE = new ReduceableCache<string, Record<number, string>>(25)
+const LRU_FILE_CONTENTS_FS_READ_FAILED = new ReduceableCache<string, 1>(20)
 const DEFAULT_LINES_OF_CONTEXT = 7
 // Determines the upper bound of lineno/colno that we will attempt to read. Large colno values are likely to be
 // minified code while large lineno values are likely to be bundled code.
@@ -79,6 +79,10 @@ export async function addSourceContext(frames: StackFrame[]): Promise<StackFrame
   if (frames && frames.length > 0) {
     addSourceContextToFrames(frames, LRU_FILE_CONTENTS_CACHE)
   }
+
+  // Once we're finished processing an exception reduce the files held in the cache
+  // so that we don't indefinetly increase the size of this map
+  LRU_FILE_CONTENTS_CACHE.reduce()
 
   return frames
 }
@@ -164,7 +168,7 @@ function getContextLinesFromFile(path: string, ranges: ReadlineRange[], output: 
 }
 
 /** Adds context lines to frames */
-function addSourceContextToFrames(frames: StackFrame[], cache: LRUMap<string, Record<number, string>>): void {
+function addSourceContextToFrames(frames: StackFrame[], cache: ReduceableCache<string, Record<number, string>>): void {
   for (const frame of frames) {
     // Only add context if we have a filename and it hasn't already been added
     if (frame.filename && frame.context_line === undefined && typeof frame.lineno === 'number') {
@@ -339,7 +343,7 @@ function makeRangeEnd(line: number): number {
 /**
  * Get or init map value
  */
-function emplace<T extends LRUMap<K, V>, K extends string, V>(map: T, key: K, contents: V): V {
+function emplace<T extends ReduceableCache<K, V>, K extends string, V>(map: T, key: K, contents: V): V {
   const value = map.get(key)
 
   if (value === undefined) {

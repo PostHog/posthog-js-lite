@@ -1,14 +1,9 @@
 /** A simple Least Recently Used map */
-export class LRUMap<K, V> {
+export class ReduceableCache<K, V> {
   private readonly _cache: Map<K, V>
 
   public constructor(private readonly _maxSize: number) {
     this._cache = new Map<K, V>()
-  }
-
-  /** Get the current size of the cache */
-  public get size(): number {
-    return this._cache.size
   }
 
   /** Get an entry or undefined if it was not in the cache. Re-inserts to update the recently used order */
@@ -25,39 +20,17 @@ export class LRUMap<K, V> {
 
   /** Insert an entry and evict an older entry if we've reached maxSize */
   public set(key: K, value: V): void {
-    if (this._cache.size >= this._maxSize) {
+    this._cache.set(key, value)
+  }
+
+  /** Remove an entry and return the entry if it was in the cache */
+  public reduce(): void {
+    while (this._cache.size >= this._maxSize) {
       const value = this._cache.keys().next().value
       if (value) {
         // keys() returns an iterator in insertion order so keys().next() gives us the oldest key
         this._cache.delete(value)
       }
     }
-    this._cache.set(key, value)
-  }
-
-  /** Remove an entry and return the entry if it was in the cache */
-  public remove(key: K): V | undefined {
-    const value = this._cache.get(key)
-    if (value) {
-      this._cache.delete(key)
-    }
-    return value
-  }
-
-  /** Clear all entries */
-  public clear(): void {
-    this._cache.clear()
-  }
-
-  /** Get all the keys */
-  public keys(): Array<K> {
-    return Array.from(this._cache.keys())
-  }
-
-  /** Get all the values */
-  public values(): Array<V> {
-    const values: V[] = []
-    this._cache.forEach((value) => values.push(value))
-    return values
   }
 }
