@@ -1,6 +1,6 @@
 import { EventHint } from 'posthog-node/src/extensions/error-tracking/types'
 
-type ErrorHandler = { _errorHandler: boolean } & ((error: Error) => void)
+type ErrorHandler = { _posthogErrorHandler: boolean } & ((error: Error) => void)
 type TaggedListener = NodeJS.UncaughtExceptionListener & {
   tag?: string
 }
@@ -25,7 +25,7 @@ function makeUncaughtExceptionHandler(
             // as soon as we're using domains this listener is attached by node itself
             listener.name !== 'domainUncaughtExceptionClear' &&
             // the handler we register in this integration
-            (listener as ErrorHandler)._errorHandler !== true
+            (listener as ErrorHandler)._posthogErrorHandler !== true
           )
         }
       ).length
@@ -44,7 +44,7 @@ function makeUncaughtExceptionHandler(
         onFatalFn()
       }
     },
-    { _errorHandler: true }
+    { _posthogErrorHandler: true }
   )
 }
 
