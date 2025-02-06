@@ -80,7 +80,7 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     parentRunId?: string,
     tags?: string[],
     metadata?: Record<string, unknown>,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     runType?: string,
     runName?: string
   ): void {
@@ -333,7 +333,9 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     const traceId = this._getTraceId(runId)
     this._popParentOfRun(runId)
     const run = this._popRunMetadata(runId)
-    if (!run) return
+    if (!run) {
+      return
+    }
     if ('modelParams' in run) {
       console.warn(`Run ${runId} is a generation, but attempted to be captured as a trace/span.`)
       return
@@ -466,10 +468,14 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
   private _getLangchainRunName(serialized: any, ...args: any[]): string | undefined {
     if (args && args.length > 0) {
       for (const arg of args) {
-        if (arg && typeof arg === 'object' && 'name' in arg) return arg.name
+        if (arg && typeof arg === 'object' && 'name' in arg) {
+          return arg.name
+        }
       }
     }
-    if (serialized && serialized.name) return serialized.name
+    if (serialized && serialized.name) {
+      return serialized.name
+    }
     if (serialized && serialized.id) {
       return Array.isArray(serialized.id) ? serialized.id[serialized.id.length - 1] : serialized.id
     }
