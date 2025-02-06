@@ -1,5 +1,12 @@
 # Next
 
+# 4.5.0 - 2025-02-06
+
+## Added
+
+1. Adds manual exception capture with full stack trace processing via `captureException` function
+2. Adds ability to enable exception autocapture via the `enableExceptionAutocapture` init option
+
 # 4.4.1 - 2025-01-21
 
 - Add option privacyMode to remove input and output from LLM Observability
