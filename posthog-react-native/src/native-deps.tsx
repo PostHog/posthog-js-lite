@@ -6,6 +6,7 @@ import { OptionalExpoFileSystem } from './optional/OptionalExpoFileSystem'
 import { OptionalExpoLocalization } from './optional/OptionalExpoLocalization'
 import { OptionalReactNativeDeviceInfo } from './optional/OptionalReactNativeDeviceInfo'
 import { PostHogCustomAppProperties, PostHogCustomStorage } from './types'
+import { OptionalReactNativeLocalize } from './optional/OptionalReactNativeLocalize'
 
 export const getAppProperties = (): PostHogCustomAppProperties => {
   let deviceType = 'Mobile'
@@ -58,6 +59,27 @@ export const getAppProperties = (): PostHogCustomAppProperties => {
   if (OptionalExpoLocalization) {
     properties.$locale = OptionalExpoLocalization.locale
     properties.$timezone = OptionalExpoLocalization.timezone
+  } else if (OptionalReactNativeLocalize) {
+    const localesFn = OptionalReactNativeLocalize.getLocales
+    if (localesFn) {
+      const locales = localesFn()
+
+      if (locales && locales.length > 0) {
+        const languageTag = locales[0].languageTag
+        if (languageTag) {
+          properties.$locale = languageTag
+        }
+      }
+    }
+
+    const timezoneFn = OptionalReactNativeLocalize.getTimeZone
+    if (timezoneFn) {
+      const timezone = timezoneFn()
+
+      if (timezone) {
+        properties.$timezone = timezone
+      }
+    }
   }
 
   return properties
