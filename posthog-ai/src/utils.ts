@@ -13,6 +13,11 @@ export interface MonitoringParams {
   posthogGroups?: Record<string, any>
 }
 
+export interface CostOverride {
+  inputCost: number
+  outputCost: number
+}
+
 export const getModelParams = (
   params: ((ChatCompletionCreateParamsBase | MessageCreateParams) & MonitoringParams) | null
 ): Record<string, any> => {
@@ -114,6 +119,7 @@ export type SendEventToPosthogParams = {
   params: (ChatCompletionCreateParamsBase | MessageCreateParams) & MonitoringParams
   isError?: boolean
   error?: string
+  costOverride?: CostOverride
 }
 
 export const sendEventToPosthog = ({
@@ -131,6 +137,7 @@ export const sendEventToPosthog = ({
   usage = {},
   isError = false,
   error,
+  costOverride,
 }: SendEventToPosthogParams): void => {
   if (client.capture) {
     let errorData = {}
@@ -140,6 +147,17 @@ export const sendEventToPosthog = ({
         $ai_error: error,
       }
     }
+    let costOverrideData = {}
+    if (costOverride) {
+      const inputCostUSD = costOverride.inputCost ?? 0 * (usage.inputTokens ?? 0)
+      const outputCostUSD = costOverride.outputCost ?? 0 * (usage.outputTokens ?? 0)
+      costOverrideData = {
+        $ai_input_cost_usd: inputCostUSD,
+        $ai_output_cost_usd: outputCostUSD,
+        $ai_total_cost_usd: inputCostUSD + outputCostUSD,
+      }
+    }
+
     client.capture({
       distinctId: distinctId ?? traceId,
       event: '$ai_generation',
@@ -158,6 +176,7 @@ export const sendEventToPosthog = ({
         ...params.posthogProperties,
         ...(distinctId ? {} : { $process_person_profile: false }),
         ...errorData,
+        ...costOverrideData,
       },
       groups: params.posthogGroups,
     })
