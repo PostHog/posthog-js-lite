@@ -149,8 +149,8 @@ export const sendEventToPosthog = ({
     }
     let costOverrideData = {}
     if (costOverride) {
-      const inputCostUSD = costOverride.inputCost ?? 0 * (usage.inputTokens ?? 0)
-      const outputCostUSD = costOverride.outputCost ?? 0 * (usage.outputTokens ?? 0)
+      const inputCostUSD = (costOverride.inputCost ?? 0) * (usage.inputTokens ?? 0)
+      const outputCostUSD = (costOverride.outputCost ?? 0) * (usage.outputTokens ?? 0)
       costOverrideData = {
         $ai_input_cost_usd: inputCostUSD,
         $ai_output_cost_usd: outputCostUSD,
