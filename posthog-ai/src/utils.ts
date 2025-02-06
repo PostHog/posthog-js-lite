@@ -14,8 +14,11 @@ export interface MonitoringParams {
 }
 
 export const getModelParams = (
-  params: (ChatCompletionCreateParamsBase | MessageCreateParams) & MonitoringParams
+  params: ((ChatCompletionCreateParamsBase | MessageCreateParams) & MonitoringParams) | null
 ): Record<string, any> => {
+  if (!params) {
+    return {}
+  }
   const modelParams: Record<string, any> = {}
   const paramKeys = [
     'temperature',
