@@ -1,10 +1,5 @@
-import { experimental_wrapLanguageModel as wrapLanguageModel } from 'ai'
-import type {
-  LanguageModelV1,
-  Experimental_LanguageModelV1Middleware as LanguageModelV1Middleware,
-  LanguageModelV1Prompt,
-  LanguageModelV1StreamPart,
-} from 'ai'
+import { wrapLanguageModel } from 'ai'
+import type { LanguageModelV1, LanguageModelV1Middleware, LanguageModelV1Prompt, LanguageModelV1StreamPart } from 'ai'
 import { v4 as uuidv4 } from 'uuid'
 import { PostHog } from 'posthog-node'
 import { sendEventToPosthog } from '../utils'
@@ -17,6 +12,12 @@ interface ClientOptions {
   posthogGroups?: Record<string, any>
   posthogModelOverride?: string
   posthogProviderOverride?: string
+  posthogCostOverride?: CostOverride
+}
+
+interface CostOverride {
+  inputTokens: number
+  outputTokens: number
 }
 
 interface CreateInstrumentationMiddlewareOptions {
@@ -27,6 +28,7 @@ interface CreateInstrumentationMiddlewareOptions {
   posthogGroups?: Record<string, any>
   posthogModelOverride?: string
   posthogProviderOverride?: string
+  posthogCostOverride?: CostOverride
 }
 
 interface PostHogInput {
