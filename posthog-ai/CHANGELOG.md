@@ -1,3 +1,7 @@
+# 3.1.1 - 2025-02-07
+
+- fix: bump ai to 4.1.0
+
 # 3.1.0 - 2025-02-07
 
 - feat: add posthogCostOverride, posthogModelOverride, and posthogProviderOverride to sendEventToPosthog for vercel
