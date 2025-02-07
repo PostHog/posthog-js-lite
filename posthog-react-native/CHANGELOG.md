@@ -1,5 +1,7 @@
 # Next
 
+1. chore: Session Replay - GA
+
 # 3.8.0 - 2025-02-06
 
 ## Added
