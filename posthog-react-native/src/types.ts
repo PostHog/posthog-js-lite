@@ -50,13 +50,11 @@ export interface PostHogCustomAppProperties {
 export type PostHogSessionReplayConfig = {
   /**
    * Enable masking of all text and text input fields
-   * Experimental support
    * Default: true
    */
   maskAllTextInputs?: boolean
   /**
    * Enable masking of all images to a placeholder
-   * Experimental support
    * Default: true
    */
   maskAllImages?: boolean
@@ -80,7 +78,6 @@ export type PostHogSessionReplayConfig = {
   /**
    * Enable capturing of logcat as console events
    * Android only
-   * Experimental support
    * Default: true
    */
   captureLog?: boolean
@@ -102,7 +99,6 @@ export type PostHogSessionReplayConfig = {
   /**
    * Enable capturing network telemetry
    * iOS only
-   * Experimental support
    * Default: true
    */
   captureNetworkTelemetry?: boolean
