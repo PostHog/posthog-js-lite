@@ -1,5 +1,11 @@
 # Next
 
+# 3.8.0 - 2025-02-06
+
+## Added
+
+1. Adds `captureException` function to allow basic manual capture of JavaScript exceptions
+
 # 3.7.0 - 2025-02-05
 
 1. chore: set locale and timezone using the react-native-localize library
