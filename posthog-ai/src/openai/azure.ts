@@ -1,7 +1,6 @@
 import OpenAIOrignal, { AzureOpenAI } from 'openai'
 import { PostHog } from 'posthog-node'
 import { v4 as uuidv4 } from 'uuid'
-import { PassThrough } from 'stream'
 import { formatResponseOpenAI, MonitoringParams, sendEventToPosthog } from '../utils'
 
 type ChatCompletion = OpenAIOrignal.ChatCompletion
@@ -86,7 +85,6 @@ export class WrappedCompletions extends AzureOpenAI.Chat.Completions {
 
     if (openAIParams.stream) {
       return parentPromise.then((value) => {
-        const passThroughStream = new PassThrough({ objectMode: true })
         let accumulatedContent = ''
         let usage: { inputTokens: number; outputTokens: number } = {
           inputTokens: 0,
@@ -94,10 +92,10 @@ export class WrappedCompletions extends AzureOpenAI.Chat.Completions {
         }
         let model = openAIParams.model
         if ('tee' in value) {
-          const openAIStream = value
+          const [stream1, stream2] = value.tee()
           ;(async () => {
             try {
-              for await (const chunk of openAIStream) {
+              for await (const chunk of stream1) {
                 const delta = chunk?.choices?.[0]?.delta?.content ?? ''
                 accumulatedContent += delta
                 if (chunk.usage) {
@@ -109,7 +107,6 @@ export class WrappedCompletions extends AzureOpenAI.Chat.Completions {
                     outputTokens: chunk.usage.completion_tokens ?? 0,
                   }
                 }
-                passThroughStream.write(chunk)
               }
               const latency = (Date.now() - startTime) / 1000
               sendEventToPosthog({
@@ -126,7 +123,6 @@ export class WrappedCompletions extends AzureOpenAI.Chat.Completions {
                 httpStatus: 200,
                 usage,
               })
-              passThroughStream.end()
             } catch (error: any) {
               // error handling
               sendEventToPosthog({
@@ -148,11 +144,13 @@ export class WrappedCompletions extends AzureOpenAI.Chat.Completions {
                 isError: true,
                 error: JSON.stringify(error),
               })
-              passThroughStream.emit('error', error)
             }
           })()
+
+          // Return the other stream to the user
+          return stream2
         }
-        return passThroughStream as unknown as Stream<ChatCompletionChunk>
+        return value
       }) as APIPromise<Stream<ChatCompletionChunk>>
     } else {
       const wrappedPromise = parentPromise.then(
