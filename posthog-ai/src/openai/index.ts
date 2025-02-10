@@ -1,7 +1,6 @@
 import OpenAIOrignal from 'openai'
 import { PostHog } from 'posthog-node'
 import { v4 as uuidv4 } from 'uuid'
-import { PassThrough } from 'stream'
 import { formatResponseOpenAI, MonitoringParams, sendEventToPosthog } from '../utils'
 
 type ChatCompletion = OpenAIOrignal.ChatCompletion
