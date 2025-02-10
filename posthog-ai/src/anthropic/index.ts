@@ -70,17 +70,16 @@ export class WrappedMessages extends AnthropicOriginal.Messages {
 
     if (anthropicParams.stream) {
       return parentPromise.then((value) => {
-        const passThroughStream = new PassThrough({ objectMode: true })
         let accumulatedContent = ''
         const usage: { inputTokens: number; outputTokens: number } = {
           inputTokens: 0,
           outputTokens: 0,
         }
         if ('tee' in value) {
-          const anthropicStream = value
-          ;(async () => {
+          const [stream1, stream2] = value.tee();
+          (async () => {
             try {
-              for await (const chunk of anthropicStream) {
+              for await (const chunk of stream1) {
                 if ('delta' in chunk) {
                   if ('text' in chunk.delta) {
                     const delta = chunk?.delta?.text ?? ''
@@ -93,7 +92,6 @@ export class WrappedMessages extends AnthropicOriginal.Messages {
                 if ('usage' in chunk) {
                   usage.outputTokens = chunk.usage.output_tokens ?? 0
                 }
-                passThroughStream.write(chunk)
               }
               const latency = (Date.now() - startTime) / 1000
               sendEventToPosthog({
@@ -110,7 +108,6 @@ export class WrappedMessages extends AnthropicOriginal.Messages {
                 httpStatus: 200,
                 usage,
               })
-              passThroughStream.end()
             } catch (error: any) {
               // error handling
               sendEventToPosthog({
@@ -132,11 +129,13 @@ export class WrappedMessages extends AnthropicOriginal.Messages {
                 isError: true,
                 error: JSON.stringify(error),
               })
-              passThroughStream.emit('error', error)
             }
           })()
+
+          // Return the other stream to the user
+          return stream2
         }
-        return passThroughStream as unknown as Stream<RawMessageStreamEvent>
+        return value
       }) as APIPromise<Stream<RawMessageStreamEvent>>
     } else {
       const wrappedPromise = parentPromise.then(
