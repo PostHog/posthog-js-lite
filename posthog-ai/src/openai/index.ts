@@ -87,13 +87,13 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
     if (openAIParams.stream) {
       return parentPromise.then((value) => {
         if ('tee' in value) {
-          const [stream1, stream2] = value.tee();
+          const [stream1, stream2] = value.tee()
           // Use one stream for tracking
-          (async () => {
+          ;(async () => {
             try {
               let accumulatedContent = ''
               let usage = { inputTokens: 0, outputTokens: 0 }
-              
+
               for await (const chunk of stream1) {
                 const delta = chunk?.choices?.[0]?.delta?.content ?? ''
                 accumulatedContent += delta
@@ -104,7 +104,7 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
                   }
                 }
               }
-              
+
               const latency = (Date.now() - startTime) / 1000
               sendEventToPosthog({
                 client: this.phClient,

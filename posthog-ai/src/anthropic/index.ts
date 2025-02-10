@@ -75,8 +75,8 @@ export class WrappedMessages extends AnthropicOriginal.Messages {
           outputTokens: 0,
         }
         if ('tee' in value) {
-          const [stream1, stream2] = value.tee();
-          (async () => {
+          const [stream1, stream2] = value.tee()
+          ;(async () => {
             try {
               for await (const chunk of stream1) {
                 if ('delta' in chunk) {
