@@ -1,13 +1,13 @@
 import React, { useState } from 'react'
 import { StatusBar } from 'expo-status-bar'
 import { StyleSheet, Text, View } from 'react-native'
-import PostHog, { PostHogProvider } from 'posthog-react-native'
+import PostHog, { PostHogProvider, PostHogSurveyProvider } from 'posthog-react-native'
 // import { WebView } from 'react-native-webview';
 
 export const posthog = new PostHog('phc_QFbR1y41s5sxnNTZoyKG2NJo2RlsCIWkUfdpawgb40D', {
   host: 'https://us.i.posthog.com',
   flushAt: 1,
-  enableSessionReplay: true,
+  enableSessionReplay: false,
   // if using WebView, you have to disable masking for text inputs and images
   // sessionReplayConfig: {
   //   maskAllTextInputs: false,
@@ -21,9 +21,9 @@ export const SharedPostHogProvider = (props: any) => {
     <PostHogProvider
       client={posthog}
       autocapture={{
-        captureLifecycleEvents: true,
-        captureScreens: true,
-        captureTouches: true,
+        captureLifecycleEvents: false,
+        captureScreens: false,
+        captureTouches: false,
         customLabelProp: 'ph-my-label',
       }}
       debug
@@ -41,19 +41,24 @@ export const SharedPostHogProvider = (props: any) => {
 export default function App() {
   const [buttonText, setButtonText] = useState('Open up App.js to start working on your app!')
 
-  const handleClick = () => {
-    posthog.capture('button_clicked', { name: 'example' })
+  const handleClick = async () => {
+    // posthog.capture('button_clicked', { name: 'example' })
     setButtonText('button_clicked' + new Date().toISOString())
+    // await posthog.getSurveys().then((surveys) => {
+    //   console.log(surveys)
+    // })
   }
 
   return (
     <SharedPostHogProvider>
-      <View style={styles.container}>
-        <Text ph-my-label="special-text-changed" onPress={handleClick}>
-          {buttonText}
-        </Text>
-        <StatusBar style="auto" />
-      </View>
+      <PostHogSurveyProvider>
+        <View style={styles.container}>
+          <Text ph-my-label="special-text-changed" onPress={handleClick}>
+            {buttonText}
+          </Text>
+          <StatusBar style="auto" />
+        </View>
+      </PostHogSurveyProvider>
     </SharedPostHogProvider>
   )
 }
