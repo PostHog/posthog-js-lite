@@ -477,7 +477,7 @@ export abstract class PostHogCoreStateless {
    *** SURVEYS
    ***/
 
-  public async getSurveys(): Promise<SurveyResponse['surveys'] | undefined> {
+  public async getSurveys(): Promise<SurveyResponse['surveys']> {
     await this._initPromise
 
     const surveys = this.getPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys)
@@ -518,7 +518,7 @@ export abstract class PostHogCoreStateless {
       this.setPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys, newSurveys)
     }
 
-    return newSurveys
+    return newSurveys ?? []
   }
 
   /***
