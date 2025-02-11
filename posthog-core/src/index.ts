@@ -23,7 +23,7 @@ export * as utils from './utils'
 import { LZString } from './lz-string'
 import { SimpleEventEmitter } from './eventemitter'
 import { uuidv7 } from './vendor/uuidv7'
-import { SurveyResponse } from './posthog-surveys-types'
+import { SurveyResponse } from './surveys-types'
 
 class PostHogFetchHttpError extends Error {
   name = 'PostHogFetchHttpError'

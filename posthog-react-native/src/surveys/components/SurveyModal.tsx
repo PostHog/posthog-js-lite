@@ -6,7 +6,7 @@ import { ConfirmationMessage } from './ConfirmationMessage'
 import { Questions } from './Surveys'
 
 import { SurveyAppearanceTheme } from '../surveys-utils'
-import { Survey } from '../../../../posthog-core/src/posthog-surveys-types'
+import { Survey } from '../../../../posthog-core/src/surveys-types'
 import { useOptionalSafeAreaInsets } from '../../optional/OptionalReactNativeSafeArea'
 
 export type SlypModalProps = {

@@ -15,7 +15,7 @@ import {
   LinkSurveyQuestion,
   MultipleSurveyQuestion,
   RatingSurveyQuestion,
-} from '../../../../posthog-core/src/posthog-surveys-types'
+} from '../../../../posthog-core/src/surveys-types'
 import { BottomSection } from './BottomSection'
 import { QuestionHeader } from './QuestionHeader'
 

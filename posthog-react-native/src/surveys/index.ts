@@ -2,5 +2,5 @@ export { PostHogSurveyProvider, useActiveSurvey, useFeedbackSurvey } from './Pos
 export type { PostHogSurveyProviderProps } from './PostHogSurveyProvider'
 export { SurveyModal } from './components/SurveyModal'
 export type { SlypModalProps } from './components/SurveyModal'
-export type { Survey, SurveyAppearance } from '../../../posthog-core/src/posthog-surveys-types'
+export type { Survey, SurveyAppearance } from '../../../posthog-core/src/surveys-types'
 export { Questions } from './components/Surveys'

@@ -4,6 +4,8 @@ import resolve from '@rollup/plugin-node-resolve'
 import json from '@rollup/plugin-json'
 import typescript from 'rollup-plugin-typescript2'
 import dts from 'rollup-plugin-dts'
+import alias from '@rollup/plugin-alias';
+import path from 'path';
 
 import pkg from './package.json'
 
@@ -63,7 +65,14 @@ const configs = ['posthog-node', 'posthog-web', 'posthog-ai'].reduce((acc, x) =>
     {
       input: `./${x}/lib/${x}/index.d.ts`,
       output: [{ file: `./${x}/lib/index.d.ts`, format: 'es' }],
-      plugins: [dts()],
+      plugins: [
+        dts(),
+        alias({
+          entries: [
+            { find: './surveys-types', replacement: path.resolve(__dirname, 'posthog-core/src/surveys-types') }
+          ]
+        })
+      ],
     },
   ]
 }, [])
