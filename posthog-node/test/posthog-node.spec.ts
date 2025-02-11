@@ -506,8 +506,7 @@ describe('PostHog Node.js', () => {
         id: 1,
         name: 'Beta Feature',
         key: 'beta-feature-local',
-        is_simple_flag: false,
-        active: true,
+                active: true,
         rollout_percentage: 100,
         filters: {
           groups: [
@@ -533,7 +532,6 @@ describe('PostHog Node.js', () => {
         id: 1,
         name: 'Beta Feature',
         key: 'person-flag',
-        is_simple_flag: true,
         active: true,
         filters: {
           groups: [
@@ -556,7 +554,6 @@ describe('PostHog Node.js', () => {
         id: 1,
         name: 'Beta Feature',
         key: 'false-flag',
-        is_simple_flag: true,
         active: true,
         filters: {
           groups: [
