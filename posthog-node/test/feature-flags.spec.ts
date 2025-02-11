@@ -267,7 +267,7 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'complex-flag',
-                    active: true,
+          active: true,
           filters: {
             groups: [
               {
@@ -657,7 +657,7 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'beta-feature',
-                    active: true,
+          active: true,
           rollout_percentage: 100,
           filters: {
             groups: [
@@ -672,7 +672,7 @@ describe('local evaluation', () => {
           id: 2,
           name: 'Beta Feature',
           key: 'disabled-feature',
-                    active: true,
+          active: true,
           filters: {
             groups: [
               {
@@ -686,7 +686,7 @@ describe('local evaluation', () => {
           id: 3,
           name: 'Beta Feature',
           key: 'beta-feature2',
-                    active: true,
+          active: true,
           filters: {
             groups: [
               {
@@ -728,7 +728,7 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'beta-feature',
-                    active: true,
+          active: true,
           rollout_percentage: 100,
           filters: {
             groups: [
@@ -746,7 +746,7 @@ describe('local evaluation', () => {
           id: 2,
           name: 'Beta Feature',
           key: 'disabled-feature',
-                    active: true,
+          active: true,
           filters: {
             groups: [
               {
@@ -763,7 +763,7 @@ describe('local evaluation', () => {
           id: 3,
           name: 'Beta Feature',
           key: 'beta-feature2',
-                    active: true,
+          active: true,
           filters: {
             groups: [
               {
@@ -808,7 +808,7 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'beta-feature',
-                    active: true,
+          active: true,
           rollout_percentage: 100,
           filters: {
             groups: [
@@ -823,7 +823,7 @@ describe('local evaluation', () => {
           id: 2,
           name: 'Beta Feature',
           key: 'disabled-feature',
-                    active: true,
+          active: true,
           filters: {
             groups: [
               {
@@ -837,7 +837,7 @@ describe('local evaluation', () => {
           id: 3,
           name: 'Beta Feature',
           key: 'beta-feature2',
-                    active: true,
+          active: true,
           filters: {
             groups: [
               {
@@ -877,7 +877,7 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'beta-feature',
-                    active: true,
+          active: true,
           rollout_percentage: 100,
           filters: {
             groups: [
@@ -895,7 +895,7 @@ describe('local evaluation', () => {
           id: 2,
           name: 'Beta Feature',
           key: 'disabled-feature',
-                    active: true,
+          active: true,
           filters: {
             groups: [
               {
@@ -912,7 +912,7 @@ describe('local evaluation', () => {
           id: 3,
           name: 'Beta Feature',
           key: 'beta-feature2',
-                    active: true,
+          active: true,
           filters: {
             groups: [
               {
@@ -1007,7 +1007,7 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'beta-feature',
-                    active: true,
+          active: true,
           rollout_percentage: 100,
           filters: {
             groups: [
@@ -1022,7 +1022,7 @@ describe('local evaluation', () => {
           id: 2,
           name: 'Beta Feature',
           key: 'disabled-feature',
-                    active: true,
+          active: true,
           filters: {
             groups: [
               {
@@ -1058,7 +1058,7 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'beta-feature',
-                    active: true,
+          active: true,
           rollout_percentage: 100,
           filters: {
             groups: [
@@ -1076,7 +1076,7 @@ describe('local evaluation', () => {
           id: 2,
           name: 'Beta Feature',
           key: 'disabled-feature',
-                    active: true,
+          active: true,
           filters: {
             groups: [
               {
@@ -1115,7 +1115,7 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'beta-feature',
-                    active: true,
+          active: true,
           rollout_percentage: 100,
           filters: {
             groups: [
@@ -1130,7 +1130,7 @@ describe('local evaluation', () => {
           id: 2,
           name: 'Beta Feature',
           key: 'disabled-feature',
-                    active: true,
+          active: true,
           filters: {
             groups: [
               {
@@ -1165,7 +1165,7 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'beta-feature',
-                    active: false,
+          active: false,
           rollout_percentage: 100,
           filters: {
             groups: [
@@ -1180,7 +1180,7 @@ describe('local evaluation', () => {
           id: 2,
           name: 'Beta Feature',
           key: 'disabled-feature',
-                    active: true,
+          active: true,
           filters: {
             groups: [
               {
@@ -1208,7 +1208,7 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'beta-feature',
-                    active: true,
+          active: true,
           rollout_percentage: 100,
           filters: {
             groups: [
@@ -1289,7 +1289,7 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'beta-feature',
-                    active: true,
+          active: true,
           rollout_percentage: 100,
           filters: {
             groups: [
@@ -2321,7 +2321,7 @@ describe('consistency tests', () => {
           name: '',
           key: 'simple-flag',
           active: true,
-                    filters: {
+          filters: {
             groups: [{ properties: [], rollout_percentage: 45 }],
           },
         },
@@ -3353,7 +3353,7 @@ describe('consistency tests', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'multivariate-flag',
-                    active: true,
+          active: true,
           filters: {
             groups: [{ properties: [], rollout_percentage: 55 }],
             multivariate: {

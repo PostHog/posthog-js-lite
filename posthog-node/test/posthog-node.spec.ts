@@ -506,7 +506,7 @@ describe('PostHog Node.js', () => {
         id: 1,
         name: 'Beta Feature',
         key: 'beta-feature-local',
-                active: true,
+        active: true,
         rollout_percentage: 100,
         filters: {
           groups: [
