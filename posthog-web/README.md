@@ -71,5 +71,5 @@ posthog.onFeatureFlag('my-feature-flag', (value) => {
 
 // Opt users in or out, persisting across sessions (default is they are opted in)
 posthog.optOut() // Will stop tracking
-posthog.optIn() // Will stop tracking
+posthog.optIn() // Will start tracking
 ```
