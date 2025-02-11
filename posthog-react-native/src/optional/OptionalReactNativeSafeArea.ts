@@ -3,7 +3,6 @@ import type RNSafeAreaContext from 'react-native-safe-area-context'
 let OptionalRNSafeArea: typeof RNSafeAreaContext | undefined = undefined
 
 try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   OptionalRNSafeArea = require('react-native-safe-area-context')
 } catch (e) {}
 
