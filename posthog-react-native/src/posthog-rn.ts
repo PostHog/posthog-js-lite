@@ -22,6 +22,7 @@ import {
 } from './types'
 import { withReactNativeNavigation } from './frameworks/wix-navigation'
 import { OptionalReactNativeSessionReplay } from './optional/OptionalSessionReplay'
+import { Survey, SurveyResponse } from '../../posthog-core/src/posthog-surveys-types'
 
 export type PostHogOptions = PostHogCoreOptions & {
   /** Allows you to provide the storage type. By default 'file'.
