@@ -1,5 +1,20 @@
 # Next
 
+# 4.5.0 - 2025-02-06
+
+## Added
+
+1. Adds manual exception capture with full stack trace processing via `captureException` function
+2. Adds ability to enable exception autocapture via the `enableExceptionAutocapture` init option
+
+# 4.4.1 - 2025-01-21
+
+- Add option privacyMode to remove input and output from LLM Observability
+
+# 4.4.0 - 2025-01-15
+
+Switch from rusha to native (node:crypto) sha1 implementation
+
 # 4.3.2 - 2024-12-11
 
 1. REVERT: Fix bug where this SDK incorrectly sent `$feature_flag_called` events with null values when using `getFeatureFlagPayload`.

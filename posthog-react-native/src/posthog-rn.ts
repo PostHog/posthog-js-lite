@@ -48,14 +48,12 @@ export type PostHogOptions = PostHogCoreOptions & {
   /**
    * Enable Recording of Session Replays for Android and iOS
    * Requires Record user sessions to be enabled in the PostHog Project Settings
-   * Experimental support
    * Defaults to false
    */
   enableSessionReplay?: boolean
 
   /**
    * Configuration for Session Replay
-   * Experimental support
    */
   sessionReplayConfig?: PostHogSessionReplayConfig
 
@@ -249,9 +247,11 @@ export class PostHog extends PostHogCore {
       }
       this._currentSessionId = sessionId
     } else {
-      console.log(
-        'PostHog Debug',
-        `Session replay session id not rotated, sessionId ${sessionId} and currentSessionId ${this._currentSessionId}.`
+      this.logMsgIfDebug(() =>
+        console.log(
+          'PostHog Debug',
+          `Session replay session id not rotated, sessionId ${sessionId} and currentSessionId ${this._currentSessionId}.`
+        )
       )
     }
 
@@ -326,14 +326,38 @@ export class PostHog extends PostHogCore {
 
     // if Decide has not returned yet, we will start session replay with default config.
     const sessionReplay = this.getPersistedProperty(PostHogPersistedProperty.SessionReplay) ?? {}
+    const featureFlags = this.getPersistedProperty(PostHogPersistedProperty.FeatureFlags) ?? {}
+    const decideFeatureFlags = (featureFlags as { [key: string]: JsonType }) ?? {}
 
-    // sessionReplay is always an object, if its a boolean, its false if disabled
-    if (sessionReplay) {
-      const decideReplayConfig = (sessionReplay as { [key: string]: JsonType }) ?? {}
-      this.logMsgIfDebug(() =>
-        console.log('PostHog Debug', `Session replay decide cached config: ${JSON.stringify(decideReplayConfig)}`)
-      )
+    const decideReplayConfig = (sessionReplay as { [key: string]: JsonType }) ?? {}
+    this.logMsgIfDebug(() =>
+      console.log('PostHog Debug', `Session replay decide cached config: ${JSON.stringify(decideReplayConfig)}`)
+    )
 
+    let recordingActive = true
+    const linkedFlag = decideReplayConfig['linkedFlag'] as string | { [key: string]: JsonType } | null | undefined
+    if (typeof linkedFlag === 'string') {
+      const value = decideFeatureFlags[linkedFlag]
+      if (typeof value === 'boolean') {
+        recordingActive = value
+      }
+
+      this.logMsgIfDebug(() => console.log('PostHog Debug', `Session replay ${linkedFlag} linked flag value: ${value}`))
+    } else if (linkedFlag && typeof linkedFlag === 'object') {
+      const flag = linkedFlag['flag'] as string | undefined
+      const variant = linkedFlag['variant'] as string | undefined
+      if (flag && variant) {
+        const value = decideFeatureFlags[flag]
+        if (value) {
+          recordingActive = value === variant
+          this.logMsgIfDebug(() =>
+            console.log('PostHog Debug', `Session replay ${flag} linked flag variant: ${variant} and value ${value}`)
+          )
+        }
+      }
+    }
+
+    if (recordingActive) {
       if (OptionalReactNativeSessionReplay) {
         const sessionId = this.getSessionId()
 
@@ -369,6 +393,7 @@ export class PostHog extends PostHogCore {
               console.log('PostHog Debug', `Session replay already started with sessionId ${sessionId}.`)
             )
           }
+          this._currentSessionId = sessionId
         } catch (e) {
           this.logMsgIfDebug(() => console.error('PostHog Debug', `Session replay failed to start: ${e}.`))
         }

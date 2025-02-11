@@ -7,14 +7,10 @@
  * See https://github.com/PostHog/posthog-js-lite/issues/127 for more info
  */
 
-import { PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src'
+import { FetchLike, PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src'
+import { getFetch } from 'posthog-core/src/utils'
 
-type FetchLike = (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
-
-let _fetch: FetchLike | undefined =
-  // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
-  // @ts-ignore
-  typeof fetch !== 'undefined' ? fetch : typeof global.fetch !== 'undefined' ? global.fetch : undefined
+let _fetch: FetchLike | undefined = getFetch()
 
 if (!_fetch) {
   // eslint-disable-next-line @typescript-eslint/no-var-requires

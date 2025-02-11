@@ -1,5 +1,5 @@
 import express from 'express'
-import { PostHog, PostHogSentryIntegration } from 'posthog-node'
+import { PostHog, sentryIntegration, PostHogSentryIntegration, setupExpressErrorHandler } from 'posthog-node'
 import undici from 'undici'
 
 import * as Sentry from '@sentry/node'
@@ -27,20 +27,31 @@ posthog.debug()
 
 Sentry.init({
   dsn: 'https://examplePublicKey@o0.ingest.sentry.io/0',
-  integrations: [new PostHogSentryIntegration(posthog)],
+  integrations: [sentryIntegration(posthog)],
 })
+
+// Because express has its own error handlers there
+// is some additional setup required to hook into them
+Sentry.setupExpressErrorHandler(app)
+setupExpressErrorHandler(posthog, app)
 
 app.get('/', (req, res) => {
   posthog.capture({ distinctId: 'EXAMPLE_APP_GLOBAL', event: 'legacy capture' })
   res.send({ hello: 'world' })
 })
 
+app.get('/unhandled-error', () => {
+  throw new Error('unhandled error')
+})
+
 app.get('/error', (req, res) => {
-  Sentry.captureException(new Error('example error'), {
+  const error = new Error('example error')
+  Sentry.captureException(error, {
     tags: {
       [PostHogSentryIntegration.POSTHOG_ID_TAG]: 'EXAMPLE_APP_GLOBAL',
     },
   })
+  posthog.captureException(error, 'EXAMPLE_APP_GLOBAL')
   res.send({ status: 'error!!' })
 })
 
@@ -56,8 +67,8 @@ app.get('/user/:userId/flags/:flagId', async (req, res) => {
   res.send({ [req.params.flagId]: flag })
 })
 
-const server = app.listen(8010, () => {
-  console.log('⚡: Server is running at http://localhost:8010')
+const server = app.listen(8020, () => {
+  console.log('⚡: Server is running at http://localhost:8020')
 })
 
 async function handleExit(signal: any) {

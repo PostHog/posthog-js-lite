@@ -1,5 +1,31 @@
 # Next
 
+# 3.9.0 - 2025-02-07
+
+1. chore: Session Replay - GA
+
+# 3.8.0 - 2025-02-06
+
+## Added
+
+1. Adds `captureException` function to allow basic manual capture of JavaScript exceptions
+
+# 3.7.0 - 2025-02-05
+
+1. chore: set locale and timezone using the react-native-localize library
+
+# 3.6.4 - 2025-02-03
+
+1. fix: improve session replay linked flag type handling
+
+# 3.6.3 - 2025-01-16
+
+1. fix: session replay respect linked feature flags
+
+# 3.6.2 - 2025-01-13
+
+1. fix: Set initial currentSessionId, log only with debug flag on
+
 # 3.6.1 - 2024-12-17
 
 1. fix: os_name was not being set correctly for some devices using expo-device
@@ -15,7 +41,7 @@
 # 3.4.0 - 2024-11-26
 
 1. feat: automatically mask out user photos and sandboxed views like photo picker (iOS Only)
-  1. To disable masking set `maskAllSandboxedViews` and `maskPhotoLibraryImages` to false
+   1. To disable masking set `maskAllSandboxedViews` and `maskPhotoLibraryImages` to false
 
 ```js
 export const posthog = new PostHog(
@@ -91,16 +117,13 @@ export const posthog = new PostHog(
 ## Changed
 
 1. chore: session id will be rotate on app restart.
-    1. To keep the session id across restarts, set the `enablePersistSessionIdAcrossRestart` option to `true` when initializing the PostHog client.
+   1. To keep the session id across restarts, set the `enablePersistSessionIdAcrossRestart` option to `true` when initializing the PostHog client.
 
 ```js
-export const posthog = new PostHog(
-  'apiKey...',
-  {
-    // ...
-    enablePersistSessionIdAcrossRestart: true,
-  },
-);
+export const posthog = new PostHog('apiKey...', {
+  // ...
+  enablePersistSessionIdAcrossRestart: true,
+})
 ```
 
 # 3.2.1 - 2024-09-24
@@ -114,7 +137,7 @@ export const posthog = new PostHog(
 ## Changed
 
 1. chore: default `captureMode` changed to `json`.
-    1. To keep using the `form` mode, just set the `captureMode` option to `form` when initializing the PostHog client.
+   1. To keep using the `form` mode, just set the `captureMode` option to `form` when initializing the PostHog client.
 2. chore: Session Replay for React-Native - Experimental support
 
 Install Session Replay for React-Native:
@@ -128,13 +151,10 @@ npm i -s posthog-react-native-session-replay
 Enable Session Replay for React-Native:
 
 ```js
-export const posthog = new PostHog(
-  'apiKey...',
-  {
-    // ...
-    enableSessionReplay: true,
-  },
-);
+export const posthog = new PostHog('apiKey...', {
+  // ...
+  enableSessionReplay: true,
+})
 ```
 
 Or using the `PostHogProvider`
