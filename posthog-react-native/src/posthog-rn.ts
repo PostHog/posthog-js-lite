@@ -127,6 +127,10 @@ export class PostHog extends PostHogCore {
         this.reloadFeatureFlags()
       }
 
+      // if (options?.preloadRemoteConfig !== false) {
+      //   this.reloadRemoteConfig()
+      // }
+
       if (options?.captureNativeAppLifecycleEvents) {
         if (this._persistence === 'memory') {
           this.logMsgIfDebug(() =>

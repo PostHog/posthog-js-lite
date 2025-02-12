@@ -9,6 +9,7 @@ import {
   PostHogPersistedProperty,
   PostHogCaptureOptions,
   JsonType,
+  PostHogRemoteConfig,
 } from './types'
 import {
   assert,
@@ -59,6 +60,7 @@ export abstract class PostHogCoreStateless {
   private flushPromise: Promise<any> | null = null
   private requestTimeout: number
   private featureFlagsRequestTimeoutMs: number
+  private remoteConfigRequestTimeoutMs: number
   private captureMode: 'form' | 'json'
   private removeDebugCallback?: () => void
   private disableGeoip: boolean = true
@@ -106,6 +108,7 @@ export abstract class PostHogCoreStateless {
     }
     this.requestTimeout = options?.requestTimeout ?? 10000 // 10 seconds
     this.featureFlagsRequestTimeoutMs = options?.featureFlagsRequestTimeoutMs ?? 3000 // 3 seconds
+    this.remoteConfigRequestTimeoutMs = options?.remoteConfigRequestTimeoutMs ?? 3000 // 3 seconds
     this.disableGeoip = options?.disableGeoip ?? true
     this.disabled = options?.disabled ?? false
     this.historicalMigration = options?.historicalMigration ?? false
@@ -286,6 +289,31 @@ export abstract class PostHogCoreStateless {
 
       this.enqueue('capture', payload, options)
     })
+  }
+
+  protected async getRemoteConfig(): Promise<PostHogRemoteConfig | undefined> {
+    await this._initPromise
+
+    let host = this.host
+
+    if (host === 'https://us.i.posthog.com') {
+      host = 'https://us-assets.i.posthog.com'
+    } else if (host === 'https://eu.i.posthog.com') {
+      host = 'https://eu-assets.i.posthog.com'
+    }
+
+    const url = `${host}/array/${this.apiKey}/config`
+    const fetchOptions: PostHogFetchOptions = {
+      method: 'GET',
+      headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },
+    }
+    // Don't retry remote config API calls
+    return this.fetchWithRetry(url, fetchOptions, { retryCount: 0 }, this.remoteConfigRequestTimeoutMs)
+      .then((response) => response.json() as Promise<PostHogRemoteConfig>)
+      .catch((error) => {
+        this._events.emit('error', error)
+        return undefined
+      })
   }
 
   /***
@@ -776,6 +804,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
 
   // internal
   protected _decideResponsePromise?: Promise<PostHogDecideResponse | undefined> // TODO: come back to this, fix typing
+  protected _remoteConfigResponsePromise?: Promise<PostHogRemoteConfig | undefined> // TODO: come back to this, fix typing
   protected _sessionExpirationTimeSeconds: number
   protected sessionProps: PostHogEventProperties = {}
 
@@ -1191,6 +1220,14 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     })
   }
 
+  private async fetchRemoteConfig(): Promise<PostHogRemoteConfig | undefined> {
+    await this._initPromise
+    if (this._remoteConfigResponsePromise) {
+      return this._remoteConfigResponsePromise
+    }
+    return this._remoteConfigAsync()
+  }
+
   /***
    *** FEATURE FLAGS
    ***/
@@ -1200,6 +1237,26 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       return this._decideResponsePromise
     }
     return this._decideAsync(sendAnonDistinctId)
+  }
+
+  private async _remoteConfigAsync(): Promise<PostHogRemoteConfig | undefined> {
+    this._remoteConfigResponsePromise = this._initPromise
+      .then(() => {
+        let remoteConfig = this.getPersistedProperty<PostHogRemoteConfig | undefined>(PostHogPersistedProperty.RemoteConfig)
+
+        return super.getRemoteConfig().then((response) => {
+          if (response) {
+            this.setPersistedProperty(PostHogPersistedProperty.RemoteConfig, response)
+            remoteConfig = response
+          }
+
+          return remoteConfig
+        });
+      })
+      .finally(() => {
+        this._remoteConfigResponsePromise = undefined
+      })
+    return this._remoteConfigResponsePromise
   }
 
   private async _decideAsync(sendAnonDistinctId: boolean = true): Promise<PostHogDecideResponse | undefined> {
