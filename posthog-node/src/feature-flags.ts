@@ -461,7 +461,19 @@ class FeatureFlagsPoller {
 
     const options = this.getPersonalApiKeyRequestOptions()
 
-    return this.fetch(url, options)
+    let abortTimeout = null
+    if (this.timeout && typeof this.timeout === 'number') {
+      const controller = new AbortController()
+      abortTimeout = safeSetTimeout(() => {
+        controller.abort()
+      }, this.timeout)
+      options.signal = controller.signal
+    }
+    try {
+      return this.fetch(url, options)
+    } finally {
+      clearTimeout(abortTimeout)
+    }
   }
 }
 
