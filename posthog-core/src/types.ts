@@ -64,6 +64,7 @@ export enum PostHogPersistedProperty {
   DecideEndpointWasHit = 'decide_endpoint_was_hit', // only used by posthog-react-native
   SurveyLastSeenDate = 'survey_last_seen_date', // only used by posthog-react-native
   SurveysSeen = 'surveys_seen', // only used by posthog-react-native
+  Surveys = 'surveys', // only used by posthog-react-native
 }
 
 export type PostHogFetchOptions = {

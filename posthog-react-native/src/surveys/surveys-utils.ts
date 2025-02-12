@@ -3,7 +3,7 @@ import {
   Survey,
   SurveyAppearance,
   SurveyQuestion,
-} from '../../../posthog-core/src/posthog-surveys-types'
+} from '../../../posthog-core/src/surveys-types'
 
 export const defaultBackgroundColor = '#eeeded' as const
 

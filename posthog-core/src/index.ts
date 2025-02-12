@@ -23,7 +23,7 @@ export * as utils from './utils'
 import { LZString } from './lz-string'
 import { SimpleEventEmitter } from './eventemitter'
 import { uuidv7 } from './vendor/uuidv7'
-import { Survey, SurveyResponse } from './posthog-surveys-types'
+import { SurveyResponse } from './surveys-types'
 
 class PostHogFetchHttpError extends Error {
   name = 'PostHogFetchHttpError'
@@ -477,23 +477,48 @@ export abstract class PostHogCoreStateless {
    *** SURVEYS
    ***/
 
-  public async getSurveys(): Promise<Survey[]> {
+  public async getSurveys(): Promise<SurveyResponse['surveys']> {
     await this._initPromise
+
+    const surveys = this.getPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys)
+
+    if (surveys && surveys.length > 0) {
+      return surveys
+    }
 
     const url = `${this.host}/api/surveys/?token=${this.apiKey}`
     const fetchOptions: PostHogFetchOptions = {
       method: 'GET',
-      headers: this.getCustomHeaders(),
+      headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },
     }
 
     const response = await this.fetchWithRetry(url, fetchOptions)
-      .then((response) => response.json() as Promise<SurveyResponse>)
+      .then((response) => {
+        if (response.status !== 200 || !response.json) {
+          const msg = `Surveys API could not be loaded: ${response.status}`
+          const error = new Error(msg)
+          this.logMsgIfDebug(() => console.error(error))
+
+          this._events.emit('error', new Error(msg))
+          return undefined
+        }
+
+        return response.json() as Promise<SurveyResponse>
+      })
       .catch((error) => {
+        this.logMsgIfDebug(() => console.error('Surveys API could not be loaded', error))
+
         this._events.emit('error', error)
-        return { surveys: [] }
+        return undefined
       })
 
-    return response.surveys
+    const newSurveys = response?.surveys
+
+    if (newSurveys) {
+      this.setPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys, newSurveys)
+    }
+
+    return newSurveys ?? []
   }
 
   /***
