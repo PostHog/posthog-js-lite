@@ -1,8 +1,16 @@
 # Next
 
-# 4.5.1 - 2025-02-12
+# 4.5.2 - 2025-02-12
+
+## Fixed
 
 1. fix: Fixed edge case where `$feature_flag_called` events were enriched with additional feature flag data when they shouldn't be.
+
+# 4.5.1 - 2025-02-12
+
+## Fixed
+
+1. Do not require a `distinctId` as an argument to `captureException`
 
 # 4.5.0 - 2025-02-06
 
