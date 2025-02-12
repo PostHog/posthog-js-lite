@@ -123,13 +123,14 @@ export class PostHog extends PostHogCore {
       this.setupBootstrap(options)
 
       this._isInitialized = true
+
+      if (options?.disableRemoteConfig !== false) {
+        this.reloadRemoteConfigAsync()
+      }
+
       if (options?.preloadFeatureFlags !== false) {
         this.reloadFeatureFlags()
       }
-
-      // if (options?.preloadRemoteConfig !== false) {
-      //   this.reloadRemoteConfig()
-      // }
 
       if (options?.captureNativeAppLifecycleEvents) {
         if (this._persistence === 'memory') {

@@ -1220,7 +1220,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     })
   }
 
-  private async fetchRemoteConfig(): Promise<PostHogRemoteConfig | undefined> {
+  private async remoteConfigAsync(): Promise<PostHogRemoteConfig | undefined> {
     await this._initPromise
     if (this._remoteConfigResponsePromise) {
       return this._remoteConfigResponsePromise
@@ -1242,7 +1242,9 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   private async _remoteConfigAsync(): Promise<PostHogRemoteConfig | undefined> {
     this._remoteConfigResponsePromise = this._initPromise
       .then(() => {
-        let remoteConfig = this.getPersistedProperty<PostHogRemoteConfig | undefined>(PostHogPersistedProperty.RemoteConfig)
+        let remoteConfig = this.getPersistedProperty<PostHogRemoteConfig | undefined>(
+          PostHogPersistedProperty.RemoteConfig
+        )
 
         return super.getRemoteConfig().then((response) => {
           if (response) {
@@ -1251,7 +1253,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
           }
 
           return remoteConfig
-        });
+        })
       })
       .finally(() => {
         this._remoteConfigResponsePromise = undefined
@@ -1462,6 +1464,10 @@ export abstract class PostHogCore extends PostHogCoreStateless {
           this.logMsgIfDebug(() => console.log('[PostHog] Error reloading feature flags', e))
         }
       })
+  }
+
+  async reloadRemoteConfigAsync(): Promise<PostHogRemoteConfig | undefined> {
+    return await this.remoteConfigAsync()
   }
 
   async reloadFeatureFlagsAsync(
