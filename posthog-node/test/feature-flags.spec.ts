@@ -1810,7 +1810,7 @@ describe('getFeatureFlag', () => {
             groups: [
               {
                 variant: null,
-                properties: [{ key: 'region', type: 'person', value: 'USA', operator: 'exact'}],
+                properties: [{ key: 'region', type: 'person', value: 'USA', operator: 'exact' }],
                 rollout_percentage: 100,
               },
             ],
@@ -1852,23 +1852,23 @@ describe('getFeatureFlag', () => {
       })
     ).toEqual(true)
 
-    await waitForPromises();
+    await waitForPromises()
 
     expect(capturedMessage).toMatchObject({
-      "distinct_id": "some-distinct-id",
-      "event": "$feature_flag_called",
-      "library": posthog.getLibraryId(),
-      "library_version": posthog.getLibraryVersion(),
-      "properties": {
-        "$feature/complex-flag": true,
-        "$feature_flag": "complex-flag",
-        "$feature_flag_response": true,
-        "$groups": undefined,
-        "$lib": posthog.getLibraryId(),
-        "$lib_version": posthog.getLibraryVersion(),
-        "locally_evaluated": true,
-      }
-    });
+      distinct_id: 'some-distinct-id',
+      event: '$feature_flag_called',
+      library: posthog.getLibraryId(),
+      library_version: posthog.getLibraryVersion(),
+      properties: {
+        '$feature/complex-flag': true,
+        $feature_flag: 'complex-flag',
+        $feature_flag_response: true,
+        $groups: undefined,
+        $lib: posthog.getLibraryId(),
+        $lib_version: posthog.getLibraryVersion(),
+        locally_evaluated: true,
+      },
+    })
 
     expect(capturedMessage.properties).not.toHaveProperty('$active_feature_flags')
     expect(capturedMessage.properties).not.toHaveProperty('$feature/simple-flag')

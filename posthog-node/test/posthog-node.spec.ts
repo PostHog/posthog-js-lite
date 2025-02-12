@@ -1079,7 +1079,7 @@ describe('PostHog Node.js', () => {
 
       await expect(posthog.getFeatureFlagPayload('false-flag', '123', true)).resolves.toEqual(300)
       // Check no non-batch API calls were made
-      const additionalNonBatchCalls = mockedFetch.mock.calls.filter(call => !call[0].includes('/batch'))
+      const additionalNonBatchCalls = mockedFetch.mock.calls.filter((call) => !call[0].includes('/batch'))
       expect(additionalNonBatchCalls.length).toBe(0)
     })
 
