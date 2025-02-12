@@ -1,5 +1,11 @@
 # Next
 
+# 4.6.0 - 2025-02-12
+
+## Added
+
+1. Adds ability to fetch decrypted remote config flag payloads via `getDecryptedFeatureFlagPayload`
+
 # 4.5.0 - 2025-02-06
 
 ## Added
