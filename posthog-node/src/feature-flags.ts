@@ -412,24 +412,28 @@ class FeatureFlagsPoller {
       this.loadedSuccessfullyOnce = true
     } catch (err) {
       // if an error that is not an instance of ClientError is thrown
-      // we silently ignore the error when reloading feature flags
+      // we silently ignore the error when reloading feature flaorization: `Bearer ${this.persongs
       if (err instanceof ClientError) {
         this.onError?.(err)
       }
     }
   }
 
-  async _requestFeatureFlagDefinitions(): Promise<PostHogFetchResponse> {
-    const url = `${this.host}/api/feature_flag/local_evaluation?token=${this.projectApiKey}&send_cohorts`
-
-    const options: PostHogFetchOptions = {
-      method: 'GET',
+  private getPersonalApiKeyRequestOptions(method: 'GET' | 'POST' | 'PUT' | 'PATCH' = 'GET'): PostHogFetchOptions {
+    return {
+      method,
       headers: {
         ...this.customHeaders,
         'Content-Type': 'application/json',
         Authorization: `Bearer ${this.personalApiKey}`,
       },
     }
+  }
+
+  async _requestFeatureFlagDefinitions(): Promise<PostHogFetchResponse> {
+    const url = `${this.host}/api/feature_flag/local_evaluation?token=${this.projectApiKey}&send_cohorts`
+
+    const options = this.getPersonalApiKeyRequestOptions()
 
     let abortTimeout = null
 
@@ -455,14 +459,7 @@ class FeatureFlagsPoller {
   _requestDecryptedFeatureFlagPayload(flagKey: string): Promise<PostHogFetchResponse> {
     const url = `${this.host}/api/projects/@current/feature_flags/${flagKey}/remote_config/`
 
-    const options: PostHogFetchOptions = {
-      method: 'GET',
-      headers: {
-        ...this.customHeaders,
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.personalApiKey}`,
-      },
-    }
+    const options = this.getPersonalApiKeyRequestOptions()
 
     return this.fetch(url, options)
   }
