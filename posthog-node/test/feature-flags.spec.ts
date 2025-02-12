@@ -5,6 +5,7 @@ import { matchProperty, InconclusiveMatchError, relativeDateParseForFeatureFlagM
 jest.mock('../src/fetch')
 import fetch from '../src/fetch'
 import { anyDecideCall, anyLocalEvalCall, apiImplementation } from './test-utils'
+import { waitForPromises } from 'posthog-core/test/test-utils/test-utils'
 
 jest.spyOn(console, 'debug').mockImplementation()
 
@@ -1793,6 +1794,84 @@ describe('local evaluation', () => {
     expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
     // decide not called
     expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+  })
+})
+
+describe('getFeatureFlag', () => {
+  it('should capture $feature_flag_called when called, but not add all cached flags', async () => {
+    const flags = {
+      flags: [
+        {
+          id: 1,
+          name: 'Beta Feature',
+          key: 'complex-flag',
+          active: true,
+          filters: {
+            groups: [
+              {
+                variant: null,
+                properties: [{ key: 'region', type: 'person', value: 'USA', operator: 'exact'}],
+                rollout_percentage: 100,
+              },
+            ],
+          },
+        },
+        {
+          id: 2,
+          name: 'Gamma Feature',
+          key: 'simple-flag',
+          active: true,
+          filters: {
+            groups: [
+              {
+                variant: null,
+                properties: [],
+                rollout_percentage: 100,
+              },
+            ],
+          },
+        },
+      ],
+    }
+    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags }))
+    const posthog = new PostHog('TEST_API_KEY', {
+      host: 'http://example.com',
+      personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
+    })
+    let capturedMessage: any
+    posthog.on('capture', (message) => {
+      capturedMessage = message
+    })
+
+    expect(
+      await posthog.getFeatureFlag('complex-flag', 'some-distinct-id', {
+        personProperties: {
+          region: 'USA',
+        } as unknown as Record<string, string>,
+      })
+    ).toEqual(true)
+
+    await waitForPromises();
+
+    expect(capturedMessage).toMatchObject({
+      "distinct_id": "some-distinct-id",
+      "event": "$feature_flag_called",
+      "library": posthog.getLibraryId(),
+      "library_version": posthog.getLibraryVersion(),
+      "properties": {
+        "$feature/complex-flag": true,
+        "$feature_flag": "complex-flag",
+        "$feature_flag_response": true,
+        "$groups": undefined,
+        "$lib": posthog.getLibraryId(),
+        "$lib_version": posthog.getLibraryVersion(),
+        "locally_evaluated": true,
+      }
+    });
+
+    expect(capturedMessage.properties).not.toHaveProperty('$active_feature_flags')
+    expect(capturedMessage.properties).not.toHaveProperty('$feature/simple-flag')
   })
 })
 
