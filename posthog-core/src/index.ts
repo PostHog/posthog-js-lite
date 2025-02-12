@@ -54,6 +54,7 @@ export abstract class PostHogCoreStateless {
   readonly apiKey: string
   readonly host: string
   readonly flushAt: number
+  readonly preloadFeatureFlags: boolean
   private maxBatchSize: number
   private maxQueueSize: number
   private flushInterval: number
@@ -97,7 +98,7 @@ export abstract class PostHogCoreStateless {
     this.maxQueueSize = Math.max(this.flushAt, options?.maxQueueSize ?? 1000)
     this.flushInterval = options?.flushInterval ?? 10000
     this.captureMode = options?.captureMode || 'json'
-
+    this.preloadFeatureFlags = options?.preloadFeatureFlags ?? true
     // If enable is explicitly set to false we override the optout
     this.defaultOptIn = options?.defaultOptIn ?? true
 
@@ -1253,6 +1254,18 @@ export abstract class PostHogCore extends PostHogCoreStateless {
           if (response) {
             this.logMsgIfDebug(() => console.log('PostHog Debug', 'Fetched remote config: ', JSON.stringify(response)))
             this.setPersistedProperty(PostHogPersistedProperty.RemoteConfig, response)
+
+            // we only dont load flags if the remote config has no feature flags
+            if (response.hasFeatureFlags === false) {
+              // resetting flags to empty object
+              this.setKnownFeatureFlags({})
+              this.setKnownFeatureFlagPayloads({})
+
+              this.logMsgIfDebug(() => console.warn('Remote config has no feature flags, will not load feature flags.'))
+            } else if (this.preloadFeatureFlags !== false) {
+              this.reloadFeatureFlags()
+            }
+
             remoteConfig = response
           }
 

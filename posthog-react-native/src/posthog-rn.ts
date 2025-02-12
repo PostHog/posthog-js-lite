@@ -126,10 +126,10 @@ export class PostHog extends PostHogCore {
 
       if (options?.disableRemoteConfig !== false) {
         this.reloadRemoteConfigAsync()
-      }
-
-      if (options?.preloadFeatureFlags !== false) {
-        this.reloadFeatureFlags()
+      } else {
+        if (options?.preloadFeatureFlags !== false) {
+          this.reloadFeatureFlags()
+        }
       }
 
       if (options?.captureNativeAppLifecycleEvents) {
