@@ -15,11 +15,14 @@ export default class ErrorTracking {
   static async captureException(
     client: PostHog,
     error: unknown,
-    distinctId: string,
     hint: EventHint,
+    distinctId?: string,
     additionalProperties?: Record<string | number, any>
   ): Promise<void> {
     const properties: EventMessage['properties'] = { ...additionalProperties }
+
+    // Given stateless nature of Node SDK we capture exceptions using personless processing when no
+    // user can be determined because a distinct_id is not provided e.g. exception autocapture
     if (!distinctId) {
       properties.$process_person_profile = false
     }
@@ -51,9 +54,7 @@ export default class ErrorTracking {
   }
 
   private onException(exception: unknown, hint: EventHint): void {
-    // Given stateless nature of Node SDK we capture exceptions using personless processing
-    // when no user can be determined e.g. in the case of exception autocapture
-    ErrorTracking.captureException(this.client, exception, uuidv7(), hint, { $process_person_profile: false })
+    ErrorTracking.captureException(this.client, exception, hint)
   }
 
   private async onFatalError(): Promise<void> {

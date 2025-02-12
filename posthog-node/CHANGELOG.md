@@ -1,5 +1,11 @@
 # Next
 
+# 4.5.1 - 2025-02-12
+
+## Fixed
+
+1. Do not require a `distinctId` as an argument to `captureException`
+
 # 4.5.0 - 2025-02-06
 
 ## Added
