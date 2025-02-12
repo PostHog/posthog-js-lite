@@ -311,6 +311,7 @@ export abstract class PostHogCoreStateless {
     return this.fetchWithRetry(url, fetchOptions, { retryCount: 0 }, this.remoteConfigRequestTimeoutMs)
       .then((response) => response.json() as Promise<PostHogRemoteConfig>)
       .catch((error) => {
+        this.logMsgIfDebug(() => console.error('Remote config could not be loaded', error))
         this._events.emit('error', error)
         return undefined
       })
@@ -1246,8 +1247,11 @@ export abstract class PostHogCore extends PostHogCoreStateless {
           PostHogPersistedProperty.RemoteConfig
         )
 
+        this.logMsgIfDebug(() => console.log('PostHog Debug', 'Cached remote config: ', JSON.stringify(remoteConfig)))
+
         return super.getRemoteConfig().then((response) => {
           if (response) {
+            this.logMsgIfDebug(() => console.log('PostHog Debug', 'Fetched remote config: ', JSON.stringify(response)))
             this.setPersistedProperty(PostHogPersistedProperty.RemoteConfig, response)
             remoteConfig = response
           }
