@@ -451,6 +451,21 @@ class FeatureFlagsPoller {
   stopPoller(): void {
     clearTimeout(this.poller)
   }
+
+  _requestDecryptedFeatureFlagPayload(flagId: number): Promise<PostHogFetchResponse> {
+    const url = `${this.host}/api/projects/@current/feature_flags/${flagId}/remote_config/`
+
+    const options: PostHogFetchOptions = {
+      method: 'GET',
+      headers: {
+        ...this.customHeaders,
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.personalApiKey}`,
+      },
+    }
+
+    return this.fetch(url, options)
+  }
 }
 
 // # This function takes a distinct_id and a feature flag key and returns a float between 0 and 1.

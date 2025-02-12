@@ -67,6 +67,8 @@ async function testFeatureFlags() {
       onlyEvaluateLocally: true,
     })
   )
+
+  console.log(await posthog.getDecryptedFeatureFlagPayload(257))
 }
 
 testFeatureFlags().then(async () => {
