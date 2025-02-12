@@ -354,8 +354,8 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     return response
   }
 
-  async getDecryptedFeatureFlagPayload(flagId: number): Promise<JsonType | undefined> {
-    return (await this.featureFlagsPoller?._requestDecryptedFeatureFlagPayload(flagId))?.json()
+  async getDecryptedFeatureFlagPayload(flagKey: string): Promise<JsonType | undefined> {
+    return (await this.featureFlagsPoller?._requestDecryptedFeatureFlagPayload(flagKey))?.json()
   }
 
   async isFeatureEnabled(

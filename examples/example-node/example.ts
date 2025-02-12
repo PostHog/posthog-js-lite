@@ -68,7 +68,7 @@ async function testFeatureFlags() {
     })
   )
 
-  console.log(await posthog.getDecryptedFeatureFlagPayload(257))
+  console.log(await posthog.getDecryptedFeatureFlagPayload('my_secret_flag_value'))
 }
 
 testFeatureFlags().then(async () => {

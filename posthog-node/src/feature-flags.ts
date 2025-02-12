@@ -452,8 +452,8 @@ class FeatureFlagsPoller {
     clearTimeout(this.poller)
   }
 
-  _requestDecryptedFeatureFlagPayload(flagId: number): Promise<PostHogFetchResponse> {
-    const url = `${this.host}/api/projects/@current/feature_flags/${flagId}/remote_config/`
+  _requestDecryptedFeatureFlagPayload(flagKey: string): Promise<PostHogFetchResponse> {
+    const url = `${this.host}/api/projects/@current/feature_flags/${flagKey}/remote_config/`
 
     const options: PostHogFetchOptions = {
       method: 'GET',
