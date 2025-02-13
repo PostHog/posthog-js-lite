@@ -1150,7 +1150,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   private async decideAsync(sendAnonDistinctId: boolean = true): Promise<PostHogDecideResponse | undefined> {
     await this._initPromise
     if (this._decideResponsePromise) {
-      await this._decideResponsePromise
+      return this._decideResponsePromise
     }
     return this._decideAsync(sendAnonDistinctId)
   }
