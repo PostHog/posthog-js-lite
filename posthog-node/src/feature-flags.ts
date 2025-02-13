@@ -456,7 +456,7 @@ class FeatureFlagsPoller {
     clearTimeout(this.poller)
   }
 
-  _requestDecryptedFeatureFlagPayload(flagKey: string): Promise<PostHogFetchResponse> {
+  _requestRemoteConfigPayload(flagKey: string): Promise<PostHogFetchResponse> {
     const url = `${this.host}/api/projects/@current/feature_flags/${flagKey}/remote_config/`
 
     const options = this.getPersonalApiKeyRequestOptions()
