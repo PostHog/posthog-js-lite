@@ -2,7 +2,7 @@
 
 # 3.9.1 - 2025-02-13
 
-1. fix: reset should reload flags and flags should always be loaded if reload method is called
+1. fix: ensure feature flags are reloaded after reset() to prevent undefined values
 
 # 3.9.0 - 2025-02-07
 
