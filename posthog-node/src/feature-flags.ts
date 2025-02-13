@@ -412,7 +412,7 @@ class FeatureFlagsPoller {
       this.loadedSuccessfullyOnce = true
     } catch (err) {
       // if an error that is not an instance of ClientError is thrown
-      // we silently ignore the error when reloading feature flaorization: `Bearer ${this.persongs
+      // we silently ignore the error when reloading feature flags
       if (err instanceof ClientError) {
         this.onError?.(err)
       }
