@@ -359,6 +359,10 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     return response
   }
 
+  async getRemoteConfigPayload(flagKey: string): Promise<JsonType | undefined> {
+    return (await this.featureFlagsPoller?._requestRemoteConfigPayload(flagKey))?.json()
+  }
+
   async isFeatureEnabled(
     key: string,
     distinctId: string,
