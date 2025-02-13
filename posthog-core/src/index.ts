@@ -1178,7 +1178,6 @@ export abstract class PostHogCore extends PostHogCoreStateless {
             }
 
             let newFeatureFlags = res.featureFlags
-
             let newFeatureFlagPayloads = res.featureFlagPayloads
             if (res.errorsWhileComputingFlags) {
               // if not all flags were computed, we upsert flags instead of replacing them
@@ -1193,7 +1192,6 @@ export abstract class PostHogCore extends PostHogCoreStateless {
               const currentFlagPayloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
                 PostHogPersistedProperty.FeatureFlagPayloads
               )
-
               newFeatureFlags = { ...currentFlags, ...res.featureFlags }
               newFeatureFlagPayloads = { ...currentFlagPayloads, ...res.featureFlagPayloads }
             }
