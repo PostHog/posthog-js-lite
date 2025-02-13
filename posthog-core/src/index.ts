@@ -835,6 +835,8 @@ export abstract class PostHogCore extends PostHogCoreStateless {
           this.setPersistedProperty((PostHogPersistedProperty as any)[key], null)
         }
       }
+
+      this.reloadFeatureFlags()
     })
   }
 
@@ -1148,7 +1150,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   private async decideAsync(sendAnonDistinctId: boolean = true): Promise<PostHogDecideResponse | undefined> {
     await this._initPromise
     if (this._decideResponsePromise) {
-      return this._decideResponsePromise
+      await this._decideResponsePromise
     }
     return this._decideAsync(sendAnonDistinctId)
   }
@@ -1176,18 +1178,26 @@ export abstract class PostHogCore extends PostHogCoreStateless {
             }
 
             let newFeatureFlags = res.featureFlags
+
             let newFeatureFlagPayloads = res.featureFlagPayloads
             if (res.errorsWhileComputingFlags) {
               // if not all flags were computed, we upsert flags instead of replacing them
               const currentFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
                 PostHogPersistedProperty.FeatureFlags
               )
+
+              this.logMsgIfDebug(() =>
+                console.log('PostHog Debug', 'Cached feature flags: ', JSON.stringify(currentFlags))
+              )
+
               const currentFlagPayloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
                 PostHogPersistedProperty.FeatureFlagPayloads
               )
+
               newFeatureFlags = { ...currentFlags, ...res.featureFlags }
               newFeatureFlagPayloads = { ...currentFlagPayloads, ...res.featureFlagPayloads }
             }
+
             this.setKnownFeatureFlags(newFeatureFlags)
             this.setKnownFeatureFlagPayloads(
               Object.fromEntries(

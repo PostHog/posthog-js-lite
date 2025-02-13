@@ -1,5 +1,9 @@
 # Next
 
+# 3.9.1 - 2025-02-13
+
+1. fix: reset should reload flags and flags should always be loaded if reload method is called
+
 # 3.9.0 - 2025-02-07
 
 1. chore: Session Replay - GA
