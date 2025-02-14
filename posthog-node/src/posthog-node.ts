@@ -135,8 +135,13 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
           return await _getFlags(distinctId, groups, disableGeoip)
         }
 
+        if (event === '$feature_flag_called') {
+          // If we're capturing a $feature_flag_called event, we don't want to enrich the event with cached flags that may be out of date.
+          return {}
+        }
+
         if ((this.featureFlagsPoller?.featureFlags?.length || 0) > 0) {
-          // Otherwise we may as well check for the flags locally and include them if there
+          // Otherwise we may as well check for the flags locally and include them if they are already loaded
           const groupsWithStringValues: Record<string, string> = {}
           for (const [key, value] of Object.entries(groups || {})) {
             groupsWithStringValues[key] = String(value)
@@ -352,6 +357,10 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       )
     }
     return response
+  }
+
+  async getRemoteConfigPayload(flagKey: string): Promise<JsonType | undefined> {
+    return (await this.featureFlagsPoller?._requestRemoteConfigPayload(flagKey))?.json()
   }
 
   async isFeatureEnabled(
