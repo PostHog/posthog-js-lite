@@ -23,6 +23,8 @@ export type PostHogCoreOptions = {
   preloadFeatureFlags?: boolean
   /** Whether to load remote config when initialized or not */
   disableRemoteConfig?: boolean
+  /** Whether to load surveys when initialized or not */
+  disableSurveys?: boolean
   /** Option to bootstrap the library with given distinctId and feature flags */
   bootstrap?: {
     distinctId?: string
