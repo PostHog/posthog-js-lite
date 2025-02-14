@@ -884,6 +884,8 @@ export abstract class PostHogCore extends PostHogCoreStateless {
           this.setPersistedProperty((PostHogPersistedProperty as any)[key], null)
         }
       }
+
+      this.reloadFeatureFlags()
     })
   }
 
@@ -1231,6 +1233,11 @@ export abstract class PostHogCore extends PostHogCoreStateless {
               const currentFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
                 PostHogPersistedProperty.FeatureFlags
               )
+
+              this.logMsgIfDebug(() =>
+                console.log('PostHog Debug', 'Cached feature flags: ', JSON.stringify(currentFlags))
+              )
+
               const currentFlagPayloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
                 PostHogPersistedProperty.FeatureFlagPayloads
               )
