@@ -119,10 +119,6 @@ export type PostHogAutocaptureElement = {
 } // Any key prefixed with `attr__` can be added
 
 export interface PostHogRemoteConfig {
-  config: { enable_collect_everything: boolean }
-  editorParams: { toolbarVersion: string; jsURL: string }
-  isAuthenticated: true
-  supportedCompression: string[]
   sessionRecording?:
     | boolean
     | {

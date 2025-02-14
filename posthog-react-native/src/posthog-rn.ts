@@ -124,7 +124,7 @@ export class PostHog extends PostHogCore {
 
       this._isInitialized = true
 
-      if (options?.disableRemoteConfig !== false) {
+      if (options?.disableRemoteConfig !== true) {
         this.reloadRemoteConfigAsync()
       } else {
         if (options?.preloadFeatureFlags !== false) {
