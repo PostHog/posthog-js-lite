@@ -1,3 +1,5 @@
+import { Survey } from './surveys-types'
+
 export type PostHogCoreOptions = {
   /** PostHog API host, usually 'https://us.i.posthog.com' or 'https://eu.i.posthog.com' */
   host?: string
@@ -19,6 +21,10 @@ export type PostHogCoreOptions = {
   sendFeatureFlagEvent?: boolean
   /** Whether to load feature flags when initialized or not */
   preloadFeatureFlags?: boolean
+  /** Whether to load remote config when initialized or not */
+  disableRemoteConfig?: boolean
+  /** Whether to load surveys when initialized or not */
+  disableSurveys?: boolean
   /** Option to bootstrap the library with given distinctId and feature flags */
   bootstrap?: {
     distinctId?: string
@@ -34,6 +40,8 @@ export type PostHogCoreOptions = {
   requestTimeout?: number
   /** Timeout in milliseconds for feature flag calls. Defaults to 10 seconds for stateful clients, and 3 seconds for stateless. */
   featureFlagsRequestTimeoutMs?: number
+  /** Timeout in milliseconds for remote config calls. Defaults to 3 seconds. */
+  remoteConfigRequestTimeoutMs?: number
   /** For Session Analysis how long before we expire a session (defaults to 30 mins) */
   sessionExpirationTimeSeconds?: number
   /** Whether to post events to PostHog in JSON or compressed format. Defaults to 'json' */
@@ -65,6 +73,7 @@ export enum PostHogPersistedProperty {
   SurveyLastSeenDate = 'survey_last_seen_date', // only used by posthog-react-native
   SurveysSeen = 'surveys_seen', // only used by posthog-react-native
   Surveys = 'surveys', // only used by posthog-react-native
+  RemoteConfig = 'remote_config',
 }
 
 export type PostHogFetchOptions = {
@@ -111,11 +120,25 @@ export type PostHogAutocaptureElement = {
   [key: string]: any
 } // Any key prefixed with `attr__` can be added
 
-export type PostHogDecideResponse = {
-  config: { enable_collect_everything: boolean }
-  editorParams: { toolbarVersion: string; jsURL: string }
-  isAuthenticated: true
-  supportedCompression: string[]
+export interface PostHogRemoteConfig {
+  sessionRecording?:
+    | boolean
+    | {
+        [key: string]: JsonType
+      }
+
+  /**
+   * Whether surveys are enabled
+   */
+  surveys?: boolean | Survey[]
+
+  /**
+   * Indicates if the team has any flags enabled (if not we don't need to load them)
+   */
+  hasFeatureFlags?: boolean
+}
+
+export interface PostHogDecideResponse extends Omit<PostHogRemoteConfig, 'surveys' | 'hasFeatureFlags'> {
   featureFlags: {
     [key: string]: string | boolean
   }
@@ -123,11 +146,6 @@ export type PostHogDecideResponse = {
     [key: string]: JsonType
   }
   errorsWhileComputingFlags: boolean
-  sessionRecording?:
-    | boolean
-    | {
-        [key: string]: JsonType
-      }
 }
 
 export type PostHogFlagsAndPayloadsResponse = {

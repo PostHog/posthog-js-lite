@@ -9,6 +9,7 @@ import {
   PostHogPersistedProperty,
   PostHogCaptureOptions,
   JsonType,
+  PostHogRemoteConfig,
 } from './types'
 import {
   assert,
@@ -23,7 +24,7 @@ export * as utils from './utils'
 import { LZString } from './lz-string'
 import { SimpleEventEmitter } from './eventemitter'
 import { uuidv7 } from './vendor/uuidv7'
-import { SurveyResponse } from './surveys-types'
+import { Survey, SurveyResponse } from './surveys-types'
 
 class PostHogFetchHttpError extends Error {
   name = 'PostHogFetchHttpError'
@@ -53,19 +54,22 @@ export abstract class PostHogCoreStateless {
   readonly apiKey: string
   readonly host: string
   readonly flushAt: number
+  readonly preloadFeatureFlags: boolean
+  readonly disableSurveys: boolean
   private maxBatchSize: number
   private maxQueueSize: number
   private flushInterval: number
   private flushPromise: Promise<any> | null = null
   private requestTimeout: number
   private featureFlagsRequestTimeoutMs: number
+  private remoteConfigRequestTimeoutMs: number
   private captureMode: 'form' | 'json'
   private removeDebugCallback?: () => void
-  private disableGeoip: boolean = true
-  private historicalMigration: boolean = false
-  protected disabled = false
+  private disableGeoip: boolean
+  private historicalMigration: boolean
+  protected disabled
 
-  private defaultOptIn: boolean = true
+  private defaultOptIn: boolean
   private pendingPromises: Record<string, Promise<any>> = {}
 
   // internal
@@ -74,6 +78,7 @@ export abstract class PostHogCoreStateless {
   protected _retryOptions: RetriableOptions
   protected _initPromise: Promise<void>
   protected _isInitialized: boolean = false
+  protected _remoteConfigResponsePromise?: Promise<PostHogRemoteConfig | undefined>
 
   // Abstract methods to be overridden by implementations
   abstract fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse>
@@ -95,9 +100,10 @@ export abstract class PostHogCoreStateless {
     this.maxQueueSize = Math.max(this.flushAt, options?.maxQueueSize ?? 1000)
     this.flushInterval = options?.flushInterval ?? 10000
     this.captureMode = options?.captureMode || 'json'
-
+    this.preloadFeatureFlags = options?.preloadFeatureFlags ?? true
     // If enable is explicitly set to false we override the optout
     this.defaultOptIn = options?.defaultOptIn ?? true
+    this.disableSurveys = options?.disableSurveys ?? false
 
     this._retryOptions = {
       retryCount: options?.fetchRetryCount ?? 3,
@@ -106,6 +112,7 @@ export abstract class PostHogCoreStateless {
     }
     this.requestTimeout = options?.requestTimeout ?? 10000 // 10 seconds
     this.featureFlagsRequestTimeoutMs = options?.featureFlagsRequestTimeoutMs ?? 3000 // 3 seconds
+    this.remoteConfigRequestTimeoutMs = options?.remoteConfigRequestTimeoutMs ?? 3000 // 3 seconds
     this.disableGeoip = options?.disableGeoip ?? true
     this.disabled = options?.disabled ?? false
     this.historicalMigration = options?.historicalMigration ?? false
@@ -286,6 +293,32 @@ export abstract class PostHogCoreStateless {
 
       this.enqueue('capture', payload, options)
     })
+  }
+
+  protected async getRemoteConfig(): Promise<PostHogRemoteConfig | undefined> {
+    await this._initPromise
+
+    let host = this.host
+
+    if (host === 'https://us.i.posthog.com') {
+      host = 'https://us-assets.i.posthog.com'
+    } else if (host === 'https://eu.i.posthog.com') {
+      host = 'https://eu-assets.i.posthog.com'
+    }
+
+    const url = `${host}/array/${this.apiKey}/config`
+    const fetchOptions: PostHogFetchOptions = {
+      method: 'GET',
+      headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },
+    }
+    // Don't retry remote config API calls
+    return this.fetchWithRetry(url, fetchOptions, { retryCount: 0 }, this.remoteConfigRequestTimeoutMs)
+      .then((response) => response.json() as Promise<PostHogRemoteConfig>)
+      .catch((error) => {
+        this.logMsgIfDebug(() => console.error('Remote config could not be loaded', error))
+        this._events.emit('error', error)
+        return undefined
+      })
   }
 
   /***
@@ -480,10 +513,17 @@ export abstract class PostHogCoreStateless {
   public async getSurveys(): Promise<SurveyResponse['surveys']> {
     await this._initPromise
 
+    if (this.disableSurveys) {
+      return []
+    }
+
     const surveys = this.getPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys)
 
     if (surveys && surveys.length > 0) {
+      this.logMsgIfDebug(() => console.log('PostHog Debug', 'Surveys fetched from storage: ', JSON.stringify(surveys)))
       return surveys
+    } else {
+      this.logMsgIfDebug(() => console.log('PostHog Debug', 'No surveys found in storage, fetching from API'))
     }
 
     const url = `${this.host}/api/surveys/?token=${this.apiKey}`
@@ -515,6 +555,7 @@ export abstract class PostHogCoreStateless {
     const newSurveys = response?.surveys
 
     if (newSurveys) {
+      this.logMsgIfDebug(() => console.log('PostHog Debug', 'Surveys fetched from API: ', JSON.stringify(newSurveys)))
       this.setPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys, newSurveys)
     }
 
@@ -1193,6 +1234,14 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     })
   }
 
+  private async remoteConfigAsync(): Promise<PostHogRemoteConfig | undefined> {
+    await this._initPromise
+    if (this._remoteConfigResponsePromise) {
+      return this._remoteConfigResponsePromise
+    }
+    return this._remoteConfigAsync()
+  }
+
   /***
    *** FEATURE FLAGS
    ***/
@@ -1202,6 +1251,76 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       return this._decideResponsePromise
     }
     return this._decideAsync(sendAnonDistinctId)
+  }
+
+  private async _remoteConfigAsync(): Promise<PostHogRemoteConfig | undefined> {
+    this._remoteConfigResponsePromise = this._initPromise
+      .then(() => {
+        let remoteConfig = this.getPersistedProperty<Omit<PostHogRemoteConfig, 'surveys'>>(
+          PostHogPersistedProperty.RemoteConfig
+        )
+
+        this.logMsgIfDebug(() => console.log('PostHog Debug', 'Cached remote config: ', JSON.stringify(remoteConfig)))
+
+        return super.getRemoteConfig().then((response) => {
+          if (response) {
+            const remoteConfigWithoutSurveys = { ...response }
+            delete remoteConfigWithoutSurveys.surveys
+
+            this.logMsgIfDebug(() =>
+              console.log('PostHog Debug', 'Fetched remote config: ', JSON.stringify(remoteConfigWithoutSurveys))
+            )
+
+            const surveys = response.surveys
+
+            let hasSurveys = true
+
+            if (!Array.isArray(surveys)) {
+              // If surveys is not an array, it means there are no surveys (its a boolean instead)
+              this.logMsgIfDebug(() => console.log('PostHog Debug', 'There are no surveys.'))
+              hasSurveys = false
+            } else {
+              this.logMsgIfDebug(() =>
+                console.log('PostHog Debug', 'Surveys fetched from remote config: ', JSON.stringify(surveys))
+              )
+            }
+
+            if (!this.disableSurveys && hasSurveys) {
+              this.setPersistedProperty<SurveyResponse['surveys']>(
+                PostHogPersistedProperty.Surveys,
+                surveys as Survey[]
+              )
+            } else {
+              this.setPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys, [])
+            }
+
+            // we cache the surveys in its own storage key
+            this.setPersistedProperty<Omit<PostHogRemoteConfig, 'surveys'>>(
+              PostHogPersistedProperty.RemoteConfig,
+              remoteConfigWithoutSurveys
+            )
+
+            // we only dont load flags if the remote config has no feature flags
+            if (response.hasFeatureFlags === false) {
+              // resetting flags to empty object
+              this.setKnownFeatureFlags({})
+              this.setKnownFeatureFlagPayloads({})
+
+              this.logMsgIfDebug(() => console.warn('Remote config has no feature flags, will not load feature flags.'))
+            } else if (this.preloadFeatureFlags !== false) {
+              this.reloadFeatureFlags()
+            }
+
+            remoteConfig = response
+          }
+
+          return remoteConfig
+        })
+      })
+      .finally(() => {
+        this._remoteConfigResponsePromise = undefined
+      })
+    return this._remoteConfigResponsePromise
   }
 
   private async _decideAsync(sendAnonDistinctId: boolean = true): Promise<PostHogDecideResponse | undefined> {
@@ -1412,6 +1531,10 @@ export abstract class PostHogCore extends PostHogCoreStateless {
           this.logMsgIfDebug(() => console.log('[PostHog] Error reloading feature flags', e))
         }
       })
+  }
+
+  async reloadRemoteConfigAsync(): Promise<PostHogRemoteConfig | undefined> {
+    return await this.remoteConfigAsync()
   }
 
   async reloadFeatureFlagsAsync(

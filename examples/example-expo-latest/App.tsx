@@ -18,16 +18,7 @@ posthog.debug(true)
 
 export const SharedPostHogProvider = (props: any) => {
   return (
-    <PostHogProvider
-      client={posthog}
-      autocapture={{
-        captureLifecycleEvents: false,
-        captureScreens: false,
-        captureTouches: false,
-        customLabelProp: 'ph-my-label',
-      }}
-      debug
-    >
+    <PostHogProvider client={posthog} autocapture={false} debug>
       {props.children}
     </PostHogProvider>
   )

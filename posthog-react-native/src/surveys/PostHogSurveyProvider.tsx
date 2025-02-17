@@ -79,6 +79,8 @@ export function PostHogSurveyProvider(props: PostHogSurveyProviderProps): JSX.El
 
   // Load surveys once
   useEffect(() => {
+    // TODO: for the first time, sometimes the surveys are not fetched from storage, so we need to fetch them from the API
+    // because the remote config is still being fetched from the API
     posthog
       .getSurveys()
       .then(setSurveys)
