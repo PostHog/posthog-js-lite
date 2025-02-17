@@ -24,7 +24,7 @@ export * as utils from './utils'
 import { LZString } from './lz-string'
 import { SimpleEventEmitter } from './eventemitter'
 import { uuidv7 } from './vendor/uuidv7'
-import { SurveyResponse } from './surveys-types'
+import { Survey, SurveyResponse } from './surveys-types'
 
 class PostHogFetchHttpError extends Error {
   name = 'PostHogFetchHttpError'
@@ -1274,7 +1274,9 @@ export abstract class PostHogCore extends PostHogCoreStateless {
             const surveys = response.surveys
 
             let hasSurveys = true
-            if (typeof surveys === 'boolean') {
+
+            if (!Array.isArray(surveys)) {
+              // If surveys is not an array, it means there are no surveys (its a boolean instead)
               this.logMsgIfDebug(() => console.log('PostHog Debug', 'There are no surveys.'))
               hasSurveys = false
             } else {
@@ -1283,8 +1285,11 @@ export abstract class PostHogCore extends PostHogCoreStateless {
               )
             }
 
-            if (!this.disableSurveys && hasSurveys && Array.isArray(surveys)) {
-              this.setPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys, surveys)
+            if (!this.disableSurveys && hasSurveys) {
+              this.setPersistedProperty<SurveyResponse['surveys']>(
+                PostHogPersistedProperty.Surveys,
+                surveys as Survey[]
+              )
             } else {
               this.setPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys, [])
             }

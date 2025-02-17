@@ -138,7 +138,7 @@ export interface PostHogRemoteConfig {
   hasFeatureFlags?: boolean
 }
 
-export interface PostHogDecideResponse extends Omit<PostHogRemoteConfig, 'surveys'> {
+export interface PostHogDecideResponse extends Omit<PostHogRemoteConfig, 'surveys' | 'hasFeatureFlags'> {
   featureFlags: {
     [key: string]: string | boolean
   }
