@@ -101,8 +101,8 @@ export function PostHogSurveyProvider(props: PostHogSurveyProviderProps): JSX.El
       surveys,
       flags ?? {},
       seenSurveys,
-      activatedSurveys,
-      lastSeenSurveyDate
+      activatedSurveys
+      // lastSeenSurveyDate
     )
 
     const popoverSurveys = activeSurveys.filter((survey: Survey) => survey.type === 'popover')
