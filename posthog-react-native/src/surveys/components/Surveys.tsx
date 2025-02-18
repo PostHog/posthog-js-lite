@@ -35,7 +35,7 @@ export const sendSurveyEvent = (
     $survey_id: survey.id,
     $survey_iteration: survey.current_iteration,
     $survey_iteration_start_date: survey.current_iteration_start_date,
-    $survey_questions: survey.questions.map((question) => question.question),
+    $survey_questions: survey.questions.map((question: SurveyQuestion) => question.question),
     ...responses,
     $set: {
       [getSurveyInteractionProperty(survey, 'responded')]: true,
@@ -74,22 +74,22 @@ export function Questions({
   const onNextButtonClick = ({
     res,
     originalQuestionIndex,
-    displayQuestionIndex,
-  }: {
+  }: // displayQuestionIndex,
+  {
     res: string | string[] | number | null
     originalQuestionIndex: number
-    displayQuestionIndex: number
+    // displayQuestionIndex: number
   }): void => {
     const responseKey = originalQuestionIndex === 0 ? `$survey_response` : `$survey_response_${originalQuestionIndex}`
 
     setQuestionsResponses({ ...questionsResponses, [responseKey]: res })
 
-    const isLastDisplayedQuestion = displayQuestionIndex === survey.questions.length - 1
+    const isLastDisplayedQuestion = originalQuestionIndex === survey.questions.length - 1
     if (isLastDisplayedQuestion) {
       sendSurveyEvent({ ...questionsResponses, [responseKey]: res }, survey, posthog)
       onSubmit()
     } else {
-      setCurrentQuestionIndex(displayQuestionIndex + 1)
+      setCurrentQuestionIndex(originalQuestionIndex + 1)
     }
   }
 
@@ -104,7 +104,7 @@ export function Questions({
           onNextButtonClick({
             res,
             originalQuestionIndex: question.originalQuestionIndex,
-            displayQuestionIndex: currentQuestionIndex,
+            // displayQuestionIndex: currentQuestionIndex,
           }),
       })}
     </ScrollView>

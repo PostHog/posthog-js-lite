@@ -75,7 +75,7 @@ export function LinkQuestion({
         descriptionContentType={question.descriptionContentType}
       />
       <BottomSection
-        text={question.buttonText ?? appearance.submitButtonText}
+        text={question.buttonText ?? appearance.submitButtonText ?? 'Submit'}
         submitDisabled={false}
         link={question.link}
         appearance={appearance}
@@ -253,7 +253,13 @@ export function MultipleChoiceQuestion({
         appearance={appearance}
         onSubmit={() => {
           // If open choice is selected, replace the choice name with the actual value entered
-          onSubmit(selectedChoices.map((c) => (c === openChoice ? openEndedInput : c)))
+          let result: string | string[] = selectedChoices.map((c) => (c === openChoice ? openEndedInput : c))
+
+          if (result.length === 1) {
+            result = result[0]
+          }
+
+          onSubmit(result)
         }}
       />
     </View>

@@ -109,14 +109,14 @@ export function SurveyScreen() {
 | Pre-built feedback tab            | ❌                                 |
 | **Customization / Appearance**    | _When using default modal UI_      |
 | Set colors in PostHog Dashboard   | ✅ Or override with your app theme |
-| Shuffle Questions                 | ✅                                 |
+| Shuffle Questions                 | ❌                                 |
 | PostHog branding                  | ❌ Always off                      |
-| Delay popup after page load       | ✅                                 |
+| Delay popup after page load       | ❌                                 |
 | Position config                   | ❌ Always bottom center            |
 | **Display conditions**            |                                    |
 | Feature flag & property targeting | ✅                                 |
 | URL Targeting                     | ❌                                 |
 | CSS Selector Matches              | ❌                                 |
-| Survey Wait period                | ✅                                 |
+| Survey Wait period                | ❌                                 |
 | Event Triggers                    | ✅                                 |
 | Action Triggers                   | ❌                                 |
