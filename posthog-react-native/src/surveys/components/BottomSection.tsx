@@ -22,10 +22,10 @@ export function BottomSection({
         style={[styles.button, { backgroundColor: appearance.submitButtonColor }]}
         disabled={submitDisabled}
         onPress={() => {
+          onSubmit()
           if (link) {
             Linking.openURL(link)
           }
-          onSubmit()
         }}
       >
         <Text style={[styles.buttonText, { color: appearance.submitButtonTextColor }]}>{text}</Text>

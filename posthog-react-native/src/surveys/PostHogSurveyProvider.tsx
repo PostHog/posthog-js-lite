@@ -10,6 +10,7 @@ import { defaultSurveyAppearance, getContrastingTextColor, SurveyAppearanceTheme
 import { Survey, SurveyAppearance } from '../../../posthog-core/src/surveys-types'
 import { usePostHog } from '../hooks/usePostHog'
 import { useFeatureFlags } from '../hooks/useFeatureFlags'
+import { PostHog } from '../posthog-rn'
 
 type ActiveSurveyContextType = { survey: Survey; onShow: () => void; onClose: (submitted: boolean) => void } | undefined
 const ActiveSurveyContext = React.createContext<ActiveSurveyContextType>(undefined)
@@ -65,11 +66,14 @@ export type PostHogSurveyProviderProps = {
    */
   overrideAppearanceWithDefault?: boolean
 
+  client?: PostHog
+
   children: React.ReactNode
 }
 
 export function PostHogSurveyProvider(props: PostHogSurveyProviderProps): JSX.Element {
-  const posthog = usePostHog()
+  const posthogFromHook = usePostHog()
+  const posthog = props.client ?? posthogFromHook
   const { seenSurveys, setSeenSurvey, lastSeenSurveyDate, setLastSeenSurveyDate } = useSurveyStorage()
   const [surveys, setSurveys] = useState<Survey[]>([])
   const [activeSurvey, setActiveSurvey] = useState<Survey | undefined>(undefined)
@@ -84,9 +88,7 @@ export function PostHogSurveyProvider(props: PostHogSurveyProviderProps): JSX.El
     posthog
       .getSurveys()
       .then(setSurveys)
-      .catch((error: unknown) => {
-        posthog.capture('PostHogSurveyProvider failed to fetch surveys', { error })
-      })
+      .catch(() => {})
   }, [posthog])
 
   // Whenever state changes and there's no active survey, check if there is a new survey to show
@@ -99,14 +101,16 @@ export function PostHogSurveyProvider(props: PostHogSurveyProviderProps): JSX.El
       surveys,
       flags ?? {},
       seenSurveys,
-      activatedSurveys,
-      lastSeenSurveyDate
+      activatedSurveys
+      // lastSeenSurveyDate
     )
-    const popoverSurveys = activeSurveys.filter((survey) => survey.type === 'popover')
-    const popoverSurveyQueue = sortSurveysByAppearanceDelay(popoverSurveys)
 
-    if (popoverSurveyQueue.length > 0) {
-      setActiveSurvey(popoverSurveyQueue[0])
+    const popoverSurveys = activeSurveys.filter((survey: Survey) => survey.type === 'popover')
+    // TODO: sort by appearance delay, implement delay
+    // const popoverSurveyQueue = sortSurveysByAppearanceDelay(popoverSurveys)
+
+    if (popoverSurveys.length > 0) {
+      setActiveSurvey(popoverSurveys[0])
     }
   }, [activeSurvey, flags, surveys, seenSurveys, activatedSurveys, lastSeenSurveyDate, props.automaticSurveyModal])
 
@@ -168,8 +172,8 @@ export function PostHogSurveyProvider(props: PostHogSurveyProviderProps): JSX.El
   )
 }
 
-function sortSurveysByAppearanceDelay(surveys: Survey[]): Survey[] {
-  return surveys.sort(
-    (a, b) => (a.appearance?.surveyPopupDelaySeconds ?? 0) - (b.appearance?.surveyPopupDelaySeconds ?? 0)
-  )
-}
+// function sortSurveysByAppearanceDelay(surveys: Survey[]): Survey[] {
+//   return surveys.sort(
+//     (a, b) => (a.appearance?.surveyPopupDelaySeconds ?? 0) - (b.appearance?.surveyPopupDelaySeconds ?? 0)
+//   )
+// }

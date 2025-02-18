@@ -32,15 +32,18 @@ export const defaultSurveyAppearance: SurveyAppearanceTheme = {
 
 export const getDisplayOrderQuestions = (survey: Survey): SurveyQuestion[] => {
   // retain the original questionIndex so we can correlate values in the webapp
-  survey.questions.forEach((question, idx) => {
+  survey.questions.forEach((question: SurveyQuestion, idx: number) => {
     question.originalQuestionIndex = idx
   })
 
-  if (!survey.appearance?.shuffleQuestions) {
-    return survey.questions
-  }
+  // TODO: shuffle questions
+  return survey.questions
 
-  return reverseIfUnshuffled(survey.questions, shuffle(survey.questions))
+  // if (!survey.appearance?.shuffleQuestions) {
+  //   return survey.questions
+  // }
+
+  // return reverseIfUnshuffled(survey.questions, shuffle(survey.questions))
 }
 
 export const hasEvents = (survey: Survey): boolean => {
@@ -59,42 +62,44 @@ export const canActivateRepeatedly = (survey: Survey): boolean => {
  * Use the Fisher-yates algorithm to shuffle this array
  * https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
  */
-export const shuffle = <T>(array: T[]): T[] => {
-  return array
-    .map((a) => ({ sort: Math.floor(Math.random() * 10), value: a }))
-    .sort((a, b) => a.sort - b.sort)
-    .map((a) => a.value)
-}
+// export const shuffle = <T>(array: T[]): T[] => {
+//   return array
+//     .map((a) => ({ sort: Math.floor(Math.random() * 10), value: a }))
+//     .sort((a, b) => a.sort - b.sort)
+//     .map((a) => a.value)
+// }
 
-const reverseIfUnshuffled = <T>(unshuffled: T[], shuffled: T[]): T[] => {
-  if (unshuffled.length === shuffled.length && unshuffled.every((val, index) => val === shuffled[index])) {
-    return shuffled.reverse()
-  }
+// const reverseIfUnshuffled = <T>(unshuffled: T[], shuffled: T[]): T[] => {
+//   if (unshuffled.length === shuffled.length && unshuffled.every((val, index) => val === shuffled[index])) {
+//     return shuffled.reverse()
+//   }
 
-  return shuffled
-}
+//   return shuffled
+// }
 
 export const getDisplayOrderChoices = (question: MultipleSurveyQuestion): string[] => {
-  if (!question.shuffleOptions) {
-    return question.choices
-  }
+  // TODO: shuffle choices
+  return question.choices
 
-  const displayOrderChoices = question.choices
-  let openEndedChoice = ''
-  if (question.hasOpenChoice && displayOrderChoices.length > 0) {
-    // if the question has an open-ended choice, its always the last element in the choices array.
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    openEndedChoice = displayOrderChoices.pop()!
-  }
+  // if (!question.shuffleOptions) {
+  //   return question.choices
+  // }
 
-  const shuffledOptions = reverseIfUnshuffled(displayOrderChoices, shuffle(displayOrderChoices))
+  // const displayOrderChoices = question.choices
+  // let openEndedChoice = ''
+  // if (question.hasOpenChoice && displayOrderChoices.length > 0) {
+  // if the question has an open-ended choice, its always the last element in the choices array.
+  // openEndedChoice = displayOrderChoices.pop()!
+  // }
 
-  if (question.hasOpenChoice) {
-    question.choices.push(openEndedChoice)
-    shuffledOptions.push(openEndedChoice)
-  }
+  // const shuffledOptions = reverseIfUnshuffled(displayOrderChoices, shuffle(displayOrderChoices))
 
-  return shuffledOptions
+  // if (question.hasOpenChoice) {
+  //   question.choices.push(openEndedChoice)
+  //   shuffledOptions.push(openEndedChoice)
+  // }
+
+  // return shuffledOptions
 }
 
 export function getContrastingTextColor(color: string): 'black' | 'white' {

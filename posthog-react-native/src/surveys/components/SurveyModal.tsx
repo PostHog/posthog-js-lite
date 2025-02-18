@@ -22,13 +22,14 @@ export function SurveyModal(props: SlypModalProps): JSX.Element | null {
   const onClose = useCallback(() => props.onClose(isSurveySent), [isSurveySent, props])
   const insets = useOptionalSafeAreaInsets()
 
-  const surveyPopupDelayMilliseconds = appearance.surveyPopupDelaySeconds * 1000
-  const [isVisible, setIsVisible] = useState(surveyPopupDelayMilliseconds === 0)
-  if (surveyPopupDelayMilliseconds > 0) {
-    setTimeout(() => {
-      setIsVisible(true)
-    }, surveyPopupDelayMilliseconds)
-  }
+  // TODO: delay seconds
+  // const surveyPopupDelayMilliseconds = appearance.surveyPopupDelaySeconds * 1000
+  const [isVisible] = useState(true)
+  // if (surveyPopupDelayMilliseconds > 0) {
+  //   setTimeout(() => {
+  //     setIsVisible(true)
+  //   }, surveyPopupDelayMilliseconds)
+  // }
 
   const shouldShowConfirmation = isSurveySent && appearance.thankYouMessageHeader
 
@@ -38,15 +39,16 @@ export function SurveyModal(props: SlypModalProps): JSX.Element | null {
     }
   }, [isVisible, onShow])
 
-  useEffect(() => {
-    let timeout: NodeJS.Timeout | undefined
-    if (isVisible && shouldShowConfirmation && appearance.autoDisappear) {
-      timeout = setTimeout(() => {
-        onClose()
-      }, 5000)
-    }
-    return () => timeout && clearTimeout(timeout)
-  }, [isVisible, onClose, shouldShowConfirmation, appearance])
+  // TODO: auto disappear
+  // useEffect(() => {
+  //   let timeout: NodeJS.Timeout | undefined
+  //   if (isVisible && shouldShowConfirmation && appearance.autoDisappear) {
+  //     timeout = setTimeout(() => {
+  //       onClose()
+  //     }, 5000)
+  //   }
+  //   return () => timeout && clearTimeout(timeout)
+  // }, [isVisible, onClose, shouldShowConfirmation, appearance])
 
   if (!isVisible) {
     return null
@@ -99,6 +101,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     padding: 20,
+    width: '90%',
+    maxWidth: 400,
+    marginHorizontal: 20,
   },
   topIconContainer: {
     position: 'absolute',
