@@ -1,5 +1,7 @@
 # Next
 
+1. fix: Autocapture native app lifecycle events
+
 # 3.9.1 - 2025-02-13
 
 1. fix: ensure feature flags are reloaded after reset() to prevent undefined values
