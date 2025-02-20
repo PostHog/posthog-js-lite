@@ -405,6 +405,8 @@ export class PostHog extends PostHogCore {
 
     const isMemoryPersistence = this._persistence === 'memory'
 
+    // version and build are deprecated, but we keep them for compatibility
+    // use $app_version and $app_build instead
     const properties: PostHogEventProperties = { version: appVersion, build: appBuild }
 
     if (!isMemoryPersistence) {
@@ -423,13 +425,9 @@ export class PostHog extends PostHogCore {
       if (appBuild) {
         if (!prevAppBuild) {
           // new app install
-          // version and build are deprecated, but we keep them for compatibility
-          // use $app_version and $app_build instead
           this.capture('Application Installed', properties)
         } else if (prevAppBuild !== appBuild) {
           // app updated
-          // version and build are deprecated, but we keep them for compatibility
-          // use $app_version and $app_build instead
           this.capture('Application Updated', {
             previous_version: prevAppVersion,
             previous_build: prevAppBuild,
@@ -447,8 +445,6 @@ export class PostHog extends PostHogCore {
 
     const initialUrl = (await Linking.getInitialURL()) ?? undefined
 
-    // version and build are deprecated, but we keep them for compatibility
-    // use $app_version and $app_build instead
     this.capture('Application Opened', {
       ...properties,
       url: initialUrl,
@@ -456,8 +452,6 @@ export class PostHog extends PostHogCore {
 
     AppState.addEventListener('change', (state) => {
       if (state === 'active') {
-        // version and build are deprecated, but we keep them for compatibility
-        // use $app_version and $app_build instead
         this.capture('Application Became Active', properties)
       } else if (state === 'background') {
         this.capture('Application Backgrounded')
