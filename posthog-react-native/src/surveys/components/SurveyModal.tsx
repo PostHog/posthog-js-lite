@@ -9,14 +9,14 @@ import { SurveyAppearanceTheme } from '../surveys-utils'
 import { Survey, SurveyQuestionDescriptionContentType } from '../../../../posthog-core/src/surveys-types'
 import { useOptionalSafeAreaInsets } from '../../optional/OptionalReactNativeSafeArea'
 
-export type SlypModalProps = {
+export type SurveyModalProps = {
   survey: Survey
   appearance: SurveyAppearanceTheme
   onShow: () => void
   onClose: (submitted: boolean) => void
 }
 
-export function SurveyModal(props: SlypModalProps): JSX.Element | null {
+export function SurveyModal(props: SurveyModalProps): JSX.Element | null {
   const { survey, appearance, onShow } = props
   const [isSurveySent, setIsSurveySent] = useState(false)
   const onClose = useCallback(() => props.onClose(isSurveySent), [isSurveySent, props])

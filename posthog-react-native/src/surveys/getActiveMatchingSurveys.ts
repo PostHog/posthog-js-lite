@@ -42,7 +42,7 @@ function defaultMatchType(matchType?: SurveyMatchType): SurveyMatchType {
 }
 
 function doesSurveyDeviceTypesMatch(survey: Survey): boolean {
-  if (!survey.conditions?.deviceTypes || survey.conditions?.deviceTypes.length === 0) {
+  if (!survey.conditions?.deviceTypes || survey.conditions.deviceTypes.length === 0) {
     return true
   }
 

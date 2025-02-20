@@ -77,13 +77,13 @@ export interface LinkSurveyQuestion extends SurveyQuestionBase {
 
 export interface RatingSurveyQuestion extends SurveyQuestionBase {
   type: SurveyQuestionType.Rating
-  display: SurveyDisplay
+  display: SurveyRatingDisplay
   scale: 3 | 5 | 7 | 10
   lowerBoundLabel: string
   upperBoundLabel: string
 }
 
-export enum SurveyDisplay {
+export enum SurveyRatingDisplay {
   Number = 'number',
   Emoji = 'emoji',
 }
