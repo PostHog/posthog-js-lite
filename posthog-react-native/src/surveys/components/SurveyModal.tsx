@@ -6,7 +6,7 @@ import { ConfirmationMessage } from './ConfirmationMessage'
 import { Questions } from './Surveys'
 
 import { SurveyAppearanceTheme } from '../surveys-utils'
-import { Survey } from '../../../../posthog-core/src/surveys-types'
+import { Survey, SurveyQuestionDescriptionContentType } from '../../../../posthog-core/src/surveys-types'
 import { useOptionalSafeAreaInsets } from '../../optional/OptionalReactNativeSafeArea'
 
 export type SlypModalProps = {
@@ -75,7 +75,9 @@ export function SurveyModal(props: SlypModalProps): JSX.Element | null {
                 appearance={appearance}
                 header={appearance.thankYouMessageHeader}
                 description={appearance.thankYouMessageDescription}
-                contentType={appearance.thankYouMessageDescriptionContentType ?? 'text'}
+                contentType={
+                  appearance.thankYouMessageDescriptionContentType ?? SurveyQuestionDescriptionContentType.Text
+                }
                 onClose={onClose}
                 isModal={true}
               />
