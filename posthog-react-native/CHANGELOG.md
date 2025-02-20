@@ -1,5 +1,11 @@
 # Next
 
+# 3.10.0 - 2025-02-20
+
+## Added
+
+1. Adds the ability to capture user feedback in LLM Observability using the `captureTraceFeedback` and `captureTraceMetric` methods.
+
 # 3.9.1 - 2025-02-13
 
 1. fix: ensure feature flags are reloaded after reset() to prevent undefined values
