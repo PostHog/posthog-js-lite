@@ -1,5 +1,57 @@
-import { canActivateRepeatedly, hasActions, hasEvents } from './surveys-utils'
-import { Survey } from '../../../posthog-core/src/surveys-types'
+import { canActivateRepeatedly, hasEvents } from './surveys-utils'
+import { Survey, SurveyMatchType } from '../../../posthog-core/src/surveys-types'
+import { currentDeviceType } from '../native-deps'
+
+const isMatchingRegex = function (value: string, pattern: string): boolean {
+  if (!isValidRegex(pattern)) {
+    return false
+  }
+
+  try {
+    return new RegExp(pattern).test(value)
+  } catch {
+    return false
+  }
+}
+
+const isValidRegex = function (str: string): boolean {
+  try {
+    new RegExp(str)
+  } catch {
+    return false
+  }
+  return true
+}
+
+const surveyValidationMap: Record<SurveyMatchType, (targets: string[], value: string) => boolean> = {
+  icontains: (targets, value) => targets.some((target) => value.toLowerCase().includes(target.toLowerCase())),
+
+  not_icontains: (targets, value) => targets.every((target) => !value.toLowerCase().includes(target.toLowerCase())),
+
+  regex: (targets, value) => targets.some((target) => isMatchingRegex(value, target)),
+
+  not_regex: (targets, value) => targets.every((target) => !isMatchingRegex(value, target)),
+
+  exact: (targets, value) => targets.some((target) => value === target),
+
+  is_not: (targets, value) => targets.every((target) => value !== target),
+}
+
+function defaultMatchType(matchType?: SurveyMatchType): SurveyMatchType {
+  return matchType ?? SurveyMatchType.Icontains
+}
+
+function doesSurveyDeviceTypesMatch(survey: Survey): boolean {
+  if (!survey.conditions?.deviceTypes || survey.conditions?.deviceTypes.length === 0) {
+    return true
+  }
+
+  const deviceType = currentDeviceType
+  return surveyValidationMap[defaultMatchType(survey.conditions.deviceTypesMatchType)](
+    survey.conditions.deviceTypes,
+    deviceType
+  )
+}
 
 export function getActiveMatchingSurveys(
   surveys: Survey[],
@@ -8,9 +60,14 @@ export function getActiveMatchingSurveys(
   activatedSurveys: ReadonlySet<string>
   // lastSeenSurveyDate: Date | undefined
 ): Survey[] {
-  return surveys.filter((survey) => {
+  return surveys.filter((survey: Survey) => {
     // Is Active
     if (!survey.start_date || survey.end_date) {
+      return false
+    }
+
+    // device type check
+    if (!doesSurveyDeviceTypesMatch(survey)) {
       return false
     }
 
@@ -43,8 +100,7 @@ export function getActiveMatchingSurveys(
     const linkedFlagCheck = survey.linked_flag_key ? flags[survey.linked_flag_key] === true : true
     const targetingFlagCheck = survey.targeting_flag_key ? flags[survey.targeting_flag_key] === true : true
 
-    const eventBasedTargetingFlagCheck =
-      hasEvents(survey) || hasActions(survey) ? activatedSurveys.has(survey.id) : true
+    const eventBasedTargetingFlagCheck = hasEvents(survey) ? activatedSurveys.has(survey.id) : true
 
     const internalTargetingFlagCheck =
       survey.internal_targeting_flag_key && !canActivateRepeatedly(survey)

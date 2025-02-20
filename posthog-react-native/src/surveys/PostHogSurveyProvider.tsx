@@ -7,7 +7,7 @@ import { useSurveyStorage } from './useSurveyStorage'
 import { useActivatedSurveys } from './useActivatedSurveys'
 import { SurveyModal } from './components/SurveyModal'
 import { defaultSurveyAppearance, getContrastingTextColor, SurveyAppearanceTheme } from './surveys-utils'
-import { Survey, SurveyAppearance } from '../../../posthog-core/src/surveys-types'
+import { Survey, SurveyAppearance, SurveyType } from '../../../posthog-core/src/surveys-types'
 import { usePostHog } from '../hooks/usePostHog'
 import { useFeatureFlags } from '../hooks/useFeatureFlags'
 import { PostHog } from '../posthog-rn'
@@ -32,7 +32,7 @@ const FeedbackSurveyContext = React.createContext<
 export const useFeedbackSurvey = (selector: string): FeedbackSurveyHook | undefined => {
   const context = React.useContext(FeedbackSurveyContext)
   const survey = context?.surveys.find(
-    (survey) => survey.type === 'widget' && survey.appearance?.widgetSelector === selector
+    (survey: Survey) => survey.type === SurveyType.Widget && survey.appearance?.widgetSelector === selector
   )
   if (!context || !survey) {
     return undefined
@@ -105,7 +105,7 @@ export function PostHogSurveyProvider(props: PostHogSurveyProviderProps): JSX.El
       // lastSeenSurveyDate
     )
 
-    const popoverSurveys = activeSurveys.filter((survey: Survey) => survey.type === 'popover')
+    const popoverSurveys = activeSurveys.filter((survey: Survey) => survey.type === SurveyType.Popover)
     // TODO: sort by appearance delay, implement delay
     // const popoverSurveyQueue = sortSurveysByAppearanceDelay(popoverSurveys)
 
@@ -160,7 +160,7 @@ export function PostHogSurveyProvider(props: PostHogSurveyProviderProps): JSX.El
   // Modal is shown for PopOver surveys or if automaticSurveyModal is true, and for all widget surveys
   // because these would have been invoked by the useFeedbackSurvey hook's showSurveyModal() method
   const shouldShowModal =
-    activeContext && (props.automaticSurveyModal !== false || activeContext.survey.type === 'widget')
+    activeContext && (props.automaticSurveyModal !== false || activeContext.survey.type === SurveyType.Widget)
 
   return (
     <ActiveSurveyContext.Provider value={activeContext}>

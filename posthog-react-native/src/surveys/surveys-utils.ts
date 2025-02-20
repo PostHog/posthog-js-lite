@@ -50,9 +50,9 @@ export const hasEvents = (survey: Survey): boolean => {
   return survey.conditions?.events?.values.length !== undefined && survey.conditions.events.values.length > 0
 }
 
-export const hasActions = (survey: Survey): boolean => {
-  return survey.conditions?.actions?.values.length !== undefined && survey.conditions.actions.values.length > 0
-}
+// export const hasActions = (survey: Survey): boolean => {
+//   return survey.conditions?.actions?.values.length !== undefined && survey.conditions.actions.values.length > 0
+// }
 
 export const canActivateRepeatedly = (survey: Survey): boolean => {
   return !!(survey.conditions?.events?.repeatedActivation && hasEvents(survey))
