@@ -20,15 +20,27 @@ export interface SurveyAppearance {
   thankYouMessageDescriptionContentType?: SurveyQuestionDescriptionContentType
   thankYouMessageCloseButtonText?: string
   borderColor?: string
-  position?: 'left' | 'right' | 'center'
+  position?: SurveyPosition
   placeholder?: string
   shuffleQuestions?: boolean
   surveyPopupDelaySeconds?: number
   // widget options
-  widgetType?: 'button' | 'tab' | 'selector'
+  widgetType?: SurveyWidgetType
   widgetSelector?: string
   widgetLabel?: string
   widgetColor?: string
+}
+
+export enum SurveyPosition {
+  Left = 'left',
+  Right = 'right',
+  Center = 'center',
+}
+
+export enum SurveyWidgetType {
+  Button = 'button',
+  Tab = 'tab',
+  Selector = 'selector',
 }
 
 export enum SurveyType {
@@ -39,11 +51,14 @@ export enum SurveyType {
 
 export type SurveyQuestion = BasicSurveyQuestion | LinkSurveyQuestion | RatingSurveyQuestion | MultipleSurveyQuestion
 
-export type SurveyQuestionDescriptionContentType = 'html' | 'text'
+export enum SurveyQuestionDescriptionContentType {
+  Html = 'html',
+  Text = 'text',
+}
 
 interface SurveyQuestionBase {
   question: string
-  description?: string | null
+  description?: string
   descriptionContentType?: SurveyQuestionDescriptionContentType
   optional?: boolean
   buttonText?: string
@@ -57,15 +72,20 @@ export interface BasicSurveyQuestion extends SurveyQuestionBase {
 
 export interface LinkSurveyQuestion extends SurveyQuestionBase {
   type: SurveyQuestionType.Link
-  link?: string | null
+  link?: string
 }
 
 export interface RatingSurveyQuestion extends SurveyQuestionBase {
   type: SurveyQuestionType.Rating
-  display: 'number' | 'emoji'
+  display: SurveyRatingDisplay
   scale: 3 | 5 | 7 | 10
   lowerBoundLabel: string
   upperBoundLabel: string
+}
+
+export enum SurveyRatingDisplay {
+  Number = 'number',
+  Emoji = 'emoji',
 }
 
 export interface MultipleSurveyQuestion extends SurveyQuestionBase {
@@ -114,7 +134,14 @@ export interface SurveyResponse {
 
 export type SurveyCallback = (surveys: Survey[]) => void
 
-export type SurveyUrlMatchType = 'regex' | 'not_regex' | 'exact' | 'is_not' | 'icontains' | 'not_icontains'
+export enum SurveyMatchType {
+  Regex = 'regex',
+  NotRegex = 'not_regex',
+  Exact = 'exact',
+  IsNot = 'is_not',
+  Icontains = 'icontains',
+  NotIcontains = 'not_icontains',
+}
 
 export interface SurveyElement {
   text?: string
@@ -139,61 +166,66 @@ export interface Survey {
   // Sync this with the backend's SurveyAPISerializer!
   id: string
   name: string
-  description: string
+  description?: string
   type: SurveyType
-  feature_flag_keys:
+  feature_flag_keys?:
     | {
         key: string
         value?: string
       }[]
-    | null
-  linked_flag_key: string | null
-  targeting_flag_key: string | null
-  internal_targeting_flag_key: string | null
+  linked_flag_key?: string
+  targeting_flag_key?: string
+  internal_targeting_flag_key?: string
   questions: SurveyQuestion[]
-  appearance: SurveyAppearance | null
-  conditions: {
+  appearance?: SurveyAppearance
+  conditions?: {
     url?: string
     selector?: string
     seenSurveyWaitPeriodInDays?: number
-    urlMatchType?: SurveyUrlMatchType
-    events: {
+    urlMatchType?: SurveyMatchType
+    events?: {
       repeatedActivation?: boolean
-      values: {
+      values?: {
         name: string
       }[]
-    } | null
-    actions: {
+    }
+    actions?: {
       values: SurveyActionType[]
-    } | null
-  } | null
-  start_date: string | null
-  end_date: string | null
-  current_iteration: number | null
-  current_iteration_start_date: string | null
+    }
+    deviceTypes?: string[]
+    deviceTypesMatchType?: SurveyMatchType
+  }
+  start_date?: string
+  end_date?: string
+  current_iteration?: number
+  current_iteration_start_date?: string
 }
 
 export interface SurveyActionType {
   id: number
-  name: string | null
+  name?: string
   steps?: ActionStepType[]
 }
 
 /** Sync with plugin-server/src/types.ts */
-export type ActionStepStringMatching = 'contains' | 'exact' | 'regex'
+export enum ActionStepStringMatching {
+  Contains = 'contains',
+  Exact = 'exact',
+  Regex = 'regex',
+}
 
 export interface ActionStepType {
-  event?: string | null
-  selector?: string | null
+  event?: string
+  selector?: string
   /** @deprecated Only `selector` should be used now. */
   tag_name?: string
-  text?: string | null
+  text?: string
   /** @default StringMatching.Exact */
-  text_matching?: ActionStepStringMatching | null
-  href?: string | null
+  text_matching?: ActionStepStringMatching
+  href?: string
   /** @default ActionStepStringMatching.Exact */
-  href_matching?: ActionStepStringMatching | null
-  url?: string | null
+  href_matching?: ActionStepStringMatching
+  url?: string
   /** @default StringMatching.Contains */
-  url_matching?: ActionStepStringMatching | null
+  url_matching?: ActionStepStringMatching
 }

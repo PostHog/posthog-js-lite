@@ -3,6 +3,8 @@ import {
   Survey,
   SurveyAppearance,
   SurveyQuestion,
+  SurveyPosition,
+  SurveyQuestionDescriptionContentType,
 } from '../../../posthog-core/src/surveys-types'
 
 export const defaultBackgroundColor = '#eeeded' as const
@@ -21,11 +23,11 @@ export const defaultSurveyAppearance: SurveyAppearanceTheme = {
   placeholder: 'Start typing...',
   displayThankYouMessage: true,
   thankYouMessageHeader: 'Thank you for your feedback!',
-  position: 'right',
+  position: SurveyPosition.Right,
   submitButtonText: 'Submit',
   autoDisappear: false,
   thankYouMessageDescription: '',
-  thankYouMessageDescriptionContentType: 'text',
+  thankYouMessageDescriptionContentType: SurveyQuestionDescriptionContentType.Text,
   thankYouMessageCloseButtonText: 'Close',
   surveyPopupDelaySeconds: 0,
 }
@@ -47,12 +49,12 @@ export const getDisplayOrderQuestions = (survey: Survey): SurveyQuestion[] => {
 }
 
 export const hasEvents = (survey: Survey): boolean => {
-  return survey.conditions?.events?.values.length !== undefined && survey.conditions.events.values.length > 0
+  return survey.conditions?.events?.values !== undefined && survey.conditions.events.values.length > 0
 }
 
-export const hasActions = (survey: Survey): boolean => {
-  return survey.conditions?.actions?.values.length !== undefined && survey.conditions.actions.values.length > 0
-}
+// export const hasActions = (survey: Survey): boolean => {
+//   return survey.conditions?.actions?.values.length !== undefined && survey.conditions.actions.values.length > 0
+// }
 
 export const canActivateRepeatedly = (survey: Survey): boolean => {
   return !!(survey.conditions?.events?.repeatedActivation && hasEvents(survey))
