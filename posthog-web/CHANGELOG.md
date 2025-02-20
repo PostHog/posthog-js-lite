@@ -1,5 +1,11 @@
 # Next
 
+# 3.4.0 - 2025-02-20
+
+## Added
+
+1. Adds the ability to capture user feedback in LLM Observability using the `captureTraceFeedback` and `captureTraceMetric` methods.
+
 # 3.3.0 - 2025-02-06
 
 ## Added
