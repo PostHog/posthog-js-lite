@@ -1425,6 +1425,32 @@ export abstract class PostHogCore extends PostHogCoreStateless {
 
     this.capture('$exception', properties)
   }
+
+  /**
+   * Capture written user feedback for a LLM trace. Numeric values are converted to strings.
+   * @param traceId The trace ID to capture feedback for.
+   * @param userFeedback The feedback to capture.
+   */
+  captureTraceFeedback(traceId: string | number, userFeedback: string): void {
+    this.capture('$ai_feedback', {
+      $ai_feedback_text: userFeedback,
+      $ai_trace_id: String(traceId),
+    })
+  }
+
+  /**
+   * Capture a metric for a LLM trace. Numeric values are converted to strings.
+   * @param traceId The trace ID to capture the metric for.
+   * @param metricName The name of the metric to capture.
+   * @param metricValue The value of the metric to capture.
+   */
+  captureTraceMetric(traceId: string | number, metricName: string, metricValue: string | number | boolean): void {
+    this.capture('$ai_metric', {
+      $ai_metric_name: metricName,
+      $ai_metric_value: String(metricValue),
+      $ai_trace_id: String(traceId),
+    })
+  }
 }
 
 export * from './types'
