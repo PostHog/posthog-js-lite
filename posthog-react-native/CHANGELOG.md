@@ -1,5 +1,11 @@
 # Next
 
+# 3.11.1 - 2025-02-21
+
+## Fixed
+
+1. fix: handle cases when non Error is passed to `captureException`
+
 # 3.11.0 - 2025-02-21
 
 1. fix: Autocapture native app lifecycle events

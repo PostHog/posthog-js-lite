@@ -1,5 +1,11 @@
 # Next
 
+# 3.4.1 - 2025-02-20
+
+## Fixed
+
+1. fix: handle cases when non Error is passed to `captureException`
+
 # 3.4.0 - 2025-02-20
 
 ## Added
