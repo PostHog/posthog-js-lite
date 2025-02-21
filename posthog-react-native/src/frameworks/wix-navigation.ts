@@ -5,7 +5,6 @@
  * Instead of hooking into the natural React lifecycle, it provides a very different API which we can hook into and use instead.
  */
 
-import { AppState } from 'react-native'
 import { OptionalReactNativeNavigationWix } from '../optional/OptionalReactNativeNavigationWix'
 import { PostHog } from '../posthog-rn'
 import { PostHogAutocaptureOptions } from '../types'
@@ -16,28 +15,6 @@ export const withReactNativeNavigation = (posthog: PostHog, options: PostHogAuto
   }
 
   const Navigation = OptionalReactNativeNavigationWix.Navigation
-
-  // Equivalent of `useLifecycleTracker`
-  const trackLifecycle = (): void => {
-    if (!(options.captureLifecycleEvents ?? true)) {
-      return
-    }
-
-    posthog.capture('Application Opened')
-
-    AppState.addEventListener('change', (nextAppState) => {
-      switch (nextAppState) {
-        case 'active':
-          return posthog.capture('Application Became Active')
-        case 'background':
-          return posthog.capture('Application Backgrounded')
-        default:
-          return
-      }
-    })
-  }
-
-  trackLifecycle()
 
   // Equivalent of `useNavigationTracker`
   Navigation.events().registerComponentDidAppearListener(({ componentName, passProps }) => {
