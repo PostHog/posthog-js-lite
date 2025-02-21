@@ -47,6 +47,11 @@ function isPostHogFetchError(err: any): boolean {
   return typeof err === 'object' && (err instanceof PostHogFetchHttpError || err instanceof PostHogFetchNetworkError)
 }
 
+enum QuotaLimitedFeature {
+  FeatureFlags = 'feature_flags',
+  Recordings = 'recordings',
+}
+
 export abstract class PostHogCoreStateless {
   // options
   readonly apiKey: string
@@ -458,7 +463,7 @@ export abstract class PostHogCoreStateless {
     const decideResponse = await this.getDecide(distinctId, groups, personProperties, groupProperties, extraPayload)
 
     // Add check for quota limitation on feature flags
-    if (decideResponse?.quotaLimited?.includes('feature_flags')) {
+    if (decideResponse?.quotaLimited?.includes(QuotaLimitedFeature.FeatureFlags)) {
       return {
         flags: undefined,
         payloads: undefined,
@@ -1178,7 +1183,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
 
         return super.getDecide(distinctId, groups, personProperties, groupProperties, extraProperties).then((res) => {
           // Add check for quota limitation on feature flags
-          if (res?.quotaLimited?.includes('feature_flags')) {
+          if (res?.quotaLimited?.includes(QuotaLimitedFeature.FeatureFlags)) {
             // Unset all feature flags by setting to null
             this.setKnownFeatureFlags(null)
             this.setKnownFeatureFlagPayloads(null)
