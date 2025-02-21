@@ -506,7 +506,6 @@ describe('PostHog Node.js', () => {
         id: 1,
         name: 'Beta Feature',
         key: 'beta-feature-local',
-        is_simple_flag: false,
         active: true,
         rollout_percentage: 100,
         filters: {
@@ -533,7 +532,6 @@ describe('PostHog Node.js', () => {
         id: 1,
         name: 'Beta Feature',
         key: 'person-flag',
-        is_simple_flag: true,
         active: true,
         filters: {
           groups: [
@@ -556,7 +554,6 @@ describe('PostHog Node.js', () => {
         id: 1,
         name: 'Beta Feature',
         key: 'false-flag',
-        is_simple_flag: true,
         active: true,
         filters: {
           groups: [
@@ -1081,7 +1078,9 @@ describe('PostHog Node.js', () => {
       expect(mockedFetch).toHaveBeenCalledTimes(0)
 
       await expect(posthog.getFeatureFlagPayload('false-flag', '123', true)).resolves.toEqual(300)
-      expect(mockedFetch).toHaveBeenCalledTimes(0)
+      // Check no non-batch API calls were made
+      const additionalNonBatchCalls = mockedFetch.mock.calls.filter((call) => !call[0].includes('/batch'))
+      expect(additionalNonBatchCalls.length).toBe(0)
     })
 
     it('should not double parse json with getFeatureFlagPayloads and server eval', async () => {

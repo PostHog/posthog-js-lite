@@ -67,6 +67,8 @@ async function testFeatureFlags() {
       onlyEvaluateLocally: true,
     })
   )
+
+  console.log(await posthog.getRemoteConfigPayload('my_secret_flag_value'))
 }
 
 testFeatureFlags().then(async () => {

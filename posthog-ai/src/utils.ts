@@ -11,11 +11,22 @@ export interface MonitoringParams {
   posthogProperties?: Record<string, any>
   posthogPrivacyMode?: boolean
   posthogGroups?: Record<string, any>
+  posthogModelOverride?: string
+  posthogProviderOverride?: string
+  posthogCostOverride?: CostOverride
+}
+
+export interface CostOverride {
+  inputCost: number
+  outputCost: number
 }
 
 export const getModelParams = (
-  params: (ChatCompletionCreateParamsBase | MessageCreateParams) & MonitoringParams
+  params: ((ChatCompletionCreateParamsBase | MessageCreateParams) & MonitoringParams) | null
 ): Record<string, any> => {
+  if (!params) {
+    return {}
+  }
   const modelParams: Record<string, any> = {}
   const paramKeys = [
     'temperature',
@@ -137,12 +148,23 @@ export const sendEventToPosthog = ({
         $ai_error: error,
       }
     }
+    let costOverrideData = {}
+    if (params.posthogCostOverride) {
+      const inputCostUSD = (params.posthogCostOverride.inputCost ?? 0) * (usage.inputTokens ?? 0)
+      const outputCostUSD = (params.posthogCostOverride.outputCost ?? 0) * (usage.outputTokens ?? 0)
+      costOverrideData = {
+        $ai_input_cost_usd: inputCostUSD,
+        $ai_output_cost_usd: outputCostUSD,
+        $ai_total_cost_usd: inputCostUSD + outputCostUSD,
+      }
+    }
+
     client.capture({
       distinctId: distinctId ?? traceId,
       event: '$ai_generation',
       properties: {
-        $ai_provider: provider,
-        $ai_model: model,
+        $ai_provider: params.posthogProviderOverride ?? provider,
+        $ai_model: params.posthogModelOverride ?? model,
         $ai_model_parameters: getModelParams(params),
         $ai_input: withPrivacyMode(client, params.posthogPrivacyMode ?? false, input),
         $ai_output_choices: withPrivacyMode(client, params.posthogPrivacyMode ?? false, output),
@@ -155,6 +177,7 @@ export const sendEventToPosthog = ({
         ...params.posthogProperties,
         ...(distinctId ? {} : { $process_person_profile: false }),
         ...errorData,
+        ...costOverrideData,
       },
       groups: params.posthogGroups,
     })

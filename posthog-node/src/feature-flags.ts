@@ -430,17 +430,21 @@ class FeatureFlagsPoller {
     }
   }
 
-  async _requestFeatureFlagDefinitions(): Promise<PostHogFetchResponse> {
-    const url = `${this.host}/api/feature_flag/local_evaluation?token=${this.projectApiKey}&send_cohorts`
-
-    const options: PostHogFetchOptions = {
-      method: 'GET',
+  private getPersonalApiKeyRequestOptions(method: 'GET' | 'POST' | 'PUT' | 'PATCH' = 'GET'): PostHogFetchOptions {
+    return {
+      method,
       headers: {
         ...this.customHeaders,
         'Content-Type': 'application/json',
         Authorization: `Bearer ${this.personalApiKey}`,
       },
     }
+  }
+
+  async _requestFeatureFlagDefinitions(): Promise<PostHogFetchResponse> {
+    const url = `${this.host}/api/feature_flag/local_evaluation?token=${this.projectApiKey}&send_cohorts`
+
+    const options = this.getPersonalApiKeyRequestOptions()
 
     let abortTimeout = null
 
@@ -461,6 +465,26 @@ class FeatureFlagsPoller {
 
   stopPoller(): void {
     clearTimeout(this.poller)
+  }
+
+  _requestRemoteConfigPayload(flagKey: string): Promise<PostHogFetchResponse> {
+    const url = `${this.host}/api/projects/@current/feature_flags/${flagKey}/remote_config/`
+
+    const options = this.getPersonalApiKeyRequestOptions()
+
+    let abortTimeout = null
+    if (this.timeout && typeof this.timeout === 'number') {
+      const controller = new AbortController()
+      abortTimeout = safeSetTimeout(() => {
+        controller.abort()
+      }, this.timeout)
+      options.signal = controller.signal
+    }
+    try {
+      return this.fetch(url, options)
+    } finally {
+      clearTimeout(abortTimeout)
+    }
   }
 }
 

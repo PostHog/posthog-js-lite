@@ -1,5 +1,17 @@
 # Next
 
+# 3.4.0 - 2025-02-20
+
+## Added
+
+1. Adds the ability to capture user feedback in LLM Observability using the `captureTraceFeedback` and `captureTraceMetric` methods.
+
+# 3.3.0 - 2025-02-06
+
+## Added
+
+1. Adds `captureException` function to allow manual capture of exceptions
+
 # 3.2.1 - 2025-01-17
 
 ## Fixed
@@ -12,13 +24,12 @@
 
 1. Add new debugging property `$feature_flag_bootstrapped_response`, `$feature_flag_bootstrapped_payload` and `$used_bootstrap_value` to `$feature_flag_called` event
 
-
 # 3.1.0 - 2024-11-21
 
 ## Changed
 
 1. chore: default `captureMode` changed to `json`.
-    1. To keep using the `form` mode, just set the `captureMode` option to `form` when initializing the PostHog client.
+   1. To keep using the `form` mode, just set the `captureMode` option to `form` when initializing the PostHog client.
 2. fix: identify method allows passing a $set_once object
 
 # 3.0.2 - 2024-06-15
