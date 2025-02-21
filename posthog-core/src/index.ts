@@ -457,6 +457,14 @@ export abstract class PostHogCoreStateless {
     }
     const decideResponse = await this.getDecide(distinctId, groups, personProperties, groupProperties, extraPayload)
 
+    // Add check for quota limitation on feature flags
+    if (decideResponse?.quotaLimited?.includes('feature_flags')) {
+      return {
+        flags: undefined,
+        payloads: undefined,
+      }
+    }
+
     const flags = decideResponse?.featureFlags
     const payloads = decideResponse?.featureFlagPayloads
 
@@ -1169,6 +1177,17 @@ export abstract class PostHogCore extends PostHogCoreStateless {
         }
 
         return super.getDecide(distinctId, groups, personProperties, groupProperties, extraProperties).then((res) => {
+          // Add check for quota limitation on feature flags
+          if (res?.quotaLimited?.includes('feature_flags')) {
+            // Unset all feature flags by setting to null
+            this.setKnownFeatureFlags(null)
+            this.setKnownFeatureFlagPayloads(null)
+            this.logMsgIfDebug(() =>
+              console.info('PostHog Debug', 'Feature flags quota exceeded - unsetting all flags')
+            )
+            return res
+          }
+
           if (res?.featureFlags) {
             // clear flag call reported if we have new flags since they might have changed
             if (this.sendFeatureFlagEvent) {
@@ -1218,7 +1237,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     return this._decideResponsePromise
   }
 
-  private setKnownFeatureFlags(featureFlags: PostHogDecideResponse['featureFlags']): void {
+  private setKnownFeatureFlags(featureFlags: PostHogDecideResponse['featureFlags'] | null): void {
     this.wrap(() => {
       this.setPersistedProperty<PostHogDecideResponse['featureFlags']>(
         PostHogPersistedProperty.FeatureFlags,
@@ -1228,7 +1247,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     })
   }
 
-  private setKnownFeatureFlagPayloads(featureFlagPayloads: PostHogDecideResponse['featureFlagPayloads']): void {
+  private setKnownFeatureFlagPayloads(featureFlagPayloads: PostHogDecideResponse['featureFlagPayloads'] | null): void {
     this.wrap(() => {
       this.setPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
         PostHogPersistedProperty.FeatureFlagPayloads,

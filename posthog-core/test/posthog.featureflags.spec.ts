@@ -502,6 +502,69 @@ describe('PostHog Core', () => {
         })
       })
     })
+
+    describe('when quota limited', () => {
+      beforeEach(() => {
+        ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1 }, (_mocks) => {
+          _mocks.fetch.mockImplementation((url) => {
+            if (url.includes('/decide/')) {
+              return Promise.resolve({
+                status: 200,
+                text: () => Promise.resolve('ok'),
+                json: () =>
+                  Promise.resolve({
+                    quotaLimited: ['feature_flags'],
+                    featureFlags: {
+                      'feature-1': true,
+                      'feature-2': false,
+                    },
+                    featureFlagPayloads: {
+                      'feature-1': { color: 'blue' },
+                    },
+                  }),
+              })
+            }
+            return errorAPIResponse
+          })
+        })
+
+        posthog.reloadFeatureFlags()
+      })
+
+      it('should unset all flags when feature_flags is quota limited', async () => {
+        // First verify the fetch was called correctly
+        expect(mocks.fetch).toHaveBeenCalledWith('https://us.i.posthog.com/decide/?v=3', {
+          body: JSON.stringify({
+            token: 'TEST_API_KEY',
+            distinct_id: posthog.getDistinctId(),
+            groups: {},
+            person_properties: {},
+            group_properties: {},
+            $anon_distinct_id: posthog.getAnonymousId(),
+          }),
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'User-Agent': 'posthog-core-tests',
+          },
+          signal: expect.anything(),
+        })
+
+        // Verify all flag methods return undefined when quota limited
+        expect(posthog.getFeatureFlags()).toEqual(undefined)
+        expect(posthog.getFeatureFlag('feature-1')).toEqual(undefined)
+        expect(posthog.getFeatureFlagPayloads()).toEqual(undefined)
+        expect(posthog.getFeatureFlagPayload('feature-1')).toEqual(undefined)
+      })
+
+      it('should emit debug message when quota limited', async () => {
+        const debugSpy = jest.spyOn(console, 'info')
+        posthog.debug(true)
+        await posthog.reloadFeatureFlagsAsync()
+
+        expect(debugSpy).toHaveBeenCalledWith('PostHog Debug', 'Feature flags quota exceeded - unsetting all flags')
+      })
+    })
   })
 
   describe('bootstrapped feature flags', () => {
