@@ -3,6 +3,19 @@
 # 3.11.0 - 2025-02-21
 
 1. fix: Autocapture native app lifecycle events
+   1. the `captureNativeAppLifecycleEvents` client option now takes priority over the `captureLifecycleEvents` autocapture option.
+   2. the `captureLifecycleEvents` autocapture option now captures Application Installed and Application Updated events.
+   3. If you don't want to capture these events, set the `captureLifecycleEvents` autocapture option to `false` and capture the events manually, example below.
+
+```js
+AppState.addEventListener('change', (state) => {
+  if (state === 'active') {
+    posthog.capture('Application Became Active')
+  } else if (state === 'background') {
+    posthog.capture('Application Backgrounded')
+  }
+})
+```
 
 # 3.10.0 - 2025-02-20
 

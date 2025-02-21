@@ -452,7 +452,7 @@ export class PostHog extends PostHogCore {
 
     AppState.addEventListener('change', (state) => {
       if (state === 'active') {
-        this.capture('Application Became Active', properties)
+        this.capture('Application Became Active')
       } else if (state === 'background') {
         this.capture('Application Backgrounded')
       }
