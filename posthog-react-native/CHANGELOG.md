@@ -1,5 +1,7 @@
 # Next
 
+# 3.11.0 - 2025-02-21
+
 1. fix: Autocapture native app lifecycle events
 
 # 3.10.0 - 2025-02-20
