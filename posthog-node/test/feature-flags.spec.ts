@@ -4426,3 +4426,37 @@ describe('consistency tests', () => {
     })
   })
 })
+
+describe('quota limiting', () => {
+  it('should clear local flags when quota limited', async () => {
+    const consoleSpy = jest.spyOn(console, 'info')
+
+    mockedFetch.mockImplementation(
+      apiImplementation({
+        localFlagsStatus: 402,
+      })
+    )
+
+    const posthog = new PostHog('TEST_API_KEY', {
+      host: 'http://example.com',
+      personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
+    })
+
+    // Enable debug mode to see the messages
+    posthog.debug(true)
+
+    // Force a reload and wait for it to complete
+    await posthog.reloadFeatureFlags()
+
+    // locally evaluate the flags
+    const res = await posthog.getAllFlagsAndPayloads('distinct-id', { onlyEvaluateLocally: true })
+
+    // expect the flags to be cleared and for the debug message to be logged
+    expect(res.featureFlags).toEqual({})
+    expect(res.featureFlagPayloads).toEqual({})
+    expect(consoleSpy).toHaveBeenCalledWith('Feature flags quota exceeded - unsetting all local flags')
+
+    consoleSpy.mockRestore()
+  })
+})

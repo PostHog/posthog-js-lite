@@ -391,6 +391,17 @@ class FeatureFlagsPoller {
         )
       }
 
+      if (res && res.status === 402) {
+        // Quota limited - clear all flags
+        this.logMsgIfDebug(() => console.info('Feature flags quota exceeded - unsetting all local flags'))
+        this.featureFlags = []
+        this.featureFlagsByKey = {}
+        this.groupTypeMapping = {}
+        this.cohorts = {}
+        this.loadedSuccessfullyOnce = false
+        return
+      }
+
       if (res && res.status !== 200) {
         // something else went wrong, or the server is down.
         // In this case, don't override existing flags
