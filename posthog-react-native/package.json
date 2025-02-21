@@ -1,6 +1,6 @@
 {
   "name": "posthog-react-native",
-  "version": "3.7.0",
+  "version": "3.10.0",
   "main": "lib/posthog-react-native/index.js",
   "files": [
     "lib/"
@@ -34,7 +34,7 @@
     "react-native-device-info": "^10.3.0",
     "react-native-navigation": "^6.0.0",
     "react-native-localize": "^3.0.0",
-    "posthog-react-native-session-replay": "^0.1"
+    "posthog-react-native-session-replay": "^1.0.0"
   },
   "peerDependencies": {
     "@react-native-async-storage/async-storage": ">=1.0.0",
@@ -45,7 +45,7 @@
     "expo-localization": ">= 11.0.0",
     "react-native-device-info": ">= 10.0.0",
     "react-native-navigation": ">=6.0.0",
-    "posthog-react-native-session-replay": "^0.1"
+    "posthog-react-native-session-replay": "^1.0.0"
   },
   "peerDependenciesMeta": {
     "@react-native-async-storage/async-storage": {

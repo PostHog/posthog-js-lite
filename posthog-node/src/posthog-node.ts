@@ -14,11 +14,13 @@ import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
 import { EventMessage, GroupIdentifyMessage, IdentifyMessage, PostHogNodeV1 } from './types'
 import { FeatureFlagsPoller } from './feature-flags'
 import fetch from './fetch'
+import ErrorTracking from './error-tracking'
 
 export type PostHogOptions = PostHogCoreOptions & {
   persistence?: 'memory'
   personalApiKey?: string
   privacyMode?: boolean
+  enableExceptionAutocapture?: boolean
   // The interval in milliseconds between polls for refreshing feature flag definitions. Defaults to 30 seconds.
   featureFlagsPollingInterval?: number
   // Maximum size of cache that deduplicates $feature_flag_called calls per user.
@@ -34,6 +36,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
   private _memoryStorage = new PostHogMemoryStorage()
 
   private featureFlagsPoller?: FeatureFlagsPoller
+  protected errorTracking: ErrorTracking
   private maxCacheSize: number
   public readonly options: PostHogOptions
 
@@ -61,6 +64,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         customHeaders: this.getCustomHeaders(),
       })
     }
+    this.errorTracking = new ErrorTracking(this, options)
     this.distinctIdHasSentFlagCalls = {}
     this.maxCacheSize = options.maxCacheSize || MAX_CACHE_SIZE
   }
@@ -131,8 +135,13 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
           return await _getFlags(distinctId, groups, disableGeoip)
         }
 
+        if (event === '$feature_flag_called') {
+          // If we're capturing a $feature_flag_called event, we don't want to enrich the event with cached flags that may be out of date.
+          return {}
+        }
+
         if ((this.featureFlagsPoller?.featureFlags?.length || 0) > 0) {
-          // Otherwise we may as well check for the flags locally and include them if there
+          // Otherwise we may as well check for the flags locally and include them if they are already loaded
           const groupsWithStringValues: Record<string, string> = {}
           for (const [key, value] of Object.entries(groups || {})) {
             groupsWithStringValues[key] = String(value)
@@ -350,6 +359,10 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     return response
   }
 
+  async getRemoteConfigPayload(flagKey: string): Promise<JsonType | undefined> {
+    return (await this.featureFlagsPoller?._requestRemoteConfigPayload(flagKey))?.json()
+  }
+
   async isFeatureEnabled(
     key: string,
     distinctId: string,
@@ -480,5 +493,10 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     }
 
     return { allPersonProperties, allGroupProperties }
+  }
+
+  captureException(error: unknown, distinctId?: string, additionalProperties?: Record<string | number, any>): void {
+    const syntheticException = new Error('PostHog syntheticException')
+    ErrorTracking.captureException(this, error, { syntheticException }, distinctId, additionalProperties)
   }
 }

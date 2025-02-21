@@ -1,5 +1,36 @@
 # Next
 
+# 4.7.0 - 2025-02-20
+
+## Added
+
+1. Adds the ability to capture user feedback in LLM Observability using the `captureTraceFeedback` and `captureTraceMetric` methods.
+
+# 4.6.0 - 2025-02-12
+
+## Added
+
+1. Adds ability to fetch decrypted remote config flag payloads via `getRemoteConfigPayload`
+
+# 4.5.2 - 2025-02-12
+
+## Fixed
+
+1. fix: Fixed edge case where `$feature_flag_called` events were enriched with additional feature flag data when they shouldn't be.
+
+# 4.5.1 - 2025-02-12
+
+## Fixed
+
+1. Do not require a `distinctId` as an argument to `captureException`
+
+# 4.5.0 - 2025-02-06
+
+## Added
+
+1. Adds manual exception capture with full stack trace processing via `captureException` function
+2. Adds ability to enable exception autocapture via the `enableExceptionAutocapture` init option
+
 # 4.4.1 - 2025-01-21
 
 - Add option privacyMode to remove input and output from LLM Observability

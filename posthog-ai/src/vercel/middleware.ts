@@ -1,13 +1,8 @@
 import { experimental_wrapLanguageModel as wrapLanguageModel } from 'ai'
-import type {
-  LanguageModelV1,
-  Experimental_LanguageModelV1Middleware as LanguageModelV1Middleware,
-  LanguageModelV1Prompt,
-  LanguageModelV1StreamPart,
-} from 'ai'
+import type { LanguageModelV1, LanguageModelV1Middleware, LanguageModelV1Prompt, LanguageModelV1StreamPart } from 'ai'
 import { v4 as uuidv4 } from 'uuid'
 import { PostHog } from 'posthog-node'
-import { sendEventToPosthog } from '../utils'
+import { CostOverride, sendEventToPosthog } from '../utils'
 
 interface ClientOptions {
   posthogDistinctId?: string
@@ -17,6 +12,7 @@ interface ClientOptions {
   posthogGroups?: Record<string, any>
   posthogModelOverride?: string
   posthogProviderOverride?: string
+  posthogCostOverride?: CostOverride
 }
 
 interface CreateInstrumentationMiddlewareOptions {
@@ -27,6 +23,7 @@ interface CreateInstrumentationMiddlewareOptions {
   posthogGroups?: Record<string, any>
   posthogModelOverride?: string
   posthogProviderOverride?: string
+  posthogCostOverride?: CostOverride
 }
 
 interface PostHogInput {
@@ -94,7 +91,11 @@ export const createInstrumentationMiddleware = (
           options.posthogModelOverride ?? (result.response?.modelId ? result.response.modelId : model.modelId)
         const provider = options.posthogProviderOverride ?? extractProvider(model)
         const baseURL = '' // cannot currently get baseURL from vercel
-
+        let content = result.text
+        if (!content) {
+          // support generate Object
+          content = result.toolCalls?.[0].args || JSON.stringify(result)
+        }
         sendEventToPosthog({
           client: phClient,
           distinctId: options.posthogDistinctId,
@@ -102,7 +103,7 @@ export const createInstrumentationMiddleware = (
           model: modelId,
           provider: provider,
           input: options.posthogPrivacyMode ? '' : mapVercelPrompt(params.prompt),
-          output: [{ content: result.text, role: 'assistant' }],
+          output: [{ content, role: 'assistant' }],
           latency,
           baseURL,
           params: mergedParams as any,

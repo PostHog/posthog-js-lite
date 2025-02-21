@@ -47,14 +47,12 @@ export type PostHogOptions = PostHogCoreOptions & {
   /**
    * Enable Recording of Session Replays for Android and iOS
    * Requires Record user sessions to be enabled in the PostHog Project Settings
-   * Experimental support
    * Defaults to false
    */
   enableSessionReplay?: boolean
 
   /**
    * Configuration for Session Replay
-   * Experimental support
    */
   sessionReplayConfig?: PostHogSessionReplayConfig
 

@@ -463,6 +463,32 @@ describe('PostHog Core', () => {
         })
       })
 
+      it('should capture $feature_flag_called when called, but not add all cached flags', async () => {
+        expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
+        await waitForPromises()
+        expect(mocks.fetch).toHaveBeenCalledTimes(2)
+
+        expect(parseBody(mocks.fetch.mock.calls[1])).toMatchObject({
+          batch: [
+            {
+              event: '$feature_flag_called',
+              distinct_id: posthog.getDistinctId(),
+              properties: {
+                $feature_flag: 'feature-1',
+                $feature_flag_response: true,
+                '$feature/feature-1': true,
+                $used_bootstrap_value: false,
+              },
+              type: 'capture',
+            },
+          ],
+        })
+
+        // Only tracked once
+        expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
+        expect(mocks.fetch).toHaveBeenCalledTimes(2)
+      })
+
       it('should persist feature flags', () => {
         expect(posthog.getPersistedProperty(PostHogPersistedProperty.FeatureFlags)).toEqual(createMockFeatureFlags())
       })
