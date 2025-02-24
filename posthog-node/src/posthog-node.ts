@@ -28,7 +28,11 @@ export type PostHogOptions = PostHogCoreOptions & {
   fetch?: (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
 }
 
+// Standard local evaluation rate limit is 600 per minute (10 per second), 
+// so the fastest a poller should ever be set is 100ms.
+const MINIMUM_POLLING_INTERVAL = 100 
 const THIRTY_SECONDS = 30 * 1000
+export const SIXTY_SECONDS = 60 * 1000
 const MAX_CACHE_SIZE = 50 * 1000
 
 // The actual exported Nodejs API.
@@ -51,7 +55,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       this.featureFlagsPoller = new FeatureFlagsPoller({
         pollingInterval:
           typeof options.featureFlagsPollingInterval === 'number'
-            ? options.featureFlagsPollingInterval
+            ? Math.max(options.featureFlagsPollingInterval, MINIMUM_POLLING_INTERVAL) 
             : THIRTY_SECONDS,
         personalApiKey: options.personalApiKey,
         projectApiKey: apiKey,
