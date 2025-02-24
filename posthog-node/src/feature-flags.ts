@@ -384,7 +384,7 @@ class FeatureFlagsPoller {
    * @returns The polling interval to use for the next request.
    */
   private getPollingInterval(): number {
-    if (!this.lastRequestWasAuthenticationError || this.authenticationErrorCount === 0) {
+    if (!this.lastRequestWasAuthenticationError) {
       return this.pollingInterval
     }
 
