@@ -4470,7 +4470,7 @@ describe('consistency tests', () => {
 
 describe('quota limiting', () => {
   it('should clear local flags when quota limited', async () => {
-    const consoleSpy = jest.spyOn(console, 'info')
+    const consoleSpy = jest.spyOn(console, 'warn')
 
     mockedFetch.mockImplementation(
       apiImplementation({
