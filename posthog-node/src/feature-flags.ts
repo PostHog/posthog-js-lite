@@ -393,7 +393,9 @@ class FeatureFlagsPoller {
 
       if (res && res.status === 402) {
         // Quota limited - clear all flags
-        this.logMsgIfDebug(() => console.info('Feature flags quota exceeded - unsetting all local flags'))
+        console.warn(
+          '[FEATURE FLAGS] Feature flags quota limit exceeded - unsetting all local flags. Learn more about billing limits at https://posthog.com/docs/billing/limits-alerts'
+        )
         this.featureFlags = []
         this.featureFlagsByKey = {}
         this.groupTypeMapping = {}

@@ -464,6 +464,9 @@ export abstract class PostHogCoreStateless {
 
     // Add check for quota limitation on feature flags
     if (decideResponse?.quotaLimited?.includes(QuotaLimitedFeature.FeatureFlags)) {
+      console.warn(
+        '[FEATURE FLAGS] Feature flags quota limit exceeded - feature flags unavailable. Learn more about billing limits at https://posthog.com/docs/billing/limits-alerts'
+      )
       return {
         flags: undefined,
         payloads: undefined,
@@ -1170,7 +1173,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
 
   private async _decideAsync(sendAnonDistinctId: boolean = true): Promise<PostHogDecideResponse | undefined> {
     this._decideResponsePromise = this._initPromise
-      .then(() => {
+      .then(async () => {
         const distinctId = this.getDistinctId()
         const groups = this.props.$groups || {}
         const personProperties =
@@ -1183,65 +1186,60 @@ export abstract class PostHogCore extends PostHogCoreStateless {
           $anon_distinct_id: sendAnonDistinctId ? this.getAnonymousId() : undefined,
         }
 
-        return super.getDecide(distinctId, groups, personProperties, groupProperties, extraProperties).then((res) => {
-          // Add check for quota limitation on feature flags
-          if (res?.quotaLimited?.includes(QuotaLimitedFeature.FeatureFlags)) {
-            // Unset all feature flags by setting to null
-            this.setKnownFeatureFlags(null)
-            this.setKnownFeatureFlagPayloads(null)
-            this.logMsgIfDebug(() =>
-              console.info('PostHog Debug', 'Feature flags quota exceeded - unsetting all flags')
-            )
-            return res
-          }
-
-          if (res?.featureFlags) {
-            // clear flag call reported if we have new flags since they might have changed
-            if (this.sendFeatureFlagEvent) {
-              this.flagCallReported = {}
-            }
-
-            let newFeatureFlags = res.featureFlags
-            let newFeatureFlagPayloads = res.featureFlagPayloads
-            if (res.errorsWhileComputingFlags) {
-              // if not all flags were computed, we upsert flags instead of replacing them
-              const currentFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
-                PostHogPersistedProperty.FeatureFlags
-              )
-
-              this.logMsgIfDebug(() =>
-                console.log('PostHog Debug', 'Cached feature flags: ', JSON.stringify(currentFlags))
-              )
-
-              const currentFlagPayloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
-                PostHogPersistedProperty.FeatureFlagPayloads
-              )
-              newFeatureFlags = { ...currentFlags, ...res.featureFlags }
-              newFeatureFlagPayloads = { ...currentFlagPayloads, ...res.featureFlagPayloads }
-            }
-            this.setKnownFeatureFlags(newFeatureFlags)
-            this.setKnownFeatureFlagPayloads(
-              Object.fromEntries(
-                Object.entries(newFeatureFlagPayloads || {}).map(([k, v]) => [k, this._parsePayload(v)])
-              )
-            )
-            // Mark that we hit the /decide endpoint so we can capture this in the $feature_flag_called event
-            this.setPersistedProperty(PostHogPersistedProperty.DecideEndpointWasHit, true)
-
-            const sessionReplay = res?.sessionRecording
-            if (sessionReplay) {
-              this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, sessionReplay)
-              this.logMsgIfDebug(() =>
-                console.log('PostHog Debug', 'Session replay config: ', JSON.stringify(sessionReplay))
-              )
-            } else {
-              this.logMsgIfDebug(() => console.info('PostHog Debug', 'Session replay config disabled.'))
-              this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, null)
-            }
-          }
-
+        const res = await super.getDecide(distinctId, groups, personProperties, groupProperties, extraProperties)
+        // Add check for quota limitation on feature flags
+        if (res?.quotaLimited?.includes(QuotaLimitedFeature.FeatureFlags)) {
+          // Unset all feature flags by setting to null
+          this.setKnownFeatureFlags(null)
+          this.setKnownFeatureFlagPayloads(null)
+          console.warn(
+            '[FEATURE FLAGS] Feature flags quota limit exceeded - unsetting all flags. Learn more about billing limits at https://posthog.com/docs/billing/limits-alerts'
+          )
           return res
-        })
+        }
+        if (res?.featureFlags) {
+          // clear flag call reported if we have new flags since they might have changed
+          if (this.sendFeatureFlagEvent) {
+            this.flagCallReported = {}
+          }
+
+          let newFeatureFlags = res.featureFlags
+          let newFeatureFlagPayloads = res.featureFlagPayloads
+          if (res.errorsWhileComputingFlags) {
+            // if not all flags were computed, we upsert flags instead of replacing them
+            const currentFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
+              PostHogPersistedProperty.FeatureFlags
+            )
+
+            this.logMsgIfDebug(() =>
+              console.log('PostHog Debug', 'Cached feature flags: ', JSON.stringify(currentFlags))
+            )
+
+            const currentFlagPayloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
+              PostHogPersistedProperty.FeatureFlagPayloads
+            )
+            newFeatureFlags = { ...currentFlags, ...res.featureFlags }
+            newFeatureFlagPayloads = { ...currentFlagPayloads, ...res.featureFlagPayloads }
+          }
+          this.setKnownFeatureFlags(newFeatureFlags)
+          this.setKnownFeatureFlagPayloads(
+            Object.fromEntries(Object.entries(newFeatureFlagPayloads || {}).map(([k, v]) => [k, this._parsePayload(v)]))
+          )
+          // Mark that we hit the /decide endpoint so we can capture this in the $feature_flag_called event
+          this.setPersistedProperty(PostHogPersistedProperty.DecideEndpointWasHit, true)
+
+          const sessionReplay = res?.sessionRecording
+          if (sessionReplay) {
+            this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, sessionReplay)
+            this.logMsgIfDebug(() =>
+              console.log('PostHog Debug', 'Session replay config: ', JSON.stringify(sessionReplay))
+            )
+          } else {
+            this.logMsgIfDebug(() => console.info('PostHog Debug', 'Session replay config disabled.'))
+            this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, null)
+          }
+        }
+        return res
       })
       .finally(() => {
         this._decideResponsePromise = undefined

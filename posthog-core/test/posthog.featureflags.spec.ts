@@ -540,13 +540,8 @@ describe('PostHog Core', () => {
                 json: () =>
                   Promise.resolve({
                     quotaLimited: ['feature_flags'],
-                    featureFlags: {
-                      'feature-1': true,
-                      'feature-2': false,
-                    },
-                    featureFlagPayloads: {
-                      'feature-1': { color: 'blue' },
-                    },
+                    featureFlags: {},
+                    featureFlagPayloads: {},
                   }),
               })
             }
@@ -584,11 +579,13 @@ describe('PostHog Core', () => {
       })
 
       it('should emit debug message when quota limited', async () => {
-        const debugSpy = jest.spyOn(console, 'info')
+        const warnSpy = jest.spyOn(console, 'warn')
         posthog.debug(true)
         await posthog.reloadFeatureFlagsAsync()
 
-        expect(debugSpy).toHaveBeenCalledWith('PostHog Debug', 'Feature flags quota exceeded - unsetting all flags')
+        expect(warnSpy).toHaveBeenCalledWith(
+          '[FEATURE FLAGS] Feature flags quota limit exceeded - unsetting all flags. Learn more about billing limits at https://posthog.com/docs/billing/limits-alerts'
+        )
       })
     })
   })
