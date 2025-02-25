@@ -4496,7 +4496,9 @@ describe('quota limiting', () => {
     // expect the flags to be cleared and for the debug message to be logged
     expect(res.featureFlags).toEqual({})
     expect(res.featureFlagPayloads).toEqual({})
-    expect(consoleSpy).toHaveBeenCalledWith('Feature flags quota exceeded - unsetting all local flags')
+    expect(consoleSpy).toHaveBeenCalledWith(
+      '[FEATURE FLAGS] Feature flags quota limit exceeded - unsetting all local flags. Learn more about billing limits at https://posthog.com/docs/billing/limits-alerts'
+    )
 
     consoleSpy.mockRestore()
   })
