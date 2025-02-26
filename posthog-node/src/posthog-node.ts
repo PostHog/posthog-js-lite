@@ -28,9 +28,9 @@ export type PostHogOptions = PostHogCoreOptions & {
   fetch?: (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
 }
 
-// Standard local evaluation rate limit is 600 per minute (10 per second), 
+// Standard local evaluation rate limit is 600 per minute (10 per second),
 // so the fastest a poller should ever be set is 100ms.
-export const MINIMUM_POLLING_INTERVAL = 100 
+export const MINIMUM_POLLING_INTERVAL = 100
 export const THIRTY_SECONDS = 30 * 1000
 export const SIXTY_SECONDS = 60 * 1000
 const MAX_CACHE_SIZE = 50 * 1000
@@ -51,13 +51,16 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
 
     this.options = options
 
-    this.options.featureFlagsPollingInterval = typeof options.featureFlagsPollingInterval === 'number'
-    ? Math.max(options.featureFlagsPollingInterval, MINIMUM_POLLING_INTERVAL) 
-    : THIRTY_SECONDS
+    this.options.featureFlagsPollingInterval =
+      typeof options.featureFlagsPollingInterval === 'number'
+        ? Math.max(options.featureFlagsPollingInterval, MINIMUM_POLLING_INTERVAL)
+        : THIRTY_SECONDS
 
     if (options.personalApiKey) {
       if (options.personalApiKey.includes('phc_')) {
-        throw new Error('Your Personal API key is invalid. These keys are prefixed with "phx_" and can be created in PostHog project settings.')
+        throw new Error(
+          'Your Personal API key is invalid. These keys are prefixed with "phx_" and can be created in PostHog project settings.'
+        )
       }
 
       this.featureFlagsPoller = new FeatureFlagsPoller({

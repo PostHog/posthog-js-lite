@@ -380,7 +380,7 @@ class FeatureFlagsPoller {
   /**
    * If a client is misconfigured with an invalid or improper API key, the polling interval is doubled each time
    * until a successful request is made, up to a maximum of 60 seconds.
-   * 
+   *
    * @returns The polling interval to use for the next request.
    */
   private getPollingInterval(): number {
