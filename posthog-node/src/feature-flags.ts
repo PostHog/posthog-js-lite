@@ -406,7 +406,7 @@ class FeatureFlagsPoller {
         this.lastRequestWasAuthenticationError = true
         this.authenticationErrorCount += 1
         throw new ClientError(
-          `Your project key or personal API key is invalid. Setting next polling interval to ${this.getPollingInterval()}ms. More information: https://posthog.com/docs/api/overview`
+          `Your project key or personal API key is invalid. Setting next polling interval to ${this.getPollingInterval()}ms. More information: https://posthog.com/docs/api#rate-limiting`
         )
       }
 
