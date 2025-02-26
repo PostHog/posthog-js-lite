@@ -406,7 +406,7 @@ class FeatureFlagsPoller {
         this.lastRequestWasAuthenticationError = true
         this.authenticationErrorCount += 1
         throw new ClientError(
-          `Your personalApiKey is invalid. Are you sure you're not using your Project API key? More information: https://posthog.com/docs/api/overview`
+          `Your project key or personal API key is invalid. Setting next polling interval to ${this.getPollingInterval()}ms. More information: https://posthog.com/docs/api/overview`
         )
       }
 
@@ -414,7 +414,7 @@ class FeatureFlagsPoller {
         this.lastRequestWasAuthenticationError = true
         this.authenticationErrorCount += 1
         throw new ClientError(
-          `Your personalApiKey does not have permission to fetch feature flag definitions for local evaluation. Are you sure you're using the correct personal and Project API key pair? More information: https://posthog.com/docs/api/overview`
+          `Your personal API key does not have permission to fetch feature flag definitions for local evaluation. Setting next polling interval to ${this.getPollingInterval()}ms. Are you sure you're using the correct personal and Project API key pair? More information: https://posthog.com/docs/api/overview`
         )
       }
 
@@ -449,10 +449,6 @@ class FeatureFlagsPoller {
   }
 
   private getPersonalApiKeyRequestOptions(method: 'GET' | 'POST' | 'PUT' | 'PATCH' = 'GET'): PostHogFetchOptions {
-    if (!this.personalApiKey || this.personalApiKey.includes('phc_')) {
-      throw new ClientError('A valid Personal API key is required to fetch feature flags')
-    }
-
     return {
       method,
       headers: {
@@ -464,6 +460,7 @@ class FeatureFlagsPoller {
   }
 
   async _requestFeatureFlagDefinitions(): Promise<PostHogFetchResponse> {
+    console.debug('DEBUG FOR TESTING ONLY: Making a request to fetch feature flags with polling interval:', this.getPollingInterval())
     const url = `${this.host}/api/feature_flag/local_evaluation?token=${this.projectApiKey}&send_cohorts`
 
     const options = this.getPersonalApiKeyRequestOptions()
