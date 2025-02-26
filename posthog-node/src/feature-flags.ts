@@ -460,7 +460,6 @@ class FeatureFlagsPoller {
   }
 
   async _requestFeatureFlagDefinitions(): Promise<PostHogFetchResponse> {
-    console.debug('DEBUG FOR TESTING ONLY: Making a request to fetch feature flags with polling interval:', this.getPollingInterval())
     const url = `${this.host}/api/feature_flag/local_evaluation?token=${this.projectApiKey}&send_cohorts`
 
     const options = this.getPersonalApiKeyRequestOptions()
