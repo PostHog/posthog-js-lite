@@ -28,9 +28,9 @@ const posthog = new PostHog('my-api-key', {
 posthog.capture('my-event', { myProperty: 'foo' })
 
 // Identify a user (e.g. on login)
-posthog.identify('my-unique-user-id', { email: 'exampke@posthog.com', name: 'Jane Doe' })
+posthog.identify('my-unique-user-id', { email: 'example@posthog.com', name: 'Jane Doe' })
 // ...or with Set Once additional properties
-posthog.identify('my-unique-user-id', { $set: { email: 'exampke@posthog.com', name: 'Jane Doe' }, $set_once: { vip: true } })
+posthog.identify('my-unique-user-id', { $set: { email: 'example@posthog.com', name: 'Jane Doe' }, $set_once: { vip: true } })
 
 // Reset a user (e.g. on logout)
 posthog.reset()
