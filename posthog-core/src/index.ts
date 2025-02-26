@@ -14,6 +14,7 @@ import {
   assert,
   currentISOTime,
   currentTimestamp,
+  isError,
   removeTrailingSlash,
   retriable,
   RetriableOptions,
@@ -1423,13 +1424,13 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   /***
    *** ERROR TRACKING
    ***/
-  captureException(error: Error, additionalProperties?: { [key: string]: any }): void {
+  captureException(error: unknown, additionalProperties?: { [key: string]: any }): void {
     const properties: { [key: string]: any } = {
       $exception_level: 'error',
       $exception_list: [
         {
-          type: error.name,
-          value: error.message,
+          type: isError(error) ? error.name : 'Error',
+          value: isError(error) ? error.message : error,
           mechanism: {
             handled: true,
             synthetic: false,
