@@ -3,6 +3,7 @@ import { FeatureFlagCondition, FlagProperty, PostHogFeatureFlag, PropertyGroup }
 import { JsonType, PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src'
 import { safeSetTimeout } from 'posthog-core/src/utils'
 import fetch from './fetch'
+import { SIXTY_SECONDS } from './posthog-node'
 
 // eslint-disable-next-line
 const LONG_SCALE = 0xfffffffffffffff
@@ -57,6 +58,8 @@ class FeatureFlagsPoller {
   debugMode: boolean = false
   onError?: (error: Error) => void
   customHeaders?: { [key: string]: string }
+  lastRequestWasAuthenticationError: boolean = false
+  authenticationErrorCount: number = 0
 
   constructor({
     pollingInterval,
@@ -78,7 +81,6 @@ class FeatureFlagsPoller {
     this.projectApiKey = projectApiKey
     this.host = host
     this.poller = undefined
-    // NOTE: as any is required here as the AbortSignal typing is slightly misaligned but works just fine
     this.fetch = options.fetch || fetch
     this.onError = options.onError
     this.customHeaders = customHeaders
@@ -375,19 +377,44 @@ class FeatureFlagsPoller {
     }
   }
 
+  /**
+   * If a client is misconfigured with an invalid or improper API key, the polling interval is doubled each time
+   * until a successful request is made, up to a maximum of 60 seconds.
+   *
+   * @returns The polling interval to use for the next request.
+   */
+  private getPollingInterval(): number {
+    if (!this.lastRequestWasAuthenticationError) {
+      return this.pollingInterval
+    }
+
+    return Math.min(SIXTY_SECONDS, this.pollingInterval * 2 ** this.authenticationErrorCount)
+  }
+
   async _loadFeatureFlags(): Promise<void> {
     if (this.poller) {
       clearTimeout(this.poller)
       this.poller = undefined
     }
-    this.poller = setTimeout(() => this._loadFeatureFlags(), this.pollingInterval)
+
+    this.poller = setTimeout(() => this._loadFeatureFlags(), this.getPollingInterval())
 
     try {
       const res = await this._requestFeatureFlagDefinitions()
 
       if (res && res.status === 401) {
+        this.lastRequestWasAuthenticationError = true
+        this.authenticationErrorCount += 1
         throw new ClientError(
-          `Your personalApiKey is invalid. Are you sure you're not using your Project API key? More information: https://posthog.com/docs/api/overview`
+          `Your project key or personal API key is invalid. Setting next polling interval to ${this.getPollingInterval()}ms. More information: https://posthog.com/docs/api#rate-limiting`
+        )
+      }
+
+      if (res && res.status === 403) {
+        this.lastRequestWasAuthenticationError = true
+        this.authenticationErrorCount += 1
+        throw new ClientError(
+          `Your personal API key does not have permission to fetch feature flag definitions for local evaluation. Setting next polling interval to ${this.getPollingInterval()}ms. Are you sure you're using the correct personal and Project API key pair? More information: https://posthog.com/docs/api/overview`
         )
       }
 
@@ -423,6 +450,8 @@ class FeatureFlagsPoller {
       this.groupTypeMapping = responseJson.group_type_mapping || {}
       this.cohorts = responseJson.cohorts || []
       this.loadedSuccessfullyOnce = true
+      this.lastRequestWasAuthenticationError = false
+      this.authenticationErrorCount = 0
     } catch (err) {
       // if an error that is not an instance of ClientError is thrown
       // we silently ignore the error when reloading feature flags
