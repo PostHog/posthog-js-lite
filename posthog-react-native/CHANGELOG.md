@@ -1,5 +1,9 @@
 # Next
 
+# 3.11.2 - 2025-02-27
+
+1. Supports gracefully handling quotaLimited responses from the PostHog API for feature flag
+
 # 3.11.1 - 2025-02-21
 
 ## Fixed

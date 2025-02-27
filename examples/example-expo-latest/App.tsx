@@ -21,9 +21,9 @@ export const SharedPostHogProvider = (props: any) => {
     <PostHogProvider
       client={posthog}
       autocapture={{
-        captureLifecycleEvents: true,
-        captureScreens: true,
-        captureTouches: true,
+        captureLifecycleEvents: false,
+        captureScreens: false,
+        captureTouches: false,
         customLabelProp: 'ph-my-label',
       }}
       debug
@@ -42,8 +42,24 @@ export default function App() {
   const [buttonText, setButtonText] = useState('Open up App.js to start working on your app!')
 
   const handleClick = () => {
-    posthog.capture('button_clicked', { name: 'example' })
-    setButtonText('button_clicked' + new Date().toISOString())
+    // posthog.capture('button_clicked', { name: 'example' })
+    // setButtonText('button_clicked' + new Date().toISOString())
+    const userId = String(93929292112)
+    const user = {
+      id: userId,
+      invite_token: 'e8d605f6a8e58e64552675331ce98680',
+      location: 'San Francisco, California',
+      state: 'active',
+      stats: {
+        bookmark_count: 61,
+        review_count: 70,
+      },
+      created_at: '2013-06-10T18:35:57+00:00',
+      updated_at: '2025-02-22T03:27:26+00:00',
+      user_type: ['User'],
+    }
+    posthog.alias(userId)
+    posthog.identify(userId, user)
   }
 
   return (
