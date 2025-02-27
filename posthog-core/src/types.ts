@@ -120,6 +120,7 @@ export type PostHogDecideResponse = {
     [key: string]: JsonType
   }
   errorsWhileComputingFlags: boolean
+  quotaLimited?: string[]
   sessionRecording?:
     | boolean
     | {

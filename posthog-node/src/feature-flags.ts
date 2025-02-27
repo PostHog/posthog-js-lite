@@ -418,6 +418,19 @@ class FeatureFlagsPoller {
         )
       }
 
+      if (res && res.status === 402) {
+        // Quota limited - clear all flags
+        console.warn(
+          '[FEATURE FLAGS] Feature flags quota limit exceeded - unsetting all local flags. Learn more about billing limits at https://posthog.com/docs/billing/limits-alerts'
+        )
+        this.featureFlags = []
+        this.featureFlagsByKey = {}
+        this.groupTypeMapping = {}
+        this.cohorts = {}
+        this.loadedSuccessfullyOnce = false
+        return
+      }
+
       if (res && res.status !== 200) {
         // something else went wrong, or the server is down.
         // In this case, don't override existing flags

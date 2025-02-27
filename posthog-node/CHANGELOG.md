@@ -1,5 +1,9 @@
 # Next
 
+# 4.8.1 – 2025-02-26
+
+1. Supports gracefully handling quotaLimited responses from the PostHog API for feature flag evaluation
+
 # 4.8.0 - 2025-02-26
 
 1. Add guardrails and exponential error backoff in the feature flag local evaluation poller to prevent high rates of 401/403 traffic towards `/local_evaluation`
