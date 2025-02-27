@@ -35,5 +35,8 @@
     "stats",
     "analysis",
     "funnels"
+  ],
+  "files": [
+    "lib/index.*"
   ]
 }
