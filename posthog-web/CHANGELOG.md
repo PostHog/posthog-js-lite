@@ -4,7 +4,7 @@
 
 ## Fixed
 
-1. Supports gracefully handling quotaLimited responses from the PostHog API for feature flag
+1. Supports gracefully handling quotaLimited responses from the PostHog API for feature flags.
 
 # 3.4.1 - 2025-02-20
 
