@@ -20,10 +20,10 @@ import {
   RetriableOptions,
   safeSetTimeout,
 } from './utils'
-export * as utils from './utils'
 import { LZString } from './lz-string'
 import { SimpleEventEmitter } from './eventemitter'
 import { uuidv7 } from './vendor/uuidv7'
+export * as utils from './utils'
 
 class PostHogFetchHttpError extends Error {
   name = 'PostHogFetchHttpError'
@@ -343,7 +343,8 @@ export abstract class PostHogCoreStateless {
       groups,
       personProperties,
       groupProperties,
-      disableGeoip
+      disableGeoip,
+      [key]
     )
 
     if (!featureFlags) {
@@ -378,7 +379,8 @@ export abstract class PostHogCoreStateless {
       groups,
       personProperties,
       groupProperties,
-      disableGeoip
+      disableGeoip,
+      [key]
     )
 
     if (!payloads) {
@@ -400,7 +402,8 @@ export abstract class PostHogCoreStateless {
     groups: Record<string, string> = {},
     personProperties: Record<string, string> = {},
     groupProperties: Record<string, Record<string, string>> = {},
-    disableGeoip?: boolean
+    disableGeoip?: boolean,
+    flagKeysToEvaluate?: string[]
   ): Promise<PostHogDecideResponse['featureFlagPayloads'] | undefined> {
     await this._initPromise
 
@@ -410,7 +413,8 @@ export abstract class PostHogCoreStateless {
         groups,
         personProperties,
         groupProperties,
-        disableGeoip
+        disableGeoip,
+        flagKeysToEvaluate
       )
     ).payloads
 
@@ -430,7 +434,8 @@ export abstract class PostHogCoreStateless {
     groups: Record<string, string | number> = {},
     personProperties: Record<string, string> = {},
     groupProperties: Record<string, Record<string, string>> = {},
-    disableGeoip?: boolean
+    disableGeoip?: boolean,
+    flagKeysToEvaluate?: string[]
   ): Promise<PostHogDecideResponse['featureFlags'] | undefined> {
     await this._initPromise
 
@@ -440,7 +445,8 @@ export abstract class PostHogCoreStateless {
         groups,
         personProperties,
         groupProperties,
-        disableGeoip
+        disableGeoip,
+        flagKeysToEvaluate
       )
     ).flags
   }
@@ -450,7 +456,8 @@ export abstract class PostHogCoreStateless {
     groups: Record<string, string | number> = {},
     personProperties: Record<string, string> = {},
     groupProperties: Record<string, Record<string, string>> = {},
-    disableGeoip?: boolean
+    disableGeoip?: boolean,
+    flagKeysToEvaluate?: string[]
   ): Promise<{
     flags: PostHogDecideResponse['featureFlags'] | undefined
     payloads: PostHogDecideResponse['featureFlagPayloads'] | undefined
@@ -460,6 +467,9 @@ export abstract class PostHogCoreStateless {
     const extraPayload: Record<string, any> = {}
     if (disableGeoip ?? this.disableGeoip) {
       extraPayload['geoip_disable'] = true
+    }
+    if (flagKeysToEvaluate) {
+      extraPayload['flag_keys_to_evaluate'] = flagKeysToEvaluate
     }
     const decideResponse = await this.getDecide(distinctId, groups, personProperties, groupProperties, extraPayload)
 
