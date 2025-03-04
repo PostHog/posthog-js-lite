@@ -14,13 +14,13 @@ import { PostHog } from '../posthog-rn'
 
 type ActiveSurveyContextType = { survey: Survey; onShow: () => void; onClose: (submitted: boolean) => void } | undefined
 const ActiveSurveyContext = React.createContext<ActiveSurveyContextType>(undefined)
-export const useActiveSurvey = (): ActiveSurveyContextType => React.useContext(ActiveSurveyContext)
+// export const useActiveSurvey = (): ActiveSurveyContextType => React.useContext(ActiveSurveyContext)
 
-type FeedbackSurveyHook = {
-  survey: Survey
-  showSurveyModal: () => void
-  hideSurveyModal: () => void
-}
+// type FeedbackSurveyHook = {
+//   survey: Survey
+//   showSurveyModal: () => void
+//   hideSurveyModal: () => void
+// }
 const FeedbackSurveyContext = React.createContext<
   | {
       surveys: Survey[]
@@ -29,32 +29,32 @@ const FeedbackSurveyContext = React.createContext<
     }
   | undefined
 >(undefined)
-export const useFeedbackSurvey = (selector: string): FeedbackSurveyHook | undefined => {
-  const context = React.useContext(FeedbackSurveyContext)
-  const survey = context?.surveys.find(
-    (survey: Survey) => survey.type === SurveyType.Widget && survey.appearance?.widgetSelector === selector
-  )
-  if (!context || !survey) {
-    return undefined
-  }
+// export const useFeedbackSurvey = (selector: string): FeedbackSurveyHook | undefined => {
+//   const context = React.useContext(FeedbackSurveyContext)
+//   const survey = context?.surveys.find(
+//     (survey: Survey) => survey.type === SurveyType.Widget && survey.appearance?.widgetSelector === selector
+//   )
+//   if (!context || !survey) {
+//     return undefined
+//   }
 
-  return {
-    survey,
-    showSurveyModal: () => context.setActiveSurvey(survey),
-    hideSurveyModal: () => {
-      if (context.activeSurvey === survey) {
-        context.setActiveSurvey(undefined)
-      }
-    },
-  }
-}
+//   return {
+//     survey,
+//     showSurveyModal: () => context.setActiveSurvey(survey),
+//     hideSurveyModal: () => {
+//       if (context.activeSurvey === survey) {
+//         context.setActiveSurvey(undefined)
+//       }
+//     },
+//   }
+// }
 
 export type PostHogSurveyProviderProps = {
-  /**
-   * Whether to show the default survey modal when there is an active survey. (Default true)
-   * If false, you can call useActiveSurvey and render survey content yourself.
-   **/
-  automaticSurveyModal?: boolean
+  // /**
+  //  * Whether to show the default survey modal when there is an active survey. (Default true)
+  //  * If false, you can call useActiveSurvey and render survey content yourself.
+  //  **/
+  // automaticSurveyModal?: boolean
 
   /**
    * The default appearance for surveys when not specified in PostHog.
@@ -112,7 +112,7 @@ export function PostHogSurveyProvider(props: PostHogSurveyProviderProps): JSX.El
     if (popoverSurveys.length > 0) {
       setActiveSurvey(popoverSurveys[0])
     }
-  }, [activeSurvey, flags, surveys, seenSurveys, activatedSurveys, lastSeenSurveyDate, props.automaticSurveyModal])
+  }, [activeSurvey, flags, surveys, seenSurveys, activatedSurveys, lastSeenSurveyDate])
 
   // Merge survey appearance so that components and hooks can use a consistent model
   const surveyAppearance = useMemo<SurveyAppearanceTheme>(() => {
@@ -159,8 +159,7 @@ export function PostHogSurveyProvider(props: PostHogSurveyProviderProps): JSX.El
 
   // Modal is shown for PopOver surveys or if automaticSurveyModal is true, and for all widget surveys
   // because these would have been invoked by the useFeedbackSurvey hook's showSurveyModal() method
-  const shouldShowModal =
-    activeContext && (props.automaticSurveyModal !== false || activeContext.survey.type === SurveyType.Widget)
+  const shouldShowModal = activeContext && activeContext.survey.type === SurveyType.Widget
 
   return (
     <ActiveSurveyContext.Provider value={activeContext}>
