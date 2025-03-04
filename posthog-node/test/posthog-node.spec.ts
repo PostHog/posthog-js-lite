@@ -1281,6 +1281,7 @@ describe('PostHog Node.js', () => {
             },
             group_properties: {},
             geoip_disable: true,
+            flag_keys_to_evaluate: ['random_key'],
           }),
         })
       )
