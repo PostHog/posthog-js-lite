@@ -385,7 +385,6 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       onlyEvaluateLocally?: boolean
       sendFeatureFlagEvents?: boolean
       disableGeoip?: boolean
-      flagKeysToEvaluate?: string[]
     }
   ): Promise<boolean | undefined> {
     const feat = await this.getFeatureFlag(key, distinctId, options)
