@@ -2,7 +2,7 @@
 
 # 4.9.0 – 2025-03-04
 
-1. Allow feature flags to be evaluated individually
+1. Allow feature flags to be evaluated individually when local evaluation is not being used
 
 # 4.8.1 – 2025-02-26
 
