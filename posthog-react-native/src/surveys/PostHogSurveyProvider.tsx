@@ -50,10 +50,10 @@ const FeedbackSurveyContext = React.createContext<
 // }
 
 export type PostHogSurveyProviderProps = {
-  /**
-   * Whether to show the default survey modal when there is an active survey. (Default true)
-   * If false, you can call useActiveSurvey and render survey content yourself.
-   **/
+  // /**
+  //  * Whether to show the default survey modal when there is an active survey. (Default true)
+  //  * If false, you can call useActiveSurvey and render survey content yourself.
+  //  **/
   // automaticSurveyModal?: boolean
 
   /**
