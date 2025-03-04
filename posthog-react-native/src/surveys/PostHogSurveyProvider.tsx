@@ -94,6 +94,7 @@ export function PostHogSurveyProvider(props: PostHogSurveyProviderProps): JSX.El
   // Whenever state changes and there's no active survey, check if there is a new survey to show
   useEffect(() => {
     if (activeSurvey) {
+      // console.log('[PostHog Debug] activeSurvey', activeSurvey)
       return
     }
 
@@ -108,6 +109,8 @@ export function PostHogSurveyProvider(props: PostHogSurveyProviderProps): JSX.El
     const popoverSurveys = activeSurveys.filter((survey: Survey) => survey.type === SurveyType.Popover)
     // TODO: sort by appearance delay, implement delay
     // const popoverSurveyQueue = sortSurveysByAppearanceDelay(popoverSurveys)
+
+    // console.log('[PostHog Debug] activeSurveys', activeSurveys)
 
     if (popoverSurveys.length > 0) {
       setActiveSurvey(popoverSurveys[0])
@@ -139,6 +142,7 @@ export function PostHogSurveyProvider(props: PostHogSurveyProviderProps): JSX.El
 
   const activeContext = useMemo(() => {
     if (!activeSurvey) {
+      // console.log('[PostHog Debug] activeSurvey', activeSurvey)
       return undefined
     }
     return {
@@ -159,7 +163,9 @@ export function PostHogSurveyProvider(props: PostHogSurveyProviderProps): JSX.El
 
   // Modal is shown for PopOver surveys or if automaticSurveyModal is true, and for all widget surveys
   // because these would have been invoked by the useFeedbackSurvey hook's showSurveyModal() method
-  const shouldShowModal = activeContext && activeContext.survey.type === SurveyType.Widget
+  const shouldShowModal = activeContext && activeContext.survey.type === SurveyType.Popover
+
+  // console.log('[PostHog Debug] shouldShowModal', shouldShowModal)
 
   return (
     <ActiveSurveyContext.Provider value={activeContext}>

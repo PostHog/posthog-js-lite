@@ -28,7 +28,7 @@ export function ConfirmationMessage({
     <View style={styleOverrides}>
       <View style={styles.thankYouMessageContainer}>
         <Text style={[styles.thankYouMessageHeader, { color: textColor }]}>{header}</Text>
-        {description && contentType === 'text' && <Text>{description} </Text>}
+        {description && contentType === SurveyQuestionDescriptionContentType.Text && <Text>{description} </Text>}
       </View>
       {isModal && (
         <BottomSection

@@ -15,7 +15,9 @@ export function QuestionHeader({
   return (
     <View style={styles.container}>
       <Text style={styles.question}>{question}</Text>
-      {description && descriptionContentType === 'text' && <Text style={styles.description}>{description} </Text>}
+      {description && descriptionContentType === SurveyQuestionDescriptionContentType.Text && (
+        <Text style={styles.description}>{description} </Text>
+      )}
     </View>
   )
 }

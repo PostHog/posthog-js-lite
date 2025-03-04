@@ -42,7 +42,7 @@ export default function App() {
 
   return (
     <SharedPostHogProvider>
-      <PostHogSurveyProvider>
+      <PostHogSurveyProvider client={posthog}>
         <View style={styles.container}>
           <Text ph-my-label="special-text-changed" onPress={handleClick}>
             {buttonText}
