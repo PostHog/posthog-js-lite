@@ -3,7 +3,6 @@ import { GestureResponderEvent, StyleProp, View, ViewStyle } from 'react-native'
 import { PostHog, PostHogOptions } from './posthog-rn'
 import { autocaptureFromTouchEvent } from './autocapture'
 import { useNavigationTracker } from './hooks/useNavigationTracker'
-import { useLifecycleTracker } from './hooks/useLifecycleTracker'
 import { PostHogContext } from './PostHogContext'
 import { PostHogAutocaptureOptions } from './types'
 import { defaultPostHogLabelProp } from './autocapture'
@@ -29,11 +28,6 @@ function PostHogNavigationHook({
   return null
 }
 
-function PostHogLifecycleHook({ client }: { client?: PostHog }): JSX.Element | null {
-  useLifecycleTracker(client)
-  return null
-}
-
 export const PostHogProvider = ({
   children,
   client,
@@ -45,9 +39,12 @@ export const PostHogProvider = ({
 }: PostHogProviderProps): JSX.Element | null => {
   if (!client && !apiKey) {
     throw new Error(
-      'Either a PostHog client or an apiKey is required. If want to use the PostHogProvider without a client, please provide an apiKey and the options={ disabled: true }.'
+      'Either a PostHog client or an apiKey is required. If you want to use the PostHogProvider without a client, please provide an apiKey and the options={ disabled: true }.'
     )
   }
+
+  const captureAll = autocapture === true
+  const captureNone = autocapture === false
 
   const posthog = useMemo(() => {
     if (client && apiKey) {
@@ -56,21 +53,31 @@ export const PostHogProvider = ({
       )
     }
 
-    return client ?? new PostHog(apiKey ?? '', options)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client, apiKey])
+    if (client) {
+      return client
+    }
+
+    const parsedOptions = {
+      ...options,
+
+      // For backwards-compatible reasons, this information can be stored in two separate places
+      // Default to true if not set
+      captureNativeAppLifecycleEvents:
+        options?.captureNativeAppLifecycleEvents !== undefined
+          ? options.captureNativeAppLifecycleEvents
+          : !captureNone && (captureAll || (autocaptureOptions?.captureLifecycleEvents ?? true)),
+    }
+
+    return new PostHog(apiKey ?? '', parsedOptions)
+  }, [client, apiKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const autocaptureOptions = useMemo(
     () => (autocapture && typeof autocapture !== 'boolean' ? autocapture : {}),
     [autocapture]
   )
-  const captureAll = autocapture === true
-  const captureNone = autocapture === false
 
   const captureTouches = !captureNone && posthog && (captureAll || autocaptureOptions?.captureTouches)
   const captureScreens = !captureNone && posthog && (captureAll || (autocaptureOptions?.captureScreens ?? true)) // Default to true if not set
-  const captureLifecycle =
-    !captureNone && posthog && (captureAll || (autocaptureOptions?.captureLifecycleEvents ?? true)) // Default to true if not set
   const phLabelProp = autocaptureOptions?.customLabelProp || defaultPostHogLabelProp
 
   useEffect(() => {
@@ -98,10 +105,7 @@ export const PostHogProvider = ({
       onTouchEndCapture={captureTouches ? (e) => onTouch('end', e) : undefined}
     >
       <PostHogContext.Provider value={{ client: posthog }}>
-        <>
-          {captureScreens ? <PostHogNavigationHook options={autocaptureOptions} client={posthog} /> : null}
-          {captureLifecycle ? <PostHogLifecycleHook client={posthog} /> : null}
-        </>
+        {captureScreens && <PostHogNavigationHook options={autocaptureOptions} client={posthog} />}
         {children}
       </PostHogContext.Provider>
     </View>

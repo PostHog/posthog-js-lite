@@ -39,9 +39,11 @@ export type PostHogOptions = PostHogCoreOptions & {
    */
   customStorage?: PostHogCustomStorage
 
-  /** Captures native app lifecycle events such as Application Installed, Application Updated, Application Opened, Application Became Active and Application Backgrounded.
+  /** Captures app lifecycle events such as Application Installed, Application Updated, Application Opened, Application Became Active and Application Backgrounded.
    * By default is false.
-   * If you're already using the 'captureLifecycleEvents' options with 'withReactNativeNavigation' or 'PostHogProvider, you should not set this to true, otherwise you may see duplicated events.
+   * If you're already using the 'captureLifecycleEvents' options with 'withReactNativeNavigation' or 'PostHogProvider, you don't need to set this.
+   * If this is set, this value has priority over the 'captureLifecycleEvents' option.
+   * Application Installed and Application Updated events are not supported with persistence set to 'memory'.
    */
   captureNativeAppLifecycleEvents?: boolean
 
@@ -132,16 +134,9 @@ export class PostHog extends PostHogCore {
         }
       }
 
+      // this value could have been inferred from the autocapture options (captureLifecycleEvents)
       if (options?.captureNativeAppLifecycleEvents) {
-        if (this._persistence === 'memory') {
-          this.logMsgIfDebug(() =>
-            console.warn(
-              'PostHog was initialised with persistence set to "memory", capturing native app events is not supported.'
-            )
-          )
-        } else {
-          void this.captureNativeAppLifecycleEvents()
-        }
+        void this.captureNativeAppLifecycleEvents()
       }
 
       void this.persistAppVersion()
@@ -345,6 +340,12 @@ export class PostHog extends PostHogCore {
       const value = decideFeatureFlags[linkedFlag]
       if (typeof value === 'boolean') {
         recordingActive = value
+      } else if (typeof value === 'string') {
+        // if its a multi-variant flag linked to "any"
+        recordingActive = true
+      } else {
+        // disable recording if the flag does not exist/quota limited
+        recordingActive = false
       }
 
       this.logMsgIfDebug(() => console.log('PostHog Debug', `Session replay ${linkedFlag} linked flag value: ${value}`))
@@ -353,12 +354,13 @@ export class PostHog extends PostHogCore {
       const variant = linkedFlag['variant'] as string | undefined
       if (flag && variant) {
         const value = decideFeatureFlags[flag]
-        if (value) {
-          recordingActive = value === variant
-          this.logMsgIfDebug(() =>
-            console.log('PostHog Debug', `Session replay ${flag} linked flag variant: ${variant} and value ${value}`)
-          )
-        }
+        recordingActive = value === variant
+        this.logMsgIfDebug(() =>
+          console.log('PostHog Debug', `Session replay ${flag} linked flag variant: ${variant} and value ${value}`)
+        )
+      } else {
+        // disable recording if the flag does not exist/quota limited
+        recordingActive = false
       }
     }
 
@@ -411,65 +413,59 @@ export class PostHog extends PostHogCore {
   }
 
   private async captureNativeAppLifecycleEvents(): Promise<void> {
-    // See the other implementations for reference:
-    // ios: https://github.com/PostHog/posthog-ios/blob/3a6afc24d6bde730a19470d4e6b713f44d076ad9/PostHog/Classes/PHGPostHog.m#L140
-    // android: https://github.com/PostHog/posthog-android/blob/09940e6921bafa9e01e7d68b8c9032671a21ae73/posthog/src/main/java/com/posthog/android/PostHog.java#L278
-    // android: https://github.com/PostHog/posthog-android/blob/09940e6921bafa9e01e7d68b8c9032671a21ae73/posthog/src/main/java/com/posthog/android/PostHogActivityLifecycleCallbacks.java#L126
-
-    const prevAppBuild = this.getPersistedProperty(PostHogPersistedProperty.InstalledAppBuild)
-    const prevAppVersion = this.getPersistedProperty(PostHogPersistedProperty.InstalledAppVersion)
     const appBuild = this._appProperties.$app_build
     const appVersion = this._appProperties.$app_version
 
-    if (!appBuild || !appVersion) {
+    const isMemoryPersistence = this._persistence === 'memory'
+
+    // version and build are deprecated, but we keep them for compatibility
+    // use $app_version and $app_build instead
+    const properties: PostHogEventProperties = { version: appVersion, build: appBuild }
+
+    if (!isMemoryPersistence) {
+      const prevAppBuild = this.getPersistedProperty(PostHogPersistedProperty.InstalledAppBuild)
+      const prevAppVersion = this.getPersistedProperty(PostHogPersistedProperty.InstalledAppVersion)
+
+      if (!appBuild || !appVersion) {
+        this.logMsgIfDebug(() =>
+          console.warn(
+            'PostHog could not track installation/update/open, as the build and version were not set. ' +
+              'This can happen if some dependencies are not installed correctly, or if you have provided' +
+              'customAppProperties but not included $app_build or $app_version.'
+          )
+        )
+      }
+      if (appBuild) {
+        if (!prevAppBuild) {
+          // new app install
+          this.capture('Application Installed', properties)
+        } else if (prevAppBuild !== appBuild) {
+          // app updated
+          this.capture('Application Updated', {
+            previous_version: prevAppVersion,
+            previous_build: prevAppBuild,
+            ...properties,
+          })
+        }
+      }
+    } else {
       this.logMsgIfDebug(() =>
         console.warn(
-          'PostHog could not track installation/update/open, as the build and version were not set. ' +
-            'This can happen if some dependencies are not installed correctly, or if you have provided' +
-            'customAppProperties but not included $app_build or $app_version.'
+          'PostHog was initialised with persistence set to "memory", capturing native app events (Application Installed and Application Updated) is not supported.'
         )
       )
-    }
-    if (appBuild) {
-      if (!prevAppBuild) {
-        // new app install
-        // version and build are deprecated, but we keep them for compatibility
-        // use $app_version and $app_build instead
-        this.capture('Application Installed', {
-          version: appVersion,
-          build: appBuild,
-        })
-      } else if (prevAppBuild !== appBuild) {
-        // app updated
-        // version and build are deprecated, but we keep them for compatibility
-        // use $app_version and $app_build instead
-        this.capture('Application Updated', {
-          previous_version: prevAppVersion,
-          previous_build: prevAppBuild,
-          version: appVersion,
-          build: appBuild,
-        })
-      }
     }
 
     const initialUrl = (await Linking.getInitialURL()) ?? undefined
 
-    // version and build are deprecated, but we keep them for compatibility
-    // use $app_version and $app_build instead
     this.capture('Application Opened', {
-      version: appVersion,
-      build: appBuild,
+      ...properties,
       url: initialUrl,
     })
 
     AppState.addEventListener('change', (state) => {
       if (state === 'active') {
-        // version and build are deprecated, but we keep them for compatibility
-        // use $app_version and $app_build instead
-        this.capture('Application Became Active', {
-          version: appVersion,
-          build: appBuild,
-        })
+        this.capture('Application Became Active')
       } else if (state === 'background') {
         this.capture('Application Backgrounded')
       }

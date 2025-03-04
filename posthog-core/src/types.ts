@@ -146,6 +146,12 @@ export interface PostHogDecideResponse extends Omit<PostHogRemoteConfig, 'survey
     [key: string]: JsonType
   }
   errorsWhileComputingFlags: boolean
+  sessionRecording?:
+    | boolean
+    | {
+        [key: string]: JsonType
+      }
+  quotaLimited?: string[]
 }
 
 export type PostHogFlagsAndPayloadsResponse = {

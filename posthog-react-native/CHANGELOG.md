@@ -1,5 +1,40 @@
 # Next
 
+# 3.11.2 - 2025-02-27
+
+## Fixed
+
+1. Supports gracefully handling quotaLimited responses from the PostHog API for feature flags.
+
+# 3.11.1 - 2025-02-21
+
+## Fixed
+
+1. fix: handle cases when non Error is passed to `captureException`
+
+# 3.11.0 - 2025-02-21
+
+1. fix: Autocapture native app lifecycle events
+   1. the `captureNativeAppLifecycleEvents` client option now takes priority over the `captureLifecycleEvents` autocapture option.
+   2. the `captureLifecycleEvents` autocapture option now captures Application Installed and Application Updated events.
+   3. If you don't want to capture these events, set the `captureLifecycleEvents` autocapture option to `false` and capture the events manually, example below.
+
+```js
+AppState.addEventListener('change', (state) => {
+  if (state === 'active') {
+    posthog.capture('Application Became Active')
+  } else if (state === 'background') {
+    posthog.capture('Application Backgrounded')
+  }
+})
+```
+
+# 3.10.0 - 2025-02-20
+
+## Added
+
+1. Adds the ability to capture user feedback in LLM Observability using the `captureTraceFeedback` and `captureTraceMetric` methods.
+
 # 3.9.1 - 2025-02-13
 
 1. fix: ensure feature flags are reloaded after reset() to prevent undefined values

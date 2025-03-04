@@ -1,5 +1,23 @@
 # Next
 
+# 3.4.2 - 2025-02-27
+
+## Fixed
+
+1. Supports gracefully handling quotaLimited responses from the PostHog API for feature flags.
+
+# 3.4.1 - 2025-02-20
+
+## Fixed
+
+1. fix: handle cases when non Error is passed to `captureException`
+
+# 3.4.0 - 2025-02-20
+
+## Added
+
+1. Adds the ability to capture user feedback in LLM Observability using the `captureTraceFeedback` and `captureTraceMetric` methods.
+
 # 3.3.0 - 2025-02-06
 
 ## Added

@@ -1,5 +1,19 @@
 # Next
 
+# 4.8.1 – 2025-02-26
+
+1. Supports gracefully handling quotaLimited responses from the PostHog API for feature flag evaluation
+
+# 4.8.0 - 2025-02-26
+
+1. Add guardrails and exponential error backoff in the feature flag local evaluation poller to prevent high rates of 401/403 traffic towards `/local_evaluation`
+
+# 4.7.0 - 2025-02-20
+
+## Added
+
+1. Adds the ability to capture user feedback in LLM Observability using the `captureTraceFeedback` and `captureTraceMetric` methods.
+
 # 4.6.0 - 2025-02-12
 
 ## Added

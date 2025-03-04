@@ -15,6 +15,7 @@ import {
   assert,
   currentISOTime,
   currentTimestamp,
+  isError,
   removeTrailingSlash,
   retriable,
   RetriableOptions,
@@ -47,6 +48,11 @@ class PostHogFetchNetworkError extends Error {
 
 function isPostHogFetchError(err: any): boolean {
   return typeof err === 'object' && (err instanceof PostHogFetchHttpError || err instanceof PostHogFetchNetworkError)
+}
+
+enum QuotaLimitedFeature {
+  FeatureFlags = 'feature_flags',
+  Recordings = 'recordings',
 }
 
 export abstract class PostHogCoreStateless {
@@ -490,6 +496,17 @@ export abstract class PostHogCoreStateless {
       extraPayload['geoip_disable'] = true
     }
     const decideResponse = await this.getDecide(distinctId, groups, personProperties, groupProperties, extraPayload)
+
+    // Add check for quota limitation on feature flags
+    if (decideResponse?.quotaLimited?.includes(QuotaLimitedFeature.FeatureFlags)) {
+      console.warn(
+        '[FEATURE FLAGS] Feature flags quota limit exceeded - feature flags unavailable. Learn more about billing limits at https://posthog.com/docs/billing/limits-alerts'
+      )
+      return {
+        flags: undefined,
+        payloads: undefined,
+      }
+    }
 
     const flags = decideResponse?.featureFlags
     const payloads = decideResponse?.featureFlagPayloads
@@ -1325,7 +1342,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
 
   private async _decideAsync(sendAnonDistinctId: boolean = true): Promise<PostHogDecideResponse | undefined> {
     this._decideResponsePromise = this._initPromise
-      .then(() => {
+      .then(async () => {
         const distinctId = this.getDistinctId()
         const groups = this.props.$groups || {}
         const personProperties =
@@ -1338,54 +1355,60 @@ export abstract class PostHogCore extends PostHogCoreStateless {
           $anon_distinct_id: sendAnonDistinctId ? this.getAnonymousId() : undefined,
         }
 
-        return super.getDecide(distinctId, groups, personProperties, groupProperties, extraProperties).then((res) => {
-          if (res?.featureFlags) {
-            // clear flag call reported if we have new flags since they might have changed
-            if (this.sendFeatureFlagEvent) {
-              this.flagCallReported = {}
-            }
-
-            let newFeatureFlags = res.featureFlags
-            let newFeatureFlagPayloads = res.featureFlagPayloads
-            if (res.errorsWhileComputingFlags) {
-              // if not all flags were computed, we upsert flags instead of replacing them
-              const currentFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
-                PostHogPersistedProperty.FeatureFlags
-              )
-
-              this.logMsgIfDebug(() =>
-                console.log('PostHog Debug', 'Cached feature flags: ', JSON.stringify(currentFlags))
-              )
-
-              const currentFlagPayloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
-                PostHogPersistedProperty.FeatureFlagPayloads
-              )
-              newFeatureFlags = { ...currentFlags, ...res.featureFlags }
-              newFeatureFlagPayloads = { ...currentFlagPayloads, ...res.featureFlagPayloads }
-            }
-            this.setKnownFeatureFlags(newFeatureFlags)
-            this.setKnownFeatureFlagPayloads(
-              Object.fromEntries(
-                Object.entries(newFeatureFlagPayloads || {}).map(([k, v]) => [k, this._parsePayload(v)])
-              )
-            )
-            // Mark that we hit the /decide endpoint so we can capture this in the $feature_flag_called event
-            this.setPersistedProperty(PostHogPersistedProperty.DecideEndpointWasHit, true)
-
-            const sessionReplay = res?.sessionRecording
-            if (sessionReplay) {
-              this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, sessionReplay)
-              this.logMsgIfDebug(() =>
-                console.log('PostHog Debug', 'Session replay config: ', JSON.stringify(sessionReplay))
-              )
-            } else {
-              this.logMsgIfDebug(() => console.info('PostHog Debug', 'Session replay config disabled.'))
-              this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, null)
-            }
+        const res = await super.getDecide(distinctId, groups, personProperties, groupProperties, extraProperties)
+        // Add check for quota limitation on feature flags
+        if (res?.quotaLimited?.includes(QuotaLimitedFeature.FeatureFlags)) {
+          // Unset all feature flags by setting to null
+          this.setKnownFeatureFlags(null)
+          this.setKnownFeatureFlagPayloads(null)
+          console.warn(
+            '[FEATURE FLAGS] Feature flags quota limit exceeded - unsetting all flags. Learn more about billing limits at https://posthog.com/docs/billing/limits-alerts'
+          )
+          return res
+        }
+        if (res?.featureFlags) {
+          // clear flag call reported if we have new flags since they might have changed
+          if (this.sendFeatureFlagEvent) {
+            this.flagCallReported = {}
           }
 
-          return res
-        })
+          let newFeatureFlags = res.featureFlags
+          let newFeatureFlagPayloads = res.featureFlagPayloads
+          if (res.errorsWhileComputingFlags) {
+            // if not all flags were computed, we upsert flags instead of replacing them
+            const currentFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
+              PostHogPersistedProperty.FeatureFlags
+            )
+
+            this.logMsgIfDebug(() =>
+              console.log('PostHog Debug', 'Cached feature flags: ', JSON.stringify(currentFlags))
+            )
+
+            const currentFlagPayloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
+              PostHogPersistedProperty.FeatureFlagPayloads
+            )
+            newFeatureFlags = { ...currentFlags, ...res.featureFlags }
+            newFeatureFlagPayloads = { ...currentFlagPayloads, ...res.featureFlagPayloads }
+          }
+          this.setKnownFeatureFlags(newFeatureFlags)
+          this.setKnownFeatureFlagPayloads(
+            Object.fromEntries(Object.entries(newFeatureFlagPayloads || {}).map(([k, v]) => [k, this._parsePayload(v)]))
+          )
+          // Mark that we hit the /decide endpoint so we can capture this in the $feature_flag_called event
+          this.setPersistedProperty(PostHogPersistedProperty.DecideEndpointWasHit, true)
+
+          const sessionReplay = res?.sessionRecording
+          if (sessionReplay) {
+            this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, sessionReplay)
+            this.logMsgIfDebug(() =>
+              console.log('PostHog Debug', 'Session replay config: ', JSON.stringify(sessionReplay))
+            )
+          } else {
+            this.logMsgIfDebug(() => console.info('PostHog Debug', 'Session replay config disabled.'))
+            this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, null)
+          }
+        }
+        return res
       })
       .finally(() => {
         this._decideResponsePromise = undefined
@@ -1393,7 +1416,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     return this._decideResponsePromise
   }
 
-  private setKnownFeatureFlags(featureFlags: PostHogDecideResponse['featureFlags']): void {
+  private setKnownFeatureFlags(featureFlags: PostHogDecideResponse['featureFlags'] | null): void {
     this.wrap(() => {
       this.setPersistedProperty<PostHogDecideResponse['featureFlags']>(
         PostHogPersistedProperty.FeatureFlags,
@@ -1403,7 +1426,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     })
   }
 
-  private setKnownFeatureFlagPayloads(featureFlagPayloads: PostHogDecideResponse['featureFlagPayloads']): void {
+  private setKnownFeatureFlagPayloads(featureFlagPayloads: PostHogDecideResponse['featureFlagPayloads'] | null): void {
     this.wrap(() => {
       this.setPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
         PostHogPersistedProperty.FeatureFlagPayloads,
@@ -1573,13 +1596,13 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   /***
    *** ERROR TRACKING
    ***/
-  captureException(error: Error, additionalProperties?: { [key: string]: any }): void {
+  captureException(error: unknown, additionalProperties?: { [key: string]: any }): void {
     const properties: { [key: string]: any } = {
       $exception_level: 'error',
       $exception_list: [
         {
-          type: error.name,
-          value: error.message,
+          type: isError(error) ? error.name : 'Error',
+          value: isError(error) ? error.message : error,
           mechanism: {
             handled: true,
             synthetic: false,
@@ -1595,6 +1618,32 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     ).toString()
 
     this.capture('$exception', properties)
+  }
+
+  /**
+   * Capture written user feedback for a LLM trace. Numeric values are converted to strings.
+   * @param traceId The trace ID to capture feedback for.
+   * @param userFeedback The feedback to capture.
+   */
+  captureTraceFeedback(traceId: string | number, userFeedback: string): void {
+    this.capture('$ai_feedback', {
+      $ai_feedback_text: userFeedback,
+      $ai_trace_id: String(traceId),
+    })
+  }
+
+  /**
+   * Capture a metric for a LLM trace. Numeric values are converted to strings.
+   * @param traceId The trace ID to capture the metric for.
+   * @param metricName The name of the metric to capture.
+   * @param metricValue The value of the metric to capture.
+   */
+  captureTraceMetric(traceId: string | number, metricName: string, metricValue: string | number | boolean): void {
+    this.capture('$ai_metric', {
+      $ai_metric_name: metricName,
+      $ai_metric_value: String(metricValue),
+      $ai_trace_id: String(traceId),
+    })
   }
 }
 
