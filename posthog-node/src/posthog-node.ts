@@ -228,9 +228,10 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       onlyEvaluateLocally?: boolean
       sendFeatureFlagEvents?: boolean
       disableGeoip?: boolean
+      flagKeysToEvaluate?: string[]
     }
   ): Promise<string | boolean | undefined> {
-    const { groups, disableGeoip } = options || {}
+    const { groups, disableGeoip, flagKeysToEvaluate } = options || {}
     let { onlyEvaluateLocally, sendFeatureFlagEvents, personProperties, groupProperties } = options || {}
 
     const adjustedProperties = this.addLocalPersonAndGroupProperties(
@@ -268,7 +269,8 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         groups,
         personProperties,
         groupProperties,
-        disableGeoip
+        disableGeoip,
+        flagKeysToEvaluate
       )
     }
 
@@ -314,9 +316,10 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       onlyEvaluateLocally?: boolean
       sendFeatureFlagEvents?: boolean
       disableGeoip?: boolean
+      flagKeysToEvaluate?: string[]
     }
   ): Promise<JsonType | undefined> {
-    const { groups, disableGeoip } = options || {}
+    const { groups, disableGeoip, flagKeysToEvaluate } = options || {}
     let { onlyEvaluateLocally, sendFeatureFlagEvents, personProperties, groupProperties } = options || {}
 
     const adjustedProperties = this.addLocalPersonAndGroupProperties(
@@ -365,7 +368,8 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         groups,
         personProperties,
         groupProperties,
-        disableGeoip
+        disableGeoip,
+        flagKeysToEvaluate
       )
     }
     return response
@@ -385,6 +389,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       onlyEvaluateLocally?: boolean
       sendFeatureFlagEvents?: boolean
       disableGeoip?: boolean
+      flagKeysToEvaluate?: string[]
     }
   ): Promise<boolean | undefined> {
     const feat = await this.getFeatureFlag(key, distinctId, options)
