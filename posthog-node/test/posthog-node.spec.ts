@@ -1180,6 +1180,7 @@ describe('PostHog Node.js', () => {
               instance: { $group_key: 'app.posthog.com' },
             },
             geoip_disable: true,
+            flag_keys_to_evaluate: ['random_key'],
           }),
         })
       )
@@ -1208,6 +1209,7 @@ describe('PostHog Node.js', () => {
               instance: { $group_key: 'app.posthog.com' },
             },
             geoip_disable: true,
+            flag_keys_to_evaluate: ['random_key'],
           }),
         })
       )

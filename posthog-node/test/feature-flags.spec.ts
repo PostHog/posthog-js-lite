@@ -2,10 +2,10 @@
 // Uncomment below line while developing to not compile code everytime
 import { PostHog as PostHog, PostHogOptions } from '../src/posthog-node'
 import { matchProperty, InconclusiveMatchError, relativeDateParseForFeatureFlagMatching } from '../src/feature-flags'
-jest.mock('../src/fetch')
 import fetch from '../src/fetch'
 import { anyDecideCall, anyLocalEvalCall, apiImplementation } from './test-utils'
 import { waitForPromises } from 'posthog-core/test/test-utils/test-utils'
+jest.mock('../src/fetch')
 
 jest.spyOn(console, 'debug').mockImplementation()
 
@@ -360,6 +360,7 @@ describe('local evaluation', () => {
           },
           group_properties: {},
           geoip_disable: true,
+          flag_keys_to_evaluate: ['complex-flag'],
         }),
       })
     )
@@ -379,6 +380,7 @@ describe('local evaluation', () => {
           person_properties: { distinct_id: 'some-distinct-id', doesnt_matter: '1' },
           group_properties: {},
           geoip_disable: true,
+          flag_keys_to_evaluate: ['complex-flag'],
         }),
       })
     )

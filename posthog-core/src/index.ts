@@ -469,7 +469,7 @@ export abstract class PostHogCoreStateless {
       extraPayload['geoip_disable'] = true
     }
     if (flagKeysToEvaluate) {
-      extraPayload['flagKeysToEvaluate'] = flagKeysToEvaluate
+      extraPayload['flag_keys_to_evaluate'] = flagKeysToEvaluate
     }
     const decideResponse = await this.getDecide(distinctId, groups, personProperties, groupProperties, extraPayload)
 
