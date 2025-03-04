@@ -334,8 +334,7 @@ export abstract class PostHogCoreStateless {
     groups: Record<string, string> = {},
     personProperties: Record<string, string> = {},
     groupProperties: Record<string, Record<string, string>> = {},
-    disableGeoip?: boolean,
-    flagKeysToEvaluate?: string[]
+    disableGeoip?: boolean
   ): Promise<boolean | string | undefined> {
     await this._initPromise
 
@@ -345,7 +344,7 @@ export abstract class PostHogCoreStateless {
       personProperties,
       groupProperties,
       disableGeoip,
-      flagKeysToEvaluate
+      [key]
     )
 
     if (!featureFlags) {
@@ -371,8 +370,7 @@ export abstract class PostHogCoreStateless {
     groups: Record<string, string> = {},
     personProperties: Record<string, string> = {},
     groupProperties: Record<string, Record<string, string>> = {},
-    disableGeoip?: boolean,
-    flagKeysToEvaluate?: string[]
+    disableGeoip?: boolean
   ): Promise<JsonType | undefined> {
     await this._initPromise
 
@@ -382,7 +380,7 @@ export abstract class PostHogCoreStateless {
       personProperties,
       groupProperties,
       disableGeoip,
-      flagKeysToEvaluate
+      [key]
     )
 
     if (!payloads) {

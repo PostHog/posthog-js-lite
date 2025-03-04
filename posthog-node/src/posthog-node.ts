@@ -228,10 +228,9 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       onlyEvaluateLocally?: boolean
       sendFeatureFlagEvents?: boolean
       disableGeoip?: boolean
-      flagKeysToEvaluate?: string[]
     }
   ): Promise<string | boolean | undefined> {
-    const { groups, disableGeoip, flagKeysToEvaluate } = options || {}
+    const { groups, disableGeoip } = options || {}
     let { onlyEvaluateLocally, sendFeatureFlagEvents, personProperties, groupProperties } = options || {}
 
     const adjustedProperties = this.addLocalPersonAndGroupProperties(
@@ -269,8 +268,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         groups,
         personProperties,
         groupProperties,
-        disableGeoip,
-        flagKeysToEvaluate
+        disableGeoip
       )
     }
 
@@ -316,10 +314,9 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       onlyEvaluateLocally?: boolean
       sendFeatureFlagEvents?: boolean
       disableGeoip?: boolean
-      flagKeysToEvaluate?: string[]
     }
   ): Promise<JsonType | undefined> {
-    const { groups, disableGeoip, flagKeysToEvaluate } = options || {}
+    const { groups, disableGeoip } = options || {}
     let { onlyEvaluateLocally, sendFeatureFlagEvents, personProperties, groupProperties } = options || {}
 
     const adjustedProperties = this.addLocalPersonAndGroupProperties(
@@ -368,8 +365,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         groups,
         personProperties,
         groupProperties,
-        disableGeoip,
-        flagKeysToEvaluate
+        disableGeoip
       )
     }
     return response
