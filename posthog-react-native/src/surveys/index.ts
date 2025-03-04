@@ -1,4 +1,4 @@
-export { PostHogSurveyProvider, useActiveSurvey, useFeedbackSurvey } from './PostHogSurveyProvider'
+export { PostHogSurveyProvider } from './PostHogSurveyProvider'
 export type { PostHogSurveyProviderProps } from './PostHogSurveyProvider'
 export { SurveyModal } from './components/SurveyModal'
 export type { SurveyModalProps } from './components/SurveyModal'
