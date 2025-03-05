@@ -108,7 +108,7 @@ export function createEventProcessor(
             ...exception.stacktrace,
             type: 'raw',
             frames: (exception.stacktrace.frames || []).map((frame: any) => {
-              return { ...frame, platform: 'web:javascript' }
+              return { ...frame, platform: 'node:javascript' }
             }),
           }
         : undefined,
