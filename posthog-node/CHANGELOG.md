@@ -1,5 +1,9 @@
 # Next
 
+# 4.9.1 – 2025-03-05
+
+1. Fix: only set `platform` on PostHog exception frame properties
+
 # 4.9.0 – 2025-03-04
 
 1. Allow feature flags to be evaluated individually when local evaluation is not being used
