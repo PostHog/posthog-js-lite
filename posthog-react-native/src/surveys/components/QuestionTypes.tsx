@@ -304,6 +304,7 @@ const styles = StyleSheet.create({
   ratingOptionsEmoji: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    flexWrap: 'wrap', // Allows items to wrap to a new line
   },
   ratingsEmoji: {
     padding: 10,
