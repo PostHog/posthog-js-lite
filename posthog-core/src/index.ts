@@ -1308,6 +1308,17 @@ export abstract class PostHogCore extends PostHogCoreStateless {
               remoteConfigWithoutSurveys
             )
 
+            const sessionReplay = response?.sessionRecording
+            if (sessionReplay) {
+              this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, sessionReplay)
+              this.logMsgIfDebug(() =>
+                console.log('PostHog Debug', 'Session replay config: ', JSON.stringify(sessionReplay))
+              )
+            } else {
+              this.logMsgIfDebug(() => console.info('PostHog Debug', 'Session replay config disabled.'))
+              this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, null)
+            }
+
             // we only dont load flags if the remote config has no feature flags
             if (response.hasFeatureFlags === false) {
               // resetting flags to empty object
