@@ -33,7 +33,7 @@ export default function App() {
   const [buttonText, setButtonText] = useState('Open up App.js to start working on your app!')
 
   const handleClick = async () => {
-    // posthog.capture('button_clicked', { name: 'example' })
+    posthog.capture('button_clicked', { name: 'example' })
     setButtonText('button_clicked' + new Date().toISOString())
     // await posthog.getSurveys().then((surveys) => {
     //   console.log(surveys)

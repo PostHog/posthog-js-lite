@@ -534,15 +534,6 @@ export abstract class PostHogCoreStateless {
       return []
     }
 
-    const surveys = this.getPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys)
-
-    if (surveys && surveys.length > 0) {
-      this.logMsgIfDebug(() => console.log('PostHog Debug', 'Surveys fetched from storage: ', JSON.stringify(surveys)))
-      return surveys
-    } else {
-      this.logMsgIfDebug(() => console.log('PostHog Debug', 'No surveys found in storage, fetching from API'))
-    }
-
     const url = `${this.host}/api/surveys/?token=${this.apiKey}`
     const fetchOptions: PostHogFetchOptions = {
       method: 'GET',

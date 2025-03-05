@@ -22,7 +22,7 @@ import {
 } from './types'
 import { withReactNativeNavigation } from './frameworks/wix-navigation'
 import { OptionalReactNativeSessionReplay } from './optional/OptionalSessionReplay'
-// import { Survey, SurveyResponse } from '../../posthog-core/src/surveys-types'
+import { SurveyResponse } from '../../posthog-core/src/surveys-types'
 
 export type PostHogOptions = PostHogCoreOptions & {
   /** Allows you to provide the storage type. By default 'file'.
@@ -289,6 +289,19 @@ export class PostHog extends PostHogCore {
 
   initReactNativeNavigation(options: PostHogAutocaptureOptions): boolean {
     return withReactNativeNavigation(this, options)
+  }
+
+  public async getSurveys(): Promise<SurveyResponse['surveys']> {
+    const surveys = this.getPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys)
+
+    if (surveys && surveys.length > 0) {
+      this.logMsgIfDebug(() => console.log('PostHog Debug', 'Surveys fetched from storage: ', JSON.stringify(surveys)))
+      return surveys
+    } else {
+      this.logMsgIfDebug(() => console.log('PostHog Debug', 'No surveys found in storage, fetching from API'))
+    }
+
+    return super.getSurveys()
   }
 
   private async startSessionReplay(options?: PostHogOptions): Promise<void> {
