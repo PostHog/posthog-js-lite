@@ -297,7 +297,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
           $feature_flag_response: response,
           locally_evaluated: flagWasLocallyEvaluated,
           [`$feature/${key}`]: response,
-          $request_id: requestId,
+          $feature_flag_request_id: requestId,
         },
         groups,
         disableGeoip,
