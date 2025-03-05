@@ -527,10 +527,11 @@ export abstract class PostHogCoreStateless {
    *** SURVEYS
    ***/
 
-  public async getSurveys(): Promise<SurveyResponse['surveys']> {
+  public async getSurveysStateless(): Promise<SurveyResponse['surveys']> {
     await this._initPromise
 
-    if (this.disableSurveys) {
+    if (this.disableSurveys === true) {
+      this.logMsgIfDebug(() => console.log('Loading surveys is disabled.'))
       return []
     }
 
@@ -564,7 +565,6 @@ export abstract class PostHogCoreStateless {
 
     if (newSurveys) {
       this.logMsgIfDebug(() => console.log('PostHog Debug', 'Surveys fetched from API: ', JSON.stringify(newSurveys)))
-      this.setPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys, newSurveys)
     }
 
     return newSurveys ?? []

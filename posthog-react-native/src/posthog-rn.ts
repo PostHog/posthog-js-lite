@@ -74,11 +74,15 @@ export class PostHog extends PostHogCore {
   private _appProperties: PostHogCustomAppProperties = {}
   private _currentSessionId?: string | undefined
   private _enableSessionReplay?: boolean
+  private _disableSurveys: boolean
+  private _disableRemoteConfig: boolean
 
   constructor(apiKey: string, options?: PostHogOptions) {
     super(apiKey, options)
     this._isInitialized = false
     this._persistence = options?.persistence ?? 'file'
+    this._disableSurveys = options?.disableSurveys ?? false
+    this._disableRemoteConfig = options?.disableRemoteConfig ?? false
 
     // Either build the app properties from the existing ones
     this._appProperties =
@@ -126,11 +130,15 @@ export class PostHog extends PostHogCore {
 
       this._isInitialized = true
 
-      if (options?.disableRemoteConfig !== true) {
+      if (this._disableRemoteConfig === false) {
         this.reloadRemoteConfigAsync()
       } else {
+        this.logMsgIfDebug(() => console.info('PostHog Debug', `Remote config is disabled.`))
         if (options?.preloadFeatureFlags !== false) {
+          this.logMsgIfDebug(() => console.info('PostHog Debug', `Feature flags will be preloaded from Decide API.`))
           this.reloadFeatureFlags()
+        } else {
+          this.logMsgIfDebug(() => console.info('PostHog Debug', `preloadFeatureFlags is disabled.`))
         }
       }
 
@@ -292,16 +300,31 @@ export class PostHog extends PostHogCore {
   }
 
   public async getSurveys(): Promise<SurveyResponse['surveys']> {
+    if (this._disableSurveys === true) {
+      this.logMsgIfDebug(() => console.log('Loading surveys is disabled.'))
+      this.setPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys, [])
+      return []
+    }
+
     const surveys = this.getPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys)
 
     if (surveys && surveys.length > 0) {
       this.logMsgIfDebug(() => console.log('PostHog Debug', 'Surveys fetched from storage: ', JSON.stringify(surveys)))
       return surveys
     } else {
-      this.logMsgIfDebug(() => console.log('PostHog Debug', 'No surveys found in storage, fetching from API'))
+      this.logMsgIfDebug(() => console.log('PostHog Debug', 'No surveys found in storage'))
     }
 
-    return super.getSurveys()
+    if (this._disableRemoteConfig === true) {
+      const surveysFromApi = await super.getSurveysStateless()
+
+      if (surveysFromApi && surveysFromApi.length > 0) {
+        this.setPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys, surveysFromApi)
+        return surveysFromApi
+      }
+    }
+
+    return []
   }
 
   private async startSessionReplay(options?: PostHogOptions): Promise<void> {
