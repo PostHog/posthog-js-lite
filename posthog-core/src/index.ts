@@ -527,20 +527,12 @@ export abstract class PostHogCoreStateless {
    *** SURVEYS
    ***/
 
-  public async getSurveys(): Promise<SurveyResponse['surveys']> {
+  public async getSurveysStateless(): Promise<SurveyResponse['surveys']> {
     await this._initPromise
 
-    if (this.disableSurveys) {
+    if (this.disableSurveys === true) {
+      this.logMsgIfDebug(() => console.log('Loading surveys is disabled.'))
       return []
-    }
-
-    const surveys = this.getPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys)
-
-    if (surveys && surveys.length > 0) {
-      this.logMsgIfDebug(() => console.log('PostHog Debug', 'Surveys fetched from storage: ', JSON.stringify(surveys)))
-      return surveys
-    } else {
-      this.logMsgIfDebug(() => console.log('PostHog Debug', 'No surveys found in storage, fetching from API'))
     }
 
     const url = `${this.host}/api/surveys/?token=${this.apiKey}`
@@ -573,7 +565,6 @@ export abstract class PostHogCoreStateless {
 
     if (newSurveys) {
       this.logMsgIfDebug(() => console.log('PostHog Debug', 'Surveys fetched from API: ', JSON.stringify(newSurveys)))
-      this.setPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys, newSurveys)
     }
 
     return newSurveys ?? []

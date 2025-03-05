@@ -159,7 +159,7 @@ export function PostHogSurveyProvider(props: PostHogSurveyProviderProps): JSX.El
 
   // Modal is shown for PopOver surveys or if automaticSurveyModal is true, and for all widget surveys
   // because these would have been invoked by the useFeedbackSurvey hook's showSurveyModal() method
-  const shouldShowModal = activeContext && activeContext.survey.type === SurveyType.Widget
+  const shouldShowModal = activeContext && activeContext.survey.type === SurveyType.Popover
 
   return (
     <ActiveSurveyContext.Provider value={activeContext}>

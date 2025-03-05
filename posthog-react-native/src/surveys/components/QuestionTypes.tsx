@@ -15,6 +15,8 @@ import {
   LinkSurveyQuestion,
   MultipleSurveyQuestion,
   RatingSurveyQuestion,
+  SurveyRatingDisplay,
+  SurveyQuestionType,
 } from '../../../../posthog-core/src/surveys-types'
 import { BottomSection } from './BottomSection'
 import { QuestionHeader } from './QuestionHeader'
@@ -106,7 +108,7 @@ export function RatingQuestion({
       />
       <View style={styles.ratingSection}>
         <View style={styles.ratingOptions}>
-          {question.display === 'emoji' && (
+          {question.display === SurveyRatingDisplay.Emoji && (
             <View style={styles.ratingOptionsEmoji}>
               {(question.scale === 3 ? threeScaleEmojis : fiveScaleEmojis).map((Emoji, idx) => {
                 const active = idx + 1 === rating
@@ -118,7 +120,7 @@ export function RatingQuestion({
               })}
             </View>
           )}
-          {question.display === 'number' && (
+          {question.display === SurveyRatingDisplay.Number && (
             <View style={[styles.ratingOptionsNumber, { borderColor: appearance.borderColor }]}>
               {getScaleNumbers(question.scale).map((number, idx) => {
                 const active = rating === number
@@ -189,7 +191,7 @@ export function MultipleChoiceQuestion({
   appearance: SurveyAppearanceTheme
   onSubmit: (choices: string | string[] | null) => void
 }): JSX.Element {
-  const allowMultiple = question.type === 'multiple_choice'
+  const allowMultiple = question.type === SurveyQuestionType.MultipleChoice
   const openChoice = question.hasOpenChoice ? question.choices[question.choices.length - 1] : null
   const choices = useMemo(() => getDisplayOrderChoices(question), [question])
   const [selectedChoices, setSelectedChoices] = useState<string[]>([])
@@ -302,6 +304,7 @@ const styles = StyleSheet.create({
   ratingOptionsEmoji: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    flexWrap: 'wrap', // Allows items to wrap to a new line
   },
   ratingsEmoji: {
     padding: 10,
