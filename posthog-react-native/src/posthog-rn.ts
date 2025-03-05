@@ -334,6 +334,12 @@ export class PostHog extends PostHogCore {
       const value = decideFeatureFlags[linkedFlag]
       if (typeof value === 'boolean') {
         recordingActive = value
+      } else if (typeof value === 'string') {
+        // if its a multi-variant flag linked to "any"
+        recordingActive = true
+      } else {
+        // disable recording if the flag does not exist/quota limited
+        recordingActive = false
       }
 
       this.logMsgIfDebug(() => console.log('PostHog Debug', `Session replay ${linkedFlag} linked flag value: ${value}`))
@@ -342,12 +348,13 @@ export class PostHog extends PostHogCore {
       const variant = linkedFlag['variant'] as string | undefined
       if (flag && variant) {
         const value = decideFeatureFlags[flag]
-        if (value) {
-          recordingActive = value === variant
-          this.logMsgIfDebug(() =>
-            console.log('PostHog Debug', `Session replay ${flag} linked flag variant: ${variant} and value ${value}`)
-          )
-        }
+        recordingActive = value === variant
+        this.logMsgIfDebug(() =>
+          console.log('PostHog Debug', `Session replay ${flag} linked flag variant: ${variant} and value ${value}`)
+        )
+      } else {
+        // disable recording if the flag does not exist/quota limited
+        recordingActive = false
       }
     }
 

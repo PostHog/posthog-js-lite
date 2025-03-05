@@ -2,10 +2,10 @@
 // Uncomment below line while developing to not compile code everytime
 import { PostHog as PostHog, PostHogOptions } from '../src/posthog-node'
 import { matchProperty, InconclusiveMatchError, relativeDateParseForFeatureFlagMatching } from '../src/feature-flags'
-jest.mock('../src/fetch')
 import fetch from '../src/fetch'
 import { anyDecideCall, anyLocalEvalCall, apiImplementation } from './test-utils'
 import { waitForPromises } from 'posthog-core/test/test-utils/test-utils'
+jest.mock('../src/fetch')
 
 jest.spyOn(console, 'debug').mockImplementation()
 
@@ -360,6 +360,7 @@ describe('local evaluation', () => {
           },
           group_properties: {},
           geoip_disable: true,
+          flag_keys_to_evaluate: ['complex-flag'],
         }),
       })
     )
@@ -379,6 +380,7 @@ describe('local evaluation', () => {
           person_properties: { distinct_id: 'some-distinct-id', doesnt_matter: '1' },
           group_properties: {},
           geoip_disable: true,
+          flag_keys_to_evaluate: ['complex-flag'],
         }),
       })
     )
@@ -4465,5 +4467,41 @@ describe('consistency tests', () => {
       const value = await posthog.getFeatureFlag('multivariate-flag', distinctId)
       expect(value).toBe(result)
     })
+  })
+})
+
+describe('quota limiting', () => {
+  it('should clear local flags when quota limited', async () => {
+    const consoleSpy = jest.spyOn(console, 'warn')
+
+    mockedFetch.mockImplementation(
+      apiImplementation({
+        localFlagsStatus: 402,
+      })
+    )
+
+    const posthog = new PostHog('TEST_API_KEY', {
+      host: 'http://example.com',
+      personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
+    })
+
+    // Enable debug mode to see the messages
+    posthog.debug(true)
+
+    // Force a reload and wait for it to complete
+    await posthog.reloadFeatureFlags()
+
+    // locally evaluate the flags
+    const res = await posthog.getAllFlagsAndPayloads('distinct-id', { onlyEvaluateLocally: true })
+
+    // expect the flags to be cleared and for the debug message to be logged
+    expect(res.featureFlags).toEqual({})
+    expect(res.featureFlagPayloads).toEqual({})
+    expect(consoleSpy).toHaveBeenCalledWith(
+      '[FEATURE FLAGS] Feature flags quota limit exceeded - unsetting all local flags. Learn more about billing limits at https://posthog.com/docs/billing/limits-alerts'
+    )
+
+    consoleSpy.mockRestore()
   })
 })

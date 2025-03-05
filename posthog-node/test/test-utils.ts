@@ -3,11 +3,13 @@ export const apiImplementation = ({
   decideFlags,
   decideFlagPayloads,
   decideStatus = 200,
+  localFlagsStatus = 200,
 }: {
   localFlags?: any
   decideFlags?: any
   decideFlagPayloads?: any
   decideStatus?: number
+  localFlagsStatus?: number
 }) => {
   return (url: any): Promise<any> => {
     if ((url as any).includes('/decide/')) {
@@ -31,7 +33,7 @@ export const apiImplementation = ({
 
     if ((url as any).includes('api/feature_flag/local_evaluation?token=TEST_API_KEY&send_cohorts')) {
       return Promise.resolve({
-        status: 200,
+        status: localFlagsStatus,
         text: () => Promise.resolve('ok'),
         json: () => Promise.resolve(localFlags),
       }) as any

@@ -1,9 +1,9 @@
-import { PostHog as PostHog } from '../src/posthog-node'
-jest.mock('../src/fetch')
+import { MINIMUM_POLLING_INTERVAL, PostHog as PostHog, THIRTY_SECONDS } from '../src/posthog-node'
 import fetch from '../src/fetch'
 import { anyDecideCall, anyLocalEvalCall, apiImplementation } from './test-utils'
 import { waitForPromises, wait } from '../../posthog-core/test/test-utils/test-utils'
 import { randomUUID } from 'crypto'
+jest.mock('../src/fetch')
 
 jest.mock('../package.json', () => ({ version: '1.2.3' }))
 
@@ -666,6 +666,38 @@ describe('PostHog Node.js', () => {
       )
     })
 
+    it('should use minimum featureFlagsPollingInterval of 100ms if set less to less than 100', async () => {
+      posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        fetchRetryCount: 0,
+        personalApiKey: 'TEST_PERSONAL_API_KEY',
+        featureFlagsPollingInterval: 98,
+      })
+
+      expect(posthog.options.featureFlagsPollingInterval).toEqual(MINIMUM_POLLING_INTERVAL)
+    })
+
+    it('should use default featureFlagsPollingInterval of 30000ms if none provided', async () => {
+      posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        fetchRetryCount: 0,
+        personalApiKey: 'TEST_PERSONAL_API_KEY',
+      })
+
+      expect(posthog.options.featureFlagsPollingInterval).toEqual(THIRTY_SECONDS)
+    })
+
+    it('should throw an error when creating SDK if a project key is passed in as personalApiKey', async () => {
+      expect(() => {
+        posthog = new PostHog('TEST_API_KEY', {
+          host: 'http://example.com',
+          fetchRetryCount: 0,
+          personalApiKey: 'phc_abc123',
+          featureFlagsPollingInterval: 100,
+        })
+      }).toThrow(Error)
+    })
+
     it('captures feature flags with locally evaluated flags', async () => {
       mockedFetch.mockClear()
       mockedFetch.mockClear()
@@ -1148,6 +1180,7 @@ describe('PostHog Node.js', () => {
               instance: { $group_key: 'app.posthog.com' },
             },
             geoip_disable: true,
+            flag_keys_to_evaluate: ['random_key'],
           }),
         })
       )
@@ -1176,6 +1209,7 @@ describe('PostHog Node.js', () => {
               instance: { $group_key: 'app.posthog.com' },
             },
             geoip_disable: true,
+            flag_keys_to_evaluate: ['random_key'],
           }),
         })
       )
@@ -1247,6 +1281,7 @@ describe('PostHog Node.js', () => {
             },
             group_properties: {},
             geoip_disable: true,
+            flag_keys_to_evaluate: ['random_key'],
           }),
         })
       )
@@ -1268,6 +1303,7 @@ describe('PostHog Node.js', () => {
             },
             group_properties: {},
             geoip_disable: true,
+            flag_keys_to_evaluate: ['random_key'],
           }),
         })
       )
