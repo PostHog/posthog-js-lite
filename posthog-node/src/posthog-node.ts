@@ -130,12 +130,12 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       super.captureStateless(distinctId, event, props, { timestamp, disableGeoip, uuid })
     }
 
-    const _getFlags = (
+    const _getFlags = async (
       distinctId: EventMessage['distinctId'],
       groups: EventMessage['groups'],
       disableGeoip: EventMessage['disableGeoip']
     ): Promise<PostHogDecideResponse['featureFlags'] | undefined> => {
-      return super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)
+      return (await super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)).flags
     }
 
     // :TRICKY: If we flush, or need to shut down, to not lose events we want this promise to resolve before we flush
@@ -260,9 +260,9 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     )
 
     const flagWasLocallyEvaluated = response !== undefined
-
+    let requestId = undefined
     if (!flagWasLocallyEvaluated && !onlyEvaluateLocally) {
-      response = await super.getFeatureFlagStateless(
+      const remoteResponse = await super.getFeatureFlagStateless(
         key,
         distinctId,
         groups,
@@ -270,6 +270,8 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         groupProperties,
         disableGeoip
       )
+      response = remoteResponse.response
+      requestId = remoteResponse.requestId
     }
 
     const featureFlagReportedKey = `${key}_${response}`
@@ -295,6 +297,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
           $feature_flag_response: response,
           locally_evaluated: flagWasLocallyEvaluated,
           [`$feature/${key}`]: response,
+          $feature_flag_request_id: requestId,
         },
         groups,
         disableGeoip,
