@@ -335,10 +335,13 @@ export abstract class PostHogCoreStateless {
     personProperties: Record<string, string> = {},
     groupProperties: Record<string, Record<string, string>> = {},
     disableGeoip?: boolean
-  ): Promise<boolean | string | undefined> {
+  ): Promise<{
+    response: boolean | string | undefined
+    requestId: string | undefined
+  }> {
     await this._initPromise
 
-    const featureFlags = await this.getFeatureFlagsStateless(
+    const decideResponse = await this.getFeatureFlagsStateless(
       distinctId,
       groups,
       personProperties,
@@ -346,10 +349,14 @@ export abstract class PostHogCoreStateless {
       disableGeoip,
       [key]
     )
+    const featureFlags = decideResponse.flags
 
     if (!featureFlags) {
       // If we haven't loaded flags yet, or errored out, we respond with undefined
-      return undefined
+      return {
+        response: undefined,
+        requestId: undefined,
+      }
     }
 
     let response = featureFlags[key]
@@ -361,7 +368,10 @@ export abstract class PostHogCoreStateless {
     }
 
     // If we have flags we either return the value (true or string) or false
-    return response
+    return {
+      response,
+      requestId: decideResponse.requestId,
+    }
   }
 
   protected async getFeatureFlagPayloadStateless(
@@ -436,19 +446,21 @@ export abstract class PostHogCoreStateless {
     groupProperties: Record<string, Record<string, string>> = {},
     disableGeoip?: boolean,
     flagKeysToEvaluate?: string[]
-  ): Promise<PostHogDecideResponse['featureFlags'] | undefined> {
+  ): Promise<{
+    flags: PostHogDecideResponse['featureFlags'] | undefined
+    payloads: PostHogDecideResponse['featureFlagPayloads'] | undefined
+    requestId: PostHogDecideResponse['requestId'] | undefined
+  }> {
     await this._initPromise
 
-    return (
-      await this.getFeatureFlagsAndPayloadsStateless(
-        distinctId,
-        groups,
-        personProperties,
-        groupProperties,
-        disableGeoip,
-        flagKeysToEvaluate
-      )
-    ).flags
+    return await this.getFeatureFlagsAndPayloadsStateless(
+      distinctId,
+      groups,
+      personProperties,
+      groupProperties,
+      disableGeoip,
+      flagKeysToEvaluate
+    )
   }
 
   protected async getFeatureFlagsAndPayloadsStateless(
@@ -461,6 +473,7 @@ export abstract class PostHogCoreStateless {
   ): Promise<{
     flags: PostHogDecideResponse['featureFlags'] | undefined
     payloads: PostHogDecideResponse['featureFlagPayloads'] | undefined
+    requestId: PostHogDecideResponse['requestId'] | undefined
   }> {
     await this._initPromise
 
@@ -481,6 +494,7 @@ export abstract class PostHogCoreStateless {
       return {
         flags: undefined,
         payloads: undefined,
+        requestId: decideResponse?.requestId,
       }
     }
 
@@ -496,6 +510,7 @@ export abstract class PostHogCoreStateless {
     return {
       flags,
       payloads: parsedPayloads,
+      requestId: decideResponse?.requestId,
     }
   }
 
