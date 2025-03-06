@@ -1261,6 +1261,17 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     return this._decideAsync(sendAnonDistinctId)
   }
 
+  private cacheSessionReplay(response?: PostHogRemoteConfig): void {
+    const sessionReplay = response?.sessionRecording
+    if (sessionReplay) {
+      this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, sessionReplay)
+      this.logMsgIfDebug(() => console.log('PostHog Debug', 'Session replay config: ', JSON.stringify(sessionReplay)))
+    } else {
+      this.logMsgIfDebug(() => console.info('PostHog Debug', 'Session replay config disabled.'))
+      this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, null)
+    }
+  }
+
   private async _remoteConfigAsync(): Promise<PostHogRemoteConfig | undefined> {
     this._remoteConfigResponsePromise = this._initPromise
       .then(() => {
@@ -1308,16 +1319,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
               remoteConfigWithoutSurveys
             )
 
-            const sessionReplay = response?.sessionRecording
-            if (sessionReplay) {
-              this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, sessionReplay)
-              this.logMsgIfDebug(() =>
-                console.log('PostHog Debug', 'Session replay config: ', JSON.stringify(sessionReplay))
-              )
-            } else {
-              this.logMsgIfDebug(() => console.info('PostHog Debug', 'Session replay config disabled.'))
-              this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, null)
-            }
+            this.cacheSessionReplay(response)
 
             // we only dont load flags if the remote config has no feature flags
             if (response.hasFeatureFlags === false) {
@@ -1399,16 +1401,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
           // Mark that we hit the /decide endpoint so we can capture this in the $feature_flag_called event
           this.setPersistedProperty(PostHogPersistedProperty.DecideEndpointWasHit, true)
 
-          const sessionReplay = res?.sessionRecording
-          if (sessionReplay) {
-            this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, sessionReplay)
-            this.logMsgIfDebug(() =>
-              console.log('PostHog Debug', 'Session replay config: ', JSON.stringify(sessionReplay))
-            )
-          } else {
-            this.logMsgIfDebug(() => console.info('PostHog Debug', 'Session replay config disabled.'))
-            this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, null)
-          }
+          this.cacheSessionReplay(res)
         }
         return res
       })
