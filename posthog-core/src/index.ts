@@ -1196,7 +1196,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
 
   resetPersonPropertiesForFlags(): void {
     this.wrap(() => {
-      this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.PersonProperties, {})
+      this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.PersonProperties, null)
     })
   }
 
@@ -1231,7 +1231,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
 
   resetGroupPropertiesForFlags(): void {
     this.wrap(() => {
-      this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.GroupProperties, {})
+      this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.GroupProperties, null)
     })
   }
 
@@ -1310,7 +1310,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
                 surveys as Survey[]
               )
             } else {
-              this.setPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys, [])
+              this.setPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys, null)
             }
 
             // we cache the surveys in its own storage key

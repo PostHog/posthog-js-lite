@@ -302,7 +302,7 @@ export class PostHog extends PostHogCore {
   public async getSurveys(): Promise<SurveyResponse['surveys']> {
     if (this._disableSurveys === true) {
       this.logMsgIfDebug(() => console.log('Loading surveys is disabled.'))
-      this.setPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys, [])
+      this.setPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys, null)
       return []
     }
 
