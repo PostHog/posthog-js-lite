@@ -1,4 +1,4 @@
-import OpenAIOrignal from 'openai'
+import OpenAIOrignal, { ClientOptions } from 'openai'
 import { PostHog } from 'posthog-node'
 import { v4 as uuidv4 } from 'uuid'
 import { formatResponseOpenAI, MonitoringParams, sendEventToPosthog } from '../utils'
@@ -11,7 +11,7 @@ type ChatCompletionCreateParamsStreaming = OpenAIOrignal.Chat.Completions.ChatCo
 import type { APIPromise, RequestOptions } from 'openai/core'
 import type { Stream } from 'openai/streaming'
 
-interface MonitoringOpenAIConfig {
+interface MonitoringOpenAIConfig extends ClientOptions {
   apiKey: string
   posthog: PostHog
   baseURL?: string
