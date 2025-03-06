@@ -1196,7 +1196,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
 
   resetPersonPropertiesForFlags(): void {
     this.wrap(() => {
-      this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.PersonProperties, {})
+      this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.PersonProperties, null)
     })
   }
 
@@ -1231,7 +1231,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
 
   resetGroupPropertiesForFlags(): void {
     this.wrap(() => {
-      this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.GroupProperties, {})
+      this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.GroupProperties, null)
     })
   }
 
@@ -1259,6 +1259,17 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       return this._decideResponsePromise
     }
     return this._decideAsync(sendAnonDistinctId)
+  }
+
+  private cacheSessionReplay(response?: PostHogRemoteConfig): void {
+    const sessionReplay = response?.sessionRecording
+    if (sessionReplay) {
+      this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, sessionReplay)
+      this.logMsgIfDebug(() => console.log('PostHog Debug', 'Session replay config: ', JSON.stringify(sessionReplay)))
+    } else {
+      this.logMsgIfDebug(() => console.info('PostHog Debug', 'Session replay config disabled.'))
+      this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, null)
+    }
   }
 
   private async _remoteConfigAsync(): Promise<PostHogRemoteConfig | undefined> {
@@ -1299,7 +1310,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
                 surveys as Survey[]
               )
             } else {
-              this.setPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys, [])
+              this.setPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys, null)
             }
 
             // we cache the surveys in its own storage key
@@ -1307,6 +1318,8 @@ export abstract class PostHogCore extends PostHogCoreStateless {
               PostHogPersistedProperty.RemoteConfig,
               remoteConfigWithoutSurveys
             )
+
+            this.cacheSessionReplay(response)
 
             // we only dont load flags if the remote config has no feature flags
             if (response.hasFeatureFlags === false) {
@@ -1388,16 +1401,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
           // Mark that we hit the /decide endpoint so we can capture this in the $feature_flag_called event
           this.setPersistedProperty(PostHogPersistedProperty.DecideEndpointWasHit, true)
 
-          const sessionReplay = res?.sessionRecording
-          if (sessionReplay) {
-            this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, sessionReplay)
-            this.logMsgIfDebug(() =>
-              console.log('PostHog Debug', 'Session replay config: ', JSON.stringify(sessionReplay))
-            )
-          } else {
-            this.logMsgIfDebug(() => console.info('PostHog Debug', 'Session replay config disabled.'))
-            this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, null)
-          }
+          this.cacheSessionReplay(res)
         }
         return res
       })
