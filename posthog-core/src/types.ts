@@ -126,6 +126,7 @@ export type PostHogDecideResponse = {
     | {
         [key: string]: JsonType
       }
+  requestId?: string
 }
 
 export type PostHogFlagsAndPayloadsResponse = {
