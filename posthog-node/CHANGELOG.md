@@ -1,5 +1,9 @@
 # Next
 
+# 4.10.1 – 2025-03-06
+
+1. Fix: only set `platform` on PostHog exception frame properties
+
 # 4.10.0 – 2025-03-06
 
 1. Attach requestId to $feature_flag_called if present in /decide response
