@@ -118,7 +118,13 @@ export type SendEventToPosthogParams = {
   latency: number
   baseURL: string
   httpStatus: number
-  usage?: { inputTokens?: number; outputTokens?: number, reasoningTokens?: any, cacheReadInputTokens?: any, cacheCreationInputTokens?: any }
+  usage?: {
+    inputTokens?: number
+    outputTokens?: number
+    reasoningTokens?: any
+    cacheReadInputTokens?: any
+    cacheCreationInputTokens?: any
+  }
   params: (ChatCompletionCreateParamsBase | MessageCreateParams) & MonitoringParams
   isError?: boolean
   error?: string
@@ -140,7 +146,7 @@ export const sendEventToPosthog = ({
   usage = {},
   isError = false,
   error,
-  tools
+  tools,
 }: SendEventToPosthogParams): void => {
   if (client.capture) {
     let errorData = {}
@@ -162,9 +168,9 @@ export const sendEventToPosthog = ({
     }
 
     let additionalTokenValues = {
-      ...(usage.reasoningTokens ? { "$ai_reasoning_tokens": usage.reasoningTokens } : {}),
-      ...(usage.cacheReadInputTokens ? { "$ai_cache_read_input_tokens": usage.cacheReadInputTokens } : {}),
-      ...(usage.cacheCreationInputTokens ? { "$ai_cache_creation_input_tokens": usage.cacheCreationInputTokens } : {}),
+      ...(usage.reasoningTokens ? { $ai_reasoning_tokens: usage.reasoningTokens } : {}),
+      ...(usage.cacheReadInputTokens ? { $ai_cache_read_input_tokens: usage.cacheReadInputTokens } : {}),
+      ...(usage.cacheCreationInputTokens ? { $ai_cache_creation_input_tokens: usage.cacheCreationInputTokens } : {}),
     }
 
     client.capture({

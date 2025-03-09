@@ -29,9 +29,11 @@ interface CreateInstrumentationMiddlewareOptions {
 interface PostHogInput {
   role: string
   type?: string
-  content?: string |{
-    [key: string]: any
-  }
+  content?:
+    | string
+    | {
+        [key: string]: any
+      }
 }
 
 const mapVercelParams = (params: any): Record<string, any> => {
@@ -50,55 +52,55 @@ const mapVercelPrompt = (prompt: LanguageModelV1Prompt): PostHogInput[] => {
   return prompt.map((p) => {
     let content = {}
     if (Array.isArray(p.content)) {
-      content = p.content
-        .map((c) => {
-          if (c.type === 'text') {
-            return {
-              type: 'text',
-              content: {
-                text: c.text,
-              },
-            }
-          } else if (c.type === 'image') {
-            return {
-              type: 'image',
-              content: {
-                // if image is a url use it, or use "none supported"
-                image: c.image instanceof URL ? c.image.toString() : 'none supported',
-                mimeType: c.mimeType,
-              },
-            }
-          } else if (c.type === 'file') {
-            return {
-              type: 'file',
-              content: {
-                mimeType: c.mimeType,
-              }
-            }
-          } else if (c.type === 'tool-call') {
-            return {
-              type: 'tool-call',
-              content: {
-                toolCallId: c.toolCallId,
-                toolName: c.toolName,
-                args: c.args,
-              },
-            }
-          } else if (c.type === 'tool-result') {
-            return {
-              type: 'tool-result',
-              content: {
-                toolCallId: c.toolCallId,
-                toolName: c.toolName,
-                result: c.result,
-                isError: c.isError,
-              },
-            }
-          }
+      content = p.content.map((c) => {
+        if (c.type === 'text') {
           return {
-            content: '',
+            type: 'text',
+            content: {
+              text: c.text,
+            },
           }
-        })
+        } else if (c.type === 'image') {
+          return {
+            type: 'image',
+            content: {
+              // if image is a url use it, or use "none supported"
+              image: c.image instanceof URL ? c.image.toString() : 'raw images not supported',
+              mimeType: c.mimeType,
+            },
+          }
+        } else if (c.type === 'file') {
+          return {
+            type: 'file',
+            content: {
+              file: c.data instanceof URL ? c.data.toString() : 'raw files not supported',
+              mimeType: c.mimeType,
+            },
+          }
+        } else if (c.type === 'tool-call') {
+          return {
+            type: 'tool-call',
+            content: {
+              toolCallId: c.toolCallId,
+              toolName: c.toolName,
+              args: c.args,
+            },
+          }
+        } else if (c.type === 'tool-result') {
+          return {
+            type: 'tool-result',
+            content: {
+              toolCallId: c.toolCallId,
+              toolName: c.toolName,
+              result: c.result,
+              isError: c.isError,
+            },
+          }
+        }
+        return {
+          content: '',
+        }
+      })
     } else {
       content = {
         type: 'text',
@@ -142,14 +144,18 @@ export const createInstrumentationMiddleware = (
         let tools = result.toolCalls
         let providerMetadata = result.providerMetadata
         let additionalTokenValues = {
-          ...(providerMetadata?.openai?.reasoningTokens ? { reasoningTokens: providerMetadata.openai.reasoningTokens } : {}),
-          ...(providerMetadata?.openai?.cachedPromptToken ? { cacheReadInputTokens: providerMetadata.openai.cachedPromptTokens } : {}),
-          ...(providerMetadata?.anthropic ? { 
-            cacheReadInputTokens: providerMetadata.anthropic.cacheReadInputTokens,
-            cacheCreationInputTokens: providerMetadata.anthropic.cacheCreationInputTokens,
-           } : {}),
-          
-
+          ...(providerMetadata?.openai?.reasoningTokens
+            ? { reasoningTokens: providerMetadata.openai.reasoningTokens }
+            : {}),
+          ...(providerMetadata?.openai?.cachedPromptToken
+            ? { cacheReadInputTokens: providerMetadata.openai.cachedPromptTokens }
+            : {}),
+          ...(providerMetadata?.anthropic
+            ? {
+                cacheReadInputTokens: providerMetadata.anthropic.cacheReadInputTokens,
+                cacheCreationInputTokens: providerMetadata.anthropic.cacheCreationInputTokens,
+              }
+            : {}),
         }
         sendEventToPosthog({
           client: phClient,
@@ -200,7 +206,13 @@ export const createInstrumentationMiddleware = (
     wrapStream: async ({ doStream, params }) => {
       const startTime = Date.now()
       let generatedText = ''
-      let usage: { inputTokens?: number; outputTokens?: number, reasoningTokens?: any, cacheReadInputTokens?: any, cacheCreationInputTokens?: any } = {}
+      let usage: {
+        inputTokens?: number
+        outputTokens?: number
+        reasoningTokens?: any
+        cacheReadInputTokens?: any
+        cacheCreationInputTokens?: any
+      } = {}
       const mergedParams = {
         ...options,
         ...mapVercelParams(params),
@@ -210,19 +222,16 @@ export const createInstrumentationMiddleware = (
       const provider = options.posthogProviderOverride ?? extractProvider(model)
       const baseURL = '' // cannot currently get baseURL from vercel
       try {
-        console.log('--- params', params)
         const { stream, ...rest } = await doStream()
-        console.log('--- rest', rest)
         const transformStream = new TransformStream<LanguageModelV1StreamPart, LanguageModelV1StreamPart>({
           transform(chunk, controller) {
             if (chunk.type === 'text-delta') {
               generatedText += chunk.textDelta
             }
             if (chunk.type === 'finish') {
-              console.log('--- chunk', chunk)
               usage = {
                 inputTokens: chunk.usage?.promptTokens,
-                outputTokens: chunk.usage?.completionTokens
+                outputTokens: chunk.usage?.completionTokens,
               }
               if (chunk.providerMetadata?.openai?.reasoningTokens) {
                 usage.reasoningTokens = chunk.providerMetadata.openai.reasoningTokens
@@ -236,7 +245,6 @@ export const createInstrumentationMiddleware = (
               if (chunk.providerMetadata?.anthropic?.cacheCreationInputTokens) {
                 usage.cacheCreationInputTokens = chunk.providerMetadata.anthropic.cacheCreationInputTokens
               }
-              
             }
             controller.enqueue(chunk)
           },

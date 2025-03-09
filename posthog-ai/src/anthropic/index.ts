@@ -70,7 +70,12 @@ export class WrappedMessages extends AnthropicOriginal.Messages {
     if (anthropicParams.stream) {
       return parentPromise.then((value) => {
         let accumulatedContent = ''
-        const usage: { inputTokens: number; outputTokens: number, cacheCreationInputTokens?: number, cacheReadInputTokens?: number } = {
+        const usage: {
+          inputTokens: number
+          outputTokens: number
+          cacheCreationInputTokens?: number
+          cacheReadInputTokens?: number
+        } = {
           inputTokens: 0,
           outputTokens: 0,
           cacheCreationInputTokens: 0,

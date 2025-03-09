@@ -234,11 +234,11 @@ describe('PostHogOpenAI - Jest test suite', () => {
       total_tokens: 30,
       // Add the detailed token usage that OpenAI would return
       completion_tokens_details: {
-        reasoning_tokens: 15
+        reasoning_tokens: 15,
       },
       prompt_tokens_details: {
-        cached_tokens: 5
-      }
+        cached_tokens: 5,
+      },
     }
 
     // Create a completion with additional token tracking
@@ -246,7 +246,7 @@ describe('PostHogOpenAI - Jest test suite', () => {
       model: 'gpt-4',
       messages: [{ role: 'user', content: 'Hello' }],
       posthogDistinctId: 'test-id',
-      posthogProperties: { foo: 'bar' }
+      posthogProperties: { foo: 'bar' },
     })
 
     expect(mockPostHogClient.capture).toHaveBeenCalledTimes(1)
@@ -256,7 +256,7 @@ describe('PostHogOpenAI - Jest test suite', () => {
     // Check standard token properties
     expect(properties['$ai_input_tokens']).toBe(20)
     expect(properties['$ai_output_tokens']).toBe(10)
-    
+
     // Check the new token properties
     expect(properties['$ai_reasoning_tokens']).toBe(15)
     expect(properties['$ai_cache_read_input_tokens']).toBe(5)

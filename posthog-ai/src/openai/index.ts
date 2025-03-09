@@ -87,11 +87,16 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
     if (openAIParams.stream) {
       return parentPromise.then((value) => {
         if ('tee' in value) {
-          const [stream1, stream2] = value.tee();
-          (async () => {
+          const [stream1, stream2] = value.tee()
+          ;(async () => {
             try {
               let accumulatedContent = ''
-              let usage: { inputTokens?: number; outputTokens?: number, reasoningTokens?: number, cacheReadInputTokens?: number } = {
+              let usage: {
+                inputTokens?: number
+                outputTokens?: number
+                reasoningTokens?: number
+                cacheReadInputTokens?: number
+              } = {
                 inputTokens: 0,
                 outputTokens: 0,
               }

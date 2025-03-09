@@ -86,7 +86,12 @@ export class WrappedCompletions extends AzureOpenAI.Chat.Completions {
     if (openAIParams.stream) {
       return parentPromise.then((value) => {
         let accumulatedContent = ''
-        let usage: { inputTokens: number; outputTokens: number, reasoningTokens?: number, cacheReadInputTokens?: number } = {
+        let usage: {
+          inputTokens: number
+          outputTokens: number
+          reasoningTokens?: number
+          cacheReadInputTokens?: number
+        } = {
           inputTokens: 0,
           outputTokens: 0,
         }
