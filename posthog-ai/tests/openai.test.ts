@@ -225,4 +225,40 @@ describe('PostHogOpenAI - Jest test suite', () => {
     expect(properties['$ai_stream']).toBe(false)
     expect(properties['foo']).toBe('bar')
   })
+
+  conditionalTest('reasoning and cache tokens', async () => {
+    // Set up mock response with standard token usage
+    mockOpenAiChatResponse.usage = {
+      prompt_tokens: 20,
+      completion_tokens: 10,
+      total_tokens: 30,
+      // Add the detailed token usage that OpenAI would return
+      completion_tokens_details: {
+        reasoning_tokens: 15,
+      },
+      prompt_tokens_details: {
+        cached_tokens: 5,
+      },
+    }
+
+    // Create a completion with additional token tracking
+    await client.chat.completions.create({
+      model: 'gpt-4',
+      messages: [{ role: 'user', content: 'Hello' }],
+      posthogDistinctId: 'test-id',
+      posthogProperties: { foo: 'bar' },
+    })
+
+    expect(mockPostHogClient.capture).toHaveBeenCalledTimes(1)
+    const [captureArgs] = (mockPostHogClient.capture as jest.Mock).mock.calls
+    const { properties } = captureArgs[0]
+
+    // Check standard token properties
+    expect(properties['$ai_input_tokens']).toBe(20)
+    expect(properties['$ai_output_tokens']).toBe(10)
+
+    // Check the new token properties
+    expect(properties['$ai_reasoning_tokens']).toBe(15)
+    expect(properties['$ai_cache_read_input_tokens']).toBe(5)
+  })
 })

@@ -86,7 +86,12 @@ export class WrappedCompletions extends AzureOpenAI.Chat.Completions {
     if (openAIParams.stream) {
       return parentPromise.then((value) => {
         let accumulatedContent = ''
-        let usage: { inputTokens: number; outputTokens: number } = {
+        let usage: {
+          inputTokens: number
+          outputTokens: number
+          reasoningTokens?: number
+          cacheReadInputTokens?: number
+        } = {
           inputTokens: 0,
           outputTokens: 0,
         }
@@ -105,6 +110,8 @@ export class WrappedCompletions extends AzureOpenAI.Chat.Completions {
                   usage = {
                     inputTokens: chunk.usage.prompt_tokens ?? 0,
                     outputTokens: chunk.usage.completion_tokens ?? 0,
+                    reasoningTokens: chunk.usage.completion_tokens_details?.reasoning_tokens ?? 0,
+                    cacheReadInputTokens: chunk.usage.prompt_tokens_details?.cached_tokens ?? 0,
                   }
                 }
               }
@@ -176,6 +183,8 @@ export class WrappedCompletions extends AzureOpenAI.Chat.Completions {
               usage: {
                 inputTokens: result.usage?.prompt_tokens ?? 0,
                 outputTokens: result.usage?.completion_tokens ?? 0,
+                reasoningTokens: result.usage?.completion_tokens_details?.reasoning_tokens ?? 0,
+                cacheReadInputTokens: result.usage?.prompt_tokens_details?.cached_tokens ?? 0,
               },
             })
           }
