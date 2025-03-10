@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { StatusBar } from 'expo-status-bar'
 import { StyleSheet, Text, View } from 'react-native'
-import PostHog, { PostHogProvider } from 'posthog-react-native'
+import PostHog, { PostHogProvider, PostHogSurveyProvider } from 'posthog-react-native'
 // import { WebView } from 'react-native-webview';
 
 export const posthog = new PostHog('phc_QFbR1y41s5sxnNTZoyKG2NJo2RlsCIWkUfdpawgb40D', {
@@ -48,12 +48,14 @@ export default function App() {
 
   return (
     <SharedPostHogProvider>
-      <View style={styles.container}>
-        <Text ph-my-label="special-text-changed" onPress={handleClick}>
-          {buttonText}
-        </Text>
-        <StatusBar style="auto" />
-      </View>
+      <PostHogSurveyProvider client={posthog}>
+        <View style={styles.container}>
+          <Text ph-my-label="special-text-changed" onPress={handleClick}>
+            {buttonText}
+          </Text>
+          <StatusBar style="auto" />
+        </View>
+      </PostHogSurveyProvider>
     </SharedPostHogProvider>
   )
 }

@@ -8,7 +8,7 @@ import { OptionalReactNativeDeviceInfo } from './optional/OptionalReactNativeDev
 import { PostHogCustomAppProperties, PostHogCustomStorage } from './types'
 import { OptionalReactNativeLocalize } from './optional/OptionalReactNativeLocalize'
 
-export const getAppProperties = (): PostHogCustomAppProperties => {
+const getDeviceType = (): string => {
   let deviceType = 'Mobile'
 
   if (Platform.OS === 'macos' || Platform.OS === 'windows') {
@@ -16,9 +16,14 @@ export const getAppProperties = (): PostHogCustomAppProperties => {
   } else if (Platform.OS === 'web') {
     deviceType = 'Web'
   }
+  return deviceType
+}
 
+export const currentDeviceType = getDeviceType()
+
+export const getAppProperties = (): PostHogCustomAppProperties => {
   const properties: PostHogCustomAppProperties = {
-    $device_type: deviceType,
+    $device_type: currentDeviceType,
   }
 
   if (OptionalExpoApplication) {
