@@ -56,9 +56,7 @@ const mapVercelPrompt = (prompt: LanguageModelV1Prompt): PostHogInput[] => {
         if (c.type === 'text') {
           return {
             type: 'text',
-            content: {
-              text: c.text,
-            },
+            content: c.text,
           }
         } else if (c.type === 'image') {
           return {
@@ -141,7 +139,7 @@ export const createInstrumentationMiddleware = (
         const provider = options.posthogProviderOverride ?? extractProvider(model)
         const baseURL = '' // cannot currently get baseURL from vercel
         let content = result.text || JSON.stringify(result)
-        let tools = result.toolCalls
+        // let tools = result.toolCalls
         let providerMetadata = result.providerMetadata
         let additionalTokenValues = {
           ...(providerMetadata?.openai?.reasoningTokens
@@ -173,8 +171,7 @@ export const createInstrumentationMiddleware = (
             inputTokens: result.usage.promptTokens,
             outputTokens: result.usage.completionTokens,
             ...additionalTokenValues,
-          },
-          tools,
+          }
         })
 
         return result
