@@ -21,9 +21,17 @@ export type PostHogCoreOptions = {
   sendFeatureFlagEvent?: boolean
   /** Whether to load feature flags when initialized or not */
   preloadFeatureFlags?: boolean
-  /** Whether to load remote config when initialized or not */
+  /**
+   * Whether to load remote config when initialized or not
+   * Experimental support
+   * Default: false - Remote config is loaded by default
+   */
   disableRemoteConfig?: boolean
-  /** Whether to load surveys when initialized or not */
+  /**
+   * Whether to load surveys when initialized or not
+   * Experimental support
+   * Default: false - Surveys are loaded by default, but requires the `PostHogSurveyProvider` to be used
+   */
   disableSurveys?: boolean
   /** Option to bootstrap the library with given distinctId and feature flags */
   bootstrap?: {

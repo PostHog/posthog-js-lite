@@ -1329,7 +1329,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
               )
             }
 
-            if (!this.disableSurveys && hasSurveys) {
+            if (this.disableSurveys === false && hasSurveys) {
               this.setPersistedProperty<SurveyResponse['surveys']>(
                 PostHogPersistedProperty.Surveys,
                 surveys as Survey[]
