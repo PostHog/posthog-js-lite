@@ -171,7 +171,7 @@ export const createInstrumentationMiddleware = (
             inputTokens: result.usage.promptTokens,
             outputTokens: result.usage.completionTokens,
             ...additionalTokenValues,
-          }
+          },
         })
 
         return result
