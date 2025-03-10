@@ -1,3 +1,9 @@
+# 3.3.0 - 2025-03-08
+
+- feat: add reasoning and cache tokens to openai and anthropic
+- feat: add tool support for vercel
+- feat: add support for other media types vercel
+
 # 3.2.1 - 2025-02-11
 
 - fix: add experimental_wrapLanguageModel to vercel middleware supporting older versions of ai
