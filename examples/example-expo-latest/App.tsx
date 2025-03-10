@@ -18,7 +18,16 @@ posthog.debug(true)
 
 export const SharedPostHogProvider = (props: any) => {
   return (
-    <PostHogProvider client={posthog} autocapture={false} debug>
+    <PostHogProvider
+      client={posthog}
+      autocapture={{
+        captureLifecycleEvents: true,
+        captureScreens: true,
+        captureTouches: true,
+        customLabelProp: 'ph-my-label',
+      }}
+      debug
+    >
       {props.children}
     </PostHogProvider>
   )
@@ -32,12 +41,9 @@ export const SharedPostHogProvider = (props: any) => {
 export default function App() {
   const [buttonText, setButtonText] = useState('Open up App.js to start working on your app!')
 
-  const handleClick = async () => {
+  const handleClick = () => {
     posthog.capture('button_clicked', { name: 'example' })
     setButtonText('button_clicked' + new Date().toISOString())
-    // await posthog.getSurveys().then((surveys) => {
-    //   console.log(surveys)
-    // })
   }
 
   return (

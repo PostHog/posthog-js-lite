@@ -1,9 +1,3 @@
-/**
- * Having Survey types in types.ts was confusing tsc
- * and generating an invalid module.d.ts
- * See https://github.com/PostHog/posthog-js/issues/698
- */
-
 export interface SurveyAppearance {
   // keep in sync with frontend/src/types.ts -> SurveyAppearance
   backgroundColor?: string
@@ -58,6 +52,7 @@ export enum SurveyQuestionDescriptionContentType {
 
 interface SurveyQuestionBase {
   question: string
+  id?: string // TODO: use this for the question id
   description?: string
   descriptionContentType?: SurveyQuestionDescriptionContentType
   optional?: boolean
