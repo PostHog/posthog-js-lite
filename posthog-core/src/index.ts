@@ -27,6 +27,8 @@ import { uuidv7 } from './vendor/uuidv7'
 
 import { Survey, SurveyResponse } from './surveys-types'
 
+export * as utils from './utils'
+
 class PostHogFetchHttpError extends Error {
   name = 'PostHogFetchHttpError'
 
