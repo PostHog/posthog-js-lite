@@ -1,5 +1,7 @@
 # Next
 
+1. Fix: prevent fetch floods when quota limited.
+
 # 4.10.1 – 2025-03-06
 
 1. Fix: only set `platform` on PostHog exception frame properties
