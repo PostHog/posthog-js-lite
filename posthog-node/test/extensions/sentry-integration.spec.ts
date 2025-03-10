@@ -138,7 +138,7 @@ describe('PostHogSentryIntegration', () => {
               {
                 type: 'Error',
                 value: 'example error',
-                stacktrace: { frames: [], type: 'raw' },
+                stacktrace: { frames: [] },
                 mechanism: { type: 'generic', handled: true },
               },
             ],
