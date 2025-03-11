@@ -419,8 +419,6 @@ class FeatureFlagsPoller {
         this.featureFlagsByKey = {}
         this.groupTypeMapping = {}
         this.cohorts = {}
-        // set loadedSuccessfullyOnce on 429s, otherwise every call to getFeatureFlag
-        // will try to fetch again.
         this.loadedSuccessfullyOnce = true
         return
       }
