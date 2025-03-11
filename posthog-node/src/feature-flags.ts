@@ -58,8 +58,8 @@ class FeatureFlagsPoller {
   debugMode: boolean = false
   onError?: (error: Error) => void
   customHeaders?: { [key: string]: string }
-  lastRequestWasAuthenticationError: boolean = false
-  authenticationErrorCount: number = 0
+  shouldBeginExponentialBackoff: boolean = false
+  backOffCount: number = 0
 
   constructor({
     pollingInterval,
@@ -384,11 +384,11 @@ class FeatureFlagsPoller {
    * @returns The polling interval to use for the next request.
    */
   private getPollingInterval(): number {
-    if (!this.lastRequestWasAuthenticationError) {
+    if (!this.shouldBeginExponentialBackoff) {
       return this.pollingInterval
     }
 
-    return Math.min(SIXTY_SECONDS, this.pollingInterval * 2 ** this.authenticationErrorCount)
+    return Math.min(SIXTY_SECONDS, this.pollingInterval * 2 ** this.backOffCount)
   }
 
   async _loadFeatureFlags(): Promise<void> {
@@ -403,22 +403,14 @@ class FeatureFlagsPoller {
       const res = await this._requestFeatureFlagDefinitions()
 
       if (res && res.status === 401) {
-        this.lastRequestWasAuthenticationError = true
-        this.authenticationErrorCount += 1
+        this.shouldBeginExponentialBackoff = true
+        this.backOffCount += 1
         throw new ClientError(
           `Your project key or personal API key is invalid. Setting next polling interval to ${this.getPollingInterval()}ms. More information: https://posthog.com/docs/api#rate-limiting`
         )
       }
 
-      if (res && res.status === 403) {
-        this.lastRequestWasAuthenticationError = true
-        this.authenticationErrorCount += 1
-        throw new ClientError(
-          `Your personal API key does not have permission to fetch feature flag definitions for local evaluation. Setting next polling interval to ${this.getPollingInterval()}ms. Are you sure you're using the correct personal and Project API key pair? More information: https://posthog.com/docs/api/overview`
-        )
-      }
-
-      if (res && (res.status === 402 || res.status === 429)) {
+      if (res && res.status === 402) {
         // Quota limited - clear all flags
         console.warn(
           '[FEATURE FLAGS] Feature flags quota limit exceeded - unsetting all local flags. Learn more about billing limits at https://posthog.com/docs/billing/limits-alerts'
@@ -431,6 +423,22 @@ class FeatureFlagsPoller {
         // will try to fetch again.
         this.loadedSuccessfullyOnce = true
         return
+      }
+
+      if (res && res.status === 403) {
+        this.shouldBeginExponentialBackoff = true
+        this.backOffCount += 1
+        throw new ClientError(
+          `Your personal API key does not have permission to fetch feature flag definitions for local evaluation. Setting next polling interval to ${this.getPollingInterval()}ms. Are you sure you're using the correct personal and Project API key pair? More information: https://posthog.com/docs/api/overview`
+        )
+      }
+
+      if (res && res.status === 429) {
+        this.shouldBeginExponentialBackoff = true
+        this.backOffCount += 1
+        throw new ClientError(
+          `You are being rate limited. Setting next polling interval to ${this.getPollingInterval()}ms. More information: https://posthog.com/docs/api#rate-limiting`
+        )
       }
 
       if (res && res.status !== 200) {
@@ -452,8 +460,8 @@ class FeatureFlagsPoller {
       this.groupTypeMapping = responseJson.group_type_mapping || {}
       this.cohorts = responseJson.cohorts || []
       this.loadedSuccessfullyOnce = true
-      this.lastRequestWasAuthenticationError = false
-      this.authenticationErrorCount = 0
+      this.shouldBeginExponentialBackoff = false
+      this.backOffCount = 0
     } catch (err) {
       // if an error that is not an instance of ClientError is thrown
       // we silently ignore the error when reloading feature flags
