@@ -1,11 +1,10 @@
 # Next
 
-# 3.12.- - 2025-03-11
+# 3.12.0 - 2025-03-11
 
 ## Added
 
 1. Adds support for [surveys on react native](https://github.com/PostHog/posthog.com/pull/10843/)
-
 
 # 3.11.2 - 2025-02-27
 
