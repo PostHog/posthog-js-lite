@@ -402,12 +402,23 @@ class FeatureFlagsPoller {
     try {
       const res = await this._requestFeatureFlagDefinitions()
 
-      // Handle undefined res case, this shouldn't happen, but doesn't hurt to handle
+      // Handle undefined res case, this shouldn't happen, but it doesn't hurt to handle it anyway
       if (!res) {
         // Don't override existing flags when something goes wrong
         return
       }
 
+      // NB ON ERROR HANDLING & `loadedSuccessfullyOnce`:
+      //
+      // `loadedSuccessfullyOnce` indicates we've successfully loaded a valid set of flags at least once.
+      // If we set it to `true` in an error scenario (e.g. 402 Over Quota, 401 Invalid Key, etc.),
+      // any manual call to `loadFeatureFlags()` (without forceReload) will skip refetching entirely,
+      // leaving us stuck with zero or outdated flags. The poller does keep running, but we also want
+      // manual reloads to be possible as soon as the error condition is resolved.
+      //
+      // Therefore, on error statuses, we do *not* set `loadedSuccessfullyOnce = true`, ensuring that
+      // both the background poller and any subsequent manual calls can keep trying to load flags
+      // once the issue (quota, permission, rate limit, etc.) is resolved.
       switch (res.status) {
         case 401:
           // Invalid API key
