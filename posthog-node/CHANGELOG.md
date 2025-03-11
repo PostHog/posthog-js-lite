@@ -1,6 +1,6 @@
 # Next
 
-1. Fix: prevent fetch floods when quota limited.
+1. Fix: prevent fetch floods when rate-limited.
 
 # 4.10.1 – 2025-03-06
 
