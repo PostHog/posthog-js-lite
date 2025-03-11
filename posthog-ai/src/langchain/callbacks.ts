@@ -28,6 +28,8 @@ interface GenerationMetadata extends SpanMetadata {
   modelParams?: Record<string, any>
   /** The base URL—for example, the API base used */
   baseUrl?: string
+  /** The tools used in the generation */
+  tools?: Record<string, any>
 }
 
 /** A run may either be a Span or a Generation */
@@ -418,6 +420,10 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
       $ai_http_status: 200,
       $ai_latency: latency,
       $ai_base_url: run.baseUrl,
+    }
+
+    if (run.tools) {
+      eventProperties['$ai_tools'] = withPrivacyMode(this.client, this.privacyMode, run.tools)
     }
 
     if (output instanceof Error) {

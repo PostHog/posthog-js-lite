@@ -118,10 +118,17 @@ export type SendEventToPosthogParams = {
   latency: number
   baseURL: string
   httpStatus: number
-  usage?: { inputTokens?: number; outputTokens?: number }
+  usage?: {
+    inputTokens?: number
+    outputTokens?: number
+    reasoningTokens?: any
+    cacheReadInputTokens?: any
+    cacheCreationInputTokens?: any
+  }
   params: (ChatCompletionCreateParamsBase | MessageCreateParams) & MonitoringParams
   isError?: boolean
   error?: string
+  tools?: any
 }
 
 export const sendEventToPosthog = ({
@@ -139,6 +146,7 @@ export const sendEventToPosthog = ({
   usage = {},
   isError = false,
   error,
+  tools,
 }: SendEventToPosthogParams): void => {
   if (client.capture) {
     let errorData = {}
@@ -159,6 +167,12 @@ export const sendEventToPosthog = ({
       }
     }
 
+    let additionalTokenValues = {
+      ...(usage.reasoningTokens ? { $ai_reasoning_tokens: usage.reasoningTokens } : {}),
+      ...(usage.cacheReadInputTokens ? { $ai_cache_read_input_tokens: usage.cacheReadInputTokens } : {}),
+      ...(usage.cacheCreationInputTokens ? { $ai_cache_creation_input_tokens: usage.cacheCreationInputTokens } : {}),
+    }
+
     client.capture({
       distinctId: distinctId ?? traceId,
       event: '$ai_generation',
@@ -171,11 +185,13 @@ export const sendEventToPosthog = ({
         $ai_http_status: httpStatus,
         $ai_input_tokens: usage.inputTokens ?? 0,
         $ai_output_tokens: usage.outputTokens ?? 0,
+        ...additionalTokenValues,
         $ai_latency: latency,
         $ai_trace_id: traceId,
         $ai_base_url: baseURL,
         ...params.posthogProperties,
         ...(distinctId ? {} : { $process_person_profile: false }),
+        ...(tools ? { $ai_tools: tools } : {}),
         ...errorData,
         ...costOverrideData,
       },
