@@ -81,6 +81,7 @@ class FeatureFlagsPoller {
     this.projectApiKey = projectApiKey
     this.host = host
     this.poller = undefined
+    this.inflightRequest = undefined
     this.fetch = options.fetch || fetch
     this.onError = options.onError
     this.customHeaders = customHeaders
@@ -396,11 +397,19 @@ class FeatureFlagsPoller {
       clearTimeout(this.poller)
       this.poller = undefined
     }
-
     this.poller = setTimeout(() => this._loadFeatureFlags(), this.getPollingInterval())
 
     try {
-      const res = await this._requestFeatureFlagDefinitions()
+      // guard against loading flags multiple times in concurrently.
+      // there's no point in starting a new fetch if there's already one inflight
+      if (this.inflightRequest) {
+        // wait for the request to finish so we don't return empty flags
+        await this.inflightRequest
+        return
+      }
+      this.inflightRequest = this._requestFeatureFlagDefinitions()
+      const res = await this.inflightRequest
+      this.inflightRequest = undefined
 
       // Handle undefined res case, this shouldn't happen, but it doesn't hurt to handle it anyway
       if (!res) {
