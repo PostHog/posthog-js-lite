@@ -251,8 +251,8 @@ export const createInstrumentationMiddleware = (
               if (chunk.providerMetadata?.openai?.reasoningTokens) {
                 usage.reasoningTokens = chunk.providerMetadata.openai.reasoningTokens
               }
-              if (chunk.providerMetadata?.openai?.cachedPromptToken) {
-                usage.cacheReadInputTokens = chunk.providerMetadata.openai.cachedPromptToken
+              if (chunk.providerMetadata?.openai?.cachedPromptTokens) {
+                usage.cacheReadInputTokens = chunk.providerMetadata.openai.cachedPromptTokens
               }
               if (chunk.providerMetadata?.anthropic?.cacheReadInputTokens) {
                 usage.cacheReadInputTokens = chunk.providerMetadata.anthropic.cacheReadInputTokens
