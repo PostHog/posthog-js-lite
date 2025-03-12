@@ -1,10 +1,7 @@
-<<<<<<< HEAD
 # 3.3.1 - 2025-03-13
 
 - fix: fix vercel output mapping and token caching
 
-=======
->>>>>>> main
 # 3.3.0 - 2025-03-08
 
 - feat: add reasoning and cache tokens to openai and anthropic
