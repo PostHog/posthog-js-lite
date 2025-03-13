@@ -24,7 +24,11 @@ export function BottomSection({
         onPress={() => {
           onSubmit()
           if (link) {
-            Linking.openURL(link)
+            Linking.canOpenURL(link).then((supported) => {
+              if (supported) {
+                Linking.openURL(link)
+              }
+            })
           }
         }}
       >

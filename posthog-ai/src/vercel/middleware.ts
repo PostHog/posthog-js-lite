@@ -138,10 +138,10 @@ export const createInstrumentationMiddleware = (
           options.posthogModelOverride ?? (result.response?.modelId ? result.response.modelId : model.modelId)
         const provider = options.posthogProviderOverride ?? extractProvider(model)
         const baseURL = '' // cannot currently get baseURL from vercel
-        let content = result.text || JSON.stringify(result)
+        const content = result.text || JSON.stringify(result)
         // let tools = result.toolCalls
-        let providerMetadata = result.providerMetadata
-        let additionalTokenValues = {
+        const providerMetadata = result.providerMetadata
+        const additionalTokenValues = {
           ...(providerMetadata?.openai?.reasoningTokens
             ? { reasoningTokens: providerMetadata.openai.reasoningTokens }
             : {}),
