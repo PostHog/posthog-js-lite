@@ -14,6 +14,9 @@ import {
   SurveyQuestion,
   SurveyRatingDisplay,
   SurveyQuestionType,
+  LinkSurveyQuestion,
+  RatingSurveyQuestion,
+  MultipleSurveyQuestion,
 } from '../../../../posthog-core/src/surveys-types'
 import { BottomSection } from './BottomSection'
 import { QuestionHeader } from './QuestionHeader'
@@ -67,6 +70,8 @@ export function LinkQuestion({
   forceDisableHtml: boolean
   onSubmit: (clicked: string) => void
 }): JSX.Element {
+  question = question as LinkSurveyQuestion
+
   return (
     <>
       <QuestionHeader
@@ -94,6 +99,7 @@ export function RatingQuestion({
 }): JSX.Element {
   //const starting = question.scale === 10 ? 0 : 1;
   const [rating, setRating] = useState<number | null>(null)
+  question = question as RatingSurveyQuestion
 
   return (
     <>
@@ -164,6 +170,7 @@ export function RatingButton({
 }): JSX.Element {
   const backgroundColor = active ? appearance.ratingButtonActiveColor : appearance.ratingButtonColor
   const textColor = getContrastingTextColor(backgroundColor)
+
   return (
     <TouchableOpacity
       style={[
@@ -185,9 +192,10 @@ export function MultipleChoiceQuestion({
 }: QuestionCommonProps & {
   onSubmit: (choices: string | string[] | null) => void
 }): JSX.Element {
+  question = question as MultipleSurveyQuestion
   const allowMultiple = question.type === SurveyQuestionType.MultipleChoice
   const openChoice = question.hasOpenChoice ? question.choices[question.choices.length - 1] : null
-  const choices = useMemo(() => getDisplayOrderChoices(question), [question])
+  const choices = useMemo(() => getDisplayOrderChoices(question as MultipleSurveyQuestion), [question])
   const [selectedChoices, setSelectedChoices] = useState<string[]>([])
   const [openEndedInput, setOpenEndedInput] = useState('')
 
