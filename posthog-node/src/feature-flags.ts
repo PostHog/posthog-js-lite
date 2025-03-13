@@ -58,8 +58,8 @@ class FeatureFlagsPoller {
   debugMode: boolean = false
   onError?: (error: Error) => void
   customHeaders?: { [key: string]: string }
-  lastRequestWasAuthenticationError: boolean = false
-  authenticationErrorCount: number = 0
+  shouldBeginExponentialBackoff: boolean = false
+  backOffCount: number = 0
 
   constructor({
     pollingInterval,
@@ -384,11 +384,11 @@ class FeatureFlagsPoller {
    * @returns The polling interval to use for the next request.
    */
   private getPollingInterval(): number {
-    if (!this.lastRequestWasAuthenticationError) {
+    if (!this.shouldBeginExponentialBackoff) {
       return this.pollingInterval
     }
 
-    return Math.min(SIXTY_SECONDS, this.pollingInterval * 2 ** this.authenticationErrorCount)
+    return Math.min(SIXTY_SECONDS, this.pollingInterval * 2 ** this.backOffCount)
   }
 
   async _loadFeatureFlags(): Promise<void> {
@@ -402,59 +402,86 @@ class FeatureFlagsPoller {
     try {
       const res = await this._requestFeatureFlagDefinitions()
 
-      if (res && res.status === 401) {
-        this.lastRequestWasAuthenticationError = true
-        this.authenticationErrorCount += 1
-        throw new ClientError(
-          `Your project key or personal API key is invalid. Setting next polling interval to ${this.getPollingInterval()}ms. More information: https://posthog.com/docs/api#rate-limiting`
-        )
-      }
-
-      if (res && res.status === 403) {
-        this.lastRequestWasAuthenticationError = true
-        this.authenticationErrorCount += 1
-        throw new ClientError(
-          `Your personal API key does not have permission to fetch feature flag definitions for local evaluation. Setting next polling interval to ${this.getPollingInterval()}ms. Are you sure you're using the correct personal and Project API key pair? More information: https://posthog.com/docs/api/overview`
-        )
-      }
-
-      if (res && res.status === 402) {
-        // Quota limited - clear all flags
-        console.warn(
-          '[FEATURE FLAGS] Feature flags quota limit exceeded - unsetting all local flags. Learn more about billing limits at https://posthog.com/docs/billing/limits-alerts'
-        )
-        this.featureFlags = []
-        this.featureFlagsByKey = {}
-        this.groupTypeMapping = {}
-        this.cohorts = {}
-        this.loadedSuccessfullyOnce = false
+      // Handle undefined res case, this shouldn't happen, but it doesn't hurt to handle it anyway
+      if (!res) {
+        // Don't override existing flags when something goes wrong
         return
       }
 
-      if (res && res.status !== 200) {
-        // something else went wrong, or the server is down.
-        // In this case, don't override existing flags
-        return
-      }
+      // NB ON ERROR HANDLING & `loadedSuccessfullyOnce`:
+      //
+      // `loadedSuccessfullyOnce` indicates we've successfully loaded a valid set of flags at least once.
+      // If we set it to `true` in an error scenario (e.g. 402 Over Quota, 401 Invalid Key, etc.),
+      // any manual call to `loadFeatureFlags()` (without forceReload) will skip refetching entirely,
+      // leaving us stuck with zero or outdated flags. The poller does keep running, but we also want
+      // manual reloads to be possible as soon as the error condition is resolved.
+      //
+      // Therefore, on error statuses, we do *not* set `loadedSuccessfullyOnce = true`, ensuring that
+      // both the background poller and any subsequent manual calls can keep trying to load flags
+      // once the issue (quota, permission, rate limit, etc.) is resolved.
+      switch (res.status) {
+        case 401:
+          // Invalid API key
+          this.shouldBeginExponentialBackoff = true
+          this.backOffCount += 1
+          throw new ClientError(
+            `Your project key or personal API key is invalid. Setting next polling interval to ${this.getPollingInterval()}ms. More information: https://posthog.com/docs/api#rate-limiting`
+          )
 
-      const responseJson = await res.json()
-      if (!('flags' in responseJson)) {
-        this.onError?.(new Error(`Invalid response when getting feature flags: ${JSON.stringify(responseJson)}`))
-      }
+        case 402:
+          // Quota exceeded - clear all flags
+          console.warn(
+            '[FEATURE FLAGS] Feature flags quota limit exceeded - unsetting all local flags. Learn more about billing limits at https://posthog.com/docs/billing/limits-alerts'
+          )
+          this.featureFlags = []
+          this.featureFlagsByKey = {}
+          this.groupTypeMapping = {}
+          this.cohorts = {}
+          return
 
-      this.featureFlags = responseJson.flags || []
-      this.featureFlagsByKey = this.featureFlags.reduce(
-        (acc, curr) => ((acc[curr.key] = curr), acc),
-        <Record<string, PostHogFeatureFlag>>{}
-      )
-      this.groupTypeMapping = responseJson.group_type_mapping || {}
-      this.cohorts = responseJson.cohorts || []
-      this.loadedSuccessfullyOnce = true
-      this.lastRequestWasAuthenticationError = false
-      this.authenticationErrorCount = 0
+        case 403:
+          // Permissions issue
+          this.shouldBeginExponentialBackoff = true
+          this.backOffCount += 1
+          throw new ClientError(
+            `Your personal API key does not have permission to fetch feature flag definitions for local evaluation. Setting next polling interval to ${this.getPollingInterval()}ms. Are you sure you're using the correct personal and Project API key pair? More information: https://posthog.com/docs/api/overview`
+          )
+
+        case 429:
+          // Rate limited
+          this.shouldBeginExponentialBackoff = true
+          this.backOffCount += 1
+          throw new ClientError(
+            `You are being rate limited. Setting next polling interval to ${this.getPollingInterval()}ms. More information: https://posthog.com/docs/api#rate-limiting`
+          )
+
+        case 200: {
+          // Process successful response
+          const responseJson = await res.json()
+          if (!('flags' in responseJson)) {
+            this.onError?.(new Error(`Invalid response when getting feature flags: ${JSON.stringify(responseJson)}`))
+            return
+          }
+
+          this.featureFlags = responseJson.flags || []
+          this.featureFlagsByKey = this.featureFlags.reduce(
+            (acc, curr) => ((acc[curr.key] = curr), acc),
+            <Record<string, PostHogFeatureFlag>>{}
+          )
+          this.groupTypeMapping = responseJson.group_type_mapping || {}
+          this.cohorts = responseJson.cohorts || {}
+          this.loadedSuccessfullyOnce = true
+          this.shouldBeginExponentialBackoff = false
+          this.backOffCount = 0
+          break
+        }
+
+        default:
+          // Something else went wrong, or the server is down.
+          // In this case, don't override existing flags
+          return
+      }
     } catch (err) {
-      // if an error that is not an instance of ClientError is thrown
-      // we silently ignore the error when reloading feature flags
       if (err instanceof ClientError) {
         this.onError?.(err)
       }
