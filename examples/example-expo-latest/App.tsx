@@ -7,7 +7,7 @@ import PostHog, { PostHogProvider, PostHogSurveyProvider } from 'posthog-react-n
 export const posthog = new PostHog('phc_QFbR1y41s5sxnNTZoyKG2NJo2RlsCIWkUfdpawgb40D', {
   host: 'https://us.i.posthog.com',
   flushAt: 1,
-  enableSessionReplay: false,
+  enableSessionReplay: true,
   // if using WebView, you have to disable masking for text inputs and images
   // sessionReplayConfig: {
   //   maskAllTextInputs: false,
@@ -18,7 +18,16 @@ posthog.debug(true)
 
 export const SharedPostHogProvider = (props: any) => {
   return (
-    <PostHogProvider client={posthog} autocapture={false} debug={true}>
+    <PostHogProvider
+      client={posthog}
+      autocapture={{
+        captureLifecycleEvents: true,
+        captureScreens: true,
+        captureTouches: true,
+        customLabelProp: 'ph-my-label',
+      }}
+      debug={true}
+    >
       {props.children}
     </PostHogProvider>
   )
@@ -33,7 +42,7 @@ export default function App() {
   const [buttonText, setButtonText] = useState('Open up App.js to start working on your app!')
 
   const handleClick = () => {
-    // posthog.capture('button_clicked', { name: 'example' })
+    posthog.capture('button_clicked', { name: 'example' })
     setButtonText('button_clicked' + new Date().toISOString())
   }
 

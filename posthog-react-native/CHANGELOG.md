@@ -5,6 +5,7 @@
 ## Added
 
 1. Adds support for [surveys on react native](https://github.com/PostHog/posthog.com/pull/10843/)
+   1. Thanks @ian-craig for initial PR.
 
 # 3.11.2 - 2025-02-27
 
