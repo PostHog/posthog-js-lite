@@ -11,23 +11,23 @@ import {
 } from '../icons'
 import { getContrastingTextColor, getDisplayOrderChoices, SurveyAppearanceTheme } from '../surveys-utils'
 import {
-  BasicSurveyQuestion,
-  LinkSurveyQuestion,
-  MultipleSurveyQuestion,
-  RatingSurveyQuestion,
+  SurveyQuestion,
   SurveyRatingDisplay,
   SurveyQuestionType,
 } from '../../../../posthog-core/src/surveys-types'
 import { BottomSection } from './BottomSection'
 import { QuestionHeader } from './QuestionHeader'
 
+interface QuestionCommonProps {
+  question: SurveyQuestion
+  appearance: SurveyAppearanceTheme
+}
+
 export function OpenTextQuestion({
   question,
   appearance,
   onSubmit,
-}: {
-  question: BasicSurveyQuestion
-  appearance: SurveyAppearanceTheme
+}: QuestionCommonProps & {
   onSubmit: (text: string) => void
 }): JSX.Element {
   const [text, setText] = useState('')
@@ -63,10 +63,8 @@ export function LinkQuestion({
   question,
   appearance,
   onSubmit,
-}: {
-  question: LinkSurveyQuestion
+}: QuestionCommonProps & {
   forceDisableHtml: boolean
-  appearance: SurveyAppearanceTheme
   onSubmit: (clicked: string) => void
 }): JSX.Element {
   return (
@@ -91,9 +89,7 @@ export function RatingQuestion({
   question,
   appearance,
   onSubmit,
-}: {
-  question: RatingSurveyQuestion
-  appearance: SurveyAppearanceTheme
+}: QuestionCommonProps & {
   onSubmit: (rating: number | null) => void
 }): JSX.Element {
   //const starting = question.scale === 10 ? 0 : 1;
@@ -186,9 +182,7 @@ export function MultipleChoiceQuestion({
   question,
   appearance,
   onSubmit,
-}: {
-  question: MultipleSurveyQuestion
-  appearance: SurveyAppearanceTheme
+}: QuestionCommonProps & {
   onSubmit: (choices: string | string[] | null) => void
 }): JSX.Element {
   const allowMultiple = question.type === SurveyQuestionType.MultipleChoice
