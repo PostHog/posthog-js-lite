@@ -112,6 +112,24 @@ const mapVercelPrompt = (prompt: LanguageModelV1Prompt): PostHogInput[] => {
   })
 }
 
+const mapVercelOutput = (result: any): PostHogInput[] => {
+  let output = {
+    ...(result.text ? { text: result.text } : {}),
+    ...(result.object ? { object: result.object } : {}),
+    ...(result.reasoning ? { reasoning: result.reasoning } : {}),
+    ...(result.response ? { response: result.response } : {}),
+    ...(result.finishReason ? { finishReason: result.finishReason } : {}),
+    ...(result.usage ? { usage: result.usage } : {}),
+    ...(result.warnings ? { warnings: result.warnings } : {}),
+    ...(result.providerMetadata ? { toolCalls: result.providerMetadata } : {}),
+  }
+  // if text and no object or reasoning, return text
+  if (output.text && !output.object && !output.reasoning) {
+    return [{ content: output.text, role: 'assistant' }]
+  }
+  return [{ content: JSON.stringify(output), role: 'assistant' }]
+}
+
 const extractProvider = (model: LanguageModelV1): string => {
   // vercel provider is in the format of provider.endpoint
   const provider = model.provider.toLowerCase()
@@ -138,14 +156,14 @@ export const createInstrumentationMiddleware = (
           options.posthogModelOverride ?? (result.response?.modelId ? result.response.modelId : model.modelId)
         const provider = options.posthogProviderOverride ?? extractProvider(model)
         const baseURL = '' // cannot currently get baseURL from vercel
-        let content = result.text || JSON.stringify(result)
+        let content = mapVercelOutput(result)
         // let tools = result.toolCalls
         let providerMetadata = result.providerMetadata
         let additionalTokenValues = {
           ...(providerMetadata?.openai?.reasoningTokens
             ? { reasoningTokens: providerMetadata.openai.reasoningTokens }
             : {}),
-          ...(providerMetadata?.openai?.cachedPromptToken
+          ...(providerMetadata?.openai?.cachedPromptTokens
             ? { cacheReadInputTokens: providerMetadata.openai.cachedPromptTokens }
             : {}),
           ...(providerMetadata?.anthropic
@@ -233,8 +251,8 @@ export const createInstrumentationMiddleware = (
               if (chunk.providerMetadata?.openai?.reasoningTokens) {
                 usage.reasoningTokens = chunk.providerMetadata.openai.reasoningTokens
               }
-              if (chunk.providerMetadata?.openai?.cachedPromptToken) {
-                usage.cacheReadInputTokens = chunk.providerMetadata.openai.cachedPromptToken
+              if (chunk.providerMetadata?.openai?.cachedPromptTokens) {
+                usage.cacheReadInputTokens = chunk.providerMetadata.openai.cachedPromptTokens
               }
               if (chunk.providerMetadata?.anthropic?.cacheReadInputTokens) {
                 usage.cacheReadInputTokens = chunk.providerMetadata.anthropic.cacheReadInputTokens
