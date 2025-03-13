@@ -74,7 +74,7 @@ export type PostHogSurveyProviderProps = {
 export function PostHogSurveyProvider(props: PostHogSurveyProviderProps): JSX.Element {
   const posthogFromHook = usePostHog()
   const posthog = props.client ?? posthogFromHook
-  const { seenSurveys, setSeenSurvey, lastSeenSurveyDate, setLastSeenSurveyDate } = useSurveyStorage()
+  const { seenSurveys, setSeenSurvey, setLastSeenSurveyDate } = useSurveyStorage()
   const [surveys, setSurveys] = useState<Survey[]>([])
   const [activeSurvey, setActiveSurvey] = useState<Survey | undefined>(undefined)
   const activatedSurveys = useActivatedSurveys(posthog, surveys)
@@ -113,7 +113,7 @@ export function PostHogSurveyProvider(props: PostHogSurveyProviderProps): JSX.El
     if (popoverSurveys.length > 0) {
       setActiveSurvey(popoverSurveys[0])
     }
-  }, [activeSurvey, flags, surveys, seenSurveys, activatedSurveys, lastSeenSurveyDate])
+  }, [activeSurvey, flags, surveys, seenSurveys, activatedSurveys])
 
   // Merge survey appearance so that components and hooks can use a consistent model
   const surveyAppearance = useMemo<SurveyAppearanceTheme>(() => {

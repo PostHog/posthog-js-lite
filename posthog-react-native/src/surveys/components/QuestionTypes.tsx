@@ -67,7 +67,6 @@ export function LinkQuestion({
   appearance,
   onSubmit,
 }: QuestionCommonProps & {
-  forceDisableHtml: boolean
   onSubmit: (clicked: string) => void
 }): JSX.Element {
   question = question as LinkSurveyQuestion

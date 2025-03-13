@@ -29,15 +29,20 @@ export function useActivatedSurveys(posthog: PostHog, surveys: Survey[]): Readon
         } else if (payload.event === SURVEY_SHOWN_EVENT_NAME) {
           // remove survey that from activatedSurveys here.
           const surveyId = payload.properties?.$survey_id
-          if (surveyId && activatedSurveys.has(surveyId)) {
-            const clone = new Set(activatedSurveys)
-            clone.delete(surveyId)
-            setActivatedSurveys(clone)
+          if (surveyId) {
+            setActivatedSurveys((current) => {
+              if (!current.has(surveyId)) {
+                return current
+              }
+              const next = new Set(current)
+              next.delete(surveyId)
+              return next
+            })
           }
         }
       })
     }
-  }, [activatedSurveys, eventMap, posthog])
+  }, [eventMap, posthog])
 
   return activatedSurveys
 }

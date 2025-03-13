@@ -1,5 +1,5 @@
 import React from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, Text, View, ViewStyle } from 'react-native'
 
 import { getContrastingTextColor, SurveyAppearanceTheme } from '../surveys-utils'
 import { SurveyQuestionDescriptionContentType } from '../../../../posthog-core/src/surveys-types'
@@ -19,7 +19,7 @@ export function ConfirmationMessage({
   description: string
   contentType?: SurveyQuestionDescriptionContentType
   onClose: () => void
-  styleOverrides?: object
+  styleOverrides?: ViewStyle
   isModal: boolean
 }): JSX.Element {
   const textColor = getContrastingTextColor(appearance.backgroundColor)
