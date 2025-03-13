@@ -113,7 +113,7 @@ const mapVercelPrompt = (prompt: LanguageModelV1Prompt): PostHogInput[] => {
 }
 
 const mapVercelOutput = (result: any): PostHogInput[] => {
-  let output = {
+  const output = {
     ...(result.text ? { text: result.text } : {}),
     ...(result.object ? { object: result.object } : {}),
     ...(result.reasoning ? { reasoning: result.reasoning } : {}),
@@ -156,10 +156,10 @@ export const createInstrumentationMiddleware = (
           options.posthogModelOverride ?? (result.response?.modelId ? result.response.modelId : model.modelId)
         const provider = options.posthogProviderOverride ?? extractProvider(model)
         const baseURL = '' // cannot currently get baseURL from vercel
-        let content = mapVercelOutput(result)
+        const content = mapVercelOutput(result)
         // let tools = result.toolCalls
-        let providerMetadata = result.providerMetadata
-        let additionalTokenValues = {
+        const providerMetadata = result.providerMetadata
+        const additionalTokenValues = {
           ...(providerMetadata?.openai?.reasoningTokens
             ? { reasoningTokens: providerMetadata.openai.reasoningTokens }
             : {}),
