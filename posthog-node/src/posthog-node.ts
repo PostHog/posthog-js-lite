@@ -99,16 +99,14 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     this.featureFlagsPoller?.debug(enabled)
   }
 
-  capture({
-    distinctId,
-    event,
-    properties,
-    groups,
-    sendFeatureFlags,
-    timestamp,
-    disableGeoip,
-    uuid,
-  }: EventMessage): void {
+  capture(props: EventMessage): void {
+    if (typeof props === 'string') {
+      this.logMsgIfDebug(() =>
+        console.warn('Called capture() with a string as the first argument when an object was expected.')
+      )
+    }
+    const { distinctId, event, properties, groups, sendFeatureFlags, timestamp, disableGeoip, uuid }: EventMessage =
+      props
     const _capture = (props: EventMessage['properties']): void => {
       super.captureStateless(distinctId, event, props, { timestamp, disableGeoip, uuid })
     }

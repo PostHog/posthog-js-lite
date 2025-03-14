@@ -328,6 +328,17 @@ describe('PostHog Node.js', () => {
 
       await client.shutdown()
     })
+
+    it('should warn if capture is called with a string', () => {
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+      posthog.debug(true)
+      // @ts-expect-error - Testing the warning when passing a string instead of an object
+      posthog.capture('test-event')
+      expect(warnSpy).toHaveBeenCalledWith(
+        'Called capture() with a string as the first argument when an object was expected.'
+      )
+      warnSpy.mockRestore()
+    })
   })
 
   describe('shutdown', () => {
