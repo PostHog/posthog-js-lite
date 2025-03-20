@@ -65,4 +65,4 @@ export const anyLocalEvalCall = [
   'http://example.com/api/feature_flag/local_evaluation?token=TEST_API_KEY&send_cohorts',
   expect.any(Object),
 ]
-export const anyDecideCall = ['http://example.com/decide/?v=3', expect.any(Object)]
+export const anyDecideCall = ['http://example.com/decide/?v=4', expect.any(Object)]
