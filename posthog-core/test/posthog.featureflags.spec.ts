@@ -1,4 +1,5 @@
-import { PostHogPersistedProperty } from '../src'
+import { PostHogPersistedProperty, FeatureFlagDetail, JsonType } from '../src'
+import { getFlagValuesFromFlags, getPayloadsFromFlags } from '../src/featureFlagUtils'
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
 import { parseBody, waitForPromises } from './test-utils/test-utils'
 
@@ -9,20 +10,65 @@ describe('PostHog Core', () => {
   jest.useFakeTimers()
   jest.setSystemTime(new Date('2022-01-01'))
 
-  const createMockFeatureFlags = (): any => ({
-    'feature-1': true,
-    'feature-2': true,
-    'feature-variant': 'variant',
-    'json-payload': true,
+  const createMockFlags = (): Record<string, FeatureFlagDetail> => ({
+    'feature-1': {
+      key: 'feature-1',
+      enabled: true,
+      variant: undefined,
+      reason: {
+        code: 'matched_condition',
+        condition_index: undefined, // We don't care for this test
+        description: 'Matched condition set 1',
+      },
+      metadata: {
+        id: 23,
+        version: undefined,
+        description: undefined,
+        payload: JSON.stringify({
+          color: 'blue',
+        }),
+      },
+    },
+    'feature-2': {
+      key: 'feature-2',
+      enabled: true,
+      variant: undefined,
+      reason: undefined,
+      metadata: {
+        id: 2,
+        version: undefined,
+        description: undefined,
+        payload: undefined,
+      },
+    },
+    'feature-variant': {
+      key: 'feature-variant',
+      enabled: true,
+      variant: 'variant',
+      reason: undefined,
+      metadata: {
+        id: 3,
+        version: undefined,
+        description: undefined,
+        payload: JSON.stringify([5]),
+      },
+    },
+    'json-payload': {
+      key: 'json-payload',
+      enabled: true,
+      variant: undefined,
+      reason: undefined,
+      metadata: {
+        id: 4,
+        version: undefined,
+        description: undefined,
+        payload: '{"a":"payload"}',
+      },
+    },
   })
 
-  const createMockFeatureFlagPayloads = (): any => ({
-    'feature-1': JSON.stringify({
-      color: 'blue',
-    }),
-    'feature-variant': JSON.stringify([5]),
-    'json-payload': '{"a":"payload"}',
-  })
+  const createMockFeatureFlags = (): any => getFlagValuesFromFlags(createMockFlags())
+  const createMockFeatureFlagPayloads = (): any => getPayloadsFromFlags(createMockFlags())
 
   const errorAPIResponse = Promise.resolve({
     status: 400,
@@ -33,34 +79,78 @@ describe('PostHog Core', () => {
       }),
   })
 
-  beforeEach(() => {
-    ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1 }, (_mocks) => {
-      _mocks.fetch.mockImplementation((url) => {
-        if (url.includes('/decide/?v=4')) {
+  const createTestClientWithVersionedResponse = (
+    version: number,
+    bootstrap?: Record<string, any> | undefined,
+    storageCache?: Record<string, any> | undefined
+  ): [PostHogCoreTestClient, PostHogCoreTestClientMocks] => {
+    if (version === 3) {
+      return createTestClientWithResponse(
+        {
+          featureFlags: createMockFeatureFlags(),
+          featureFlagPayloads: createMockFeatureFlagPayloads(),
+        },
+        bootstrap,
+        storageCache
+      )
+    }
+
+    if (version === 4) {
+      return createTestClientWithResponse(
+        {
+          flags: createMockFlags(),
+        },
+        bootstrap,
+        storageCache
+      )
+    }
+
+    throw new Error(`Unsupported version: ${version}`)
+  }
+
+  const createTestClientWithResponse = (
+    response: Record<string, any>,
+    bootstrap?: Record<string, any> | undefined,
+    storageCache?: Record<string, any> | undefined
+  ): [PostHogCoreTestClient, PostHogCoreTestClientMocks] => {
+    return createTestClient(
+      'TEST_API_KEY',
+      {
+        flushAt: 1,
+        bootstrap: bootstrap,
+      },
+      (_mocks) => {
+        _mocks.fetch.mockImplementation((url) => {
+          if (url.includes('/decide/?v=4')) {
+            return Promise.resolve({
+              status: 200,
+              text: () => Promise.resolve('ok'),
+              json: () =>
+                Promise.resolve({
+                  ...response,
+                }),
+            })
+          }
+
           return Promise.resolve({
             status: 200,
             text: () => Promise.resolve('ok'),
             json: () =>
               Promise.resolve({
-                featureFlags: createMockFeatureFlags(),
-                featureFlagPayloads: createMockFeatureFlagPayloads(),
+                status: 'ok',
               }),
           })
-        }
-
-        return Promise.resolve({
-          status: 200,
-          text: () => Promise.resolve('ok'),
-          json: () =>
-            Promise.resolve({
-              status: 'ok',
-            }),
         })
-      })
-    })
-  })
+      },
+      storageCache
+    )
+  }
 
-  describe('featureflags', () => {
+  describe.each([3, 4])('featureflags v%s', (version) => {
+    beforeEach(() => {
+      ;[posthog, mocks] = createTestClientWithVersionedResponse(version)
+    })
+
     it('getFeatureFlags should return undefined if not loaded', () => {
       expect(posthog.getFeatureFlags()).toEqual(undefined)
     })
@@ -393,102 +483,6 @@ describe('PostHog Core', () => {
         })
       })
 
-      it('should capture $feature_flag_called when called', async () => {
-        expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
-        await waitForPromises()
-        expect(mocks.fetch).toHaveBeenCalledTimes(2)
-
-        expect(parseBody(mocks.fetch.mock.calls[1])).toMatchObject({
-          batch: [
-            {
-              event: '$feature_flag_called',
-              distinct_id: posthog.getDistinctId(),
-              properties: {
-                $feature_flag: 'feature-1',
-                $feature_flag_response: true,
-                '$feature/feature-1': true,
-                $used_bootstrap_value: false,
-              },
-              type: 'capture',
-            },
-          ],
-        })
-
-        // Only tracked once
-        expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
-        expect(mocks.fetch).toHaveBeenCalledTimes(2)
-      })
-
-      it('should capture $feature_flag_called again if new flags', async () => {
-        expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
-        await waitForPromises()
-        expect(mocks.fetch).toHaveBeenCalledTimes(2)
-
-        expect(parseBody(mocks.fetch.mock.calls[1])).toMatchObject({
-          batch: [
-            {
-              event: '$feature_flag_called',
-              distinct_id: posthog.getDistinctId(),
-              properties: {
-                $feature_flag: 'feature-1',
-                $feature_flag_response: true,
-                '$feature/feature-1': true,
-                $used_bootstrap_value: false,
-              },
-              type: 'capture',
-            },
-          ],
-        })
-
-        await posthog.reloadFeatureFlagsAsync()
-        posthog.getFeatureFlag('feature-1')
-
-        await waitForPromises()
-        expect(mocks.fetch).toHaveBeenCalledTimes(4)
-
-        expect(parseBody(mocks.fetch.mock.calls[3])).toMatchObject({
-          batch: [
-            {
-              event: '$feature_flag_called',
-              distinct_id: posthog.getDistinctId(),
-              properties: {
-                $feature_flag: 'feature-1',
-                $feature_flag_response: true,
-                '$feature/feature-1': true,
-                $used_bootstrap_value: false,
-              },
-              type: 'capture',
-            },
-          ],
-        })
-      })
-
-      it('should capture $feature_flag_called when called, but not add all cached flags', async () => {
-        expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
-        await waitForPromises()
-        expect(mocks.fetch).toHaveBeenCalledTimes(2)
-
-        expect(parseBody(mocks.fetch.mock.calls[1])).toMatchObject({
-          batch: [
-            {
-              event: '$feature_flag_called',
-              distinct_id: posthog.getDistinctId(),
-              properties: {
-                $feature_flag: 'feature-1',
-                $feature_flag_response: true,
-                '$feature/feature-1': true,
-                $used_bootstrap_value: false,
-              },
-              type: 'capture',
-            },
-          ],
-        })
-
-        // Only tracked once
-        expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
-        expect(mocks.fetch).toHaveBeenCalledTimes(2)
-      })
-
       it('should persist feature flags', () => {
         expect(posthog.getPersistedProperty(PostHogPersistedProperty.FeatureFlags)).toEqual(createMockFeatureFlags())
       })
@@ -529,7 +523,7 @@ describe('PostHog Core', () => {
       })
     })
 
-    describe('when quota limited', () => {
+    describe.each([3, 4])('when quota limited v%s', (version) => {
       beforeEach(() => {
         ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1 }, (_mocks) => {
           _mocks.fetch.mockImplementation((url) => {
@@ -538,11 +532,18 @@ describe('PostHog Core', () => {
                 status: 200,
                 text: () => Promise.resolve('ok'),
                 json: () =>
-                  Promise.resolve({
-                    quotaLimited: ['feature_flags'],
-                    featureFlags: {},
-                    featureFlagPayloads: {},
-                  }),
+                  Promise.resolve(
+                    version == 3
+                      ? {
+                          quotaLimited: ['feature_flags'],
+                          featureFlags: {},
+                          featureFlagPayloads: {},
+                        }
+                      : {
+                          quotaLimited: ['feature_flags'],
+                          flags: {},
+                        }
+                  ),
               })
             }
             return errorAPIResponse
@@ -691,56 +692,26 @@ describe('PostHog Core', () => {
       expect(posthog.getFeatureFlagPayload('enabled')).toEqual(200)
     })
 
-    describe('when loaded', () => {
+    describe.each([3, 4])('when loaded v%s', (version) => {
       beforeEach(() => {
-        ;[posthog, mocks] = createTestClient(
-          'TEST_API_KEY',
-          {
-            flushAt: 1,
-            bootstrap: {
-              distinctId: 'tomato',
-              featureFlags: {
-                'bootstrap-1': 'variant-1',
-                'feature-1': 'feature-1-bootstrap-value',
-                enabled: true,
-                disabled: false,
-              },
-              featureFlagPayloads: {
-                'bootstrap-1': {
-                  some: 'key',
-                },
-                'feature-1': {
-                  color: 'feature-1-bootstrap-color',
-                },
-                enabled: 200,
-              },
-            },
+        ;[posthog, mocks] = createTestClientWithVersionedResponse(version, {
+          distinctId: 'tomato',
+          featureFlags: {
+            'bootstrap-1': 'variant-1',
+            'feature-1': 'feature-1-bootstrap-value',
+            enabled: true,
+            disabled: false,
           },
-          (_mocks) => {
-            _mocks.fetch.mockImplementation((url) => {
-              if (url.includes('/decide/')) {
-                return Promise.resolve({
-                  status: 200,
-                  text: () => Promise.resolve('ok'),
-                  json: () =>
-                    Promise.resolve({
-                      featureFlags: createMockFeatureFlags(),
-                      featureFlagPayloads: createMockFeatureFlagPayloads(),
-                    }),
-                })
-              }
-
-              return Promise.resolve({
-                status: 200,
-                text: () => Promise.resolve('ok'),
-                json: () =>
-                  Promise.resolve({
-                    status: 'ok',
-                  }),
-              })
-            })
-          }
-        )
+          featureFlagPayloads: {
+            'bootstrap-1': {
+              some: 'key',
+            },
+            'feature-1': {
+              color: 'feature-1-bootstrap-color',
+            },
+            enabled: 200,
+          },
+        })
 
         posthog.reloadFeatureFlags()
       })
@@ -821,46 +792,19 @@ describe('PostHog Core', () => {
     })
   })
 
-  describe('bootstapped do not overwrite values', () => {
+  describe.each([3, 4])('bootstapped do not overwrite values v%s', (version) => {
     beforeEach(() => {
-      ;[posthog, mocks] = createTestClient(
-        'TEST_API_KEY',
+      ;[posthog, mocks] = createTestClientWithVersionedResponse(
+        version,
         {
-          flushAt: 1,
-          bootstrap: {
-            distinctId: 'tomato',
-            featureFlags: { 'bootstrap-1': 'variant-1', enabled: true, disabled: false },
-            featureFlagPayloads: {
-              'bootstrap-1': {
-                some: 'key',
-              },
-              enabled: 200,
+          distinctId: 'tomato',
+          featureFlags: { 'bootstrap-1': 'variant-1', enabled: true, disabled: false },
+          featureFlagPayloads: {
+            'bootstrap-1': {
+              some: 'key',
             },
+            enabled: 200,
           },
-        },
-        (_mocks) => {
-          _mocks.fetch.mockImplementation((url) => {
-            if (url.includes('/decide/')) {
-              return Promise.resolve({
-                status: 200,
-                text: () => Promise.resolve('ok'),
-                json: () =>
-                  Promise.resolve({
-                    featureFlags: createMockFeatureFlags(),
-                    featureFlagPayloads: createMockFeatureFlagPayloads(),
-                  }),
-              })
-            }
-
-            return Promise.resolve({
-              status: 200,
-              text: () => Promise.resolve('ok'),
-              json: () =>
-                Promise.resolve({
-                  status: 'ok',
-                }),
-            })
-          })
         },
         {
           distinct_id: '123',
@@ -882,6 +826,146 @@ describe('PostHog Core', () => {
       expect(posthog.getFeatureFlagPayload('bootstrap-1')).toEqual({
         some: 'other-key',
       })
+    })
+  })
+
+  describe('featureflags $feature_called_event v3', () => {
+    beforeEach(() => {
+      ;[posthog, mocks] = createTestClientWithVersionedResponse(3)
+      posthog.reloadFeatureFlags()
+    })
+
+    it('should capture $feature_flag_called when called', async () => {
+      expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
+      await waitForPromises()
+      expect(mocks.fetch).toHaveBeenCalledTimes(2)
+
+      expect(parseBody(mocks.fetch.mock.calls[1])).toMatchObject({
+        batch: [
+          {
+            event: '$feature_flag_called',
+            distinct_id: posthog.getDistinctId(),
+            properties: {
+              $feature_flag: 'feature-1',
+              $feature_flag_response: true,
+              '$feature/feature-1': true,
+              $used_bootstrap_value: false,
+            },
+            type: 'capture',
+          },
+        ],
+      })
+
+      // Only tracked once
+      expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
+      expect(mocks.fetch).toHaveBeenCalledTimes(2)
+    })
+
+    it('should capture $feature_flag_called again if new flags', async () => {
+      expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
+      await waitForPromises()
+      expect(mocks.fetch).toHaveBeenCalledTimes(2)
+
+      expect(parseBody(mocks.fetch.mock.calls[1])).toMatchObject({
+        batch: [
+          {
+            event: '$feature_flag_called',
+            distinct_id: posthog.getDistinctId(),
+            properties: {
+              $feature_flag: 'feature-1',
+              $feature_flag_response: true,
+              '$feature/feature-1': true,
+              $used_bootstrap_value: false,
+            },
+            type: 'capture',
+          },
+        ],
+      })
+
+      await posthog.reloadFeatureFlagsAsync()
+      posthog.getFeatureFlag('feature-1')
+
+      await waitForPromises()
+      expect(mocks.fetch).toHaveBeenCalledTimes(4)
+
+      expect(parseBody(mocks.fetch.mock.calls[3])).toMatchObject({
+        batch: [
+          {
+            event: '$feature_flag_called',
+            distinct_id: posthog.getDistinctId(),
+            properties: {
+              $feature_flag: 'feature-1',
+              $feature_flag_response: true,
+              '$feature/feature-1': true,
+              $used_bootstrap_value: false,
+            },
+            type: 'capture',
+          },
+        ],
+      })
+    })
+
+    it('should capture $feature_flag_called when called, but not add all cached flags', async () => {
+      expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
+      await waitForPromises()
+      expect(mocks.fetch).toHaveBeenCalledTimes(2)
+
+      expect(parseBody(mocks.fetch.mock.calls[1])).toMatchObject({
+        batch: [
+          {
+            event: '$feature_flag_called',
+            distinct_id: posthog.getDistinctId(),
+            properties: {
+              $feature_flag: 'feature-1',
+              $feature_flag_response: true,
+              '$feature/feature-1': true,
+              $used_bootstrap_value: false,
+            },
+            type: 'capture',
+          },
+        ],
+      })
+
+      // Only tracked once
+      expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
+      expect(mocks.fetch).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('featureflags $feature_called_event v4', () => {
+    beforeEach(() => {
+      ;[posthog, mocks] = createTestClientWithVersionedResponse(4)
+      posthog.reloadFeatureFlags()
+    })
+
+    it('should capture $feature_flag_called with additional v4 details', async () => {
+      expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
+      await waitForPromises()
+      expect(mocks.fetch).toHaveBeenCalledTimes(2)
+
+      expect(parseBody(mocks.fetch.mock.calls[1])).toMatchObject({
+        batch: [
+          {
+            event: '$feature_flag_called',
+            distinct_id: posthog.getDistinctId(),
+            properties: {
+              $feature_flag: 'feature-1',
+              $feature_flag_request_id: expect.any(String),
+              $feature_flag_version: 23,
+              $feature_flag_id: 1,
+              $feature_flag_reason: 'Matched condition set 1',
+              $feature_flag_response: true,
+              '$feature/feature-1': true,
+              $used_bootstrap_value: false,
+            },
+            type: 'capture',
+          },
+        ],
+      })
+
+      // Only tracked once
+      expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
+      expect(mocks.fetch).toHaveBeenCalledTimes(2)
     })
   })
 })

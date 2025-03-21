@@ -10,6 +10,7 @@ import {
   PostHogCaptureOptions,
   JsonType,
   PostHogRemoteConfig,
+  FeatureFlagDetail,
 } from './types'
 import {
   assert,
@@ -26,6 +27,7 @@ import { SimpleEventEmitter } from './eventemitter'
 import { uuidv7 } from './vendor/uuidv7'
 
 import { Survey, SurveyResponse } from './surveys-types'
+import { getFlagDetailsFromFlagsAndPayloads, getFlagValuesFromFlags, getPayloadsFromFlags } from './featureFlagUtils'
 
 export * as utils from './utils'
 
@@ -372,11 +374,10 @@ export abstract class PostHogCoreStateless {
     groupProperties: Record<string, Record<string, string>> = {},
     disableGeoip?: boolean
   ): Promise<{
-    response: boolean | string | undefined
+    response: FeatureFlagDetail | undefined
     requestId: string | undefined
   }> {
     await this._initPromise
-
     const decideResponse = await this.getFeatureFlagsStateless(
       distinctId,
       groups,
@@ -385,9 +386,9 @@ export abstract class PostHogCoreStateless {
       disableGeoip,
       [key]
     )
-    const featureFlags = decideResponse.flags
+    const flags = decideResponse.details
 
-    if (!featureFlags) {
+    if (!flags) {
       // If we haven't loaded flags yet, or errored out, we respond with undefined
       return {
         response: undefined,
@@ -395,76 +396,20 @@ export abstract class PostHogCoreStateless {
       }
     }
 
-    let response = featureFlags[key]
-    // `/decide` v3 returns all flags
-
-    if (response === undefined) {
-      // For cases where the flag is unknown, return false
-      response = false
+    // For cases where the flag is unknown, return false
+    const flag = flags[key] ?? {
+      key: key,
+      enabled: false,
+      variant: undefined,
+      reason: undefined,
+      metadata: undefined,
     }
 
-    // If we have flags we either return the value (true or string) or false
+    // If we have flags we either return the details or undefined
     return {
-      response,
+      response: flag,
       requestId: decideResponse.requestId,
     }
-  }
-
-  protected async getFeatureFlagPayloadStateless(
-    key: string,
-    distinctId: string,
-    groups: Record<string, string> = {},
-    personProperties: Record<string, string> = {},
-    groupProperties: Record<string, Record<string, string>> = {},
-    disableGeoip?: boolean
-  ): Promise<JsonType | undefined> {
-    await this._initPromise
-
-    const payloads = await this.getFeatureFlagPayloadsStateless(
-      distinctId,
-      groups,
-      personProperties,
-      groupProperties,
-      disableGeoip,
-      [key]
-    )
-
-    if (!payloads) {
-      return undefined
-    }
-
-    const response = payloads[key]
-
-    // Undefined means a loading or missing data issue. Null means evaluation happened and there was no match
-    if (response === undefined) {
-      return null
-    }
-
-    return response
-  }
-
-  protected async getFeatureFlagPayloadsStateless(
-    distinctId: string,
-    groups: Record<string, string> = {},
-    personProperties: Record<string, string> = {},
-    groupProperties: Record<string, Record<string, string>> = {},
-    disableGeoip?: boolean,
-    flagKeysToEvaluate?: string[]
-  ): Promise<PostHogDecideResponse['featureFlagPayloads'] | undefined> {
-    await this._initPromise
-
-    const payloads = (
-      await this.getFeatureFlagsAndPayloadsStateless(
-        distinctId,
-        groups,
-        personProperties,
-        groupProperties,
-        disableGeoip,
-        flagKeysToEvaluate
-      )
-    ).payloads
-
-    return payloads
   }
 
   protected _parsePayload(response: any): any {
@@ -484,6 +429,7 @@ export abstract class PostHogCoreStateless {
     flagKeysToEvaluate?: string[]
   ): Promise<{
     flags: PostHogDecideResponse['featureFlags'] | undefined
+    details: PostHogDecideResponse['flags'] | undefined
     payloads: PostHogDecideResponse['featureFlagPayloads'] | undefined
     requestId: PostHogDecideResponse['requestId'] | undefined
   }> {
@@ -508,6 +454,7 @@ export abstract class PostHogCoreStateless {
     flagKeysToEvaluate?: string[]
   ): Promise<{
     flags: PostHogDecideResponse['featureFlags'] | undefined
+    details: PostHogDecideResponse['flags'] | undefined
     payloads: PostHogDecideResponse['featureFlagPayloads'] | undefined
     requestId: PostHogDecideResponse['requestId'] | undefined
   }> {
@@ -522,6 +469,17 @@ export abstract class PostHogCoreStateless {
     }
     const decideResponse = await this.getDecide(distinctId, groups, personProperties, groupProperties, extraPayload)
 
+    if (decideResponse === undefined) {
+      // This should never happen, but we'll handle it gracefully
+      console.error('[FEATURE FLAGS] Decide response is undefined')
+      return {
+        flags: undefined,
+        details: undefined,
+        payloads: undefined,
+        requestId: undefined,
+      }
+    }
+
     // Add check for quota limitation on feature flags
     if (decideResponse?.quotaLimited?.includes(QuotaLimitedFeature.FeatureFlags)) {
       console.warn(
@@ -529,23 +487,34 @@ export abstract class PostHogCoreStateless {
       )
       return {
         flags: undefined,
+        details: undefined,
         payloads: undefined,
         requestId: decideResponse?.requestId,
       }
     }
 
-    const flags = decideResponse?.featureFlags
-    const payloads = decideResponse?.featureFlagPayloads
+    let flags = decideResponse?.featureFlags
+    let flagDetails = decideResponse?.flags
+    let payloads = decideResponse?.featureFlagPayloads
 
-    let parsedPayloads = payloads
+    if (flagDetails !== undefined) {
+      // v4 response
+      flags = getFlagValuesFromFlags(flagDetails)
+      payloads = getPayloadsFromFlags(flagDetails)
+    }
+    else {
+      // v3 response - need to construct flag details
+      flagDetails = getFlagDetailsFromFlagsAndPayloads(decideResponse)
+    }
 
     if (payloads) {
-      parsedPayloads = Object.fromEntries(Object.entries(payloads).map(([k, v]) => [k, this._parsePayload(v)]))
+      payloads = Object.fromEntries(Object.entries(payloads).map(([k, v]) => [k, this._parsePayload(v)]))
     }
 
     return {
       flags,
-      payloads: parsedPayloads,
+      details: flagDetails,
+      payloads: payloads,
       requestId: decideResponse?.requestId,
     }
   }
@@ -1397,6 +1366,13 @@ export abstract class PostHogCore extends PostHogCoreStateless {
           )
           return res
         }
+        if (res?.flags) {
+          const flagDetails = res.flags
+          // This is a v=4 request. We'll map the flags to the old format.
+          res.featureFlags = getFlagValuesFromFlags(flagDetails)
+          res.featureFlagPayloads = getPayloadsFromFlags(flagDetails)
+        }
+
         if (res?.featureFlags) {
           // clear flag call reported if we have new flags since they might have changed
           if (this.sendFeatureFlagEvent) {

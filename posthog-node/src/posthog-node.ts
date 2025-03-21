@@ -1,6 +1,7 @@
 import { version } from '../package.json'
 
 import {
+  FeatureFlagDetail,
   JsonType,
   PostHogCoreOptions,
   PostHogCoreStateless,
@@ -15,6 +16,7 @@ import { EventMessage, GroupIdentifyMessage, IdentifyMessage, PostHogNodeV1 } fr
 import { FeatureFlagsPoller } from './feature-flags'
 import fetch from './fetch'
 import ErrorTracking from './error-tracking'
+import { getFeatureFlagValue } from 'posthog-core/src/featureFlagUtils'
 
 export type PostHogOptions = PostHogCoreOptions & {
   persistence?: 'memory'
@@ -249,6 +251,8 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       sendFeatureFlagEvents = true
     }
 
+    let detail: FeatureFlagDetail | undefined = undefined
+
     let response = await this.featureFlagsPoller?.getFeatureFlag(
       key,
       distinctId,
@@ -268,7 +272,8 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         groupProperties,
         disableGeoip
       )
-      response = remoteResponse.response
+      detail = remoteResponse.response
+      response = detail !== undefined ? getFeatureFlagValue(detail) : undefined
       requestId = remoteResponse.requestId
     }
 
@@ -287,16 +292,36 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       } else {
         this.distinctIdHasSentFlagCalls[distinctId] = [featureFlagReportedKey]
       }
+
+      const properties: Record<string, any> = {
+        $feature_flag: key,
+        $feature_flag_response: response,
+        locally_evaluated: flagWasLocallyEvaluated,
+        [`$feature/${key}`]: response,
+        $feature_flag_request_id: requestId,
+      }
+
+      if (detail) {
+        // Add additional v4 properties to the event
+        const reason = detail.reason?.description ?? detail.reason?.code
+        if (reason) {
+          properties['$feature_flag_reason'] = reason
+        }
+        const metadata = detail.metadata
+        if (metadata) {
+          if (metadata.version) {
+            properties['$feature_flag_version'] = metadata.version
+          } 
+          if (metadata.id) {
+            properties['$feature_flag_id'] = metadata.id
+          }
+        }
+      }
+
       this.capture({
         distinctId,
         event: '$feature_flag_called',
-        properties: {
-          $feature_flag: key,
-          $feature_flag_response: response,
-          locally_evaluated: flagWasLocallyEvaluated,
-          [`$feature/${key}`]: response,
-          $feature_flag_request_id: requestId,
-        },
+        properties: properties,
         groups,
         disableGeoip,
       })
@@ -360,7 +385,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     const payloadWasLocallyEvaluated = response !== undefined
 
     if (!payloadWasLocallyEvaluated && !onlyEvaluateLocally) {
-      response = await super.getFeatureFlagPayloadStateless(
+      const remoteResponse = await super.getFeatureFlagStateless(
         key,
         distinctId,
         groups,
@@ -368,6 +393,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         groupProperties,
         disableGeoip
       )
+      response = this._parsePayload(remoteResponse.response?.metadata?.payload)
     }
     return response
   }
