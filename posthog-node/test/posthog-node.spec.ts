@@ -1,8 +1,9 @@
 import { MINIMUM_POLLING_INTERVAL, PostHog as PostHog, THIRTY_SECONDS } from '../src/posthog-node'
 import fetch from '../src/fetch'
-import { anyDecideCall, anyLocalEvalCall, apiImplementation } from './test-utils'
+import { anyDecideCall, anyLocalEvalCall, apiImplementation, versionedApiImplementation } from './test-utils'
 import { waitForPromises, wait } from '../../posthog-core/test/test-utils/test-utils'
 import { randomUUID } from 'crypto'
+import { PostHogDecideResponse } from 'posthog-core'
 jest.mock('../src/fetch')
 
 jest.mock('../package.json', () => ({ version: '1.2.3' }))
@@ -496,21 +497,89 @@ describe('PostHog Node.js', () => {
     })
   })
 
-  describe('feature flags', () => {
+  describe.each([3, 4])('feature flags', (version) => {
     beforeEach(() => {
-      const mockFeatureFlags = {
-        'feature-1': true,
-        'feature-2': true,
-        'feature-variant': 'variant',
-        'disabled-flag': false,
-        'feature-array': true,
-      }
-
-      // these are stringified in apiImplementation
-      const mockFeatureFlagPayloads = {
-        'feature-1': { color: 'blue' },
-        'feature-variant': 2,
-        'feature-array': [1],
+      const mockFlags: PostHogDecideResponse['flags'] = {
+        'feature-1': {
+          key: 'feature-1',
+          enabled: true,
+          variant: undefined,
+          reason: {
+            code: 'matched_condition',
+            condition_index: undefined, // We don't care for this test
+            description: 'Matched condition set 1',
+          },
+          metadata: {
+            id: 1,
+            version: undefined,
+            description: undefined,
+            payload: JSON.stringify({ color: 'blue' }),
+          },
+        },
+        'feature-2': {
+          key: 'feature-2',
+          enabled: true,
+          variant: undefined,
+          reason: {
+            code: 'matched_condition',
+            condition_index: undefined, // We don't care for this test
+            description: 'Matched condition set 2',
+          },
+          metadata: {
+            id: 2,
+            version: undefined,
+            description: undefined,
+            payload: JSON.stringify({ color: 'blue' }),
+          },
+        },
+        'feature-variant': {
+          key: 'feature-variant',
+          enabled: true,
+          variant: 'variant',
+          reason: {
+            code: 'matched_condition',
+            condition_index: undefined, // We don't care for this test
+            description: 'Matched condition set 3',
+          },
+          metadata: {
+            id: 3,
+            version: undefined,
+            description: undefined,
+            payload: JSON.stringify(2),
+          },
+        },
+        'disabled-flag': {
+          key: 'disabled-flag',
+          enabled: false,
+          variant: undefined,
+          reason: {
+            code: 'matched_condition',
+            condition_index: undefined, // We don't care for this test
+            description: 'Matched condition set 4',
+          },
+          metadata: {
+            id: 4,
+            version: undefined,
+            description: undefined,
+            payload: JSON.stringify({ color: 'blue' }),
+          },
+        },
+        'feature-array': {
+          key: 'feature-array',
+          enabled: true,
+          variant: undefined,
+          reason: {
+            code: 'matched_condition',
+            condition_index: undefined, // We don't care for this test
+            description: 'Matched condition set 5',
+          },
+          metadata: {
+            id: 5,
+            version: undefined,
+            description: undefined,
+            payload: JSON.stringify([1]),
+          },
+        },
       }
 
       const multivariateFlag = {
@@ -594,9 +663,8 @@ describe('PostHog Node.js', () => {
       }
 
       mockedFetch.mockImplementation(
-        apiImplementation({
-          decideFlags: mockFeatureFlags,
-          decideFlagPayloads: mockFeatureFlagPayloads,
+        versionedApiImplementation(version, {
+          decideFlags: mockFlags,
           localFlags: { flags: [multivariateFlag, basicFlag, falseFlag, arrayFlag] },
         })
       )
@@ -614,7 +682,7 @@ describe('PostHog Node.js', () => {
       )
       expect(mockedFetch).toHaveBeenCalledTimes(1)
       expect(mockedFetch).toHaveBeenCalledWith(
-        'http://example.com/decide/?v=3',
+        'http://example.com/decide/?v=4',
         expect.objectContaining({ method: 'POST', body: expect.stringContaining('"geoip_disable":true') })
       )
     })
@@ -647,7 +715,7 @@ describe('PostHog Node.js', () => {
       await waitForPromises()
 
       expect(mockedFetch).toHaveBeenCalledWith(
-        'http://example.com/decide/?v=3',
+        'http://example.com/decide/?v=4',
         expect.objectContaining({ method: 'POST' })
       )
 
@@ -672,7 +740,7 @@ describe('PostHog Node.js', () => {
 
       expect(mockedFetch).not.toHaveBeenCalledWith(...anyLocalEvalCall)
       expect(mockedFetch).toHaveBeenCalledWith(
-        'http://example.com/decide/?v=3',
+        'http://example.com/decide/?v=4',
         expect.objectContaining({ method: 'POST', body: expect.stringContaining('"geoip_disable":true') })
       )
     })
@@ -732,7 +800,7 @@ describe('PostHog Node.js', () => {
       expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
       // no decide call
       expect(mockedFetch).not.toHaveBeenCalledWith(
-        'http://example.com/decide/?v=3',
+        'http://example.com/decide/?v=4',
         expect.objectContaining({ method: 'POST' })
       )
 
@@ -790,7 +858,7 @@ describe('PostHog Node.js', () => {
       expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
       // no decide call
       expect(mockedFetch).not.toHaveBeenCalledWith(
-        'http://example.com/decide/?v=3',
+        'http://example.com/decide/?v=4',
         expect.objectContaining({ method: 'POST' })
       )
 
@@ -838,7 +906,7 @@ describe('PostHog Node.js', () => {
       await waitForFlushTimer()
 
       expect(mockedFetch).toHaveBeenCalledWith(
-        'http://example.com/decide/?v=3',
+        'http://example.com/decide/?v=4',
         expect.objectContaining({ method: 'POST', body: expect.not.stringContaining('geoip_disable') })
       )
 
@@ -879,7 +947,26 @@ describe('PostHog Node.js', () => {
       }
 
       mockedFetch.mockImplementation(
-        apiImplementation({ localFlags: flags, decideFlags: { 'beta-feature': 'decide-fallback-value' } })
+        versionedApiImplementation(version, {
+          localFlags: flags,
+          decideFlags: { 
+            'beta-feature': {
+              variant: 'decide-fallback-value',
+              enabled: true,
+              reason: {
+                code: 'matched_condition',
+                condition_index: undefined, // We don't care for this test
+                description: 'Matched condition set 1',
+              },
+              metadata: {
+                id: 1,
+                version: undefined,
+                description: undefined,
+                payload: undefined,
+              },
+            },
+          },
+        })
       )
 
       posthog = new PostHog('TEST_API_KEY', {
@@ -1091,7 +1178,7 @@ describe('PostHog Node.js', () => {
       ).resolves.toEqual(2)
       expect(mockedFetch).toHaveBeenCalledTimes(1)
       expect(mockedFetch).toHaveBeenCalledWith(
-        'http://example.com/decide/?v=3',
+        'http://example.com/decide/?v=4',
         expect.objectContaining({ method: 'POST', body: expect.stringContaining('"geoip_disable":true') })
       )
     })
@@ -1133,7 +1220,7 @@ describe('PostHog Node.js', () => {
       ).resolves.toEqual([1])
       expect(mockedFetch).toHaveBeenCalledTimes(1)
       expect(mockedFetch).toHaveBeenCalledWith(
-        'http://example.com/decide/?v=3',
+        'http://example.com/decide/?v=4',
         expect.objectContaining({ method: 'POST', body: expect.stringContaining('"geoip_disable":true') })
       )
     })
@@ -1153,7 +1240,7 @@ describe('PostHog Node.js', () => {
       ).resolves.toEqual(2)
       expect(mockedFetch).toHaveBeenCalledTimes(1)
       expect(mockedFetch).toHaveBeenCalledWith(
-        'http://example.com/decide/?v=3',
+        'http://example.com/decide/?v=4',
         expect.objectContaining({ method: 'POST', body: expect.stringContaining('"geoip_disable":true') })
       )
 
@@ -1162,7 +1249,7 @@ describe('PostHog Node.js', () => {
       await expect(posthog.isFeatureEnabled('feature-variant', '123', { disableGeoip: false })).resolves.toEqual(true)
       expect(mockedFetch).toHaveBeenCalledTimes(1)
       expect(mockedFetch).toHaveBeenCalledWith(
-        'http://example.com/decide/?v=3',
+        'http://example.com/decide/?v=4',
         expect.objectContaining({ method: 'POST', body: expect.not.stringContaining('geoip_disable') })
       )
     })
@@ -1176,7 +1263,7 @@ describe('PostHog Node.js', () => {
       jest.runOnlyPendingTimers()
 
       expect(mockedFetch).toHaveBeenCalledWith(
-        'http://example.com/decide/?v=3',
+        'http://example.com/decide/?v=4',
         expect.objectContaining({
           body: JSON.stringify({
             token: 'TEST_API_KEY',
@@ -1206,7 +1293,7 @@ describe('PostHog Node.js', () => {
       jest.runOnlyPendingTimers()
 
       expect(mockedFetch).toHaveBeenCalledWith(
-        'http://example.com/decide/?v=3',
+        'http://example.com/decide/?v=4',
         expect.objectContaining({
           body: JSON.stringify({
             token: 'TEST_API_KEY',
@@ -1237,7 +1324,7 @@ describe('PostHog Node.js', () => {
       jest.runOnlyPendingTimers()
 
       expect(mockedFetch).toHaveBeenCalledWith(
-        'http://example.com/decide/?v=3',
+        'http://example.com/decide/?v=4',
         expect.objectContaining({
           body: JSON.stringify({
             token: 'TEST_API_KEY',
@@ -1261,7 +1348,7 @@ describe('PostHog Node.js', () => {
       jest.runOnlyPendingTimers()
 
       expect(mockedFetch).toHaveBeenCalledWith(
-        'http://example.com/decide/?v=3',
+        'http://example.com/decide/?v=4',
         expect.objectContaining({
           body: JSON.stringify({
             token: 'TEST_API_KEY',
@@ -1281,7 +1368,7 @@ describe('PostHog Node.js', () => {
       jest.runOnlyPendingTimers()
 
       expect(mockedFetch).toHaveBeenCalledWith(
-        'http://example.com/decide/?v=3',
+        'http://example.com/decide/?v=4',
         expect.objectContaining({
           body: JSON.stringify({
             token: 'TEST_API_KEY',
@@ -1303,7 +1390,7 @@ describe('PostHog Node.js', () => {
       jest.runOnlyPendingTimers()
 
       expect(mockedFetch).toHaveBeenCalledWith(
-        'http://example.com/decide/?v=3',
+        'http://example.com/decide/?v=4',
         expect.objectContaining({
           body: JSON.stringify({
             token: 'TEST_API_KEY',
@@ -1318,6 +1405,197 @@ describe('PostHog Node.js', () => {
           }),
         })
       )
+    })
+  })
+
+  describe('feature flags version 4 specific tests', () => {
+    it('$feature_flag_called is called with extra properties when querying flags with v4', async () => {
+      mockedFetch.mockClear()
+
+      const flags: PostHogDecideResponse['flags'] = {
+        'beta-feature': {
+          key: 'beta-feature',
+          variant: undefined,
+          enabled: true,
+          reason: {
+            code: 'matched_condition',
+            condition_index: 0, // We don't care for this test
+            description: 'Matched condition set 1',
+          },
+          metadata: {
+            id: 2,
+            version: 42,
+            description: undefined,
+            payload: undefined,
+          },
+        },
+        'decide-flag': {
+          key: 'decide-flag',
+          variant: 'decide-variant',
+          enabled: true,
+          reason: {
+            code: 'matched_condition',
+            condition_index: 2, // We don't care for this test
+            description: 'Matched condition set 3',
+          },
+          metadata: {
+            id: 3,
+            version: 1,
+            description: undefined,
+            payload: undefined,
+          },
+        }
+      }
+
+      mockedFetch.mockImplementation(
+        versionedApiImplementation(4, { localFlags: undefined, decideFlags: flags })
+      )
+
+      posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        personalApiKey: 'TEST_PERSONAL_API_KEY',
+        maxCacheSize: 10,
+        fetchRetryCount: 0,
+      })
+
+      jest.runOnlyPendingTimers()
+
+      expect(
+        await posthog.getFeatureFlag('beta-feature', 'some-distinct-id', {
+          personProperties: { region: 'USA', name: 'Aloha' },
+        })
+      ).toEqual(true)
+
+      // TRICKY: There's now an extra step before events are queued, so need to wait for that to resolve
+      jest.runOnlyPendingTimers()
+      await waitForPromises()
+      await posthog.flush()
+
+      expect(mockedFetch).toHaveBeenCalledWith('http://example.com/batch/', expect.any(Object))
+      
+      expect(getLastBatchEvents()?.[0]).toEqual(
+        expect.objectContaining({
+          distinct_id: 'some-distinct-id',
+          event: '$feature_flag_called',
+          properties: expect.objectContaining({
+            $feature_flag: 'beta-feature',
+            $feature_flag_response: true,
+            $feature_flag_reason: 'Matched condition set 1',
+            $feature_flag_version: 42,
+            $feature_flag_id: 2,
+            '$feature/beta-feature': true,
+            $lib: 'posthog-node',
+            $lib_version: '1.2.3',
+            locally_evaluated: false,
+            $geoip_disable: true,
+          }),
+        })
+      )
+      mockedFetch.mockClear()
+
+      // # called again for same user, shouldn't call capture again
+      expect(
+        await posthog.getFeatureFlag('beta-feature', 'some-distinct-id', {
+          personProperties: { region: 'USA', name: 'Aloha' },
+        })
+      ).toEqual(true)
+      jest.runOnlyPendingTimers()
+      await waitForPromises()
+      await posthog.flush()
+
+      expect(mockedFetch).not.toHaveBeenCalledWith('http://example.com/batch/', expect.any(Object))
+
+      // # called for different user, should call capture again
+      expect(
+        await posthog.getFeatureFlag('beta-feature', 'some-distinct-id2', {
+          groups: { x: 'y' },
+          personProperties: { region: 'USA', name: 'Aloha' },
+          disableGeoip: false,
+        })
+      ).toEqual(true)
+      jest.runOnlyPendingTimers()
+      await waitForPromises()
+      await posthog.flush()
+      expect(mockedFetch).toHaveBeenCalledWith('http://example.com/batch/', expect.any(Object))
+
+      expect(getLastBatchEvents()?.[0]).toEqual(
+        expect.objectContaining({
+          distinct_id: 'some-distinct-id2',
+          event: '$feature_flag_called',
+        })
+      )
+      expect(getLastBatchEvents()?.[0].properties).toEqual({
+        $feature_flag: 'beta-feature',
+        $feature_flag_response: true,
+        $feature_flag_reason: 'Matched condition set 1',
+        $feature_flag_version: 42,
+        $feature_flag_id: 2,
+        $lib: 'posthog-node',
+        $lib_version: '1.2.3',
+        locally_evaluated: false,
+        '$feature/beta-feature': true,
+        $groups: { x: 'y' },
+      })
+      mockedFetch.mockClear()
+
+      // # called for different user, but send configuration is false, so should NOT call capture again
+      expect(
+        await posthog.getFeatureFlag('beta-feature', 'some-distinct-id23', {
+          personProperties: { region: 'USA', name: 'Aloha' },
+          sendFeatureFlagEvents: false,
+        })
+      ).toEqual(true)
+      jest.runOnlyPendingTimers()
+      await waitForPromises()
+      await posthog.flush()
+      expect(mockedFetch).not.toHaveBeenCalledWith('http://example.com/batch/', expect.any(Object))
+
+      // # called for different flag, should call capture again
+      expect(
+        await posthog.getFeatureFlag('decide-flag', 'some-distinct-id2345', {
+          groups: { organization: 'org1' },
+          personProperties: { region: 'USA', name: 'Aloha' },
+        })
+      ).toEqual('decide-variant')
+      jest.runOnlyPendingTimers()
+      await waitForPromises()
+      await posthog.flush()
+      // one to decide, one to batch
+      expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
+      expect(mockedFetch).toHaveBeenCalledWith('http://example.com/batch/', expect.any(Object))
+
+      expect(getLastBatchEvents()?.[0]).toEqual(
+        expect.objectContaining({
+          distinct_id: 'some-distinct-id2345',
+          event: '$feature_flag_called',
+          properties: expect.objectContaining({
+            $feature_flag: 'decide-flag',
+            $feature_flag_response: 'decide-variant',
+            $feature_flag_reason: 'Matched condition set 3',
+            $feature_flag_version: 1,
+            $feature_flag_id: 3,
+            $lib: 'posthog-node',
+            $lib_version: '1.2.3',
+            locally_evaluated: false,
+            '$feature/decide-flag': 'decide-variant',
+            $groups: { organization: 'org1' },
+          }),
+        })
+      )
+      mockedFetch.mockClear()
+
+      expect(
+        await posthog.isFeatureEnabled('decide-flag', 'some-distinct-id2345', {
+          groups: { organization: 'org1' },
+          personProperties: { region: 'USA', name: 'Aloha' },
+        })
+      ).toEqual(true)
+      jest.runOnlyPendingTimers()
+      await waitForPromises()
+      await posthog.flush()
+      // call decide, but not batch
+      expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
+      expect(mockedFetch).not.toHaveBeenCalledWith('http://example.com/batch/', expect.any(Object))
     })
   })
 })

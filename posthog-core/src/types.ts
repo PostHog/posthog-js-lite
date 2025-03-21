@@ -147,6 +147,9 @@ export interface PostHogRemoteConfig {
 }
 
 export interface PostHogDecideResponse extends Omit<PostHogRemoteConfig, 'surveys' | 'hasFeatureFlags'> {
+  flags: {
+    [key: string]: FeatureFlagDetail
+  }
   featureFlags: {
     [key: string]: string | boolean
   }
@@ -171,3 +174,24 @@ export type PostHogFlagsAndPayloadsResponse = {
 export type JsonType = string | number | boolean | null | { [key: string]: JsonType } | Array<JsonType>
 
 export type FetchLike = (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
+
+export type FeatureFlagDetail = {
+  key: string
+  enabled: boolean
+  variant: string | undefined
+  reason: EvaluationReason | undefined
+  metadata: FeatureFlagMetadata | undefined
+}
+
+export type FeatureFlagMetadata = {
+  id: number | undefined
+  version: number | undefined
+  description: string | undefined
+  payload: JsonType | undefined
+}
+
+export type EvaluationReason = {
+  code: string | undefined
+  condition_index: number | undefined
+  description: string | undefined
+}
