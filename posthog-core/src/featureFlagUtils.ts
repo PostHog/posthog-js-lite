@@ -1,5 +1,10 @@
 import { FeatureFlagDetail, JsonType, PostHogDecideResponse } from './types'
 
+/**
+ * Get the flag values from the flags v4 response.
+ * @param flags - The flags
+ * @returns The flag values
+ */
 export const getFlagValuesFromFlags = (
   flags: PostHogDecideResponse['flags']
 ): PostHogDecideResponse['featureFlags'] => {
@@ -10,6 +15,11 @@ export const getFlagValuesFromFlags = (
   )
 }
 
+/**
+ * Get the payloads from the flags v4 response.
+ * @param flags - The flags
+ * @returns The payloads
+ */
 export const getPayloadsFromFlags = (
   flags: PostHogDecideResponse['flags']
 ): PostHogDecideResponse['featureFlagPayloads'] => {
@@ -27,6 +37,11 @@ export const getPayloadsFromFlags = (
   )
 }
 
+/**
+ * Get the flag details from the legacy v3 flags and payloads. As such, it will lack the reason, id, version, and description.
+ * @param decideResponse - The decide response
+ * @returns The flag details
+ */
 export const getFlagDetailsFromFlagsAndPayloads = (decideResponse: PostHogDecideResponse): PostHogDecideResponse['flags'] => {
   const flags = decideResponse.featureFlags
   const payloads = decideResponse.featureFlagPayloads
