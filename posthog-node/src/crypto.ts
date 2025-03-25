@@ -1,6 +1,7 @@
 /// <reference lib="dom" />
 
 import { getNodeCrypto, getWebCrypto } from './crypto-helpers'
+
 export async function hashSHA1(text: string): Promise<string> {
   // Try Node.js crypto first
   const nodeCrypto = await getNodeCrypto()
