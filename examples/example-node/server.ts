@@ -62,7 +62,7 @@ app.get('/user/:userId/action', (req, res) => {
 })
 
 app.get('/user/:userId/flags/:flagId', async (req, res) => {
-  const flag = await posthog.getFeatureFlag('key-1', req.params.userId).catch((e) => console.error(e))
+  const flag = await posthog.getFeatureFlag(req.params.flagId, req.params.userId).catch((e) => console.error(e))
 
   res.send({ [req.params.flagId]: flag })
 })
