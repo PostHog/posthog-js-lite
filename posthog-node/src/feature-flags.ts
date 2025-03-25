@@ -4,6 +4,7 @@ import { JsonType, PostHogFetchOptions, PostHogFetchResponse } from 'posthog-cor
 import { safeSetTimeout } from 'posthog-core/src/utils'
 import fetch from './fetch'
 import { SIXTY_SECONDS } from './posthog-node'
+import { hashSHA1 } from './crypto'
 
 // eslint-disable-next-line
 const LONG_SCALE = 0xfffffffffffffff
@@ -551,9 +552,8 @@ class FeatureFlagsPoller {
 // # uniformly distributed between 0 and 1, so if we want to show this feature to 20% of traffic
 // # we can do _hash(key, distinct_id) < 0.2
 async function _hash(key: string, distinctId: string, salt: string = ''): Promise<number> {
-  const sha1Hash = createHash('sha1')
-  sha1Hash.update(`${key}.${distinctId}${salt}`)
-  return parseInt(sha1Hash.digest('hex').slice(0, 15), 16) / LONG_SCALE
+  const hashString = await hashSHA1(`${key}.${distinctId}${salt}`)
+  return parseInt(hashString.slice(0, 15), 16) / LONG_SCALE
 }
 
 function matchProperty(
