@@ -180,23 +180,25 @@ class FeatureFlagsPoller {
     const payloads: Record<string, JsonType> = {}
     let fallbackToDecide = this.featureFlags.length == 0
 
-    await Promise.all(this.featureFlags.map(async (flag) => {
-      try {
-        const matchValue = await this.computeFlagLocally(flag, distinctId, groups, personProperties, groupProperties)
-        response[flag.key] = matchValue
-        const matchPayload = await this.computeFeatureFlagPayloadLocally(flag.key, matchValue)
-        if (matchPayload) {
-          payloads[flag.key] = matchPayload
+    await Promise.all(
+      this.featureFlags.map(async (flag) => {
+        try {
+          const matchValue = await this.computeFlagLocally(flag, distinctId, groups, personProperties, groupProperties)
+          response[flag.key] = matchValue
+          const matchPayload = await this.computeFeatureFlagPayloadLocally(flag.key, matchValue)
+          if (matchPayload) {
+            payloads[flag.key] = matchPayload
+          }
+        } catch (e) {
+          if (e instanceof InconclusiveMatchError) {
+            // do nothing
+          } else if (e instanceof Error) {
+            this.onError?.(new Error(`Error computing flag locally: ${flag.key}: ${e}`))
+          }
+          fallbackToDecide = true
         }
-      } catch (e) {
-        if (e instanceof InconclusiveMatchError) {
-          // do nothing
-        } else if (e instanceof Error) {
-          this.onError?.(new Error(`Error computing flag locally: ${flag.key}: ${e}`))
-        }
-        fallbackToDecide = true
-      }
-    }))
+      })
+    )
 
     return { response, payloads, fallbackToDecide }
   }
@@ -280,7 +282,7 @@ class FeatureFlagsPoller {
           if (variantOverride && flagVariants.some((variant) => variant.key === variantOverride)) {
             result = variantOverride
           } else {
-            result = await this.getMatchingVariant(flag, distinctId) || true
+            result = (await this.getMatchingVariant(flag, distinctId)) || true
           }
           break
         }
@@ -334,7 +336,7 @@ class FeatureFlagsPoller {
       }
     }
 
-    if (rolloutPercentage != undefined && await _hash(flag.key, distinctId) > rolloutPercentage / 100.0) {
+    if (rolloutPercentage != undefined && (await _hash(flag.key, distinctId)) > rolloutPercentage / 100.0) {
       return false
     }
 

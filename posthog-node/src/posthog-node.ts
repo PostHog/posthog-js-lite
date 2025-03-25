@@ -174,8 +174,8 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
           }
         }
         const activeFlags = Object.keys(flags || {})
-        .filter((flag) => flags?.[flag] !== false)
-        .sort()
+          .filter((flag) => flags?.[flag] !== false)
+          .sort()
         if (activeFlags.length > 0) {
           additionalProperties['$active_feature_flags'] = activeFlags
         }
