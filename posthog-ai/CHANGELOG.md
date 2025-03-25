@@ -1,3 +1,7 @@
+# 3.3.2 - 2025-03-25
+
+- fix: langchain name mapping
+
 # 3.3.1 - 2025-03-13
 
 - fix: fix vercel output mapping and token caching
