@@ -586,8 +586,6 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     let llmUsage: [number, number, Record<string, any>] = [0, 0, {}]
     const llmUsageKeys = ['token_usage', 'usage', 'tokenUsage']
 
-    console.log('response1', response)
-
     if (response.llmOutput != null) {
       const key = llmUsageKeys.find((k) => response.llmOutput?.[k] != null)
       if (key) {
