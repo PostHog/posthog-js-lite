@@ -5,11 +5,11 @@ export class Lazy<T> {
   private value: T | undefined
   private factory: () => Promise<T>
   private initializationPromise: Promise<T> | undefined
-  
+
   constructor(factory: () => Promise<T>) {
     this.factory = factory
   }
-  
+
   /**
    * Gets the value, initializing it if necessary.
    * Multiple concurrent calls will share the same initialization promise.
@@ -18,7 +18,7 @@ export class Lazy<T> {
     if (this.value !== undefined) {
       return this.value
     }
-    
+
     if (this.initializationPromise === undefined) {
       this.initializationPromise = (async () => {
         try {
@@ -31,17 +31,17 @@ export class Lazy<T> {
         }
       })()
     }
-    
+
     return this.initializationPromise
   }
-  
+
   /**
    * Returns true if the value has been initialized.
    */
   isInitialized(): boolean {
     return this.value !== undefined
   }
-  
+
   /**
    * Returns a promise that resolves when the value is initialized.
    * If already initialized, resolves immediately.
@@ -53,4 +53,3 @@ export class Lazy<T> {
     await this.getValue()
   }
 }
-  

@@ -63,9 +63,9 @@ describe('Lazy', () => {
 
     const lazy = new Lazy(factory)
     const [value1, value2] = await Promise.all([lazy.getValue(), lazy.getValue()])
-    
+
     expect(value1).toBe('value')
     expect(value2).toBe('value')
     expect(callCount).toBe(1)
   })
-}) 
+})
