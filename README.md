@@ -8,3 +8,15 @@ The short-term goal is to have a dedicated React Native library free from any pl
 
 1. Installation to Expo managed projects without any separate compilation / ejecting
 2. Tighter integration to RN enabling hooks, context, autocapture etc.
+
+## Running Tests
+
+```bash
+yarn test
+```
+
+Or to run a single test suite:
+
+```bash
+yarn test:node
+```
