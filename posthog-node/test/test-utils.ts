@@ -4,12 +4,14 @@ export const apiImplementation = ({
   decideFlagPayloads,
   decideStatus = 200,
   localFlagsStatus = 200,
+  errorsWhileComputingFlags = false,
 }: {
   localFlags?: any
   decideFlags?: any
   decideFlagPayloads?: any
   decideStatus?: number
   localFlagsStatus?: number
+  errorsWhileComputingFlags?: boolean
 }) => {
   return (url: any): Promise<any> => {
     if ((url as any).includes('/decide/')) {
@@ -25,6 +27,7 @@ export const apiImplementation = ({
               featureFlagPayloads: Object.fromEntries(
                 Object.entries(decideFlagPayloads || {}).map(([k, v]) => [k, JSON.stringify(v)])
               ),
+              errorsWhileComputingFlags,
             })
           }
         },

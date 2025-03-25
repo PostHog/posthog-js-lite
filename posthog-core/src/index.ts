@@ -522,6 +522,13 @@ export abstract class PostHogCoreStateless {
     }
     const decideResponse = await this.getDecide(distinctId, groups, personProperties, groupProperties, extraPayload)
 
+    // if there's an error on the decideREsponse, log a console error, but don't throw an error
+    if (decideResponse?.errorsWhileComputingFlags) {
+      console.error(
+        '[FEATURE FLAGS] Error while computing feature flags, some flags may be missing or incorrect. Learn more at https://posthog.com/docs/feature-flags/best-practices'
+      )
+    }
+
     // Add check for quota limitation on feature flags
     if (decideResponse?.quotaLimited?.includes(QuotaLimitedFeature.FeatureFlags)) {
       console.warn(

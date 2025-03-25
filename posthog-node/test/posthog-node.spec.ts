@@ -1319,5 +1319,25 @@ describe('PostHog Node.js', () => {
         })
       )
     })
+
+    it('should log error when decide response has errors', async () => {
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+
+      mockedFetch.mockImplementation(
+        apiImplementation({
+          decideFlags: { 'feature-1': true },
+          decideFlagPayloads: {},
+          errorsWhileComputingFlags: true,
+        })
+      )
+
+      await posthog.getFeatureFlag('feature-1', '123')
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        '[FEATURE FLAGS] Error while computing feature flags, some flags may be missing or incorrect. Learn more at https://posthog.com/docs/feature-flags/best-practices'
+      )
+
+      errorSpy.mockRestore()
+    })
   })
 })
