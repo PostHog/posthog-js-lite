@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto'
 import { FeatureFlagCondition, FlagProperty, PostHogFeatureFlag, PropertyGroup } from './types'
 import { JsonType, PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src'
 import { safeSetTimeout } from 'posthog-core/src/utils'
