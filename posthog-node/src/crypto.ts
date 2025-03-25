@@ -17,5 +17,5 @@ export async function hashSHA1(text: string): Promise<string> {
     return hashArray.map((byte) => byte.toString(16).padStart(2, '0')).join('')
   }
 
-  throw new Error('No crypto implementation available')
+  throw new Error('No crypto implementation available. Tried Node Crypto API and Web SubtleCrypto API')
 }

@@ -28,7 +28,9 @@ describe('crypto', () => {
       jest.spyOn(cryptoHelpers, 'getNodeCrypto').mockResolvedValue(undefined)
       jest.spyOn(cryptoHelpers, 'getWebCrypto').mockResolvedValue(undefined)
 
-      await expect(crypto.hashSHA1(testString)).rejects.toThrow('No crypto implementation available')
+      await expect(crypto.hashSHA1(testString)).rejects.toThrow(
+        'No crypto implementation available. Tried Node Crypto API and Web SubtleCrypto API'
+      )
     })
   })
 })
