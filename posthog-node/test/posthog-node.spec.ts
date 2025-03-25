@@ -656,7 +656,7 @@ describe('PostHog Node.js', () => {
           distinct_id: 'distinct_id',
           event: 'node test event',
           properties: expect.objectContaining({
-            $active_feature_flags: ['feature-1', 'feature-2', 'feature-variant', 'feature-array'],
+            $active_feature_flags: ['feature-1', 'feature-2', 'feature-array', 'feature-variant'],
             '$feature/feature-1': true,
             '$feature/feature-2': true,
             '$feature/feature-array': true,
@@ -843,7 +843,7 @@ describe('PostHog Node.js', () => {
       )
 
       expect(getLastBatchEvents()?.[0].properties).toEqual({
-        $active_feature_flags: ['feature-1', 'feature-2', 'feature-variant', 'feature-array'],
+        $active_feature_flags: ['feature-1', 'feature-2', 'feature-array', 'feature-variant'],
         '$feature/feature-1': true,
         '$feature/feature-2': true,
         '$feature/feature-array': true,
