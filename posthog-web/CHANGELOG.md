@@ -1,5 +1,9 @@
 # Next
 
+## Fixed
+
+1. Fix: apiKey cannot be empty.
+
 # 3.4.2 - 2025-02-27
 
 ## Fixed

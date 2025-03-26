@@ -1,6 +1,7 @@
 # Next
 
 1. Fix: prevent fetch floods when rate-limited.
+2. Fix: apiKey cannot be empty.
 
 # 4.10.1 – 2025-03-06
 
