@@ -6,7 +6,7 @@
     "jsx": "react-native",
     "lib": ["ESNext"],
     "module": "ESNext",
-    "moduleResolution": "node16",
+    "moduleResolution": "node",
     "noEmitOnError": true,
     "outDir": "./lib",
     "skipLibCheck": true,
