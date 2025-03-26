@@ -1,11 +1,15 @@
 # Next
 
-1. Fix: prevent fetch floods when rate-limited.
-2. Fix: apiKey cannot be empty.
+## Fixed
+
+1. prevent fetch floods when rate-limited.
+2. apiKey cannot be empty.
 
 # 4.10.1 – 2025-03-06
 
-1. Fix: only set `platform` on PostHog exception frame properties
+## Fixed
+
+1. only set `platform` on PostHog exception frame properties
 
 # 4.10.0 – 2025-03-06
 
