@@ -1,5 +1,9 @@
 # Next
 
+## Fixed
+
+1. apiKey cannot be empty.
+
 # 4.10.2 - 2025-03-06
 
 1. Add: log error message when feature flags have computation errors.

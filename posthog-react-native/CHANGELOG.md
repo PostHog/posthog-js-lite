@@ -1,5 +1,9 @@
 # Next
 
+## Fixed
+
+1. apiKey cannot be empty.
+
 # 3.12.0 - 2025-03-13
 
 ## Added
