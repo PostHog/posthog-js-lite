@@ -1,6 +1,7 @@
 import { canActivateRepeatedly, hasEvents } from './surveys-utils'
 import { Survey, SurveyMatchType } from '../../../posthog-core/src/surveys-types'
 import { currentDeviceType } from '../native-deps'
+import { FeatureFlagValue } from 'posthog-core/src'
 
 const isMatchingRegex = function (value: string, pattern: string): boolean {
   if (!isValidRegex(pattern)) {
@@ -55,7 +56,7 @@ function doesSurveyDeviceTypesMatch(survey: Survey): boolean {
 
 export function getActiveMatchingSurveys(
   surveys: Survey[],
-  flags: Record<string, string | boolean>,
+  flags: Record<string, FeatureFlagValue>,
   seenSurveys: string[],
   activatedSurveys: ReadonlySet<string>
   // lastSeenSurveyDate: Date | undefined
