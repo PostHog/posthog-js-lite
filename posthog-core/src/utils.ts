@@ -1,9 +1,16 @@
 import { FetchLike } from './types'
 
 export function assert(truthyValue: any, message: string): void {
-  if (!truthyValue) {
+  if (!truthyValue || isEmpty(truthyValue)) {
     throw new Error(message)
   }
+}
+
+function isEmpty(truthyValue: any): boolean {
+  if (typeof truthyValue === 'string' && truthyValue.trim().length === 0) {
+    return true
+  }
+  return false
 }
 
 export function removeTrailingSlash(url: string): string {
