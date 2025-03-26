@@ -1,4 +1,4 @@
-import { JsonType } from '../../posthog-core/src'
+import { FeatureFlagValue, JsonType } from '../../posthog-core/src'
 
 export interface IdentifyMessage {
   distinctId: string
@@ -155,7 +155,7 @@ export type PostHogNodeV1 = {
       onlyEvaluateLocally?: boolean
       sendFeatureFlagEvents?: boolean
     }
-  ): Promise<string | boolean | undefined>
+  ): Promise<FeatureFlagValue | undefined>
 
   /**
    * @description Retrieves payload associated with the specified flag and matched value that is passed in.
@@ -186,7 +186,7 @@ export type PostHogNodeV1 = {
   getFeatureFlagPayload(
     key: string,
     distinctId: string,
-    matchValue?: string | boolean,
+    matchValue?: FeatureFlagValue,
     options?: {
       onlyEvaluateLocally?: boolean
     }

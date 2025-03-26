@@ -10,6 +10,7 @@ import {
   PostHogCaptureOptions,
   JsonType,
   PostHogRemoteConfig,
+  FeatureFlagValue,
 } from './types'
 import {
   assert,
@@ -372,7 +373,7 @@ export abstract class PostHogCoreStateless {
     groupProperties: Record<string, Record<string, string>> = {},
     disableGeoip?: boolean
   ): Promise<{
-    response: boolean | string | undefined
+    response: FeatureFlagValue | undefined
     requestId: string | undefined
   }> {
     await this._initPromise
@@ -904,7 +905,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       const bootstrapFlags = Object.keys(bootstrapfeatureFlags)
         .filter((flag) => !!bootstrapfeatureFlags[flag])
         .reduce(
-          (res: Record<string, string | boolean>, key) => ((res[key] = bootstrapfeatureFlags[key] || false), res),
+          (res: Record<string, FeatureFlagValue>, key) => ((res[key] = bootstrapfeatureFlags[key] || false), res),
           {}
         )
 
@@ -975,7 +976,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   protected getCommonEventProperties(): any {
     const featureFlags = this.getFeatureFlags()
 
-    const featureVariantProperties: Record<string, string | boolean> = {}
+    const featureVariantProperties: Record<string, FeatureFlagValue> = {}
     if (featureFlags) {
       for (const [feature, variant] of Object.entries(featureFlags)) {
         featureVariantProperties[`$feature/${feature}`] = variant
@@ -1464,7 +1465,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     })
   }
 
-  getFeatureFlag(key: string): boolean | string | undefined {
+  getFeatureFlag(key: string): FeatureFlagValue | undefined {
     const featureFlags = this.getFeatureFlags()
 
     if (!featureFlags) {
@@ -1604,7 +1605,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     })
   }
 
-  onFeatureFlag(key: string, cb: (value: string | boolean) => void): () => void {
+  onFeatureFlag(key: string, cb: (value: FeatureFlagValue) => void): () => void {
     return this.on('featureflags', async () => {
       const flagResponse = this.getFeatureFlag(key)
       if (flagResponse !== undefined) {

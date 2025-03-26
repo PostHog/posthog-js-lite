@@ -37,7 +37,7 @@ export type PostHogCoreOptions = {
   bootstrap?: {
     distinctId?: string
     isIdentifiedId?: boolean
-    featureFlags?: Record<string, boolean | string>
+    featureFlags?: Record<string, FeatureFlagValue>
     featureFlagPayloads?: Record<string, JsonType>
   }
   /** How many times we will retry HTTP requests. Defaults to 3. */
@@ -146,12 +146,17 @@ export interface PostHogRemoteConfig {
   hasFeatureFlags?: boolean
 }
 
+export type FeatureFlagValue = string | boolean
+
 export interface PostHogDecideResponse extends Omit<PostHogRemoteConfig, 'surveys' | 'hasFeatureFlags'> {
   featureFlags: {
-    [key: string]: string | boolean
+    [key: string]: FeatureFlagValue
   }
   featureFlagPayloads: {
     [key: string]: JsonType
+  }
+  flags: {
+    [key: string]: FeatureFlagDetail
   }
   errorsWhileComputingFlags: boolean
   sessionRecording?:
@@ -163,11 +168,34 @@ export interface PostHogDecideResponse extends Omit<PostHogRemoteConfig, 'survey
   requestId?: string
 }
 
-export type PostHogFlagsAndPayloadsResponse = {
-  featureFlags: PostHogDecideResponse['featureFlags']
-  featureFlagPayloads: PostHogDecideResponse['featureFlagPayloads']
-}
+export type PostHogV3DecideResponse = Omit<PostHogDecideResponse, 'flags'>
+export type PostHogV4DecideResponse = Omit<PostHogDecideResponse, 'featureFlags' | 'featureFlagPayloads'>
+export type PostHogFlagsAndPayloadsResponse = Partial<
+  Pick<PostHogDecideResponse, 'featureFlags' | 'featureFlagPayloads'>
+>
 
 export type JsonType = string | number | boolean | null | { [key: string]: JsonType } | Array<JsonType>
 
 export type FetchLike = (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
+
+export type FeatureFlagDetail = {
+  key: string
+  enabled: boolean
+  variant: string | undefined
+  reason: EvaluationReason | undefined
+  metadata: FeatureFlagMetadata | undefined
+}
+
+export type FeatureFlagMetadata = {
+  id: number | undefined
+  version: number | undefined
+  description: string | undefined
+  // Payloads in the response are always JSON encoded as a string
+  payload: string | undefined
+}
+
+export type EvaluationReason = {
+  code: string | undefined
+  condition_index: number | undefined
+  description: string | undefined
+}

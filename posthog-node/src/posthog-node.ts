@@ -12,6 +12,7 @@ import {
 } from '../../posthog-core/src'
 import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
 import { EventMessage, GroupIdentifyMessage, IdentifyMessage, PostHogNodeV1 } from './types'
+import { FeatureFlagValue } from '../../posthog-core/src/types'
 import { FeatureFlagsPoller } from './feature-flags'
 import fetch from './fetch'
 import ErrorTracking from './error-tracking'
@@ -229,7 +230,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       sendFeatureFlagEvents?: boolean
       disableGeoip?: boolean
     }
-  ): Promise<string | boolean | undefined> {
+  ): Promise<FeatureFlagValue | undefined> {
     const { groups, disableGeoip } = options || {}
     let { onlyEvaluateLocally, sendFeatureFlagEvents, personProperties, groupProperties } = options || {}
 
@@ -309,7 +310,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
   async getFeatureFlagPayload(
     key: string,
     distinctId: string,
-    matchValue?: string | boolean,
+    matchValue?: FeatureFlagValue,
     options?: {
       groups?: Record<string, string>
       personProperties?: Record<string, string>
@@ -406,9 +407,9 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       onlyEvaluateLocally?: boolean
       disableGeoip?: boolean
     }
-  ): Promise<Record<string, string | boolean>> {
+  ): Promise<Record<string, FeatureFlagValue>> {
     const response = await this.getAllFlagsAndPayloads(distinctId, options)
-    return response.featureFlags
+    return response.featureFlags || {}
   }
 
   async getAllFlagsAndPayloads(

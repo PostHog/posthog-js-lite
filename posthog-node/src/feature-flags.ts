@@ -1,5 +1,5 @@
 import { FeatureFlagCondition, FlagProperty, PostHogFeatureFlag, PropertyGroup } from './types'
-import { JsonType, PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src'
+import { FeatureFlagValue, JsonType, PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src'
 import { safeSetTimeout } from 'posthog-core/src/utils'
 import fetch from './fetch'
 import { SIXTY_SECONDS } from './posthog-node'
@@ -104,10 +104,10 @@ class FeatureFlagsPoller {
     groups: Record<string, string> = {},
     personProperties: Record<string, string> = {},
     groupProperties: Record<string, Record<string, string>> = {}
-  ): Promise<string | boolean | undefined> {
+  ): Promise<FeatureFlagValue | undefined> {
     await this.loadFeatureFlags()
 
-    let response: string | boolean | undefined = undefined
+    let response: FeatureFlagValue | undefined = undefined
     let featureFlag = undefined
 
     if (!this.loadedSuccessfullyOnce) {
@@ -137,7 +137,7 @@ class FeatureFlagsPoller {
     return response
   }
 
-  async computeFeatureFlagPayloadLocally(key: string, matchValue: string | boolean): Promise<JsonType | undefined> {
+  async computeFeatureFlagPayloadLocally(key: string, matchValue: FeatureFlagValue): Promise<JsonType | undefined> {
     await this.loadFeatureFlags()
 
     let response = undefined
@@ -170,13 +170,13 @@ class FeatureFlagsPoller {
     personProperties: Record<string, string> = {},
     groupProperties: Record<string, Record<string, string>> = {}
   ): Promise<{
-    response: Record<string, string | boolean>
+    response: Record<string, FeatureFlagValue>
     payloads: Record<string, JsonType>
     fallbackToDecide: boolean
   }> {
     await this.loadFeatureFlags()
 
-    const response: Record<string, string | boolean> = {}
+    const response: Record<string, FeatureFlagValue> = {}
     const payloads: Record<string, JsonType> = {}
     let fallbackToDecide = this.featureFlags.length == 0
 
@@ -209,7 +209,7 @@ class FeatureFlagsPoller {
     groups: Record<string, string> = {},
     personProperties: Record<string, string> = {},
     groupProperties: Record<string, Record<string, string>> = {}
-  ): Promise<string | boolean> {
+  ): Promise<FeatureFlagValue> {
     if (flag.ensure_experience_continuity) {
       throw new InconclusiveMatchError('Flag has experience continuity enabled')
     }
@@ -251,7 +251,7 @@ class FeatureFlagsPoller {
     flag: PostHogFeatureFlag,
     distinctId: string,
     properties: Record<string, string>
-  ): Promise<string | boolean> {
+  ): Promise<FeatureFlagValue> {
     const flagFilters = flag.filters || {}
     const flagConditions = flagFilters.groups || []
     let isInconclusive = false
@@ -343,7 +343,7 @@ class FeatureFlagsPoller {
     return true
   }
 
-  async getMatchingVariant(flag: PostHogFeatureFlag, distinctId: string): Promise<string | boolean | undefined> {
+  async getMatchingVariant(flag: PostHogFeatureFlag, distinctId: string): Promise<FeatureFlagValue | undefined> {
     const hashValue = await _hash(flag.key, distinctId, 'variant')
     const matchingVariant = this.variantLookupTable(flag).find((variant) => {
       return hashValue >= variant.valueMin && hashValue < variant.valueMax
