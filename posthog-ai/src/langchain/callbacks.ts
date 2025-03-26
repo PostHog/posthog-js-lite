@@ -82,7 +82,6 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     parentRunId?: string,
     tags?: string[],
     metadata?: Record<string, unknown>,
-
     runType?: string,
     runName?: string
   ): void {
@@ -432,9 +431,17 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
       eventProperties['$ai_is_error'] = true
     } else {
       // Handle token usage
-      const [inputTokens, outputTokens] = this.parseUsage(output)
+      const [inputTokens, outputTokens, additionalTokenData] = this.parseUsage(output)
       eventProperties['$ai_input_tokens'] = inputTokens
       eventProperties['$ai_output_tokens'] = outputTokens
+
+      // Add additional token data to properties
+      if (additionalTokenData.cacheReadInputTokens) {
+        eventProperties['$ai_cache_read_tokens'] = additionalTokenData.cacheReadInputTokens
+      }
+      if (additionalTokenData.reasoningTokens) {
+        eventProperties['$ai_reasoning_tokens'] = additionalTokenData.reasoningTokens
+      }
 
       // Handle generations/completions
       let completions
@@ -471,14 +478,17 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     }
   }
 
-  private _getLangchainRunName(serialized: any, ...args: any[]): string | undefined {
+  private _getLangchainRunName(serialized: any, ...args: any): string | undefined {
     if (args && args.length > 0) {
       for (const arg of args) {
         if (arg && typeof arg === 'object' && 'name' in arg) {
           return arg.name
+        } else if (arg && typeof arg === 'object' && 'runName' in arg) {
+          return arg.runName
         }
       }
     }
+
     if (serialized && serialized.name) {
       return serialized.name
     }
@@ -520,7 +530,7 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     return messageDict
   }
 
-  private _parseUsageModel(usage: any): [number, number] {
+  private _parseUsageModel(usage: any): [number, number, Record<string, any>] {
     const conversionList: Array<[string, 'input' | 'output']> = [
       ['promptTokens', 'input'],
       ['completionTokens', 'output'],
@@ -548,11 +558,32 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
       { input: 0, output: 0 }
     )
 
-    return [parsedUsage.input, parsedUsage.output]
+    // Extract additional token details like cached tokens and reasoning tokens
+    const additionalTokenData: Record<string, any> = {}
+
+    // Check for cached tokens in various formats
+    if (usage.prompt_tokens_details?.cached_tokens != null) {
+      additionalTokenData.cacheReadInputTokens = usage.prompt_tokens_details.cached_tokens
+    } else if (usage.input_token_details?.cache_read != null) {
+      additionalTokenData.cacheReadInputTokens = usage.input_token_details.cache_read
+    } else if (usage.cachedPromptTokens != null) {
+      additionalTokenData.cacheReadInputTokens = usage.cachedPromptTokens
+    }
+
+    // Check for reasoning tokens in various formats
+    if (usage.completion_tokens_details?.reasoning_tokens != null) {
+      additionalTokenData.reasoningTokens = usage.completion_tokens_details.reasoning_tokens
+    } else if (usage.output_token_details?.reasoning != null) {
+      additionalTokenData.reasoningTokens = usage.output_token_details.reasoning
+    } else if (usage.reasoningTokens != null) {
+      additionalTokenData.reasoningTokens = usage.reasoningTokens
+    }
+
+    return [parsedUsage.input, parsedUsage.output, additionalTokenData]
   }
 
-  private parseUsage(response: LLMResult): [number, number] {
-    let llmUsage: [number, number] = [0, 0]
+  private parseUsage(response: LLMResult): [number, number, Record<string, any>] {
+    let llmUsage: [number, number, Record<string, any>] = [0, 0, {}]
     const llmUsageKeys = ['token_usage', 'usage', 'tokenUsage']
 
     if (response.llmOutput != null) {
@@ -566,6 +597,7 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     if (llmUsage[0] === 0 && llmUsage[1] === 0 && response.generations) {
       for (const generation of response.generations) {
         for (const genChunk of generation) {
+          // Check other paths for usage information
           if (genChunk.generationInfo?.usage_metadata) {
             llmUsage = this._parseUsageModel(genChunk.generationInfo.usage_metadata)
             return llmUsage

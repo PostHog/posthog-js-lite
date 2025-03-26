@@ -167,7 +167,7 @@ export const sendEventToPosthog = ({
       }
     }
 
-    let additionalTokenValues = {
+    const additionalTokenValues = {
       ...(usage.reasoningTokens ? { $ai_reasoning_tokens: usage.reasoningTokens } : {}),
       ...(usage.cacheReadInputTokens ? { $ai_cache_read_input_tokens: usage.cacheReadInputTokens } : {}),
       ...(usage.cacheCreationInputTokens ? { $ai_cache_creation_input_tokens: usage.cacheCreationInputTokens } : {}),
