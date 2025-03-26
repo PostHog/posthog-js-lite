@@ -1,13 +1,13 @@
 import { FetchLike } from './types'
 
 export function assert(truthyValue: any, message: string): void {
-  if (!truthyValue || isEmpty(truthyValue)) {
+  if (!truthyValue || typeof truthyValue !== 'string' || isEmpty(truthyValue)) {
     throw new Error(message)
   }
 }
 
-function isEmpty(truthyValue: any): boolean {
-  if (typeof truthyValue === 'string' && truthyValue.trim().length === 0) {
+function isEmpty(truthyValue: string): boolean {
+  if (truthyValue.trim().length === 0) {
     return true
   }
   return false
