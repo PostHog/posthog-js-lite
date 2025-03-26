@@ -20,6 +20,12 @@ describe('PostHog Core', () => {
       )
     })
 
+    it('should throw if empty api key', () => {
+      expect(() => createTestClient('   ')).toThrowError(
+        "You must pass your PostHog project's api key."
+      )
+    })
+
     it('should initialise default options', () => {
       expect(posthog as any).toMatchObject({
         apiKey: 'TEST_API_KEY',
