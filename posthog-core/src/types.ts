@@ -170,9 +170,28 @@ export interface PostHogDecideResponse extends Omit<PostHogRemoteConfig, 'survey
   requestId?: string
 }
 
-export type PostHogFeatureFlagDetails = Pick<PostHogV4DecideResponse, 'flags' | 'requestId'>
+/**
+ * These are the fields we care about from PostHogDecideResponse for feature flags.
+ */
+export type PostHogFeatureFlagDetails = Pick<PostHogDecideResponse, 'flags' | 'featureFlags' | 'featureFlagPayloads' | 'requestId'>
+
+/**
+ * Models the response from the v3 `/decide` endpoint.
+ */
 export type PostHogV3DecideResponse = Omit<PostHogDecideResponse, 'flags'>
 export type PostHogV4DecideResponse = Omit<PostHogDecideResponse, 'featureFlags' | 'featureFlagPayloads'>
+
+/**
+ * The format of the flags object in persisted storage
+ *
+ * When we pull flags from persistence, we can normalize them to PostHogFeatureFlagDetails
+ * so that we can support v3 and v4 of the API.
+ */
+export type PostHogFlagsStorageFormat = Pick<PostHogFeatureFlagDetails, 'flags'>
+
+/**
+ * Models legacy flags and payloads return type for many public methods.
+ */
 export type PostHogFlagsAndPayloadsResponse = Partial<
   Pick<PostHogDecideResponse, 'featureFlags' | 'featureFlagPayloads'>
 >

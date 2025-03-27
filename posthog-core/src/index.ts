@@ -14,6 +14,8 @@ import {
   PostHogV4DecideResponse,
   PostHogV3DecideResponse,
   PostHogFeatureFlagDetails,
+  PostHogFlagsStorageFormat,
+  FeatureFlagDetail,
 } from './types'
 import {
   createDecideResponseFromFlagsAndPayloads,
@@ -21,6 +23,7 @@ import {
   getPayloadsFromFlags,
   normalizeDecideResponse,
   parsePayload,
+  updateFlagValue,
 } from './featureFlagUtils'
 import {
   assert,
@@ -1433,19 +1436,19 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   }
 
   // We only store the flags and request id in the feature flag details storage key
-  private setKnownFeatureFlagDetails(decideResponse: PostHogFeatureFlagDetails | null): void {
+  private setKnownFeatureFlagDetails(decideResponse: PostHogFlagsStorageFormat | null): void {
     this.wrap(() => {
-      this.setPersistedProperty<PostHogFeatureFlagDetails>(
+      this.setPersistedProperty<PostHogFlagsStorageFormat>(
         PostHogPersistedProperty.FeatureFlagDetails,
-        decideResponse as PostHogFeatureFlagDetails | null
+        decideResponse
       )
 
       this._events.emit('featureflags', getFlagValuesFromFlags(decideResponse?.flags ?? {}))
     })
   }
 
-  private getKnownFeatureFlagDetails(): PostHogDecideResponse | undefined {
-    const storedDetails = this.getPersistedProperty<PostHogFeatureFlagDetails>(
+  private getKnownFeatureFlagDetails(): PostHogFeatureFlagDetails | undefined {
+    const storedDetails = this.getPersistedProperty<PostHogFlagsStorageFormat>(
       PostHogPersistedProperty.FeatureFlagDetails
     )
     if (!storedDetails) {
@@ -1463,7 +1466,8 @@ export abstract class PostHogCore extends PostHogCoreStateless {
 
       return createDecideResponseFromFlagsAndPayloads(featureFlags ?? {}, featureFlagPayloads ?? {})
     }
-    return storedDetails as PostHogDecideResponse
+
+    return normalizeDecideResponse(storedDetails as PostHogV3DecideResponse | PostHogV4DecideResponse) as PostHogFeatureFlagDetails
   }
 
   private getKnownFeatureFlags(): PostHogDecideResponse['featureFlags'] | undefined {
@@ -1593,6 +1597,36 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     }
 
     return flags
+  }
+
+  getFeatureFlagDetails(): PostHogFeatureFlagDetails | undefined {
+    // NOTE: We don't check for _initPromise here as the function is designed to be
+    // callable before the state being loaded anyways
+    let details = this.getKnownFeatureFlagDetails()
+    const overriddenFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
+      PostHogPersistedProperty.OverrideFeatureFlags
+    )
+
+    if (!overriddenFlags) {
+      return details
+    }
+
+    details = details ?? { featureFlags: {}, featureFlagPayloads: {}, flags: {} }
+
+    const flags: Record<string, FeatureFlagDetail> = details.flags ?? {}
+
+    for (const key in overriddenFlags) {
+      if (!overriddenFlags[key]) {
+        delete flags[key]
+      } else {
+        flags[key] = updateFlagValue(flags[key], overriddenFlags[key])
+      }
+    }
+
+    return {
+      ...details,
+      flags,
+    }
   }
 
   getFeatureFlagsAndPayloads(): {
