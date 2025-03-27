@@ -901,11 +901,14 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     }
 
     const bootstrapfeatureFlags = bootstrap.featureFlags
+    const bootstrapfeatureFlagPayloads = bootstrap.featureFlagPayloads ?? {}
     if (bootstrapfeatureFlags && Object.keys(bootstrapfeatureFlags).length) {
-      const bootstrapFlags = Object.keys(bootstrapfeatureFlags)
-        .filter((flag) => !!bootstrapfeatureFlags[flag])
+      // If a bootstrapped payload is not in the feature flags, we treat it as true feature flag.
+      const allKeys = [...new Set([...Object.keys(bootstrapfeatureFlags), ...Object.keys(bootstrapfeatureFlagPayloads ?? {})])]
+      const bootstrapFlags = allKeys
+        .filter((flag) => !!bootstrapfeatureFlags[flag] || !!bootstrapfeatureFlagPayloads[flag])
         .reduce(
-          (res: Record<string, FeatureFlagValue>, key) => ((res[key] = bootstrapfeatureFlags[key] || false), res),
+          (res: Record<string, FeatureFlagValue>, key) => ((res[key] = bootstrapfeatureFlags[key] ?? true), res),
           {}
         )
 

@@ -97,6 +97,18 @@ describe('PostHog Core', () => {
       expect(flags).toEqual(createMockFeatureFlags())
     })
 
+    it('should emit featureflags event when flags are loaded', async () => {
+      const receivedFlags: any[] = []
+      const unsubscribe = posthog.onFeatureFlags((flags) => {
+        receivedFlags.push(flags)
+      })
+
+      await posthog.reloadFeatureFlagsAsync()
+      unsubscribe()
+
+      expect(receivedFlags).toEqual([createMockFeatureFlags()])
+    })
+
     describe('when loaded', () => {
       beforeEach(() => {
         // The core doesn't reload flags by default (this is handled differently by web and RN)
@@ -612,6 +624,9 @@ describe('PostHog Core', () => {
                 color: 'feature-1-bootstrap-color',
               },
               enabled: 200,
+              'not-in-featureFlags': {
+                color: {'foo': 'bar'},
+              },
             },
           },
         },
@@ -639,6 +654,7 @@ describe('PostHog Core', () => {
         'bootstrap-1': 'variant-1',
         enabled: true,
         'feature-1': 'feature-1-bootstrap-value',
+        'not-in-featureFlags': true,
       })
       expect(posthog.getDistinctId()).toEqual('tomato')
       expect(posthog.getAnonymousId()).toEqual('tomato')
@@ -649,6 +665,7 @@ describe('PostHog Core', () => {
       expect(posthog.getFeatureFlag('bootstrap-1')).toEqual('variant-1')
       expect(posthog.getFeatureFlag('enabled')).toEqual(true)
       expect(posthog.getFeatureFlag('disabled')).toEqual(false)
+      expect(posthog.getFeatureFlag('not-in-featureFlags')).toEqual(true)
     })
 
     it('getFeatureFlag should capture $feature_flag_called with bootstrapped values', async () => {
@@ -681,6 +698,7 @@ describe('PostHog Core', () => {
       expect(posthog.isFeatureEnabled('bootstrap-1')).toEqual(true)
       expect(posthog.isFeatureEnabled('enabled')).toEqual(true)
       expect(posthog.isFeatureEnabled('disabled')).toEqual(false)
+      expect(posthog.isFeatureEnabled('not-in-featureFlags')).toEqual(true)
     })
 
     it('getFeatureFlagPayload should return bootstrapped payloads', () => {
@@ -689,6 +707,9 @@ describe('PostHog Core', () => {
         some: 'key',
       })
       expect(posthog.getFeatureFlagPayload('enabled')).toEqual(200)
+      expect(posthog.getFeatureFlagPayload('not-in-featureFlags')).toEqual({
+        color: {'foo': 'bar'},
+      })
     })
 
     describe('when loaded', () => {
