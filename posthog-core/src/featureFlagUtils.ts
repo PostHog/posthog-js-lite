@@ -6,11 +6,13 @@ import {
   PostHogV3DecideResponse,
   PostHogV4DecideResponse,
   PostHogFlagsAndPayloadsResponse,
+  PartialWithRequired,
+  PostHogFeatureFlagsResponse,
 } from './types'
 
 export const normalizeDecideResponse = (
-  decideResponse: PostHogV3DecideResponse | PostHogV4DecideResponse
-): PostHogDecideResponse => {
+  decideResponse: PartialWithRequired<PostHogV4DecideResponse, 'flags'> | PartialWithRequired<PostHogV3DecideResponse, 'featureFlags' | 'featureFlagPayloads'>
+): PostHogFeatureFlagsResponse => {
   if ('flags' in decideResponse) {
     // Convert v4 format to v3 format
     const featureFlags = getFlagValuesFromFlags(decideResponse.flags)
@@ -106,7 +108,7 @@ export const getPayloadsFromFlags = (
  * @returns The flag details
  */
 export const getFlagDetailsFromFlagsAndPayloads = (
-  decideResponse: PostHogDecideResponse
+  decideResponse: PostHogFeatureFlagsResponse
 ): PostHogDecideResponse['flags'] => {
   const flags = decideResponse.featureFlags ?? {}
   const payloads = decideResponse.featureFlagPayloads ?? {}
@@ -115,8 +117,8 @@ export const getFlagDetailsFromFlagsAndPayloads = (
       key,
       {
         key: key,
-        enabled: getEnabledFromValue(value),
-        variant: getVariantFromValue(value),
+        enabled: typeof value === 'string' ? true : value,
+        variant: typeof value === 'string' ? value : undefined,
         reason: undefined,
         metadata: {
           id: undefined,
@@ -158,7 +160,7 @@ export const parsePayload = (response: any): any => {
 export const createDecideResponseFromFlagsAndPayloads = (
   featureFlags: PostHogV3DecideResponse['featureFlags'],
   featureFlagPayloads: PostHogV3DecideResponse['featureFlagPayloads']
-): PostHogDecideResponse => {
+): PostHogFeatureFlagsResponse => {
   // If a feature flag payload key is not in the feature flags, we treat it as true feature flag.
   const allKeys = [...new Set([...Object.keys(featureFlags ?? {}), ...Object.keys(featureFlagPayloads ?? {})])]
   const enabledFlags = allKeys

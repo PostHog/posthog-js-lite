@@ -667,7 +667,10 @@ describe('PostHog Feature Flags v4', () => {
           'feature-2': false,
           'feature-variant': 'control',
         })
-        expect(posthog.getFeatureFlags()).toEqual({
+
+        const received = posthog.getFeatureFlags();
+
+        expect(received).toEqual({
           'json-payload': true,
           'feature-1': true,
           'feature-variant': 'control',

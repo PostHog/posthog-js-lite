@@ -376,7 +376,7 @@ export abstract class PostHogCoreStateless {
       .catch((error) => {
         this._events.emit('error', error)
         return undefined
-      })
+      }) as Promise<PostHogDecideResponse | undefined>
   }
 
   protected async getFeatureFlagStateless(
@@ -1569,34 +1569,13 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   }
 
   getFeatureFlagPayloads(): PostHogDecideResponse['featureFlagPayloads'] | undefined {
-    const payloads = this.getKnownFeatureFlagPayloads()
-
-    return payloads
+    return this.getFeatureFlagDetails()?.featureFlagPayloads
   }
 
   getFeatureFlags(): PostHogDecideResponse['featureFlags'] | undefined {
     // NOTE: We don't check for _initPromise here as the function is designed to be
     // callable before the state being loaded anyways
-    let flags = this.getKnownFeatureFlags()
-    const overriddenFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
-      PostHogPersistedProperty.OverrideFeatureFlags
-    )
-
-    if (!overriddenFlags) {
-      return flags
-    }
-
-    flags = flags || {}
-
-    for (const key in overriddenFlags) {
-      if (!overriddenFlags[key]) {
-        delete flags[key]
-      } else {
-        flags[key] = overriddenFlags[key]
-      }
-    }
-
-    return flags
+    return this.getFeatureFlagDetails()?.featureFlags
   }
 
   getFeatureFlagDetails(): PostHogFeatureFlagDetails | undefined {
@@ -1623,10 +1602,12 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       }
     }
 
-    return {
+    const result = {
       ...details,
       flags,
     }
+
+    return normalizeDecideResponse(result) as PostHogFeatureFlagDetails
   }
 
   getFeatureFlagsAndPayloads(): {
