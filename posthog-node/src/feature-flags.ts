@@ -1,9 +1,9 @@
-import { createHash } from 'node:crypto'
 import { FeatureFlagCondition, FlagProperty, PostHogFeatureFlag, PropertyGroup } from './types'
 import { JsonType, PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src'
 import { safeSetTimeout } from 'posthog-core/src/utils'
 import fetch from './fetch'
 import { SIXTY_SECONDS } from './posthog-node'
+import { hashSHA1 } from './crypto'
 
 // eslint-disable-next-line
 const LONG_SCALE = 0xfffffffffffffff
@@ -123,7 +123,7 @@ class FeatureFlagsPoller {
 
     if (featureFlag !== undefined) {
       try {
-        response = this.computeFlagLocally(featureFlag, distinctId, groups, personProperties, groupProperties)
+        response = await this.computeFlagLocally(featureFlag, distinctId, groups, personProperties, groupProperties)
         this.logMsgIfDebug(() => console.debug(`Successfully computed flag locally: ${key} -> ${response}`))
       } catch (e) {
         if (e instanceof InconclusiveMatchError) {
@@ -180,34 +180,36 @@ class FeatureFlagsPoller {
     const payloads: Record<string, JsonType> = {}
     let fallbackToDecide = this.featureFlags.length == 0
 
-    this.featureFlags.map(async (flag) => {
-      try {
-        const matchValue = this.computeFlagLocally(flag, distinctId, groups, personProperties, groupProperties)
-        response[flag.key] = matchValue
-        const matchPayload = await this.computeFeatureFlagPayloadLocally(flag.key, matchValue)
-        if (matchPayload) {
-          payloads[flag.key] = matchPayload
+    await Promise.all(
+      this.featureFlags.map(async (flag) => {
+        try {
+          const matchValue = await this.computeFlagLocally(flag, distinctId, groups, personProperties, groupProperties)
+          response[flag.key] = matchValue
+          const matchPayload = await this.computeFeatureFlagPayloadLocally(flag.key, matchValue)
+          if (matchPayload) {
+            payloads[flag.key] = matchPayload
+          }
+        } catch (e) {
+          if (e instanceof InconclusiveMatchError) {
+            // do nothing
+          } else if (e instanceof Error) {
+            this.onError?.(new Error(`Error computing flag locally: ${flag.key}: ${e}`))
+          }
+          fallbackToDecide = true
         }
-      } catch (e) {
-        if (e instanceof InconclusiveMatchError) {
-          // do nothing
-        } else if (e instanceof Error) {
-          this.onError?.(new Error(`Error computing flag locally: ${flag.key}: ${e}`))
-        }
-        fallbackToDecide = true
-      }
-    })
+      })
+    )
 
     return { response, payloads, fallbackToDecide }
   }
 
-  computeFlagLocally(
+  async computeFlagLocally(
     flag: PostHogFeatureFlag,
     distinctId: string,
     groups: Record<string, string> = {},
     personProperties: Record<string, string> = {},
     groupProperties: Record<string, Record<string, string>> = {}
-  ): string | boolean {
+  ): Promise<string | boolean> {
     if (flag.ensure_experience_continuity) {
       throw new InconclusiveMatchError('Flag has experience continuity enabled')
     }
@@ -239,17 +241,17 @@ class FeatureFlagsPoller {
       }
 
       const focusedGroupProperties = groupProperties[groupName]
-      return this.matchFeatureFlagProperties(flag, groups[groupName], focusedGroupProperties)
+      return await this.matchFeatureFlagProperties(flag, groups[groupName], focusedGroupProperties)
     } else {
-      return this.matchFeatureFlagProperties(flag, distinctId, personProperties)
+      return await this.matchFeatureFlagProperties(flag, distinctId, personProperties)
     }
   }
 
-  matchFeatureFlagProperties(
+  async matchFeatureFlagProperties(
     flag: PostHogFeatureFlag,
     distinctId: string,
     properties: Record<string, string>
-  ): string | boolean {
+  ): Promise<string | boolean> {
     const flagFilters = flag.filters || {}
     const flagConditions = flagFilters.groups || []
     let isInconclusive = false
@@ -274,13 +276,13 @@ class FeatureFlagsPoller {
 
     for (const condition of sortedFlagConditions) {
       try {
-        if (this.isConditionMatch(flag, distinctId, condition, properties)) {
+        if (await this.isConditionMatch(flag, distinctId, condition, properties)) {
           const variantOverride = condition.variant
           const flagVariants = flagFilters.multivariate?.variants || []
           if (variantOverride && flagVariants.some((variant) => variant.key === variantOverride)) {
             result = variantOverride
           } else {
-            result = this.getMatchingVariant(flag, distinctId) || true
+            result = (await this.getMatchingVariant(flag, distinctId)) || true
           }
           break
         }
@@ -303,12 +305,12 @@ class FeatureFlagsPoller {
     return false
   }
 
-  isConditionMatch(
+  async isConditionMatch(
     flag: PostHogFeatureFlag,
     distinctId: string,
     condition: FeatureFlagCondition,
     properties: Record<string, string>
-  ): boolean {
+  ): Promise<boolean> {
     const rolloutPercentage = condition.rollout_percentage
     const warnFunction = (msg: string): void => {
       this.logMsgIfDebug(() => console.warn(msg))
@@ -334,15 +336,15 @@ class FeatureFlagsPoller {
       }
     }
 
-    if (rolloutPercentage != undefined && _hash(flag.key, distinctId) > rolloutPercentage / 100.0) {
+    if (rolloutPercentage != undefined && (await _hash(flag.key, distinctId)) > rolloutPercentage / 100.0) {
       return false
     }
 
     return true
   }
 
-  getMatchingVariant(flag: PostHogFeatureFlag, distinctId: string): string | boolean | undefined {
-    const hashValue = _hash(flag.key, distinctId, 'variant')
+  async getMatchingVariant(flag: PostHogFeatureFlag, distinctId: string): Promise<string | boolean | undefined> {
+    const hashValue = await _hash(flag.key, distinctId, 'variant')
     const matchingVariant = this.variantLookupTable(flag).find((variant) => {
       return hashValue >= variant.valueMin && hashValue < variant.valueMax
     })
@@ -550,10 +552,9 @@ class FeatureFlagsPoller {
 // # Given the same distinct_id and key, it'll always return the same float. These floats are
 // # uniformly distributed between 0 and 1, so if we want to show this feature to 20% of traffic
 // # we can do _hash(key, distinct_id) < 0.2
-function _hash(key: string, distinctId: string, salt: string = ''): number {
-  const sha1Hash = createHash('sha1')
-  sha1Hash.update(`${key}.${distinctId}${salt}`)
-  return parseInt(sha1Hash.digest('hex').slice(0, 15), 16) / LONG_SCALE
+async function _hash(key: string, distinctId: string, salt: string = ''): Promise<number> {
+  const hashString = await hashSHA1(`${key}.${distinctId}${salt}`)
+  return parseInt(hashString.slice(0, 15), 16) / LONG_SCALE
 }
 
 function matchProperty(

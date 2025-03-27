@@ -173,7 +173,9 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
             additionalProperties[`$feature/${feature}`] = variant
           }
         }
-        const activeFlags = Object.keys(flags || {}).filter((flag) => flags?.[flag] !== false)
+        const activeFlags = Object.keys(flags || {})
+          .filter((flag) => flags?.[flag] !== false)
+          .sort()
         if (activeFlags.length > 0) {
           additionalProperties['$active_feature_flags'] = activeFlags
         }
