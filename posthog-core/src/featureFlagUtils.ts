@@ -23,7 +23,8 @@ export const normalizeDecideResponse = (
   } else {
     // Convert v3 format to v4 format
     const featureFlags = decideResponse.featureFlags ?? {}
-    const featureFlagPayloads = decideResponse.featureFlagPayloads ?? {}
+    const featureFlagPayloads = Object.fromEntries(Object.entries(decideResponse.featureFlagPayloads || {}).map(([k, v]) => [k, parsePayload(v)]))
+
     const flags = Object.fromEntries(
       Object.entries(featureFlags).map(([key, value]) => [
         key,

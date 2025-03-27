@@ -11,7 +11,10 @@ import {
   JsonType,
   PostHogRemoteConfig,
   FeatureFlagValue,
+  PostHogV4DecideResponse,
+  PostHogV3DecideResponse,
 } from './types'
+import { normalizeDecideResponse, parsePayload } from './featureFlagUtils'
 import {
   assert,
   currentISOTime,
@@ -358,7 +361,8 @@ export abstract class PostHogCoreStateless {
     }
     // Don't retry /decide API calls
     return this.fetchWithRetry(url, fetchOptions, { retryCount: 0 }, this.featureFlagsRequestTimeoutMs)
-      .then((response) => response.json() as Promise<PostHogDecideResponse>)
+      .then((response) => response.json() as Promise<PostHogV3DecideResponse | PostHogV4DecideResponse>)
+      .then((response) => normalizeDecideResponse(response))
       .catch((error) => {
         this._events.emit('error', error)
         return undefined
@@ -468,14 +472,6 @@ export abstract class PostHogCoreStateless {
     return payloads
   }
 
-  protected _parsePayload(response: any): any {
-    try {
-      return JSON.parse(response)
-    } catch {
-      return response
-    }
-  }
-
   protected async getFeatureFlagsStateless(
     distinctId: string,
     groups: Record<string, string | number> = {},
@@ -548,7 +544,7 @@ export abstract class PostHogCoreStateless {
     let parsedPayloads = payloads
 
     if (payloads) {
-      parsedPayloads = Object.fromEntries(Object.entries(payloads).map(([k, v]) => [k, this._parsePayload(v)]))
+      parsedPayloads = Object.fromEntries(Object.entries(payloads).map(([k, v]) => [k, parsePayload(v)]))
     }
 
     return {
@@ -1432,10 +1428,9 @@ export abstract class PostHogCore extends PostHogCoreStateless {
             newFeatureFlags = { ...currentFlags, ...res.featureFlags }
             newFeatureFlagPayloads = { ...currentFlagPayloads, ...res.featureFlagPayloads }
           }
+          
           this.setKnownFeatureFlags(newFeatureFlags)
-          this.setKnownFeatureFlagPayloads(
-            Object.fromEntries(Object.entries(newFeatureFlagPayloads || {}).map(([k, v]) => [k, this._parsePayload(v)]))
-          )
+          this.setKnownFeatureFlagPayloads(newFeatureFlagPayloads)
           // Mark that we hit the /decide endpoint so we can capture this in the $feature_flag_called event
           this.setPersistedProperty(PostHogPersistedProperty.DecideEndpointWasHit, true)
 

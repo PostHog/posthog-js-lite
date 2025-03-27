@@ -1,28 +1,88 @@
-import { PostHogPersistedProperty } from '../src'
+import { PostHogDecideResponse, PostHogPersistedProperty, PostHogV4DecideResponse } from '../src'
+import { normalizeDecideResponse } from '../src/featureFlagUtils'
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
 import { parseBody, waitForPromises } from './test-utils/test-utils'
 
-describe('PostHog Core', () => {
+describe('PostHog Feature Flags v4', () => {
   let posthog: PostHogCoreTestClient
   let mocks: PostHogCoreTestClientMocks
 
   jest.useFakeTimers()
   jest.setSystemTime(new Date('2022-01-01'))
 
-  const createMockFeatureFlags = (): any => ({
+  const createMockFeatureFlags = (): Partial<PostHogV4DecideResponse['flags']> => ({
+    'feature-1': {
+      key: 'feature-1',
+      enabled: true,
+      variant: undefined,
+      reason: {
+        code: 'matched_condition',
+        description: 'matched condition set 1',
+        condition_index: 0,
+      },
+      metadata: {
+        id: 1,
+        version: 1,
+        description: 'feature-1',
+        payload: '{"color":"blue"}',
+      },
+    },
+    'feature-2': {
+      key: 'feature-2',
+      enabled: true,
+      variant: undefined,
+      reason: {
+        code: 'matched_condition',
+        description: 'matched condition set 2',
+        condition_index: 0,
+      },
+      metadata: {
+        id: 2,
+        version: 1,
+        description: 'feature-2',
+        payload: undefined,
+      },
+    },
+    'feature-variant': {
+      key: 'feature-variant',
+      enabled: true,
+      variant: 'variant',
+      reason: {
+        code: 'matched_condition',
+        description: 'matched condition set 3',
+        condition_index: 0,
+      },
+      metadata: {
+        id: 3,
+        version: 1,
+        description: 'feature-variant',
+        payload: '[5]',
+      },
+    },
+    'json-payload': {
+      key: 'json-payload',
+      enabled: true,
+      variant: undefined,
+      reason: {
+        code: 'matched_condition',
+        description: 'matched condition set 4',
+        condition_index: 0,
+      },
+      metadata: {
+        id: 4,
+        version: 1,
+        description: 'json-payload',
+        payload: '{"a":"payload"}',
+      },
+    },
+  })
+
+  const expectedFeatureFlagResponses = {
     'feature-1': true,
     'feature-2': true,
     'feature-variant': 'variant',
     'json-payload': true,
-  })
-
-  const createMockFeatureFlagPayloads = (): any => ({
-    'feature-1': JSON.stringify({
-      color: 'blue',
-    }),
-    'feature-variant': JSON.stringify([5]),
-    'json-payload': '{"a":"payload"}',
-  })
+  }
 
   const errorAPIResponse = Promise.resolve({
     status: 400,
@@ -42,8 +102,7 @@ describe('PostHog Core', () => {
             text: () => Promise.resolve('ok'),
             json: () =>
               Promise.resolve({
-                featureFlags: createMockFeatureFlags(),
-                featureFlagPayloads: createMockFeatureFlagPayloads(),
+                flags: createMockFeatureFlags(),
               }),
           })
         }
@@ -84,8 +143,10 @@ describe('PostHog Core', () => {
     })
 
     it('should load persisted feature flags', () => {
-      posthog.setPersistedProperty(PostHogPersistedProperty.FeatureFlags, createMockFeatureFlags())
-      expect(posthog.getFeatureFlags()).toEqual(createMockFeatureFlags())
+      const decideResponse = { flags: createMockFeatureFlags() } as PostHogDecideResponse
+      const featureFlagResponses = normalizeDecideResponse(decideResponse).featureFlags
+      posthog.setPersistedProperty(PostHogPersistedProperty.FeatureFlags, featureFlagResponses)
+      expect(posthog.getFeatureFlags()).toEqual(expectedFeatureFlagResponses)
     })
 
     it('should only call fetch once if already calling', async () => {
@@ -94,7 +155,7 @@ describe('PostHog Core', () => {
       posthog.reloadFeatureFlagsAsync()
       const flags = await posthog.reloadFeatureFlagsAsync()
       expect(mocks.fetch).toHaveBeenCalledTimes(1)
-      expect(flags).toEqual(createMockFeatureFlags())
+      expect(flags).toEqual(expectedFeatureFlagResponses)
     })
 
     it('should emit featureflags event when flags are loaded', async () => {
@@ -106,7 +167,7 @@ describe('PostHog Core', () => {
       await posthog.reloadFeatureFlagsAsync()
       unsubscribe()
 
-      expect(receivedFlags).toEqual([createMockFeatureFlags()])
+      expect(receivedFlags).toEqual([expectedFeatureFlagResponses])
     })
 
     describe('when loaded', () => {
@@ -121,13 +182,12 @@ describe('PostHog Core', () => {
         expect(posthog.getFeatureFlag('feature-missing')).toEqual(false)
       })
 
-      it('should return payload of matched flags only', async () => {
-        expect(posthog.getFeatureFlagPayload('feature-variant')).toEqual([5])
-        expect(posthog.getFeatureFlagPayload('feature-1')).toEqual({
-          color: 'blue',
-        })
-
-        expect(posthog.getFeatureFlagPayload('feature-2')).toEqual(null)
+      it.each([
+        ['feature-variant', [5]],
+        ['feature-1', { color: 'blue' }],
+        ['feature-2', null],
+      ])('should return correct payload for flag %s', (flagKey, expectedPayload) => {
+        expect(posthog.getFeatureFlagPayload(flagKey)).toEqual(expectedPayload)
       })
 
       describe('when errored out', () => {
@@ -194,7 +254,7 @@ describe('PostHog Core', () => {
                     text: () => Promise.resolve('ok'),
                     json: () =>
                       Promise.resolve({
-                        featureFlags: createMockFeatureFlags(),
+                        flags: createMockFeatureFlags(),
                       }),
                   })
                 }
@@ -207,7 +267,40 @@ describe('PostHog Core', () => {
                     text: () => Promise.resolve('ok'),
                     json: () =>
                       Promise.resolve({
-                        featureFlags: { 'x-flag': 'x-value', 'feature-1': false },
+                        flags: {
+                          'x-flag': {
+                            key: 'x-flag',
+                            enabled: true,
+                            variant: 'x-value',
+                            reason: {
+                              code: 'matched_condition',
+                              description: 'matched condition set 5',
+                              condition_index: 0,
+                            },
+                            metadata: {
+                              id: 5,
+                              version: 1,
+                              description: 'x-flag',
+                              payload: '{"x":"value"}',
+                            },
+                          },
+                          'feature-1': {
+                            key: 'feature-1',
+                            enabled: false,
+                            variant: undefined,
+                            reason: {
+                              code: 'matched_condition',
+                              description: 'matched condition set 6',
+                              condition_index: 0,
+                            },
+                            metadata: {
+                              id: 6,
+                              version: 1,
+                              description: 'feature-1',
+                              payload: '{"color":"blue"}',
+                            },
+                          },
+                        },
                         errorsWhileComputingFlags: true,
                       }),
                   })
@@ -299,7 +392,7 @@ describe('PostHog Core', () => {
                     text: () => Promise.resolve('ok'),
                     json: () =>
                       Promise.resolve({
-                        featureFlags: createMockFeatureFlags(),
+                        flags: createMockFeatureFlags(),
                       }),
                   })
                 }
@@ -312,7 +405,40 @@ describe('PostHog Core', () => {
                     text: () => Promise.resolve('ok'),
                     json: () =>
                       Promise.resolve({
-                        featureFlags: { 'x-flag': 'x-value', 'feature-1': false },
+                        flags: {
+                          'x-flag': {
+                            key: 'x-flag',
+                            enabled: true,
+                            variant: 'x-value',
+                            reason: {
+                              code: 'matched_condition',
+                              description: 'matched condition set 5',
+                              condition_index: 0,
+                            },
+                            metadata: {
+                              id: 5,
+                              version: 1,
+                              description: 'x-flag',
+                              payload: '{"x":"value"}',
+                            },
+                          },
+                          'feature-1': {
+                            key: 'feature-1',
+                            enabled: false,
+                            variant: undefined,
+                            reason: {
+                              code: 'matched_condition',
+                              description: 'matched condition set 6',
+                              condition_index: 0,
+                            },
+                            metadata: {
+                              id: 6,
+                              version: 1,
+                              description: 'feature-1',
+                              payload: '{"color":"blue"}',
+                            },
+                          },
+                        },
                         errorsWhileComputingFlags: false,
                       }),
                   })
@@ -502,7 +628,9 @@ describe('PostHog Core', () => {
       })
 
       it('should persist feature flags', () => {
-        expect(posthog.getPersistedProperty(PostHogPersistedProperty.FeatureFlags)).toEqual(createMockFeatureFlags())
+        expect(posthog.getPersistedProperty(PostHogPersistedProperty.FeatureFlags)).toEqual(
+          expectedFeatureFlagResponses
+        )
       })
 
       it('should include feature flags in subsequent captures', async () => {
@@ -552,8 +680,7 @@ describe('PostHog Core', () => {
                 json: () =>
                   Promise.resolve({
                     quotaLimited: ['feature_flags'],
-                    featureFlags: {},
-                    featureFlagPayloads: {},
+                    flags: {},
                   }),
               })
             }
@@ -745,8 +872,7 @@ describe('PostHog Core', () => {
                   text: () => Promise.resolve('ok'),
                   json: () =>
                     Promise.resolve({
-                      featureFlags: createMockFeatureFlags(),
-                      featureFlagPayloads: createMockFeatureFlagPayloads(),
+                      flags: createMockFeatureFlags(),
                     }),
                 })
               }
@@ -867,8 +993,7 @@ describe('PostHog Core', () => {
                 text: () => Promise.resolve('ok'),
                 json: () =>
                   Promise.resolve({
-                    featureFlags: createMockFeatureFlags(),
-                    featureFlagPayloads: createMockFeatureFlagPayloads(),
+                    flags: createMockFeatureFlags(),
                   }),
               })
             }
