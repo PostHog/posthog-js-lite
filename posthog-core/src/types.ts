@@ -170,14 +170,17 @@ export interface PostHogDecideResponse extends Omit<PostHogRemoteConfig, 'survey
   requestId?: string
 }
 
-export type PostHogFeatureFlagsResponse = PartialWithRequired<PostHogDecideResponse, 'flags' | 'featureFlags' | 'featureFlagPayloads' | 'requestId'>
+export type PostHogFeatureFlagsResponse = PartialWithRequired<
+  PostHogDecideResponse,
+  'flags' | 'featureFlags' | 'featureFlagPayloads' | 'requestId'
+>
 
 /**
  * Creates a type with all properties of T, but makes only K properties required while the rest remain optional.
- * 
+ *
  * @template T - The base type containing all properties
  * @template K - Union type of keys from T that should be required
- * 
+ *
  * @example
  * interface User {
  *   id: number;
@@ -185,10 +188,10 @@ export type PostHogFeatureFlagsResponse = PartialWithRequired<PostHogDecideRespo
  *   email?: string;
  *   age?: number;
  * }
- * 
+ *
  * // Makes 'id' and 'name' required, but 'email' and 'age' optional
  * type RequiredUser = PartialWithRequired<User, 'id' | 'name'>;
- * 
+ *
  * const user: RequiredUser = {
  *   id: 1,      // Must be provided
  *   name: "John" // Must be provided
@@ -196,15 +199,18 @@ export type PostHogFeatureFlagsResponse = PartialWithRequired<PostHogDecideRespo
  * };
  */
 export type PartialWithRequired<T, K extends keyof T> = {
-  [P in K]: T[P]  // Required fields
+  [P in K]: T[P] // Required fields
 } & {
-  [P in Exclude<keyof T, K>]?: T[P]  // Optional fields
+  [P in Exclude<keyof T, K>]?: T[P] // Optional fields
 }
 
 /**
  * These are the fields we care about from PostHogDecideResponse for feature flags.
  */
-export type PostHogFeatureFlagDetails = PartialWithRequired<PostHogDecideResponse, 'flags' | 'featureFlags' | 'featureFlagPayloads' | 'requestId'>
+export type PostHogFeatureFlagDetails = PartialWithRequired<
+  PostHogDecideResponse,
+  'flags' | 'featureFlags' | 'featureFlagPayloads' | 'requestId'
+>
 
 /**
  * Models the response from the v3 `/decide` endpoint.

@@ -19,10 +19,10 @@ import {
 } from './types'
 import {
   createDecideResponseFromFlagsAndPayloads,
+  getFeatureFlagValue,
   getFlagValuesFromFlags,
   getPayloadsFromFlags,
   normalizeDecideResponse,
-  parsePayload,
   updateFlagValue,
 } from './featureFlagUtils'
 import {
@@ -356,7 +356,7 @@ export abstract class PostHogCoreStateless {
   ): Promise<PostHogDecideResponse | undefined> {
     await this._initPromise
 
-    const url = `${this.host}/decide/?v=3`
+    const url = `${this.host}/decide/?v=4`
     const fetchOptions: PostHogFetchOptions = {
       method: 'POST',
       headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },
@@ -392,17 +392,16 @@ export abstract class PostHogCoreStateless {
   }> {
     await this._initPromise
 
-    const decideResponse = await this.getFeatureFlagsStateless(
+    const flagDetailResponse = await this.getFeatureFlagDetailStateless(
+      key,
       distinctId,
       groups,
       personProperties,
       groupProperties,
-      disableGeoip,
-      [key]
+      disableGeoip
     )
-    const featureFlags = decideResponse.flags
 
-    if (!featureFlags) {
+    if (flagDetailResponse === undefined) {
       // If we haven't loaded flags yet, or errored out, we respond with undefined
       return {
         response: undefined,
@@ -410,8 +409,7 @@ export abstract class PostHogCoreStateless {
       }
     }
 
-    let response = featureFlags[key]
-    // `/decide` v3 returns all flags
+    let response = getFeatureFlagValue(flagDetailResponse.response)
 
     if (response === undefined) {
       // For cases where the flag is unknown, return false
@@ -421,6 +419,45 @@ export abstract class PostHogCoreStateless {
     // If we have flags we either return the value (true or string) or false
     return {
       response,
+      requestId: flagDetailResponse.requestId,
+    }
+  }
+
+  protected async getFeatureFlagDetailStateless(
+    key: string,
+    distinctId: string,
+    groups: Record<string, string> = {},
+    personProperties: Record<string, string> = {},
+    groupProperties: Record<string, Record<string, string>> = {},
+    disableGeoip?: boolean
+  ): Promise<
+    | {
+        response: FeatureFlagDetail | undefined
+        requestId: string | undefined
+      }
+    | undefined
+  > {
+    await this._initPromise
+
+    const decideResponse = await this.getFeatureFlagDetailsStateless(
+      distinctId,
+      groups,
+      personProperties,
+      groupProperties,
+      disableGeoip,
+      [key]
+    )
+
+    if (decideResponse === undefined) {
+      return undefined
+    }
+
+    const featureFlags = decideResponse.flags
+
+    const flagDetail = featureFlags[key]
+
+    return {
+      response: flagDetail,
       requestId: decideResponse.requestId,
     }
   }
@@ -520,6 +557,40 @@ export abstract class PostHogCoreStateless {
   }> {
     await this._initPromise
 
+    const featureFlagDetails = await this.getFeatureFlagDetailsStateless(
+      distinctId,
+      groups,
+      personProperties,
+      groupProperties,
+      disableGeoip,
+      flagKeysToEvaluate
+    )
+
+    if (!featureFlagDetails) {
+      return {
+        flags: undefined,
+        payloads: undefined,
+        requestId: undefined,
+      }
+    }
+
+    return {
+      flags: featureFlagDetails.featureFlags,
+      payloads: featureFlagDetails.featureFlagPayloads,
+      requestId: featureFlagDetails.requestId,
+    }
+  }
+
+  protected async getFeatureFlagDetailsStateless(
+    distinctId: string,
+    groups: Record<string, string | number> = {},
+    personProperties: Record<string, string> = {},
+    groupProperties: Record<string, Record<string, string>> = {},
+    disableGeoip?: boolean,
+    flagKeysToEvaluate?: string[]
+  ): Promise<PostHogFeatureFlagDetails | undefined> {
+    await this._initPromise
+
     const extraPayload: Record<string, any> = {}
     if (disableGeoip ?? this.disableGeoip) {
       extraPayload['geoip_disable'] = true
@@ -529,39 +600,32 @@ export abstract class PostHogCoreStateless {
     }
     const decideResponse = await this.getDecide(distinctId, groups, personProperties, groupProperties, extraPayload)
 
+    if (decideResponse === undefined) {
+      // We probably errored out, so return undefined
+      return undefined
+    }
+
     // if there's an error on the decideResponse, log a console error, but don't throw an error
-    if (decideResponse?.errorsWhileComputingFlags) {
+    if (decideResponse.errorsWhileComputingFlags) {
       console.error(
         '[FEATURE FLAGS] Error while computing feature flags, some flags may be missing or incorrect. Learn more at https://posthog.com/docs/feature-flags/best-practices'
       )
     }
 
     // Add check for quota limitation on feature flags
-    if (decideResponse?.quotaLimited?.includes(QuotaLimitedFeature.FeatureFlags)) {
+    if (decideResponse.quotaLimited?.includes(QuotaLimitedFeature.FeatureFlags)) {
       console.warn(
         '[FEATURE FLAGS] Feature flags quota limit exceeded - feature flags unavailable. Learn more about billing limits at https://posthog.com/docs/billing/limits-alerts'
       )
       return {
-        flags: undefined,
-        payloads: undefined,
+        flags: {},
+        featureFlags: {},
+        featureFlagPayloads: {},
         requestId: decideResponse?.requestId,
       }
     }
 
-    const flags = decideResponse?.featureFlags
-    const payloads = decideResponse?.featureFlagPayloads
-
-    let parsedPayloads = payloads
-
-    if (payloads) {
-      parsedPayloads = Object.fromEntries(Object.entries(payloads).map(([k, v]) => [k, parsePayload(v)]))
-    }
-
-    return {
-      flags,
-      payloads: parsedPayloads,
-      requestId: decideResponse?.requestId,
-    }
+    return decideResponse
   }
 
   /***
@@ -1438,10 +1502,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   // We only store the flags and request id in the feature flag details storage key
   private setKnownFeatureFlagDetails(decideResponse: PostHogFlagsStorageFormat | null): void {
     this.wrap(() => {
-      this.setPersistedProperty<PostHogFlagsStorageFormat>(
-        PostHogPersistedProperty.FeatureFlagDetails,
-        decideResponse
-      )
+      this.setPersistedProperty<PostHogFlagsStorageFormat>(PostHogPersistedProperty.FeatureFlagDetails, decideResponse)
 
       this._events.emit('featureflags', getFlagValuesFromFlags(decideResponse?.flags ?? {}))
     })
@@ -1467,7 +1528,9 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       return createDecideResponseFromFlagsAndPayloads(featureFlags ?? {}, featureFlagPayloads ?? {})
     }
 
-    return normalizeDecideResponse(storedDetails as PostHogV3DecideResponse | PostHogV4DecideResponse) as PostHogFeatureFlagDetails
+    return normalizeDecideResponse(
+      storedDetails as PostHogV3DecideResponse | PostHogV4DecideResponse
+    ) as PostHogFeatureFlagDetails
   }
 
   private getKnownFeatureFlags(): PostHogDecideResponse['featureFlags'] | undefined {
@@ -1517,15 +1580,16 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   }
 
   getFeatureFlag(key: string): FeatureFlagValue | undefined {
-    const featureFlags = this.getFeatureFlags()
+    const details = this.getFeatureFlagDetails()
 
-    if (!featureFlags) {
+    if (!details) {
       // If we haven't loaded flags yet, or errored out, we respond with undefined
       return undefined
     }
 
-    let response = featureFlags[key]
-    // `/decide` v3 returns all flags
+    const featureFlag = details.flags[key]
+
+    let response = getFeatureFlagValue(featureFlag)
 
     if (response === undefined) {
       // For cases where the flag is unknown, return false
@@ -1540,10 +1604,14 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       this.capture('$feature_flag_called', {
         $feature_flag: key,
         $feature_flag_response: response,
+        $feature_flag_id: featureFlag?.metadata?.id,
+        $feature_flag_version: featureFlag?.metadata?.version,
+        $feature_flag_reason: featureFlag?.reason?.description ?? featureFlag?.reason?.code,
         $feature_flag_bootstrapped_response: bootstrappedResponse,
         $feature_flag_bootstrapped_payload: bootstrappedPayload,
         // If we haven't yet received a response from the /decide endpoint, we must have used the bootstrapped value
         $used_bootstrap_value: !this.getPersistedProperty(PostHogPersistedProperty.DecideEndpointWasHit),
+        $feature_flag_request_id: details.requestId,
       })
     }
 

@@ -11,7 +11,9 @@ import {
 } from './types'
 
 export const normalizeDecideResponse = (
-  decideResponse: PartialWithRequired<PostHogV4DecideResponse, 'flags'> | PartialWithRequired<PostHogV3DecideResponse, 'featureFlags' | 'featureFlagPayloads'>
+  decideResponse:
+    | PartialWithRequired<PostHogV4DecideResponse, 'flags'>
+    | PartialWithRequired<PostHogV3DecideResponse, 'featureFlags' | 'featureFlagPayloads'>
 ): PostHogFeatureFlagsResponse => {
   if ('flags' in decideResponse) {
     // Convert v4 format to v3 format
@@ -131,8 +133,8 @@ export const getFlagDetailsFromFlagsAndPayloads = (
   )
 }
 
-export const getFeatureFlagValue = (detail: FeatureFlagDetail): FeatureFlagValue | undefined => {
-  return detail.variant ?? detail.enabled
+export const getFeatureFlagValue = (detail: FeatureFlagDetail | undefined): FeatureFlagValue | undefined => {
+  return detail === undefined ? undefined : detail.variant ?? detail.enabled
 }
 
 export const parsePayload = (response: any): any => {

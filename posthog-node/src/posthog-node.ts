@@ -12,10 +12,11 @@ import {
 } from '../../posthog-core/src'
 import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
 import { EventMessage, GroupIdentifyMessage, IdentifyMessage, PostHogNodeV1 } from './types'
-import { FeatureFlagValue } from '../../posthog-core/src/types'
+import { FeatureFlagDetail, FeatureFlagValue } from '../../posthog-core/src/types'
 import { FeatureFlagsPoller } from './feature-flags'
 import fetch from './fetch'
 import ErrorTracking from './error-tracking'
+import { getFeatureFlagValue } from 'posthog-core/src/featureFlagUtils'
 
 export type PostHogOptions = PostHogCoreOptions & {
   persistence?: 'memory'
@@ -262,8 +263,9 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
 
     const flagWasLocallyEvaluated = response !== undefined
     let requestId = undefined
+    let flagDetail: FeatureFlagDetail | undefined = undefined
     if (!flagWasLocallyEvaluated && !onlyEvaluateLocally) {
-      const remoteResponse = await super.getFeatureFlagStateless(
+      const remoteResponse = await super.getFeatureFlagDetailStateless(
         key,
         distinctId,
         groups,
@@ -271,8 +273,14 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         groupProperties,
         disableGeoip
       )
-      response = remoteResponse.response
-      requestId = remoteResponse.requestId
+
+      if (remoteResponse === undefined) {
+        return undefined
+      }
+
+      flagDetail = remoteResponse.response
+      response = getFeatureFlagValue(flagDetail) ?? false
+      requestId = remoteResponse?.requestId
     }
 
     const featureFlagReportedKey = `${key}_${response}`
@@ -296,6 +304,9 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         properties: {
           $feature_flag: key,
           $feature_flag_response: response,
+          $feature_flag_id: flagDetail?.metadata?.id,
+          $feature_flag_version: flagDetail?.metadata?.version,
+          $feature_flag_reason: flagDetail?.reason?.description ?? flagDetail?.reason?.code,
           locally_evaluated: flagWasLocallyEvaluated,
           [`$feature/${key}`]: response,
           $feature_flag_request_id: requestId,
@@ -335,17 +346,22 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
 
     let response = undefined
 
-    // Try to get match value locally if not provided
-    if (!matchValue) {
-      matchValue = await this.getFeatureFlag(key, distinctId, {
-        ...options,
-        onlyEvaluateLocally: true,
-      })
-    }
+    const localEvaluationEnabled = this.featureFlagsPoller !== undefined
+    if (localEvaluationEnabled) {
+      // Try to get match value locally if not provided
+      if (!matchValue) {
+        matchValue = await this.getFeatureFlag(key, distinctId, {
+          ...options,
+          onlyEvaluateLocally: true,
+          sendFeatureFlagEvents: false, // TODO: Discuss with @dylan.
+        })
+      }
 
-    if (matchValue) {
-      response = await this.featureFlagsPoller?.computeFeatureFlagPayloadLocally(key, matchValue)
+      if (matchValue) {
+        response = await this.featureFlagsPoller?.computeFeatureFlagPayloadLocally(key, matchValue)
+      }
     }
+    //}
 
     // set defaults
     if (onlyEvaluateLocally == undefined) {
