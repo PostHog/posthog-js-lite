@@ -115,8 +115,8 @@ export const getFlagDetailsFromFlagsAndPayloads = (
       key,
       {
         key: key,
-        enabled: typeof value === 'string' ? true : value,
-        variant: typeof value === 'string' ? value : undefined,
+        enabled: getEnabledFromValue(value),
+        variant: getVariantFromValue(value),
         reason: undefined,
         metadata: {
           id: undefined,
@@ -171,4 +171,20 @@ export const createDecideResponseFromFlagsAndPayloads = (
   }
 
   return normalizeDecideResponse(flagDetails as PostHogV3DecideResponse)
+}
+
+export const updateFlagValue = (flag: FeatureFlagDetail, value: FeatureFlagValue): FeatureFlagDetail => {
+  return {
+    ...flag,
+    enabled: getEnabledFromValue(value),
+    variant: getVariantFromValue(value),
+  }
+}
+
+function getEnabledFromValue(value: FeatureFlagValue): boolean {
+  return typeof value === 'string' ? true : value
+}
+
+function getVariantFromValue(value: FeatureFlagValue): string | undefined {
+  return typeof value === 'string' ? value : undefined
 }
