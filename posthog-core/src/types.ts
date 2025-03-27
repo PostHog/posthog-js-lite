@@ -63,8 +63,10 @@ export enum PostHogPersistedProperty {
   AnonymousId = 'anonymous_id',
   DistinctId = 'distinct_id',
   Props = 'props',
+  FeatureFlagDetails = 'feature_flag_details',
   FeatureFlags = 'feature_flags',
   FeatureFlagPayloads = 'feature_flag_payloads',
+  BootstrapFeatureFlagDetails = 'bootstrap_feature_flag_details',
   BootstrapFeatureFlags = 'bootstrap_feature_flags',
   BootstrapFeatureFlagPayloads = 'bootstrap_feature_flag_payloads',
   OverrideFeatureFlags = 'override_feature_flags',
@@ -168,6 +170,7 @@ export interface PostHogDecideResponse extends Omit<PostHogRemoteConfig, 'survey
   requestId?: string
 }
 
+export type PostHogFeatureFlagDetails = Pick<PostHogV4DecideResponse, 'flags' | 'requestId'>
 export type PostHogV3DecideResponse = Omit<PostHogDecideResponse, 'flags'>
 export type PostHogV4DecideResponse = Omit<PostHogDecideResponse, 'featureFlags' | 'featureFlagPayloads'>
 export type PostHogFlagsAndPayloadsResponse = Partial<

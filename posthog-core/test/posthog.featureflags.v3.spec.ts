@@ -1,4 +1,5 @@
-import { PostHogPersistedProperty } from '../src'
+import { PostHogPersistedProperty, PostHogV3DecideResponse } from '../src'
+import { normalizeDecideResponse } from '../src/featureFlagUtils'
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
 import { parseBody, waitForPromises } from './test-utils/test-utils'
 
@@ -83,7 +84,7 @@ describe('PostHog Feature Flags v3', () => {
       expect(posthog.isFeatureEnabled('feature-1')).toEqual(undefined)
     })
 
-    it('should load persisted feature flags', () => {
+    it('should load legacy persisted feature flags', () => {
       posthog.setPersistedProperty(PostHogPersistedProperty.FeatureFlags, createMockFeatureFlags())
       expect(posthog.getFeatureFlags()).toEqual(createMockFeatureFlags())
     })
@@ -502,7 +503,14 @@ describe('PostHog Feature Flags v3', () => {
       })
 
       it('should persist feature flags', () => {
-        expect(posthog.getPersistedProperty(PostHogPersistedProperty.FeatureFlags)).toEqual(createMockFeatureFlags())
+        const expectedFeatureFlags = {
+          featureFlags: createMockFeatureFlags(),
+          featureFlagPayloads: createMockFeatureFlagPayloads(),
+        }
+        const normalizedFeatureFlags = normalizeDecideResponse(expectedFeatureFlags as PostHogV3DecideResponse)
+        expect(posthog.getPersistedProperty(PostHogPersistedProperty.FeatureFlagDetails)).toEqual(
+          normalizedFeatureFlags
+        )
       })
 
       it('should include feature flags in subsequent captures', async () => {
@@ -624,7 +632,7 @@ describe('PostHog Feature Flags v3', () => {
                 color: 'feature-1-bootstrap-color',
               },
               'not-in-featureFlags': {
-                color: {'foo': 'bar'},
+                color: { foo: 'bar' },
               },
               enabled: 200,
             },
@@ -709,7 +717,7 @@ describe('PostHog Feature Flags v3', () => {
       })
       expect(posthog.getFeatureFlagPayload('enabled')).toEqual(200)
       expect(posthog.getFeatureFlagPayload('not-in-featureFlags')).toEqual({
-        color: {'foo': 'bar'},
+        color: { foo: 'bar' },
       })
     })
 

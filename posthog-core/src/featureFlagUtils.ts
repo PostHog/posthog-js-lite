@@ -5,6 +5,7 @@ import {
   PostHogDecideResponse,
   PostHogV3DecideResponse,
   PostHogV4DecideResponse,
+  PostHogFlagsAndPayloadsResponse,
 } from './types'
 
 export const normalizeDecideResponse = (
@@ -23,7 +24,9 @@ export const normalizeDecideResponse = (
   } else {
     // Convert v3 format to v4 format
     const featureFlags = decideResponse.featureFlags ?? {}
-    const featureFlagPayloads = Object.fromEntries(Object.entries(decideResponse.featureFlagPayloads || {}).map(([k, v]) => [k, parsePayload(v)]))
+    const featureFlagPayloads = Object.fromEntries(
+      Object.entries(decideResponse.featureFlagPayloads || {}).map(([k, v]) => [k, parsePayload(v)])
+    )
 
     const flags = Object.fromEntries(
       Object.entries(featureFlags).map(([key, value]) => [
@@ -140,4 +143,32 @@ export const parsePayload = (response: any): any => {
   } catch {
     return response
   }
+}
+
+/**
+ * Get the normalized flag details from the flags and payloads.
+ * This is used to convert things like boostrap and stored feature flags and payloads to the v4 format.
+ * This helps us ensure backwards compatibility.
+ * If a key exists in the featureFlagPayloads that is not in the featureFlags, we treat it as a true feature flag.
+ *
+ * @param featureFlags - The feature flags
+ * @param featureFlagPayloads - The feature flag payloads
+ * @returns The normalized flag details
+ */
+export const createDecideResponseFromFlagsAndPayloads = (
+  featureFlags: PostHogV3DecideResponse['featureFlags'],
+  featureFlagPayloads: PostHogV3DecideResponse['featureFlagPayloads']
+): PostHogDecideResponse => {
+  // If a feature flag payload key is not in the feature flags, we treat it as true feature flag.
+  const allKeys = [...new Set([...Object.keys(featureFlags ?? {}), ...Object.keys(featureFlagPayloads ?? {})])]
+  const enabledFlags = allKeys
+    .filter((flag) => !!featureFlags[flag] || !!featureFlagPayloads[flag])
+    .reduce((res: Record<string, FeatureFlagValue>, key) => ((res[key] = featureFlags[key] ?? true), res), {})
+
+  const flagDetails: PostHogFlagsAndPayloadsResponse = {
+    featureFlags: enabledFlags,
+    featureFlagPayloads: featureFlagPayloads ?? {},
+  }
+
+  return normalizeDecideResponse(flagDetails as PostHogV3DecideResponse)
 }

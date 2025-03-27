@@ -1,4 +1,4 @@
-import { PostHogDecideResponse, PostHogPersistedProperty, PostHogV4DecideResponse } from '../src'
+import { PostHogPersistedProperty, PostHogV4DecideResponse } from '../src'
 import { normalizeDecideResponse } from '../src/featureFlagUtils'
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
 import { parseBody, waitForPromises } from './test-utils/test-utils'
@@ -103,6 +103,7 @@ describe('PostHog Feature Flags v4', () => {
             json: () =>
               Promise.resolve({
                 flags: createMockFeatureFlags(),
+                requestId: '8c865d72-94ef-4088-8b4e-cdb7983f0f81',
               }),
           })
         }
@@ -143,9 +144,9 @@ describe('PostHog Feature Flags v4', () => {
     })
 
     it('should load persisted feature flags', () => {
-      const decideResponse = { flags: createMockFeatureFlags() } as PostHogDecideResponse
-      const featureFlagResponses = normalizeDecideResponse(decideResponse).featureFlags
-      posthog.setPersistedProperty(PostHogPersistedProperty.FeatureFlags, featureFlagResponses)
+      const decideResponse = { flags: createMockFeatureFlags() } as PostHogV4DecideResponse
+      const normalizedFeatureFlags = normalizeDecideResponse(decideResponse)
+      posthog.setPersistedProperty(PostHogPersistedProperty.FeatureFlagDetails, normalizedFeatureFlags)
       expect(posthog.getFeatureFlags()).toEqual(expectedFeatureFlagResponses)
     })
 
@@ -628,8 +629,13 @@ describe('PostHog Feature Flags v4', () => {
       })
 
       it('should persist feature flags', () => {
-        expect(posthog.getPersistedProperty(PostHogPersistedProperty.FeatureFlags)).toEqual(
-          expectedFeatureFlagResponses
+        const expectedFeatureFlags = {
+          flags: createMockFeatureFlags(),
+          requestId: '8c865d72-94ef-4088-8b4e-cdb7983f0f81',
+        }
+        const normalizedFeatureFlags = normalizeDecideResponse(expectedFeatureFlags as PostHogV4DecideResponse)
+        expect(posthog.getPersistedProperty(PostHogPersistedProperty.FeatureFlagDetails)).toEqual(
+          normalizedFeatureFlags
         )
       })
 
@@ -752,7 +758,7 @@ describe('PostHog Feature Flags v4', () => {
               },
               enabled: 200,
               'not-in-featureFlags': {
-                color: {'foo': 'bar'},
+                color: { foo: 'bar' },
               },
             },
           },
@@ -835,7 +841,7 @@ describe('PostHog Feature Flags v4', () => {
       })
       expect(posthog.getFeatureFlagPayload('enabled')).toEqual(200)
       expect(posthog.getFeatureFlagPayload('not-in-featureFlags')).toEqual({
-        color: {'foo': 'bar'},
+        color: { foo: 'bar' },
       })
     })
 
@@ -941,7 +947,7 @@ describe('PostHog Feature Flags v4', () => {
         expect(posthog.getFeatureFlagPayload('feature-variant')).toEqual([5])
       })
 
-      it('should capture $feature_flag_called with bootstrapped values', async () => {
+      it('should capture feature_flag_called with bootstrapped values', async () => {
         expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
 
         await waitForPromises()
@@ -1008,10 +1014,30 @@ describe('PostHog Feature Flags v4', () => {
             })
           })
         },
+        // Storage cache
         {
           distinct_id: '123',
-          feature_flags: { 'bootstrap-1': 'variant-2' },
-          feature_flag_payloads: { 'bootstrap-1': { some: 'other-key' } },
+          feature_flag_details: {
+            flags: {
+              'bootstrap-1': {
+                key: 'bootstrap-1',
+                enabled: true,
+                variant: 'variant-2',
+                reason: {
+                  code: 'matched_condition',
+                  description: 'matched condition set 1',
+                  condition_index: 0,
+                },
+                metadata: {
+                  id: 1,
+                  version: 1,
+                  description: 'bootstrap-1',
+                  payload: '{"some":"other-key"}',
+                },
+              },
+              requestId: '8c865d72-94ef-4088-8b4e-cdb7983f0f81',
+            },
+          },
         }
       )
     })

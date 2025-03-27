@@ -13,8 +13,15 @@ import {
   FeatureFlagValue,
   PostHogV4DecideResponse,
   PostHogV3DecideResponse,
+  PostHogFeatureFlagDetails,
 } from './types'
-import { normalizeDecideResponse, parsePayload } from './featureFlagUtils'
+import {
+  createDecideResponseFromFlagsAndPayloads,
+  getFlagValuesFromFlags,
+  getPayloadsFromFlags,
+  normalizeDecideResponse,
+  parsePayload,
+} from './featureFlagUtils'
 import {
   assert,
   currentISOTime,
@@ -896,37 +903,27 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       }
     }
 
-    const bootstrapfeatureFlags = bootstrap.featureFlags
-    const bootstrapfeatureFlagPayloads = bootstrap.featureFlagPayloads ?? {}
-    if (bootstrapfeatureFlags && Object.keys(bootstrapfeatureFlags).length) {
-      // If a bootstrapped payload is not in the feature flags, we treat it as true feature flag.
-      const allKeys = [...new Set([...Object.keys(bootstrapfeatureFlags), ...Object.keys(bootstrapfeatureFlagPayloads ?? {})])]
-      const bootstrapFlags = allKeys
-        .filter((flag) => !!bootstrapfeatureFlags[flag] || !!bootstrapfeatureFlagPayloads[flag])
-        .reduce(
-          (res: Record<string, FeatureFlagValue>, key) => ((res[key] = bootstrapfeatureFlags[key] ?? true), res),
-          {}
-        )
+    const bootstrapFeatureFlags = bootstrap.featureFlags
+    const bootstrapFeatureFlagPayloads = bootstrap.featureFlagPayloads ?? {}
+    if (bootstrapFeatureFlags && Object.keys(bootstrapFeatureFlags).length) {
+      const normalizedBootstrapFeatureFlagDetails = createDecideResponseFromFlagsAndPayloads(
+        bootstrapFeatureFlags,
+        bootstrapFeatureFlagPayloads
+      )
 
-      if (Object.keys(bootstrapFlags).length) {
-        this.setPersistedProperty(PostHogPersistedProperty.BootstrapFeatureFlags, bootstrapFlags)
+      if (Object.keys(normalizedBootstrapFeatureFlagDetails.flags).length > 0) {
+        this.setBootstrappedFeatureFlagDetails(normalizedBootstrapFeatureFlagDetails)
 
-        const currentFlags =
-          this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(PostHogPersistedProperty.FeatureFlags) || {}
-        const newFeatureFlags = { ...bootstrapFlags, ...currentFlags }
-        this.setKnownFeatureFlags(newFeatureFlags)
-      }
+        const currentFeatureFlagDetails = this.getKnownFeatureFlagDetails() || { flags: {}, requestId: undefined }
+        const newFeatureFlagDetails = {
+          flags: {
+            ...normalizedBootstrapFeatureFlagDetails.flags,
+            ...currentFeatureFlagDetails.flags,
+          },
+          requestId: normalizedBootstrapFeatureFlagDetails.requestId,
+        }
 
-      const bootstrapFlagPayloads = bootstrap.featureFlagPayloads
-      if (bootstrapFlagPayloads && Object.keys(bootstrapFlagPayloads).length) {
-        this.setPersistedProperty(PostHogPersistedProperty.BootstrapFeatureFlagPayloads, bootstrapFlagPayloads)
-
-        const currentFlagPayloads =
-          this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
-            PostHogPersistedProperty.FeatureFlagPayloads
-          ) || {}
-        const newFeatureFlagPayloads = { ...bootstrapFlagPayloads, ...currentFlagPayloads }
-        this.setKnownFeatureFlagPayloads(newFeatureFlagPayloads)
+        this.setKnownFeatureFlagDetails(newFeatureFlagDetails)
       }
     }
   }
@@ -1358,8 +1355,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
             // we only dont load flags if the remote config has no feature flags
             if (response.hasFeatureFlags === false) {
               // resetting flags to empty object
-              this.setKnownFeatureFlags({})
-              this.setKnownFeatureFlagPayloads({})
+              this.setKnownFeatureFlagDetails({ flags: {} })
 
               this.logMsgIfDebug(() => console.warn('Remote config has no feature flags, will not load feature flags.'))
             } else if (this.preloadFeatureFlags !== false) {
@@ -1397,8 +1393,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
         // Add check for quota limitation on feature flags
         if (res?.quotaLimited?.includes(QuotaLimitedFeature.FeatureFlags)) {
           // Unset all feature flags by setting to null
-          this.setKnownFeatureFlags(null)
-          this.setKnownFeatureFlagPayloads(null)
+          this.setKnownFeatureFlagDetails(null)
           console.warn(
             '[FEATURE FLAGS] Feature flags quota limit exceeded - unsetting all flags. Learn more about billing limits at https://posthog.com/docs/billing/limits-alerts'
           )
@@ -1410,27 +1405,20 @@ export abstract class PostHogCore extends PostHogCoreStateless {
             this.flagCallReported = {}
           }
 
-          let newFeatureFlags = res.featureFlags
-          let newFeatureFlagPayloads = res.featureFlagPayloads
+          let newFeatureFlagDetails = res
           if (res.errorsWhileComputingFlags) {
             // if not all flags were computed, we upsert flags instead of replacing them
-            const currentFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
-              PostHogPersistedProperty.FeatureFlags
-            )
-
+            const currentFlagDetails = this.getKnownFeatureFlagDetails()
             this.logMsgIfDebug(() =>
-              console.log('PostHog Debug', 'Cached feature flags: ', JSON.stringify(currentFlags))
+              console.log('PostHog Debug', 'Cached feature flags: ', JSON.stringify(currentFlagDetails))
             )
 
-            const currentFlagPayloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
-              PostHogPersistedProperty.FeatureFlagPayloads
-            )
-            newFeatureFlags = { ...currentFlags, ...res.featureFlags }
-            newFeatureFlagPayloads = { ...currentFlagPayloads, ...res.featureFlagPayloads }
+            newFeatureFlagDetails = {
+              ...res,
+              flags: { ...currentFlagDetails?.flags, ...res.flags },
+            }
           }
-          
-          this.setKnownFeatureFlags(newFeatureFlags)
-          this.setKnownFeatureFlagPayloads(newFeatureFlagPayloads)
+          this.setKnownFeatureFlagDetails(newFeatureFlagDetails)
           // Mark that we hit the /decide endpoint so we can capture this in the $feature_flag_called event
           this.setPersistedProperty(PostHogPersistedProperty.DecideEndpointWasHit, true)
 
@@ -1444,23 +1432,84 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     return this._decideResponsePromise
   }
 
-  private setKnownFeatureFlags(featureFlags: PostHogDecideResponse['featureFlags'] | null): void {
+  // We only store the flags and request id in the feature flag details storage key
+  private setKnownFeatureFlagDetails(decideResponse: PostHogFeatureFlagDetails | null): void {
     this.wrap(() => {
-      this.setPersistedProperty<PostHogDecideResponse['featureFlags']>(
-        PostHogPersistedProperty.FeatureFlags,
-        featureFlags
+      this.setPersistedProperty<PostHogFeatureFlagDetails>(
+        PostHogPersistedProperty.FeatureFlagDetails,
+        decideResponse as PostHogFeatureFlagDetails | null
       )
-      this._events.emit('featureflags', featureFlags)
+
+      this._events.emit('featureflags', getFlagValuesFromFlags(decideResponse?.flags ?? {}))
     })
   }
 
-  private setKnownFeatureFlagPayloads(featureFlagPayloads: PostHogDecideResponse['featureFlagPayloads'] | null): void {
-    this.wrap(() => {
-      this.setPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
-        PostHogPersistedProperty.FeatureFlagPayloads,
-        featureFlagPayloads
+  private getKnownFeatureFlagDetails(): PostHogDecideResponse | undefined {
+    const storedDetails = this.getPersistedProperty<PostHogFeatureFlagDetails>(
+      PostHogPersistedProperty.FeatureFlagDetails
+    )
+    if (!storedDetails) {
+      // Rebuild from the stored feature flags and feature flag payloads
+      const featureFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
+        PostHogPersistedProperty.FeatureFlags
       )
-    })
+      const featureFlagPayloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
+        PostHogPersistedProperty.FeatureFlagPayloads
+      )
+
+      if (featureFlags === undefined && featureFlagPayloads === undefined) {
+        return undefined
+      }
+
+      return createDecideResponseFromFlagsAndPayloads(featureFlags ?? {}, featureFlagPayloads ?? {})
+    }
+    return storedDetails as PostHogDecideResponse
+  }
+
+  private getKnownFeatureFlags(): PostHogDecideResponse['featureFlags'] | undefined {
+    const featureFlagDetails = this.getKnownFeatureFlagDetails()
+    if (!featureFlagDetails) {
+      return undefined
+    }
+    return getFlagValuesFromFlags(featureFlagDetails.flags)
+  }
+
+  private getKnownFeatureFlagPayloads(): PostHogDecideResponse['featureFlagPayloads'] | undefined {
+    const featureFlagDetails = this.getKnownFeatureFlagDetails()
+    if (!featureFlagDetails) {
+      return undefined
+    }
+    return getPayloadsFromFlags(featureFlagDetails.flags)
+  }
+
+  private getBootstrappedFeatureFlagDetails(): PostHogFeatureFlagDetails | undefined {
+    const details = this.getPersistedProperty<PostHogFeatureFlagDetails>(
+      PostHogPersistedProperty.BootstrapFeatureFlagDetails
+    )
+    if (!details) {
+      return undefined
+    }
+    return details
+  }
+
+  private setBootstrappedFeatureFlagDetails(details: PostHogFeatureFlagDetails): void {
+    this.setPersistedProperty<PostHogFeatureFlagDetails>(PostHogPersistedProperty.BootstrapFeatureFlagDetails, details)
+  }
+
+  private getBootstrappedFeatureFlags(): PostHogDecideResponse['featureFlags'] | undefined {
+    const details = this.getBootstrappedFeatureFlagDetails()
+    if (!details) {
+      return undefined
+    }
+    return getFlagValuesFromFlags(details.flags)
+  }
+
+  private getBootstrappedFeatureFlagPayloads(): PostHogDecideResponse['featureFlagPayloads'] | undefined {
+    const details = this.getBootstrappedFeatureFlagDetails()
+    if (!details) {
+      return undefined
+    }
+    return getPayloadsFromFlags(details.flags)
   }
 
   getFeatureFlag(key: string): FeatureFlagValue | undefined {
@@ -1480,16 +1529,15 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     }
 
     if (this.sendFeatureFlagEvent && !this.flagCallReported[key]) {
+      const bootstrappedResponse = this.getBootstrappedFeatureFlags()?.[key]
+      const bootstrappedPayload = this.getBootstrappedFeatureFlagPayloads()?.[key]
+
       this.flagCallReported[key] = true
       this.capture('$feature_flag_called', {
         $feature_flag: key,
         $feature_flag_response: response,
-        $feature_flag_bootstrapped_response: this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
-          PostHogPersistedProperty.BootstrapFeatureFlags
-        )?.[key],
-        $feature_flag_bootstrapped_payload: this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
-          PostHogPersistedProperty.BootstrapFeatureFlagPayloads
-        )?.[key],
+        $feature_flag_bootstrapped_response: bootstrappedResponse,
+        $feature_flag_bootstrapped_payload: bootstrappedPayload,
         // If we haven't yet received a response from the /decide endpoint, we must have used the bootstrapped value
         $used_bootstrap_value: !this.getPersistedProperty(PostHogPersistedProperty.DecideEndpointWasHit),
       })
@@ -1517,9 +1565,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   }
 
   getFeatureFlagPayloads(): PostHogDecideResponse['featureFlagPayloads'] | undefined {
-    const payloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
-      PostHogPersistedProperty.FeatureFlagPayloads
-    )
+    const payloads = this.getKnownFeatureFlagPayloads()
 
     return payloads
   }
@@ -1527,7 +1573,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   getFeatureFlags(): PostHogDecideResponse['featureFlags'] | undefined {
     // NOTE: We don't check for _initPromise here as the function is designed to be
     // callable before the state being loaded anyways
-    let flags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(PostHogPersistedProperty.FeatureFlags)
+    let flags = this.getKnownFeatureFlags()
     const overriddenFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
       PostHogPersistedProperty.OverrideFeatureFlags
     )
