@@ -571,8 +571,8 @@ describe('local evaluation', () => {
     expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
 
     // # beta-feature2 falls back to decide, and whatever decide returns is the value
-    expect(await posthog.getFeatureFlag('beta-feature2', 'some-distinct-id')).toEqual(false)
-    expect(await posthog.isFeatureEnabled('beta-feature2', 'some-distinct-id')).toEqual(false)
+    expect(await posthog.getFeatureFlag('beta-feature2', 'some-distinct-id')).toEqual(undefined)
+    expect(await posthog.isFeatureEnabled('beta-feature2', 'some-distinct-id')).toEqual(undefined)
     expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
   })
 
@@ -1320,7 +1320,7 @@ describe('local evaluation', () => {
       await posthog.getFeatureFlag('beta-feature', 'some-distinct-id', {
         personProperties: { region: 'USA', other: 'thing' },
       })
-    ).toEqual(false)
+    ).toEqual(undefined)
     expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
 
     mockedFetch.mockClear()

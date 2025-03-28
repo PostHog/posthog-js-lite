@@ -279,7 +279,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       }
 
       flagDetail = remoteResponse.response
-      response = getFeatureFlagValue(flagDetail) ?? false
+      response = getFeatureFlagValue(flagDetail)
       requestId = remoteResponse?.requestId
     }
 

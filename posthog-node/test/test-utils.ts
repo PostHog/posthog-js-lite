@@ -1,7 +1,7 @@
 import { PostHogV4DecideResponse } from 'posthog-core/src/types'
 
 type ErrorResponse = {
-  status: number,
+  status: number
   json: () => Promise<any>
 }
 
