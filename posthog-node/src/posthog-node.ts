@@ -353,7 +353,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         matchValue = await this.getFeatureFlag(key, distinctId, {
           ...options,
           onlyEvaluateLocally: true,
-          sendFeatureFlagEvents: false, // TODO: Discuss with @dylan.
+          sendFeatureFlagEvents: false,
         })
       }
 
