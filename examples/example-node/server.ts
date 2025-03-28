@@ -69,6 +69,11 @@ app.get('/user/:userId/flags/:flagId', async (req, res) => {
   res.send({ [req.params.flagId]: { flag, payload } })
 })
 
+app.get('/user/:userId/flags', async (req, res) => {
+  const allFlags = await posthog.getAllFlagsAndPayloads(req.params.userId).catch((e) => console.error(e))
+  res.send(allFlags)
+})
+
 const server = app.listen(8020, () => {
   console.log('⚡: Server is running at http://localhost:8020')
 })
