@@ -576,48 +576,6 @@ describe('local evaluation', () => {
     expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
   })
 
-  it('returns undefined when decide errors out', async () => {
-    const flags = {
-      flags: [
-        {
-          id: 1,
-          name: 'Beta Feature',
-          key: 'beta-feature',
-          active: true,
-          filters: {
-            groups: [
-              {
-                properties: [],
-                rollout_percentage: 0,
-              },
-            ],
-          },
-        },
-      ],
-    }
-    mockedFetch.mockImplementation(
-      apiImplementation({ localFlags: flags, decideFlags: { error: 'went wrong' }, decideStatus: 400 })
-    )
-
-    posthog = new PostHog('TEST_API_KEY', {
-      host: 'http://example.com',
-      personalApiKey: 'TEST_PERSONAL_API_KEY',
-      ...posthogImmediateResolveOptions,
-    })
-
-    let err: any = null
-    posthog.on('error', (e) => {
-      err = e
-    })
-
-    // # beta-feature2 falls back to decide, which on error returns undefined
-    expect(await posthog.getFeatureFlag('beta-feature2', 'some-distinct-id')).toEqual(undefined)
-    expect(await posthog.isFeatureEnabled('beta-feature2', 'some-distinct-id')).toEqual(undefined)
-    expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
-    await posthog.shutdown()
-    expect(err).toHaveProperty('name', 'PostHogFetchHttpError')
-  })
-
   it('experience continuity flags are not evaluated locally', async () => {
     const flags = {
       flags: [

@@ -258,6 +258,68 @@ describe('decide v3', () => {
       })
     })
 
+    it.each([
+      { 
+        case: 'JSON error response',
+        mock: apiImplementationV4({
+          status: 400,
+          json: () => Promise.resolve({ error: 'error response' })
+        })
+      },
+      { 
+        case: 'undefined response',
+        mock: apiImplementationV4({
+          status: 400,
+          json: () => Promise.resolve(undefined)
+        })
+      },
+      { 
+        case: 'null response',
+        mock: apiImplementationV4({
+          status: 400,
+          json: () => Promise.resolve(null)
+        })
+      },
+      { 
+        case: 'empty response',
+        mock: apiImplementationV4({
+          status: 400,
+          json: () => Promise.resolve({})
+        })
+      },
+      { 
+        case: 'network error',
+        mock: () => Promise.reject(new Error('Network error'))
+      },
+      { 
+        case: 'invalid JSON',
+        mock: apiImplementationV4({
+          status: 500,
+          json: () => Promise.reject(new Error('Invalid JSON'))
+        })
+      }
+    ])('handles $case correctly', async ({ mock }) => {
+      mockedFetch.mockImplementation(mock)
+
+      const posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        ...posthogImmediateResolveOptions,
+      })
+      let capturedMessage: any
+      posthog.on('capture', (message) => {
+        capturedMessage = message
+      })
+
+      expect(await posthog.getFeatureFlag('error-flag', 'some-distinct-id')).toBe(undefined)
+      expect(await posthog.isFeatureEnabled('error-flag', 'some-distinct-id')).toBe(undefined)
+      expect(await posthog.getFeatureFlagPayload('error-flag', 'some-distinct-id')).toBe(undefined)
+
+      expect(mockedFetch).toHaveBeenCalledWith('http://example.com/decide/?v=4', expect.any(Object))
+
+      await waitForPromises()
+      expect(capturedMessage).toBeUndefined()
+    })
+
     describe('getFeatureFlagPayload v3', () => {
       it('returns payload', async () => {
         mockedFetch.mockImplementation(
