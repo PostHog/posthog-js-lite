@@ -1,88 +1,29 @@
-import { PostHogPersistedProperty, PostHogV4DecideResponse } from '../src'
+import { PostHogPersistedProperty, PostHogV3DecideResponse } from '../src'
 import { normalizeDecideResponse } from '../src/featureFlagUtils'
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
 import { parseBody, waitForPromises } from './test-utils/test-utils'
 
-describe('PostHog Feature Flags v4', () => {
+describe('PostHog Feature Flags v3', () => {
   let posthog: PostHogCoreTestClient
   let mocks: PostHogCoreTestClientMocks
 
   jest.useFakeTimers()
   jest.setSystemTime(new Date('2022-01-01'))
 
-  const createMockFeatureFlags = (): Partial<PostHogV4DecideResponse['flags']> => ({
-    'feature-1': {
-      key: 'feature-1',
-      enabled: true,
-      variant: undefined,
-      reason: {
-        code: 'matched_condition',
-        description: 'matched condition set 1',
-        condition_index: 0,
-      },
-      metadata: {
-        id: 1,
-        version: 1,
-        description: 'feature-1',
-        payload: '{"color":"blue"}',
-      },
-    },
-    'feature-2': {
-      key: 'feature-2',
-      enabled: true,
-      variant: undefined,
-      reason: {
-        code: 'matched_condition',
-        description: 'matched condition set 2',
-        condition_index: 1,
-      },
-      metadata: {
-        id: 2,
-        version: 42,
-        description: 'feature-2',
-        payload: undefined,
-      },
-    },
-    'feature-variant': {
-      key: 'feature-variant',
-      enabled: true,
-      variant: 'variant',
-      reason: {
-        code: 'matched_condition',
-        description: 'matched condition set 3',
-        condition_index: 2,
-      },
-      metadata: {
-        id: 3,
-        version: 1,
-        description: 'feature-variant',
-        payload: '[5]',
-      },
-    },
-    'json-payload': {
-      key: 'json-payload',
-      enabled: true,
-      variant: undefined,
-      reason: {
-        code: 'matched_condition',
-        description: 'matched condition set 4',
-        condition_index: 4,
-      },
-      metadata: {
-        id: 4,
-        version: 1,
-        description: 'json-payload',
-        payload: '{"a":"payload"}',
-      },
-    },
-  })
-
-  const expectedFeatureFlagResponses = {
+  const createMockFeatureFlags = (): any => ({
     'feature-1': true,
     'feature-2': true,
     'feature-variant': 'variant',
     'json-payload': true,
-  }
+  })
+
+  const createMockFeatureFlagPayloads = (): any => ({
+    'feature-1': JSON.stringify({
+      color: 'blue',
+    }),
+    'feature-variant': JSON.stringify([5]),
+    'json-payload': '{"a":"payload"}',
+  })
 
   const errorAPIResponse = Promise.resolve({
     status: 400,
@@ -102,8 +43,8 @@ describe('PostHog Feature Flags v4', () => {
             text: () => Promise.resolve('ok'),
             json: () =>
               Promise.resolve({
-                flags: createMockFeatureFlags(),
-                requestId: '0152a345-295f-4fba-adac-2e6ea9c91082',
+                featureFlags: createMockFeatureFlags(),
+                featureFlagPayloads: createMockFeatureFlagPayloads(),
               }),
           })
         }
@@ -143,11 +84,9 @@ describe('PostHog Feature Flags v4', () => {
       expect(posthog.isFeatureEnabled('feature-1')).toEqual(undefined)
     })
 
-    it('should load persisted feature flags', () => {
-      const decideResponse = { flags: createMockFeatureFlags() } as PostHogV4DecideResponse
-      const normalizedFeatureFlags = normalizeDecideResponse(decideResponse)
-      posthog.setPersistedProperty(PostHogPersistedProperty.FeatureFlagDetails, normalizedFeatureFlags)
-      expect(posthog.getFeatureFlags()).toEqual(expectedFeatureFlagResponses)
+    it('should load legacy persisted feature flags', () => {
+      posthog.setPersistedProperty(PostHogPersistedProperty.FeatureFlags, createMockFeatureFlags())
+      expect(posthog.getFeatureFlags()).toEqual(createMockFeatureFlags())
     })
 
     it('should only call fetch once if already calling', async () => {
@@ -156,7 +95,7 @@ describe('PostHog Feature Flags v4', () => {
       posthog.reloadFeatureFlagsAsync()
       const flags = await posthog.reloadFeatureFlagsAsync()
       expect(mocks.fetch).toHaveBeenCalledTimes(1)
-      expect(flags).toEqual(expectedFeatureFlagResponses)
+      expect(flags).toEqual(createMockFeatureFlags())
     })
 
     it('should emit featureflags event when flags are loaded', async () => {
@@ -168,7 +107,7 @@ describe('PostHog Feature Flags v4', () => {
       await posthog.reloadFeatureFlagsAsync()
       unsubscribe()
 
-      expect(receivedFlags).toEqual([expectedFeatureFlagResponses])
+      expect(receivedFlags).toEqual([createMockFeatureFlags()])
     })
 
     describe('when loaded', () => {
@@ -183,12 +122,13 @@ describe('PostHog Feature Flags v4', () => {
         expect(posthog.getFeatureFlag('feature-missing')).toEqual(false)
       })
 
-      it.each([
-        ['feature-variant', [5]],
-        ['feature-1', { color: 'blue' }],
-        ['feature-2', null],
-      ])('should return correct payload for flag %s', (flagKey, expectedPayload) => {
-        expect(posthog.getFeatureFlagPayload(flagKey)).toEqual(expectedPayload)
+      it('should return payload of matched flags only', async () => {
+        expect(posthog.getFeatureFlagPayload('feature-variant')).toEqual([5])
+        expect(posthog.getFeatureFlagPayload('feature-1')).toEqual({
+          color: 'blue',
+        })
+
+        expect(posthog.getFeatureFlagPayload('feature-2')).toEqual(null)
       })
 
       describe('when errored out', () => {
@@ -255,7 +195,7 @@ describe('PostHog Feature Flags v4', () => {
                     text: () => Promise.resolve('ok'),
                     json: () =>
                       Promise.resolve({
-                        flags: createMockFeatureFlags(),
+                        featureFlags: createMockFeatureFlags(),
                       }),
                   })
                 }
@@ -268,40 +208,7 @@ describe('PostHog Feature Flags v4', () => {
                     text: () => Promise.resolve('ok'),
                     json: () =>
                       Promise.resolve({
-                        flags: {
-                          'x-flag': {
-                            key: 'x-flag',
-                            enabled: true,
-                            variant: 'x-value',
-                            reason: {
-                              code: 'matched_condition',
-                              description: 'matched condition set 5',
-                              condition_index: 0,
-                            },
-                            metadata: {
-                              id: 5,
-                              version: 1,
-                              description: 'x-flag',
-                              payload: '{"x":"value"}',
-                            },
-                          },
-                          'feature-1': {
-                            key: 'feature-1',
-                            enabled: false,
-                            variant: undefined,
-                            reason: {
-                              code: 'matched_condition',
-                              description: 'matched condition set 6',
-                              condition_index: 0,
-                            },
-                            metadata: {
-                              id: 6,
-                              version: 1,
-                              description: 'feature-1',
-                              payload: '{"color":"blue"}',
-                            },
-                          },
-                        },
+                        featureFlags: { 'x-flag': 'x-value', 'feature-1': false },
                         errorsWhileComputingFlags: true,
                       }),
                   })
@@ -393,8 +300,7 @@ describe('PostHog Feature Flags v4', () => {
                     text: () => Promise.resolve('ok'),
                     json: () =>
                       Promise.resolve({
-                        flags: createMockFeatureFlags(),
-                        requestId: '18043bf7-9cf6-44cd-b959-9662ee20d371',
+                        featureFlags: createMockFeatureFlags(),
                       }),
                   })
                 }
@@ -407,42 +313,8 @@ describe('PostHog Feature Flags v4', () => {
                     text: () => Promise.resolve('ok'),
                     json: () =>
                       Promise.resolve({
-                        flags: {
-                          'x-flag': {
-                            key: 'x-flag',
-                            enabled: true,
-                            variant: 'x-value',
-                            reason: {
-                              code: 'matched_condition',
-                              description: 'matched condition set 5',
-                              condition_index: 0,
-                            },
-                            metadata: {
-                              id: 5,
-                              version: 1,
-                              description: 'x-flag',
-                              payload: '{"x":"value"}',
-                            },
-                          },
-                          'feature-1': {
-                            key: 'feature-1',
-                            enabled: false,
-                            variant: undefined,
-                            reason: {
-                              code: 'matched_condition',
-                              description: 'matched condition set 6',
-                              condition_index: 0,
-                            },
-                            metadata: {
-                              id: 6,
-                              version: 1,
-                              description: 'feature-1',
-                              payload: '{"color":"blue"}',
-                            },
-                          },
-                        },
+                        featureFlags: { 'x-flag': 'x-value', 'feature-1': false },
                         errorsWhileComputingFlags: false,
-                        requestId: 'bccd3c21-38e6-4499-a804-89f77ddcd1fc',
                       }),
                   })
                 }
@@ -534,67 +406,31 @@ describe('PostHog Feature Flags v4', () => {
         })
       })
 
-      it.each([
-        {
-          key: 'feature-1',
-          expected_response: true,
-          expected_id: 1,
-          expected_version: 1,
-          expected_reason: 'matched condition set 1',
-        },
-        {
-          key: 'feature-2',
-          expected_response: true,
-          expected_id: 2,
-          expected_version: 42,
-          expected_reason: 'matched condition set 2',
-        },
-        {
-          key: 'feature-variant',
-          expected_response: 'variant',
-          expected_id: 3,
-          expected_version: 1,
-          expected_reason: 'matched condition set 3',
-        },
-        {
-          key: 'json-payload',
-          expected_response: true,
-          expected_id: 4,
-          expected_version: 1,
-          expected_reason: 'matched condition set 4',
-        },
-      ])(
-        'should capture feature_flag_called when called for %s',
-        async ({ key, expected_response, expected_id, expected_version, expected_reason }) => {
-          expect(posthog.getFeatureFlag(key)).toEqual(expected_response)
-          await waitForPromises()
-          expect(mocks.fetch).toHaveBeenCalledTimes(2)
+      it('should capture $feature_flag_called when called', async () => {
+        expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
+        await waitForPromises()
+        expect(mocks.fetch).toHaveBeenCalledTimes(2)
 
-          expect(parseBody(mocks.fetch.mock.calls[1])).toMatchObject({
-            batch: [
-              {
-                event: '$feature_flag_called',
-                distinct_id: posthog.getDistinctId(),
-                properties: {
-                  $feature_flag: key,
-                  $feature_flag_response: expected_response,
-                  $feature_flag_id: expected_id,
-                  $feature_flag_version: expected_version,
-                  $feature_flag_reason: expected_reason,
-                  '$feature/feature-1': true,
-                  $used_bootstrap_value: false,
-                  $feature_flag_request_id: '0152a345-295f-4fba-adac-2e6ea9c91082',
-                },
-                type: 'capture',
+        expect(parseBody(mocks.fetch.mock.calls[1])).toMatchObject({
+          batch: [
+            {
+              event: '$feature_flag_called',
+              distinct_id: posthog.getDistinctId(),
+              properties: {
+                $feature_flag: 'feature-1',
+                $feature_flag_response: true,
+                '$feature/feature-1': true,
+                $used_bootstrap_value: false,
               },
-            ],
-          })
+              type: 'capture',
+            },
+          ],
+        })
 
-          // Only tracked once
-          expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
-          expect(mocks.fetch).toHaveBeenCalledTimes(2)
-        }
-      )
+        // Only tracked once
+        expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
+        expect(mocks.fetch).toHaveBeenCalledTimes(2)
+      })
 
       it('should capture $feature_flag_called again if new flags', async () => {
         expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
@@ -611,7 +447,6 @@ describe('PostHog Feature Flags v4', () => {
                 $feature_flag_response: true,
                 '$feature/feature-1': true,
                 $used_bootstrap_value: false,
-                $feature_flag_request_id: '0152a345-295f-4fba-adac-2e6ea9c91082',
               },
               type: 'capture',
             },
@@ -669,10 +504,10 @@ describe('PostHog Feature Flags v4', () => {
 
       it('should persist feature flags', () => {
         const expectedFeatureFlags = {
-          flags: createMockFeatureFlags(),
-          requestId: '0152a345-295f-4fba-adac-2e6ea9c91082',
+          featureFlags: createMockFeatureFlags(),
+          featureFlagPayloads: createMockFeatureFlagPayloads(),
         }
-        const normalizedFeatureFlags = normalizeDecideResponse(expectedFeatureFlags as PostHogV4DecideResponse)
+        const normalizedFeatureFlags = normalizeDecideResponse(expectedFeatureFlags as PostHogV3DecideResponse)
         expect(posthog.getPersistedProperty(PostHogPersistedProperty.FeatureFlagDetails)).toEqual(
           normalizedFeatureFlags
         )
@@ -706,10 +541,7 @@ describe('PostHog Feature Flags v4', () => {
           'feature-2': false,
           'feature-variant': 'control',
         })
-
-        const received = posthog.getFeatureFlags()
-
-        expect(received).toEqual({
+        expect(posthog.getFeatureFlags()).toEqual({
           'json-payload': true,
           'feature-1': true,
           'feature-variant': 'control',
@@ -728,7 +560,8 @@ describe('PostHog Feature Flags v4', () => {
                 json: () =>
                   Promise.resolve({
                     quotaLimited: ['feature_flags'],
-                    flags: {},
+                    featureFlags: {},
+                    featureFlagPayloads: {},
                   }),
               })
             }
@@ -798,10 +631,10 @@ describe('PostHog Feature Flags v4', () => {
               'feature-1': {
                 color: 'feature-1-bootstrap-color',
               },
-              enabled: 200,
               'not-in-featureFlags': {
                 color: { foo: 'bar' },
               },
+              enabled: 200,
             },
           },
         },
@@ -840,6 +673,7 @@ describe('PostHog Feature Flags v4', () => {
       expect(posthog.getFeatureFlag('bootstrap-1')).toEqual('variant-1')
       expect(posthog.getFeatureFlag('enabled')).toEqual(true)
       expect(posthog.getFeatureFlag('disabled')).toEqual(false)
+      // If a bootstrapped payload is not in the feature flags, we treat it as true
       expect(posthog.getFeatureFlag('not-in-featureFlags')).toEqual(true)
     })
 
@@ -920,7 +754,8 @@ describe('PostHog Feature Flags v4', () => {
                   text: () => Promise.resolve('ok'),
                   json: () =>
                     Promise.resolve({
-                      flags: createMockFeatureFlags(),
+                      featureFlags: createMockFeatureFlags(),
+                      featureFlagPayloads: createMockFeatureFlagPayloads(),
                     }),
                 })
               }
@@ -989,7 +824,7 @@ describe('PostHog Feature Flags v4', () => {
         expect(posthog.getFeatureFlagPayload('feature-variant')).toEqual([5])
       })
 
-      it('should capture feature_flag_called with bootstrapped values', async () => {
+      it('should capture $feature_flag_called with bootstrapped values', async () => {
         expect(posthog.getFeatureFlag('feature-1')).toEqual(true)
 
         await waitForPromises()
@@ -1041,7 +876,8 @@ describe('PostHog Feature Flags v4', () => {
                 text: () => Promise.resolve('ok'),
                 json: () =>
                   Promise.resolve({
-                    flags: createMockFeatureFlags(),
+                    featureFlags: createMockFeatureFlags(),
+                    featureFlagPayloads: createMockFeatureFlagPayloads(),
                   }),
               })
             }
@@ -1056,30 +892,10 @@ describe('PostHog Feature Flags v4', () => {
             })
           })
         },
-        // Storage cache
         {
           distinct_id: '123',
-          feature_flag_details: {
-            flags: {
-              'bootstrap-1': {
-                key: 'bootstrap-1',
-                enabled: true,
-                variant: 'variant-2',
-                reason: {
-                  code: 'matched_condition',
-                  description: 'matched condition set 1',
-                  condition_index: 0,
-                },
-                metadata: {
-                  id: 1,
-                  version: 1,
-                  description: 'bootstrap-1',
-                  payload: '{"some":"other-key"}',
-                },
-              },
-              requestId: '8c865d72-94ef-4088-8b4e-cdb7983f0f81',
-            },
-          },
+          feature_flags: { 'bootstrap-1': 'variant-2' },
+          feature_flag_payloads: { 'bootstrap-1': { some: 'other-key' } },
         }
       )
     })

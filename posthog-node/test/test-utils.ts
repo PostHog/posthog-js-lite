@@ -1,3 +1,26 @@
+import { PostHogV4DecideResponse } from 'posthog-core/src/types'
+
+export const apiImplementationV4 = (decideResponse?: PostHogV4DecideResponse) => {
+  return (url: any): Promise<any> => {
+    if ((url as any).includes('/decide/?v=4')) {
+      return Promise.resolve({
+        status: 200,
+        text: () => Promise.resolve('ok'),
+        json: () => Promise.resolve(decideResponse),
+      }) as any
+    }
+
+    return Promise.resolve({
+      status: 400,
+      text: () => Promise.resolve('ok'),
+      json: () =>
+        Promise.resolve({
+          status: 'ok',
+        }),
+    }) as any
+  }
+}
+
 export const apiImplementation = ({
   localFlags,
   decideFlags,
@@ -68,4 +91,4 @@ export const anyLocalEvalCall = [
   'http://example.com/api/feature_flag/local_evaluation?token=TEST_API_KEY&send_cohorts',
   expect.any(Object),
 ]
-export const anyDecideCall = ['http://example.com/decide/?v=3', expect.any(Object)]
+export const anyDecideCall = ['http://example.com/decide/?v=4', expect.any(Object)]

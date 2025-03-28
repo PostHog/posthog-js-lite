@@ -63,8 +63,15 @@ app.get('/user/:userId/action', (req, res) => {
 
 app.get('/user/:userId/flags/:flagId', async (req, res) => {
   const flag = await posthog.getFeatureFlag(req.params.flagId, req.params.userId).catch((e) => console.error(e))
+  const payload = await posthog
+    .getFeatureFlagPayload(req.params.flagId, req.params.userId)
+    .catch((e) => console.error(e))
+  res.send({ [req.params.flagId]: { flag, payload } })
+})
 
-  res.send({ [req.params.flagId]: flag })
+app.get('/user/:userId/flags', async (req, res) => {
+  const allFlags = await posthog.getAllFlagsAndPayloads(req.params.userId).catch((e) => console.error(e))
+  res.send(allFlags)
 })
 
 const server = app.listen(8020, () => {
