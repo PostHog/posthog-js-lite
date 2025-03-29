@@ -622,7 +622,7 @@ describe('PostHog Node.js', () => {
     it('should do isFeatureEnabled', async () => {
       expect(mockedFetch).toHaveBeenCalledTimes(0)
       await expect(posthog.isFeatureEnabled('feature-1', '123', { groups: { org: '123' } })).resolves.toEqual(true)
-      await expect(posthog.isFeatureEnabled('feature-4', '123', { groups: { org: '123' } })).resolves.toEqual(false)
+      await expect(posthog.isFeatureEnabled('feature-4', '123', { groups: { org: '123' } })).resolves.toEqual(undefined)
       expect(mockedFetch).toHaveBeenCalledTimes(2)
     })
 

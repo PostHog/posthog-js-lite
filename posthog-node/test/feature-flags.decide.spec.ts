@@ -15,7 +15,7 @@ const posthogImmediateResolveOptions: PostHogOptions = {
 
 describe('decide v4', () => {
   describe('getFeatureFlag v4', () => {
-    it('returns false if the flag is not found', async () => {
+    it('returns undefined if the flag is not found', async () => {
       const decideResponse: PostHogV4DecideResponse = {
         flags: {},
         errorsWhileComputingFlags: false,
@@ -34,7 +34,7 @@ describe('decide v4', () => {
 
       const result = await posthog.getFeatureFlag('non-existent-flag', 'some-distinct-id')
 
-      expect(result).toBe(false)
+      expect(result).toBe(undefined)
       expect(mockedFetch).toHaveBeenCalledWith('http://example.com/decide/?v=4', expect.any(Object))
 
       await waitForPromises()
@@ -44,9 +44,9 @@ describe('decide v4', () => {
         library: posthog.getLibraryId(),
         library_version: posthog.getLibraryVersion(),
         properties: {
-          '$feature/non-existent-flag': false,
+          '$feature/non-existent-flag': undefined,
           $feature_flag: 'non-existent-flag',
-          $feature_flag_response: false,
+          $feature_flag_response: undefined,
           $feature_flag_request_id: '0152a345-295f-4fba-adac-2e6ea9c91082',
           $groups: undefined,
           $lib: posthog.getLibraryId(),
@@ -219,11 +219,98 @@ describe('decide v4', () => {
       })
     })
   })
+
+  describe('error handling', () => {
+    let posthog: PostHog
+    describe.each([
+      {
+        case: 'JSON error response',
+        mock: apiImplementationV4({
+          status: 400,
+          json: () => Promise.resolve({ error: 'error response' }),
+        }),
+      },
+      {
+        case: 'undefined response',
+        mock: apiImplementationV4({
+          status: 400,
+          json: () => Promise.resolve(undefined),
+        }),
+      },
+      {
+        case: 'null response',
+        mock: apiImplementationV4({
+          status: 400,
+          json: () => Promise.resolve(null),
+        }),
+      },
+      {
+        case: 'empty response',
+        mock: apiImplementationV4({
+          status: 400,
+          json: () => Promise.resolve({}),
+        }),
+      },
+      {
+        case: 'network error',
+        mock: () => Promise.reject(new Error('Network error')),
+      },
+      {
+        case: 'invalid JSON',
+        mock: apiImplementationV4({
+          status: 500,
+          json: () => Promise.reject(new Error('Invalid JSON')),
+        }),
+      },
+    ])('when $case', ({ mock }) => {
+      beforeEach(() => {
+        posthog = new PostHog('TEST_API_KEY', {
+          host: 'http://example.com',
+          ...posthogImmediateResolveOptions,
+        })
+        mockedFetch.mockImplementation(mock)
+      })
+
+      it('getFeatureFlag returns undefined', async () => {
+        expect(await posthog.getFeatureFlag('error-flag', 'some-distinct-id')).toBe(undefined)
+      })
+
+      it('isFeatureEnabled returns undefined', async () => {
+        expect(await posthog.isFeatureEnabled('error-flag', 'some-distinct-id')).toBe(undefined)
+      })
+
+      it('getFeatureFlagPayload returns undefined', async () => {
+        expect(await posthog.getFeatureFlagPayload('error-flag', 'some-distinct-id')).toBe(undefined)
+      })
+
+      it('getAllFlags returns empty object', async () => {
+        expect(await posthog.getAllFlags('some-distinct-id')).toEqual({})
+      })
+
+      it('getAllFlagsAndPayloads returns object with empty flags and payloads', async () => {
+        expect(await posthog.getAllFlagsAndPayloads('some-distinct-id')).toEqual({
+          featureFlags: {},
+          featureFlagPayloads: {},
+        })
+      })
+
+      it('captures no events', async () => {
+        let capturedMessage: any
+        posthog.on('capture', (message) => {
+          capturedMessage = message
+        })
+
+        await posthog.getFeatureFlag('error-flag', 'some-distinct-id')
+        await waitForPromises()
+        expect(capturedMessage).toBeUndefined()
+      })
+    })
+  })
 })
 
 describe('decide v3', () => {
   describe('getFeatureFlag v3', () => {
-    it('returns false if the flag is not found', async () => {
+    it('returns undefined if the flag is not found', async () => {
       mockedFetch.mockImplementation(apiImplementation({ decideFlags: {} }))
 
       const posthog = new PostHog('TEST_API_KEY', {
@@ -237,7 +324,7 @@ describe('decide v3', () => {
 
       const result = await posthog.getFeatureFlag('non-existent-flag', 'some-distinct-id')
 
-      expect(result).toBe(false)
+      expect(result).toBe(undefined)
       expect(mockedFetch).toHaveBeenCalledWith('http://example.com/decide/?v=4', expect.any(Object))
 
       await waitForPromises()
@@ -247,9 +334,9 @@ describe('decide v3', () => {
         library: posthog.getLibraryId(),
         library_version: posthog.getLibraryVersion(),
         properties: {
-          '$feature/non-existent-flag': false,
+          '$feature/non-existent-flag': undefined,
           $feature_flag: 'non-existent-flag',
-          $feature_flag_response: false,
+          $feature_flag_response: undefined,
           $groups: undefined,
           $lib: posthog.getLibraryId(),
           $lib_version: posthog.getLibraryVersion(),
@@ -257,37 +344,37 @@ describe('decide v3', () => {
         },
       })
     })
+  })
 
-    describe('getFeatureFlagPayload v3', () => {
-      it('returns payload', async () => {
-        mockedFetch.mockImplementation(
-          apiImplementation({
-            decideFlags: {
-              'flag-with-payload': true,
-            },
-            decideFlagPayloads: {
-              'flag-with-payload': [0, 1, 2],
-            },
-          })
-        )
-
-        const posthog = new PostHog('TEST_API_KEY', {
-          host: 'http://example.com',
-          ...posthogImmediateResolveOptions,
+  describe('getFeatureFlagPayload v3', () => {
+    it('returns payload', async () => {
+      mockedFetch.mockImplementation(
+        apiImplementation({
+          decideFlags: {
+            'flag-with-payload': true,
+          },
+          decideFlagPayloads: {
+            'flag-with-payload': [0, 1, 2],
+          },
         })
-        let capturedMessage: any = undefined
-        posthog.on('capture', (message) => {
-          capturedMessage = message
-        })
+      )
 
-        const result = await posthog.getFeatureFlagPayload('flag-with-payload', 'some-distinct-id')
-
-        expect(result).toEqual([0, 1, 2])
-        expect(mockedFetch).toHaveBeenCalledWith('http://example.com/decide/?v=4', expect.any(Object))
-
-        await waitForPromises()
-        expect(capturedMessage).toBeUndefined()
+      const posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        ...posthogImmediateResolveOptions,
       })
+      let capturedMessage: any = undefined
+      posthog.on('capture', (message) => {
+        capturedMessage = message
+      })
+
+      const result = await posthog.getFeatureFlagPayload('flag-with-payload', 'some-distinct-id')
+
+      expect(result).toEqual([0, 1, 2])
+      expect(mockedFetch).toHaveBeenCalledWith('http://example.com/decide/?v=4', expect.any(Object))
+
+      await waitForPromises()
+      expect(capturedMessage).toBeUndefined()
     })
   })
 })

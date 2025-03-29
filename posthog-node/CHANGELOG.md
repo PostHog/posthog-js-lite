@@ -1,3 +1,9 @@
+# 4.11.1 - 2025-03-28
+
+## Fixed
+
+1. `getFeatureFlag`, `isFeatureEnabled`, and `getAllFlagsAndPayloads` now return `undefined` if the flag is not found.
+
 # 4.11.0 - 2025-03-28
 
 ## Added

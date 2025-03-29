@@ -1,13 +1,25 @@
 import { PostHogV4DecideResponse } from 'posthog-core/src/types'
 
-export const apiImplementationV4 = (decideResponse?: PostHogV4DecideResponse) => {
+type ErrorResponse = {
+  status: number
+  json: () => Promise<any>
+}
+
+export const apiImplementationV4 = (decideResponse: PostHogV4DecideResponse | ErrorResponse) => {
   return (url: any): Promise<any> => {
     if ((url as any).includes('/decide/?v=4')) {
-      return Promise.resolve({
-        status: 200,
-        text: () => Promise.resolve('ok'),
-        json: () => Promise.resolve(decideResponse),
-      }) as any
+      // Check if the response is a decide response or an error response
+      return 'flags' in decideResponse
+        ? Promise.resolve({
+            status: 200,
+            text: () => Promise.resolve('ok'),
+            json: () => Promise.resolve(decideResponse),
+          })
+        : Promise.resolve({
+            status: decideResponse.status,
+            text: () => Promise.resolve('not-ok'),
+            json: decideResponse.json,
+          })
     }
 
     return Promise.resolve({
