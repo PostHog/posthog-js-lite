@@ -1,3 +1,8 @@
+# 4.11.2 - 2025-04-07
+
+1. chore: bump axios to 1.8.2 (fixes [CVE-2025-27152](https://github.com/advisories/GHSA-jr5f-v2jv-69x6))
+
+
 # 4.11.1 - 2025-03-28
 
 ## Fixed
