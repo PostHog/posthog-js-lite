@@ -19,6 +19,7 @@ _Please describe._
 - [ ] All of them
 - [ ] posthog-web
 - [ ] posthog-node
+- [ ] posthog-ai
 - [ ] posthog-react-native
 
 ## Additional context
