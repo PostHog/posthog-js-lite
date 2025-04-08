@@ -1,7 +1,30 @@
-import { createReadStream } from 'node:fs'
-import { createInterface } from 'node:readline'
 import { StackFrame } from './types'
 import { ReduceableCache } from './reduceable-cache'
+import { Lazy } from 'posthog-node/src/lazy'
+
+const nodeFs = new Lazy(async () => {
+  try {
+    return await import('node:fs')
+  } catch {
+    return undefined
+  }
+})
+
+export async function getNodeFs(): Promise<typeof import('node:fs') | undefined> {
+  return await nodeFs.getValue()
+}
+
+const nodeReadline = new Lazy(async () => {
+  try {
+    return await import('node:readline')
+  } catch {
+    return undefined
+  }
+})
+
+export async function getNodeReadline(): Promise<typeof import('node:readline') | undefined> {
+  return await nodeReadline.getValue()
+}
 
 const LRU_FILE_CONTENTS_CACHE = new ReduceableCache<string, Record<number, string>>(25)
 const LRU_FILE_CONTENTS_FS_READ_FAILED = new ReduceableCache<string, 1>(20)
@@ -92,77 +115,87 @@ export async function addSourceContext(frames: StackFrame[]): Promise<StackFrame
  */
 function getContextLinesFromFile(path: string, ranges: ReadlineRange[], output: Record<number, string>): Promise<void> {
   return new Promise((resolve) => {
-    // It is important *not* to have any async code between createInterface and the 'line' event listener
-    // as it will cause the 'line' event to
-    // be emitted before the listener is attached.
-    const stream = createReadStream(path)
-    const lineReaded = createInterface({
-      input: stream,
-    })
-
-    // We need to explicitly destroy the stream to prevent memory leaks,
-    // removing the listeners on the readline interface is not enough.
-    // See: https://github.com/nodejs/node/issues/9002 and https://github.com/getsentry/sentry-javascript/issues/14892
-    function destroyStreamAndResolve(): void {
-      stream.destroy()
-      resolve()
-    }
-
-    // Init at zero and increment at the start of the loop because lines are 1 indexed.
-    let lineNumber = 0
-    let currentRangeIndex = 0
-    const range = ranges[currentRangeIndex]
-    if (range === undefined) {
-      // We should never reach this point, but if we do, we should resolve the promise to prevent it from hanging.
-      destroyStreamAndResolve()
-      return
-    }
-    let rangeStart = range[0]
-    let rangeEnd = range[1]
-
-    // We use this inside Promise.all, so we need to resolve the promise even if there is an error
-    // to prevent Promise.all from short circuiting the rest.
-    function onStreamError(): void {
-      // Mark file path as failed to read and prevent multiple read attempts.
-      LRU_FILE_CONTENTS_FS_READ_FAILED.set(path, 1)
-      lineReaded.close()
-      lineReaded.removeAllListeners()
-      destroyStreamAndResolve()
-    }
-
-    // We need to handle the error event to prevent the process from crashing in < Node 16
-    // https://github.com/nodejs/node/pull/31603
-    stream.on('error', onStreamError)
-    lineReaded.on('error', onStreamError)
-    lineReaded.on('close', destroyStreamAndResolve)
-
-    lineReaded.on('line', (line) => {
-      lineNumber++
-      if (lineNumber < rangeStart) {
+    // KLUDGE: edge runtimes do not support node:fs or node:readline
+    // until we have separate packages for each environment this will skip
+    // trying to access the filesystem when not accessible
+    Promise.all([getNodeFs(), getNodeReadline()]).then(([nodeFs, nodeReadline]) => {
+      if (!nodeFs || !nodeReadline) {
+        resolve()
         return
       }
 
-      // !Warning: This mutates the cache by storing the snipped line into the cache.
-      output[lineNumber] = snipLine(line, 0)
+      // It is important *not* to have any async code between createInterface and the 'line' event listener
+      // as it will cause the 'line' event to
+      // be emitted before the listener is attached.
+      const stream = nodeFs.createReadStream(path)
+      const lineReaded = nodeReadline.createInterface({
+        input: stream,
+      })
 
-      if (lineNumber >= rangeEnd) {
-        if (currentRangeIndex === ranges.length - 1) {
-          // We need to close the file stream and remove listeners, else the reader will continue to run our listener;
-          lineReaded.close()
-          lineReaded.removeAllListeners()
-          return
-        }
-        currentRangeIndex++
-        const range = ranges[currentRangeIndex]
-        if (range === undefined) {
-          // This should never happen as it means we have a bug in the context.
-          lineReaded.close()
-          lineReaded.removeAllListeners()
-          return
-        }
-        rangeStart = range[0]
-        rangeEnd = range[1]
+      // We need to explicitly destroy the stream to prevent memory leaks,
+      // removing the listeners on the readline interface is not enough.
+      // See: https://github.com/nodejs/node/issues/9002 and https://github.com/getsentry/sentry-javascript/issues/14892
+      function destroyStreamAndResolve(): void {
+        stream.destroy()
+        resolve()
       }
+
+      // Init at zero and increment at the start of the loop because lines are 1 indexed.
+      let lineNumber = 0
+      let currentRangeIndex = 0
+      const range = ranges[currentRangeIndex]
+      if (range === undefined) {
+        // We should never reach this point, but if we do, we should resolve the promise to prevent it from hanging.
+        destroyStreamAndResolve()
+        return
+      }
+      let rangeStart = range[0]
+      let rangeEnd = range[1]
+
+      // We use this inside Promise.all, so we need to resolve the promise even if there is an error
+      // to prevent Promise.all from short circuiting the rest.
+      function onStreamError(): void {
+        // Mark file path as failed to read and prevent multiple read attempts.
+        LRU_FILE_CONTENTS_FS_READ_FAILED.set(path, 1)
+        lineReaded.close()
+        lineReaded.removeAllListeners()
+        destroyStreamAndResolve()
+      }
+
+      // We need to handle the error event to prevent the process from crashing in < Node 16
+      // https://github.com/nodejs/node/pull/31603
+      stream.on('error', onStreamError)
+      lineReaded.on('error', onStreamError)
+      lineReaded.on('close', destroyStreamAndResolve)
+
+      lineReaded.on('line', (line) => {
+        lineNumber++
+        if (lineNumber < rangeStart) {
+          return
+        }
+
+        // !Warning: This mutates the cache by storing the snipped line into the cache.
+        output[lineNumber] = snipLine(line, 0)
+
+        if (lineNumber >= rangeEnd) {
+          if (currentRangeIndex === ranges.length - 1) {
+            // We need to close the file stream and remove listeners, else the reader will continue to run our listener;
+            lineReaded.close()
+            lineReaded.removeAllListeners()
+            return
+          }
+          currentRangeIndex++
+          const range = ranges[currentRangeIndex]
+          if (range === undefined) {
+            // This should never happen as it means we have a bug in the context.
+            lineReaded.close()
+            lineReaded.removeAllListeners()
+            return
+          }
+          rangeStart = range[0]
+          rangeEnd = range[1]
+        }
+      })
     })
   })
 }
