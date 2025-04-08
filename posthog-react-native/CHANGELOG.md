@@ -1,5 +1,20 @@
 # Next
 
+## Added
+
+1. `$feature_flag_called` event now includes additional properties such as `feature_flag_id`, `feature_flag_version`, `feature_flag_reason`, and `feature_flag_request_id`.
+
+## Fixed
+
+1. apiKey cannot be empty.
+
+# 3.12.0 - 2025-03-13
+
+## Added
+
+1. Adds support for [surveys on react native](https://github.com/PostHog/posthog.com/pull/10843/)
+   1. Thanks @ian-craig for initial PR.
+
 # 3.11.2 - 2025-02-27
 
 ## Fixed

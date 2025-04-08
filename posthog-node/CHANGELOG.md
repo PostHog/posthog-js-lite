@@ -1,18 +1,43 @@
-# Next
+# 4.11.2 - 2025-04-07
 
-# 4.10.1 – 2025-03-06
+1. chore: bump axios to 1.8.2 (fixes [CVE-2025-27152](https://github.com/advisories/GHSA-jr5f-v2jv-69x6))
+
+
+# 4.11.1 - 2025-03-28
+
+## Fixed
+
+1. `getFeatureFlag`, `isFeatureEnabled`, and `getAllFlagsAndPayloads` now return `undefined` if the flag is not found.
+
+# 4.11.0 - 2025-03-28
+
+## Added
+
+1. `$feature_flag_called` event now includes additional properties such as `feature_flag_id`, `feature_flag_version`, `feature_flag_reason`, and `feature_flag_request_id`.
+
+## Fixed
+
+1. apiKey cannot be empty.
+
+# 4.10.2 - 2025-03-06
+
+1. Add: log error message when feature flags have computation errors.
+
+# 4.10.1 – 2025-03-06
 
 1. Fix: only set `platform` on PostHog exception frame properties
+1. Fix: prevent fetch floods when rate-limited.
 
-# 4.10.0 – 2025-03-06
+
+# 4.10.0 – 2025-03-06
 
 1. Attach requestId to $feature_flag_called if present in /decide response
 
-# 4.9.0 – 2025-03-04
+# 4.9.0 – 2025-03-04
 
 1. Allow feature flags to be evaluated individually when local evaluation is not being used
 
-# 4.8.1 – 2025-02-26
+# 4.8.1 – 2025-02-26
 
 1. Supports gracefully handling quotaLimited responses from the PostHog API for feature flag evaluation
 

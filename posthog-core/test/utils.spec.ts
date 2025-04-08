@@ -3,14 +3,12 @@ import { assert, removeTrailingSlash, currentISOTime, currentTimestamp } from '.
 describe('utils', () => {
   describe('assert', () => {
     it('should throw on falsey values', () => {
-      ;[false, '', null, undefined, 0].forEach((x) => {
+      ;[false, '', null, undefined, 0, {}, []].forEach((x) => {
         expect(() => assert(x, 'error')).toThrow('error')
       })
     })
-    it('should not throw on truthy values', () => {
-      ;[true, 'string', 1, {}].forEach((x) => {
-        expect(() => assert(x, 'error')).not.toThrow('error')
-      })
+    it('should not throw on truthy value', () => {
+      expect(() => assert('string', 'error')).not.toThrow('error')
     })
   })
   describe('removeTrailingSlash', () => {
