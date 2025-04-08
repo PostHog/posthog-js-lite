@@ -50,7 +50,7 @@ export function SurveyModal(props: SurveyModalProps): JSX.Element | null {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1, justifyContent: 'flex-end' }}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0} // adjust if needed
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.modalBackdrop}>
