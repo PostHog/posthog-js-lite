@@ -1,5 +1,7 @@
 # Next
 
+# 3.13.0 - 2025-04-08
+
 ## Added
 
 1. `$feature_flag_called` event now includes additional properties such as `feature_flag_id`, `feature_flag_version`, `feature_flag_reason`, and `feature_flag_request_id`.
@@ -7,6 +9,7 @@
 ## Fixed
 
 1. apiKey cannot be empty.
+2. Survey modal now moves up when the keyboard is open.
 
 # 3.12.0 - 2025-03-13
 
