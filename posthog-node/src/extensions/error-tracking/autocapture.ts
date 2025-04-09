@@ -1,5 +1,8 @@
 import { EventHint } from 'posthog-node/src/extensions/error-tracking/types'
 
+// Portions of this file are derived from getsentry/sentry-javascript by Software, Inc. dba Sentry
+// Licensed under the MIT License
+
 type ErrorHandler = { _posthogErrorHandler: boolean } & ((error: Error) => void)
 
 function makeUncaughtExceptionHandler(
