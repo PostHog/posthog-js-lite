@@ -27,6 +27,10 @@ export class PostHog extends PostHogCore {
     if (options?.preloadFeatureFlags !== false) {
       this.reloadFeatureFlags()
     }
+
+    if (options?.trackHistoryEvents && typeof window !== 'undefined') {
+      this.setupHistoryEventTracking()
+    }
   }
 
   private getWindow(): Window | undefined {
@@ -83,5 +87,41 @@ export class PostHog extends PostHogCore {
       ...super.getCommonEventProperties(),
       ...getContext(this.getWindow()),
     }
+  }
+
+  private setupHistoryEventTracking(): void {
+    const window = this.getWindow()
+    if (!window) {
+      return
+    }
+
+    const originalPushState = window.history.pushState
+    const originalReplaceState = window.history.replaceState
+
+    window.history.pushState = (state, title, url) => {
+      originalPushState.apply(window.history, [state, title, url])
+      this.captureNavigationEvent('pushState')
+    }
+
+    window.history.replaceState = (state, title, url) => {
+      originalReplaceState.apply(window.history, [state, title, url])
+      this.captureNavigationEvent('replaceState')
+    }
+
+    // For popstate we need to listen to the event instead of overriding a method
+    window.addEventListener('popstate', () => {
+      this.captureNavigationEvent('popstate')
+    })
+  }
+
+  // Capture navigation as pageview with only navigation_type
+  // URL and pathname come from getCommonEventProperties()
+  private captureNavigationEvent(navigationType: 'pushState' | 'replaceState' | 'popstate'): void {
+    const window = this.getWindow()
+    if (!window) {
+      return
+    }
+
+    this.capture('$pageview', { navigation_type: navigationType })
   }
 }

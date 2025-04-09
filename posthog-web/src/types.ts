@@ -4,4 +4,5 @@ export type PostHogOptions = {
   autocapture?: boolean
   persistence?: 'localStorage' | 'sessionStorage' | 'cookie' | 'memory'
   persistence_name?: string
+  trackHistoryEvents?: boolean
 } & PostHogCoreOptions
