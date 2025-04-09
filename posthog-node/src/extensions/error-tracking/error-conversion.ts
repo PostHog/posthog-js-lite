@@ -1,9 +1,9 @@
+// Portions of this file are derived from getsentry/sentry-javascript by Software, Inc. dba Sentry
+// Licensed under the MIT License
+
 import { isError, isErrorEvent, isEvent, isPlainObject } from './type-checking'
 import { ErrorProperties, EventHint, Exception, Mechanism, StackFrame, StackParser } from './types'
 import { addSourceContext } from './context-lines'
-
-// Portions of this file are derived from getsentry/sentry-javascript by Software, Inc. dba Sentry
-// Licensed under the MIT License
 
 export async function propertiesFromUnknownInput(
   stackParser: StackParser,
