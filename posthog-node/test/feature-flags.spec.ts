@@ -1755,6 +1755,176 @@ describe('local evaluation', () => {
     // decide not called
     expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
   })
+
+  describe('isLocalEvaluationReady', () => {
+    it('returns false when featureFlagsPoller is undefined', () => {
+      posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        ...posthogImmediateResolveOptions,
+      })
+      expect(posthog.isLocalEvaluationReady()).toBe(false)
+    })
+
+    it('returns false when featureFlagsPoller has not loaded successfully', () => {
+      posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        personalApiKey: 'TEST_PERSONAL_API_KEY',
+        ...posthogImmediateResolveOptions,
+      })
+      expect(posthog.isLocalEvaluationReady()).toBe(false)
+    })
+
+    it('returns false when featureFlagsPoller has no flags', async () => {
+      const flags = { flags: [] }
+      mockedFetch.mockImplementation(apiImplementation({ localFlags: flags }))
+      posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        personalApiKey: 'TEST_PERSONAL_API_KEY',
+        ...posthogImmediateResolveOptions,
+      })
+      await posthog.reloadFeatureFlags()
+      expect(posthog.isLocalEvaluationReady()).toBe(false)
+    })
+
+    it('returns true when featureFlagsPoller has loaded flags successfully', async () => {
+      const flags = {
+        flags: [
+          {
+            id: 1,
+            name: 'Beta Feature',
+            key: 'beta-feature',
+            active: true,
+            filters: {
+              groups: [
+                {
+                  properties: [],
+                  rollout_percentage: 100,
+                },
+              ],
+            },
+          },
+        ],
+      }
+      mockedFetch.mockImplementation(apiImplementation({ localFlags: flags }))
+      posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        personalApiKey: 'TEST_PERSONAL_API_KEY',
+        ...posthogImmediateResolveOptions,
+      })
+      await posthog.reloadFeatureFlags()
+      expect(posthog.isLocalEvaluationReady()).toBe(true)
+    })
+  })
+
+  it('emits localEvaluationFlagsLoaded event when flags are loaded', async () => {
+    const flags = {
+      flags: [
+        {
+          id: 1,
+          name: 'Beta Feature',
+          key: 'beta-feature',
+          active: true,
+          filters: {
+            groups: [
+              {
+                properties: [],
+                rollout_percentage: 100,
+              },
+            ],
+          },
+        },
+        {
+          id: 2,
+          name: 'Alpha Feature',
+          key: 'alpha-feature',
+          active: true,
+          filters: {
+            groups: [
+              {
+                properties: [],
+                rollout_percentage: 50,
+              },
+            ],
+          },
+        },
+      ],
+    }
+    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags }))
+
+    posthog = new PostHog('TEST_API_KEY', {
+      host: 'http://example.com',
+      personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
+    })
+
+    const eventHandler = jest.fn()
+    posthog.on('localEvaluationFlagsLoaded', eventHandler)
+
+    // Wait for initial load
+    await waitForPromises()
+
+    expect(eventHandler).toHaveBeenCalledWith(2) // Should be called with number of flags loaded
+  })
+
+  it('does not emit localEvaluationFlagsLoaded event when loading fails', async () => {
+    mockedFetch.mockImplementation(() => {
+      throw new Error('Failed to load flags')
+    })
+
+    posthog = new PostHog('TEST_API_KEY', {
+      host: 'http://example.com',
+      personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
+    })
+
+    const eventHandler = jest.fn()
+    posthog.on('localEvaluationFlagsLoaded', eventHandler)
+
+    // Wait for initial load
+    await waitForPromises()
+
+    expect(eventHandler).not.toHaveBeenCalled()
+  })
+
+  it('emits localEvaluationFlagsLoaded event on reload', async () => {
+    const flags = {
+      flags: [
+        {
+          id: 1,
+          name: 'Beta Feature',
+          key: 'beta-feature',
+          active: true,
+          filters: {
+            groups: [
+              {
+                properties: [],
+                rollout_percentage: 100,
+              },
+            ],
+          },
+        },
+      ],
+    }
+    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags }))
+
+    posthog = new PostHog('TEST_API_KEY', {
+      host: 'http://example.com',
+      personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
+    })
+
+    const eventHandler = jest.fn()
+    posthog.on('localEvaluationFlagsLoaded', eventHandler)
+
+    // Wait for initial load
+    await waitForPromises()
+    eventHandler.mockClear() // Clear initial call
+
+    // Reload flags
+    await posthog.reloadFeatureFlags()
+
+    expect(eventHandler).toHaveBeenCalledWith(1) // Should be called with number of flags loaded
+  })
 })
 
 describe('getFeatureFlag', () => {

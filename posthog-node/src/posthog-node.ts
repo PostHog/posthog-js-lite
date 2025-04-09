@@ -75,6 +75,9 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         onError: (err: Error) => {
           this._events.emit('error', err)
         },
+        onLoad: (count: number) => {
+          this._events.emit('localEvaluationFlagsLoaded', count)
+        },
         customHeaders: this.getCustomHeaders(),
       })
     }
@@ -218,6 +221,16 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
 
   alias(data: { distinctId: string; alias: string; disableGeoip?: boolean }): void {
     super.aliasStateless(data.alias, data.distinctId, undefined, { disableGeoip: data.disableGeoip })
+  }
+
+  /**
+   * Returns true if the feature flags poller has loaded successfully at least once and has more than 0 feature flags.
+   * This is useful to check if local evaluation is ready before calling getFeatureFlag.
+   * 
+   * @returns true if the feature flags poller has loaded successfully at least once and has more than 0 feature flags.
+   */
+  isLocalEvaluationReady(): boolean {
+    return this.featureFlagsPoller?.isLocalEvaluationReady() ?? false
   }
 
   async getFeatureFlag(
@@ -497,6 +510,10 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     super.groupIdentifyStateless(groupType, groupKey, properties, { disableGeoip }, distinctId)
   }
 
+  /**
+   * Reloads the feature flag definitions from the server for local evaluation.
+   * This is useful to call if you want to ensure that the feature flags are up to date before calling getFeatureFlag.
+   */
   async reloadFeatureFlags(): Promise<void> {
     await this.featureFlagsPoller?.loadFeatureFlags(true)
   }
