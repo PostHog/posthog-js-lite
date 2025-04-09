@@ -110,20 +110,20 @@ describe('PostHogWeb', () => {
       window.removeEventListener('popstate', popstateHandler)
     })
 
-    it('should not patch history methods when trackHistoryEvents is disabled', () => {
+    it('should not patch history methods when captureHistoryEvents is disabled', () => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const posthog = new PostHog('TEST_API_KEY', {
-        trackHistoryEvents: false,
+        captureHistoryEvents: false,
       })
 
       expect(window.history.pushState).toBe(originalPushState)
       expect(window.history.replaceState).toBe(originalReplaceState)
     })
 
-    it('should patch history methods when trackHistoryEvents is enabled', () => {
+    it('should patch history methods when captureHistoryEvents is enabled', () => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const posthog = new PostHog('TEST_API_KEY', {
-        trackHistoryEvents: true,
+        captureHistoryEvents: true,
       })
 
       expect(window.history.pushState).not.toBe(originalPushState)
@@ -132,7 +132,7 @@ describe('PostHogWeb', () => {
 
     it('should capture pageview events on pushState', async () => {
       const posthog = new PostHog('TEST_API_KEY', {
-        trackHistoryEvents: true,
+        captureHistoryEvents: true,
         flushAt: 1,
       })
 
@@ -150,7 +150,7 @@ describe('PostHogWeb', () => {
 
     it('should capture pageview events on replaceState', async () => {
       const posthog = new PostHog('TEST_API_KEY', {
-        trackHistoryEvents: true,
+        captureHistoryEvents: true,
         flushAt: 1,
       })
 
@@ -168,7 +168,7 @@ describe('PostHogWeb', () => {
 
     it('should capture pageview events on popstate', async () => {
       const posthog = new PostHog('TEST_API_KEY', {
-        trackHistoryEvents: true,
+        captureHistoryEvents: true,
         flushAt: 1,
       })
 
@@ -186,7 +186,7 @@ describe('PostHogWeb', () => {
 
     it('should include navigation properties in capture call and rely on getCommonEventProperties', async () => {
       const posthog = new PostHog('TEST_API_KEY', {
-        trackHistoryEvents: true,
+        captureHistoryEvents: true,
         flushAt: 1,
       })
 
