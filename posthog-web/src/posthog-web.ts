@@ -28,7 +28,7 @@ export class PostHog extends PostHogCore {
       this.reloadFeatureFlags()
     }
 
-    if (options?.trackHistoryEvents && typeof window !== 'undefined') {
+    if (options?.captureHistoryEvents && typeof window !== 'undefined') {
       this.setupHistoryEventTracking()
     }
   }
