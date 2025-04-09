@@ -105,7 +105,9 @@ describe('PostHogWeb', () => {
       window.history.pushState = originalPushState
       window.history.replaceState = originalReplaceState
 
-      window.removeEventListener('popstate', () => {})
+      const popstateHandler = () => {}
+      window.addEventListener('popstate', popstateHandler)
+      window.removeEventListener('popstate', popstateHandler)
     })
 
     it('should not patch history methods when trackHistoryEvents is disabled', () => {
