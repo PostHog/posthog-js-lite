@@ -1816,6 +1816,54 @@ describe('local evaluation', () => {
     })
   })
 
+  describe('waitForLocalEvaluationReady', () => {
+    it('returns true when local evaluation is ready', async () => {
+      const flags = {
+        flags: [
+          {
+            id: 1,
+            name: 'Beta Feature',
+            key: 'beta-feature',
+            active: true,
+            filters: {
+              groups: [{ properties: [], rollout_percentage: 100 }],
+            },
+          },
+        ],
+      }
+      mockedFetch.mockImplementation(apiImplementation({ localFlags: flags }))
+      posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        personalApiKey: 'TEST_PERSONAL_API_KEY',
+        ...posthogImmediateResolveOptions,
+      })
+
+      expect(await posthog.waitForLocalEvaluationReady()).toBe(true)
+    })
+
+    it('returns false when local evaluation endpoint returns empty flags', async () => {
+      const flags = { flags: [] }
+      mockedFetch.mockImplementation(apiImplementation({ localFlags: flags }))
+      posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        personalApiKey: 'TEST_PERSONAL_API_KEY',
+        ...posthogImmediateResolveOptions,
+      })
+      expect(await posthog.waitForLocalEvaluationReady()).toBe(false)
+    })
+
+    it('returns false when local evaluation is not enabled', async () => {
+      const flags = { flags: [] }
+      mockedFetch.mockImplementation(apiImplementation({ localFlags: flags }))
+      posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        personalApiKey: undefined,
+        ...posthogImmediateResolveOptions,
+      })
+      expect(await posthog.waitForLocalEvaluationReady()).toBe(false)
+    })
+  })
+
   it('emits localEvaluationFlagsLoaded event when flags are loaded', async () => {
     const flags = {
       flags: [

@@ -226,11 +226,40 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
   /**
    * Returns true if the feature flags poller has loaded successfully at least once and has more than 0 feature flags.
    * This is useful to check if local evaluation is ready before calling getFeatureFlag.
-   * 
+   *
    * @returns true if the feature flags poller has loaded successfully at least once and has more than 0 feature flags.
    */
   isLocalEvaluationReady(): boolean {
     return this.featureFlagsPoller?.isLocalEvaluationReady() ?? false
+  }
+
+  /**
+   * Waits for local evaluation to be ready, with an optional timeout.
+   * @param timeoutMs - Maximum time to wait in milliseconds. Defaults to 30 seconds.
+   * @returns A promise that resolves to true if local evaluation is ready (aka, flag
+   * definitions are loaded and there's more than 0 flags), false if the timeout was reached or if local evaluation is not enabled or if there are no flags.
+   */
+  async waitForLocalEvaluationReady(timeoutMs: number = THIRTY_SECONDS): Promise<boolean> {
+    if (this.isLocalEvaluationReady()) {
+      return true
+    }
+
+    if (this.featureFlagsPoller === undefined) {
+      return false
+    }
+
+    return new Promise((resolve) => {
+      const timeout = setTimeout(() => {
+        cleanup()
+        resolve(false)
+      }, timeoutMs)
+
+      const cleanup = this._events.on('localEvaluationFlagsLoaded', (count: number) => {
+        clearTimeout(timeout)
+        cleanup()
+        resolve(count > 0)
+      })
+    })
   }
 
   async getFeatureFlag(
