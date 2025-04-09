@@ -105,7 +105,7 @@ describe('PostHogWeb', () => {
       window.history.pushState = originalPushState
       window.history.replaceState = originalReplaceState
 
-      const popstateHandler = () => {}
+      const popstateHandler = (): void => {}
       window.addEventListener('popstate', popstateHandler)
       window.removeEventListener('popstate', popstateHandler)
     })
