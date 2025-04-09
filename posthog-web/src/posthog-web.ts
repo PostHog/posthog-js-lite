@@ -9,6 +9,7 @@ import { PostHogStorage, getStorage } from './storage'
 import { version } from '../package.json'
 import { PostHogOptions } from './types'
 import { getFetch } from 'posthog-core/src/utils'
+import { patch } from '../../posthog-core/src/patch'
 
 export class PostHog extends PostHogCore {
   private _storage: PostHogStorage
@@ -89,24 +90,31 @@ export class PostHog extends PostHogCore {
     }
   }
 
+  // Setup tracking for the three SPA navigation types: pushState, replaceState, and popstate
   private setupHistoryEventTracking(): void {
     const window = this.getWindow()
     if (!window) {
       return
     }
 
-    const originalPushState = window.history.pushState
-    const originalReplaceState = window.history.replaceState
+    // Old fashioned, we could also use arrow functions but I think relying on the closure for a patch is more reliable
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const self = this
 
-    window.history.pushState = (state, title, url) => {
-      originalPushState.apply(window.history, [state, title, url])
-      this.captureNavigationEvent('pushState')
-    }
+    // Use patch with proper History method types
+    patch(window.history, 'pushState', (originalPushState) => {
+      return function patchedPushState(this: History, state: any, title: string, url?: string | URL | null): void {
+        ;(originalPushState as History['pushState']).call(this, state, title, url)
+        self.captureNavigationEvent('pushState')
+      }
+    })
 
-    window.history.replaceState = (state, title, url) => {
-      originalReplaceState.apply(window.history, [state, title, url])
-      this.captureNavigationEvent('replaceState')
-    }
+    patch(window.history, 'replaceState', (originalReplaceState) => {
+      return function patchedReplaceState(this: History, state: any, title: string, url?: string | URL | null): void {
+        ;(originalReplaceState as History['replaceState']).call(this, state, title, url)
+        self.captureNavigationEvent('replaceState')
+      }
+    })
 
     // For popstate we need to listen to the event instead of overriding a method
     window.addEventListener('popstate', () => {
