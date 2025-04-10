@@ -2,7 +2,7 @@
 
 ## Added
 
-1. Added `trackHistoryEvents` option to automatically capture navigation events in single-page applications using the History API.
+1. Added `captureHistoryEvents` option to automatically capture navigation events in single-page applications using the History API.
 
 ## Fixed
 

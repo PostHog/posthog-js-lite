@@ -22,7 +22,6 @@ import PostHog from 'posthog-js-lite'
 const posthog = new PostHog('my-api-key', {
   /* options, e.g. for self-hosted users */
   // host: "https://my-posthog.app.com"
-  // trackHistoryEvents: true // Enable tracking of History API navigation events as pageviews
 })
 
 // Capture generic events
@@ -78,11 +77,11 @@ posthog.optIn() // Will start tracking
 
 Single-page applications (SPAs) typically use the History API (`pushState`, `replaceState`) for navigation instead of full page loads. By default, PostHog only tracks the initial page load.
 
-To automatically track navigation events in SPAs, enable the `trackHistoryEvents` option:
+To automatically track navigation events in SPAs, enable the `captureHistoryEvents` option:
 
 ```ts
 const posthog = new PostHog('my-api-key', {
-  trackHistoryEvents: true
+  captureHistoryEvents: true
 })
 ```
 
