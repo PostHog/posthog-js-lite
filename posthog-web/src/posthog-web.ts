@@ -90,28 +90,26 @@ export class PostHog extends PostHogCore {
     }
   }
 
-  // Setup tracking for the three SPA navigation types: pushState, replaceState, and popstate
   private setupHistoryEventTracking(): void {
     const window = this.getWindow()
     if (!window) {
       return
     }
 
-    // Old fashioned, we could also use arrow functions but I think relying on the closure for a patch is more reliable
+    // Old fashioned, we could also use arrow functions but I think the closure for a patch is more reliable
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this
 
-    // Use patch with proper History method types
     patch(window.history, 'pushState', (originalPushState) => {
       return function patchedPushState(this: History, state: any, title: string, url?: string | URL | null): void {
-        (originalPushState as History['pushState']).call(this, state, title, url)
+        ;(originalPushState as History['pushState']).call(this, state, title, url)
         self.captureNavigationEvent('pushState')
       }
     })
 
     patch(window.history, 'replaceState', (originalReplaceState) => {
       return function patchedReplaceState(this: History, state: any, title: string, url?: string | URL | null): void {
-        (originalReplaceState as History['replaceState']).call(this, state, title, url)
+        ;(originalReplaceState as History['replaceState']).call(this, state, title, url)
         self.captureNavigationEvent('replaceState')
       }
     })
@@ -122,8 +120,6 @@ export class PostHog extends PostHogCore {
     })
   }
 
-  // Capture navigation as pageview with only navigation_type
-  // URL and pathname come from getCommonEventProperties()
   private captureNavigationEvent(navigationType: 'pushState' | 'replaceState' | 'popstate'): void {
     const window = this.getWindow()
     if (!window) {
