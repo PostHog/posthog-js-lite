@@ -99,6 +99,22 @@ describe('PostHogWeb', () => {
   describe('History API tracking', () => {
     const originalPushState = window.history.pushState
     const originalReplaceState = window.history.replaceState
+    let setPathname: (pathname: string) => void
+
+    beforeEach(() => {
+      const mockLocation = {
+        pathname: '/initial-path',
+      }
+
+      Object.defineProperty(window, 'location', {
+        value: mockLocation,
+        writable: true,
+      })
+
+      setPathname = (pathname: string) => {
+        mockLocation.pathname = pathname
+      }
+    })
 
     // Reset history methods after each test
     afterEach(() => {
@@ -130,7 +146,7 @@ describe('PostHogWeb', () => {
       expect(window.history.replaceState).not.toBe(originalReplaceState)
     })
 
-    it('should capture pageview events on pushState', async () => {
+    it('should capture pageview events on pushState when pathname changes', async () => {
       const posthog = new PostHog('TEST_API_KEY', {
         captureHistoryEvents: true,
         flushAt: 1,
@@ -138,6 +154,8 @@ describe('PostHogWeb', () => {
 
       const captureSpy = jest.spyOn(posthog, 'capture')
 
+      // Change pathname
+      setPathname('/test-page')
       window.history.pushState({}, '', '/test-page')
 
       expect(captureSpy).toHaveBeenCalledWith(
@@ -148,7 +166,22 @@ describe('PostHogWeb', () => {
       )
     })
 
-    it('should capture pageview events on replaceState', async () => {
+    it('should not capture pageview events on pushState when pathname does not change', async () => {
+      const posthog = new PostHog('TEST_API_KEY', {
+        captureHistoryEvents: true,
+        flushAt: 1,
+      })
+
+      const captureSpy = jest.spyOn(posthog, 'capture')
+      captureSpy.mockClear()
+
+      // Don't change pathname
+      window.history.pushState({}, '', '/initial-path')
+
+      expect(captureSpy).not.toHaveBeenCalled()
+    })
+
+    it('should capture pageview events on replaceState when pathname changes', async () => {
       const posthog = new PostHog('TEST_API_KEY', {
         captureHistoryEvents: true,
         flushAt: 1,
@@ -156,6 +189,8 @@ describe('PostHogWeb', () => {
 
       const captureSpy = jest.spyOn(posthog, 'capture')
 
+      // Change pathname
+      setPathname('/replaced-page')
       window.history.replaceState({}, '', '/replaced-page')
 
       expect(captureSpy).toHaveBeenCalledWith(
@@ -166,7 +201,22 @@ describe('PostHogWeb', () => {
       )
     })
 
-    it('should capture pageview events on popstate', async () => {
+    it('should not capture pageview events on replaceState when pathname does not change', async () => {
+      const posthog = new PostHog('TEST_API_KEY', {
+        captureHistoryEvents: true,
+        flushAt: 1,
+      })
+
+      const captureSpy = jest.spyOn(posthog, 'capture')
+      captureSpy.mockClear()
+
+      // Don't change pathname
+      window.history.replaceState({}, '', '/initial-path')
+
+      expect(captureSpy).not.toHaveBeenCalled()
+    })
+
+    it('should capture pageview events on popstate when pathname changes', async () => {
       const posthog = new PostHog('TEST_API_KEY', {
         captureHistoryEvents: true,
         flushAt: 1,
@@ -174,6 +224,8 @@ describe('PostHogWeb', () => {
 
       const captureSpy = jest.spyOn(posthog, 'capture')
 
+      // Change pathname
+      setPathname('/popstate-page')
       window.dispatchEvent(new Event('popstate'))
 
       expect(captureSpy).toHaveBeenCalledWith(
@@ -182,6 +234,21 @@ describe('PostHogWeb', () => {
           navigation_type: 'popstate',
         })
       )
+    })
+
+    it('should not capture pageview events on popstate when pathname does not change', async () => {
+      const posthog = new PostHog('TEST_API_KEY', {
+        captureHistoryEvents: true,
+        flushAt: 1,
+      })
+
+      const captureSpy = jest.spyOn(posthog, 'capture')
+      captureSpy.mockClear()
+
+      // Don't change pathname
+      window.dispatchEvent(new Event('popstate'))
+
+      expect(captureSpy).not.toHaveBeenCalled()
     })
 
     it('should include navigation properties in capture call and rely on getCommonEventProperties', async () => {
@@ -197,6 +264,8 @@ describe('PostHogWeb', () => {
 
       const coreCaptureMethod = jest.spyOn(PostHog.prototype, 'capture')
 
+      // Change pathname
+      setPathname('/captured-page')
       window.history.pushState({}, '', '/captured-page')
 
       // Will use a mock here for now and rely on the implementation since the tests setup is very simple at the moment

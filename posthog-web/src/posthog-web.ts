@@ -15,6 +15,7 @@ export class PostHog extends PostHogCore {
   private _storage: PostHogStorage
   private _storageCache: any
   private _storageKey: string
+  private _lastPathname: string = ''
 
   constructor(apiKey: string, options?: PostHogOptions) {
     super(apiKey, options)
@@ -30,6 +31,7 @@ export class PostHog extends PostHogCore {
     }
 
     if (options?.captureHistoryEvents && typeof window !== 'undefined') {
+      this._lastPathname = window?.location?.pathname || ''
       this.setupHistoryEventTracking()
     }
   }
@@ -126,6 +128,12 @@ export class PostHog extends PostHogCore {
       return
     }
 
-    this.capture('$pageview', { navigation_type: navigationType })
+    const currentPathname = window.location.pathname
+
+    // Only capture pageview if the pathname has changed
+    if (currentPathname !== this._lastPathname) {
+      this.capture('$pageview', { navigation_type: navigationType })
+      this._lastPathname = currentPathname
+    }
   }
 }
