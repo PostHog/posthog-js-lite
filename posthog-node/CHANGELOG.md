@@ -1,3 +1,9 @@
+# 4.11.4 - 2025-04-14
+
+## Fixed
+
+1. export top-level declarations for surveys
+
 # 4.11.3 - 2025-04-08
 
 1. fix: do not access `fs` or `readline` in when not available e.g. edge environments
