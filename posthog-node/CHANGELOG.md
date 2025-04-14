@@ -1,8 +1,18 @@
+# 4.11.4 - 2025-04-14
+
+## Fixed
+
+1. export top-level declarations for surveys
+
 # 4.11.3 - 2025-04-08
 
-1. fix: do not access `fs` or `readline` in when not available e.g. edge environments
+## Fixed
+
+1. do not access `fs` or `readline` in when not available e.g. edge environments
 
 # 4.11.2 - 2025-04-07
+
+## Fixed
 
 1. chore: bump axios to 1.8.2 (fixes [CVE-2025-27152](https://github.com/advisories/GHSA-jr5f-v2jv-69x6))
 

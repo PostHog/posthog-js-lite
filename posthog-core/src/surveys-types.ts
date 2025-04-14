@@ -1,3 +1,7 @@
+// Forces this file to be treated as a module
+// See https://github.com/PostHog/posthog-js-lite/issues/448
+export {}
+
 export interface SurveyAppearance {
   // keep in sync with frontend/src/types.ts -> SurveyAppearance
   backgroundColor?: string
