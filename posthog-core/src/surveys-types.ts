@@ -1,8 +1,4 @@
-// Forces this file to be treated as a module
-// See https://github.com/PostHog/posthog-js-lite/issues/448
-export {}
-
-export interface SurveyAppearance {
+export declare interface SurveyAppearance {
   // keep in sync with frontend/src/types.ts -> SurveyAppearance
   backgroundColor?: string
   submitButtonColor?: string
@@ -29,32 +25,36 @@ export interface SurveyAppearance {
   widgetColor?: string
 }
 
-export enum SurveyPosition {
+export declare enum SurveyPosition {
   Left = 'left',
   Right = 'right',
   Center = 'center',
 }
 
-export enum SurveyWidgetType {
+export declare enum SurveyWidgetType {
   Button = 'button',
   Tab = 'tab',
   Selector = 'selector',
 }
 
-export enum SurveyType {
+export declare enum SurveyType {
   Popover = 'popover',
   API = 'api',
   Widget = 'widget',
 }
 
-export type SurveyQuestion = BasicSurveyQuestion | LinkSurveyQuestion | RatingSurveyQuestion | MultipleSurveyQuestion
+export declare type SurveyQuestion =
+  | BasicSurveyQuestion
+  | LinkSurveyQuestion
+  | RatingSurveyQuestion
+  | MultipleSurveyQuestion
 
-export enum SurveyQuestionDescriptionContentType {
+export declare enum SurveyQuestionDescriptionContentType {
   Html = 'html',
   Text = 'text',
 }
 
-interface SurveyQuestionBase {
+export declare interface SurveyQuestionBase {
   question: string
   id?: string // TODO: use this for the question id
   description?: string
@@ -65,16 +65,16 @@ interface SurveyQuestionBase {
   branching?: NextQuestionBranching | EndBranching | ResponseBasedBranching | SpecificQuestionBranching
 }
 
-export interface BasicSurveyQuestion extends SurveyQuestionBase {
+export declare interface BasicSurveyQuestion extends SurveyQuestionBase {
   type: SurveyQuestionType.Open
 }
 
-export interface LinkSurveyQuestion extends SurveyQuestionBase {
+export declare interface LinkSurveyQuestion extends SurveyQuestionBase {
   type: SurveyQuestionType.Link
   link?: string
 }
 
-export interface RatingSurveyQuestion extends SurveyQuestionBase {
+export declare interface RatingSurveyQuestion extends SurveyQuestionBase {
   type: SurveyQuestionType.Rating
   display: SurveyRatingDisplay
   scale: 3 | 5 | 7 | 10
@@ -82,19 +82,19 @@ export interface RatingSurveyQuestion extends SurveyQuestionBase {
   upperBoundLabel: string
 }
 
-export enum SurveyRatingDisplay {
+export declare enum SurveyRatingDisplay {
   Number = 'number',
   Emoji = 'emoji',
 }
 
-export interface MultipleSurveyQuestion extends SurveyQuestionBase {
+export declare interface MultipleSurveyQuestion extends SurveyQuestionBase {
   type: SurveyQuestionType.SingleChoice | SurveyQuestionType.MultipleChoice
   choices: string[]
   hasOpenChoice?: boolean
   shuffleOptions?: boolean
 }
 
-export enum SurveyQuestionType {
+export declare enum SurveyQuestionType {
   Open = 'open',
   MultipleChoice = 'multiple_choice',
   SingleChoice = 'single_choice',
@@ -102,38 +102,38 @@ export enum SurveyQuestionType {
   Link = 'link',
 }
 
-export enum SurveyQuestionBranchingType {
+export declare enum SurveyQuestionBranchingType {
   NextQuestion = 'next_question',
   End = 'end',
   ResponseBased = 'response_based',
   SpecificQuestion = 'specific_question',
 }
 
-interface NextQuestionBranching {
+export declare interface NextQuestionBranching {
   type: SurveyQuestionBranchingType.NextQuestion
 }
 
-interface EndBranching {
+export declare interface EndBranching {
   type: SurveyQuestionBranchingType.End
 }
 
-interface ResponseBasedBranching {
+export declare interface ResponseBasedBranching {
   type: SurveyQuestionBranchingType.ResponseBased
   responseValues: Record<string, any>
 }
 
-interface SpecificQuestionBranching {
+export declare interface SpecificQuestionBranching {
   type: SurveyQuestionBranchingType.SpecificQuestion
   index: number
 }
 
-export interface SurveyResponse {
+export declare interface SurveyResponse {
   surveys: Survey[]
 }
 
-export type SurveyCallback = (surveys: Survey[]) => void
+export declare type SurveyCallback = (surveys: Survey[]) => void
 
-export enum SurveyMatchType {
+export declare enum SurveyMatchType {
   Regex = 'regex',
   NotRegex = 'not_regex',
   Exact = 'exact',
@@ -142,7 +142,7 @@ export enum SurveyMatchType {
   NotIcontains = 'not_icontains',
 }
 
-export interface SurveyElement {
+export declare interface SurveyElement {
   text?: string
   $el_text?: string
   tag_name?: string
@@ -156,12 +156,12 @@ export interface SurveyElement {
   order?: number
   group_id?: number
 }
-export interface SurveyRenderReason {
+export declare interface SurveyRenderReason {
   visible: boolean
   disabledReason?: string
 }
 
-export interface Survey {
+export declare interface Survey {
   // Sync this with the backend's SurveyAPISerializer!
   id: string
   name: string
@@ -200,20 +200,20 @@ export interface Survey {
   current_iteration_start_date?: string
 }
 
-export interface SurveyActionType {
+export declare interface SurveyActionType {
   id: number
   name?: string
   steps?: ActionStepType[]
 }
 
 /** Sync with plugin-server/src/types.ts */
-export enum ActionStepStringMatching {
+export declare enum ActionStepStringMatching {
   Contains = 'contains',
   Exact = 'exact',
   Regex = 'regex',
 }
 
-export interface ActionStepType {
+export declare interface ActionStepType {
   event?: string
   selector?: string
   /** @deprecated Only `selector` should be used now. */
