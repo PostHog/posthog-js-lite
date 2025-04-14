@@ -1,3 +1,9 @@
+# 4.11.5 - 2025-04-14
+
+## Fixed
+
+1. export and declare top-level declarations for surveys
+
 # 4.11.4 - 2025-04-14
 
 ## Fixed

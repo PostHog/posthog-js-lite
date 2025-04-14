@@ -1,8 +1,6 @@
-// Forces this file to be treated as a module
-// See https://github.com/PostHog/posthog-js-lite/issues/448
 export {}
 
-export interface SurveyAppearance {
+export type SurveyAppearance = {
   // keep in sync with frontend/src/types.ts -> SurveyAppearance
   backgroundColor?: string
   submitButtonColor?: string
@@ -54,7 +52,7 @@ export enum SurveyQuestionDescriptionContentType {
   Text = 'text',
 }
 
-interface SurveyQuestionBase {
+type SurveyQuestionBase = {
   question: string
   id?: string // TODO: use this for the question id
   description?: string
@@ -109,25 +107,25 @@ export enum SurveyQuestionBranchingType {
   SpecificQuestion = 'specific_question',
 }
 
-interface NextQuestionBranching {
+export type NextQuestionBranching = {
   type: SurveyQuestionBranchingType.NextQuestion
 }
 
-interface EndBranching {
+export type EndBranching = {
   type: SurveyQuestionBranchingType.End
 }
 
-interface ResponseBasedBranching {
+export type ResponseBasedBranching = {
   type: SurveyQuestionBranchingType.ResponseBased
   responseValues: Record<string, any>
 }
 
-interface SpecificQuestionBranching {
+export type SpecificQuestionBranching = {
   type: SurveyQuestionBranchingType.SpecificQuestion
   index: number
 }
 
-export interface SurveyResponse {
+export type SurveyResponse = {
   surveys: Survey[]
 }
 
@@ -142,7 +140,7 @@ export enum SurveyMatchType {
   NotIcontains = 'not_icontains',
 }
 
-export interface SurveyElement {
+export type SurveyElement = {
   text?: string
   $el_text?: string
   tag_name?: string
@@ -156,12 +154,12 @@ export interface SurveyElement {
   order?: number
   group_id?: number
 }
-export interface SurveyRenderReason {
+export type SurveyRenderReason = {
   visible: boolean
   disabledReason?: string
 }
 
-export interface Survey {
+export type Survey = {
   // Sync this with the backend's SurveyAPISerializer!
   id: string
   name: string
@@ -200,7 +198,7 @@ export interface Survey {
   current_iteration_start_date?: string
 }
 
-export interface SurveyActionType {
+export type SurveyActionType = {
   id: number
   name?: string
   steps?: ActionStepType[]
@@ -213,7 +211,7 @@ export enum ActionStepStringMatching {
   Regex = 'regex',
 }
 
-export interface ActionStepType {
+export type ActionStepType = {
   event?: string
   selector?: string
   /** @deprecated Only `selector` should be used now. */
