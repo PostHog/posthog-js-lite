@@ -1,3 +1,9 @@
+# 4.11.6 - 2025-04-15
+
+## Fixed
+
+1. move survey export top-level declarations
+
 # 4.11.5 - 2025-04-14
 
 ## Fixed

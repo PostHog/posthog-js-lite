@@ -16,6 +16,8 @@ import {
   PostHogFeatureFlagDetails,
   PostHogFlagsStorageFormat,
   FeatureFlagDetail,
+  Survey,
+  SurveyResponse,
 } from './types'
 import {
   createDecideResponseFromFlagsAndPayloads,
@@ -38,8 +40,6 @@ import {
 import { LZString } from './lz-string'
 import { SimpleEventEmitter } from './eventemitter'
 import { uuidv7 } from './vendor/uuidv7'
-
-import { Survey, SurveyResponse } from './surveys-types'
 
 export * as utils from './utils'
 
