@@ -15,6 +15,7 @@ export type PostHogAutocaptureOptions = {
   // Navigation
   captureScreens?: boolean
   navigation?: PostHogAutocaptureNavigationTrackerOptions
+  navigationRef?: any
 
   /** Captures app lifecycle events such as Application Installed, Application Updated, Application Opened, Application Became Active and Application Backgrounded.
    * By default is true.

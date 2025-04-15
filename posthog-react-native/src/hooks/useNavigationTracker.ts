@@ -8,7 +8,7 @@ function _useNavigationTrackerDisabled(): void {
   return
 }
 
-function _useNavigationTracker(options?: PostHogAutocaptureNavigationTrackerOptions, client?: PostHog): void {
+function _useNavigationTracker(options?: PostHogAutocaptureNavigationTrackerOptions, navigationRef?: any, client?: PostHog): void {
   const contextClient = usePostHog()
   const posthog = client || contextClient
 
@@ -18,12 +18,32 @@ function _useNavigationTracker(options?: PostHogAutocaptureNavigationTrackerOpti
   }
 
   const routes = OptionalReactNativeNavigation.useNavigationState((state) => state?.routes)
-  const navigation = OptionalReactNativeNavigation.useNavigation()
+  const navigation = navigationRef || OptionalReactNativeNavigation.useNavigation()
 
   const trackRoute = useCallback((): void => {
+    if (!navigation) {
+      return
+    }
+
+    let currentRoute = undefined
+
+
     // NOTE: This method is not typed correctly but is available and takes care of parsing the router state correctly
-    const currentRoute = (navigation as any).getCurrentRoute()
-    if (!currentRoute) {
+    try {
+      let isReady = false
+      try {
+        isReady = (navigation as any).isReady()
+      } catch (error) {
+        // keep compatibility with older versions of react-navigation
+        isReady = true
+      }
+
+      if (!isReady) {
+        return
+      }
+
+      currentRoute = (navigation as any).getCurrentRoute()
+    } catch (error) {
       return
     }
 
