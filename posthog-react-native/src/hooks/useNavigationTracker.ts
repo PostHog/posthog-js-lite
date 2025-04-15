@@ -22,6 +22,7 @@ function _useNavigationTracker(
   }
 
   const routes = OptionalReactNativeNavigation.useNavigationState((state) => state?.routes)
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const navigation = navigationRef || OptionalReactNativeNavigation.useNavigation()
 
   const trackRoute = useCallback((): void => {
