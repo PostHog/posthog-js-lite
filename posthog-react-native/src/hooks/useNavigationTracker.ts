@@ -8,7 +8,11 @@ function _useNavigationTrackerDisabled(): void {
   return
 }
 
-function _useNavigationTracker(options?: PostHogAutocaptureNavigationTrackerOptions, navigationRef?: any, client?: PostHog): void {
+function _useNavigationTracker(
+  options?: PostHogAutocaptureNavigationTrackerOptions,
+  navigationRef?: any,
+  client?: PostHog
+): void {
   const contextClient = usePostHog()
   const posthog = client || contextClient
 
@@ -26,7 +30,6 @@ function _useNavigationTracker(options?: PostHogAutocaptureNavigationTrackerOpti
     }
 
     let currentRoute = undefined
-
 
     // NOTE: This method is not typed correctly but is available and takes care of parsing the router state correctly
     try {
