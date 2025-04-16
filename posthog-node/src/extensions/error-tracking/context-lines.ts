@@ -3,7 +3,7 @@
 
 import { StackFrame } from './types'
 import { ReduceableCache } from './reduceable-cache'
-import { Lazy } from 'posthog-node/src/lazy'
+import { Lazy } from 'posthog-core/src/lazy'
 
 const nodeFs = new Lazy(async () => {
   try {
