@@ -7,25 +7,25 @@ import { Lazy } from 'posthog-node/src/lazy'
 
 const nodeFs = new Lazy(async () => {
   try {
-    return await import('node:fs')
+    return await import('fs')
   } catch {
     return undefined
   }
 })
 
-export async function getNodeFs(): Promise<typeof import('node:fs') | undefined> {
+export async function getNodeFs(): Promise<typeof import('fs') | undefined> {
   return await nodeFs.getValue()
 }
 
 const nodeReadline = new Lazy(async () => {
   try {
-    return await import('node:readline')
+    return await import('readline')
   } catch {
     return undefined
   }
 })
 
-export async function getNodeReadline(): Promise<typeof import('node:readline') | undefined> {
+export async function getNodeReadline(): Promise<typeof import('readline') | undefined> {
   return await nodeReadline.getValue()
 }
 

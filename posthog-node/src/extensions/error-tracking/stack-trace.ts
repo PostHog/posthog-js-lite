@@ -1,7 +1,7 @@
 // Portions of this file are derived from getsentry/sentry-javascript by Software, Inc. dba Sentry
 // Licensed under the MIT License
 
-import { posix, sep, dirname } from 'node:path'
+import { posix, sep, dirname } from 'path'
 import { StackFrame, StackLineParser, StackLineParserFn, StackParser } from './types'
 
 type GetModuleFn = (filename: string | undefined) => string | undefined
