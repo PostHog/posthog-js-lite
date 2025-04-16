@@ -1,3 +1,7 @@
+# 4.11.7 - 2025-04-16
+
+1. fix: do not reference `node:` prefix as it is not supported by Next.js edge runtime
+
 # 4.11.6 - 2025-04-15
 
 ## Fixed
