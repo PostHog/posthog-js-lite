@@ -1,5 +1,11 @@
 # Next
 
+# 3.13.2 - 2025-04-16
+
+## Fixed
+
+1. react native navigation missing navigationRef
+
 # 3.13.1 - 2025-04-15
 
 ## Fixed
