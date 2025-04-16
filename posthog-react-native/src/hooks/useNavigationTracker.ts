@@ -3,6 +3,7 @@ import { OptionalReactNativeNavigation } from '../optional/OptionalReactNativeNa
 import type { PostHog } from '../posthog-rn'
 import { PostHogAutocaptureNavigationTrackerOptions } from '../types'
 import { usePostHog } from './usePostHog'
+import { PostHogNavigationRef } from '../types'
 
 function _useNavigationTrackerDisabled(): void {
   return
@@ -10,7 +11,7 @@ function _useNavigationTrackerDisabled(): void {
 
 function _useNavigationTracker(
   options?: PostHogAutocaptureNavigationTrackerOptions,
-  navigationRef?: any,
+  navigationRef?: PostHogNavigationRef,
   client?: PostHog
 ): void {
   const contextClient = usePostHog()
@@ -48,6 +49,10 @@ function _useNavigationTracker(
 
       currentRoute = (navigation as any).getCurrentRoute()
     } catch (error) {
+      return
+    }
+
+    if (!currentRoute) {
       return
     }
 

@@ -3,6 +3,11 @@ export type PostHogAutocaptureNavigationTrackerOptions = {
   routeToProperties?: (name: string, params: any) => Record<string, any>
 }
 
+export type PostHogNavigationRef = {
+  getCurrentRoute(): any | undefined
+  isReady: () => boolean
+}
+
 export type PostHogAutocaptureOptions = {
   // Touches
   captureTouches?: boolean
@@ -15,7 +20,7 @@ export type PostHogAutocaptureOptions = {
   // Navigation
   captureScreens?: boolean
   navigation?: PostHogAutocaptureNavigationTrackerOptions
-  navigationRef?: any
+  navigationRef?: PostHogNavigationRef
 
   /** Captures app lifecycle events such as Application Installed, Application Updated, Application Opened, Application Became Active and Application Backgrounded.
    * By default is true.
