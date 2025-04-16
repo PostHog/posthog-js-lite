@@ -1,12 +1,34 @@
-# 4.11.4 - 2025-04-16
+# 4.11.7 - 2025-04-16
 
 1. fix: do not reference `node:` prefix as it is not supported by Next.js edge runtime
 
+# 4.11.6 - 2025-04-15
+
+## Fixed
+
+1. move survey export top-level declarations
+
+# 4.11.5 - 2025-04-14
+
+## Fixed
+
+1. export and declare top-level declarations for surveys
+
+# 4.11.4 - 2025-04-14
+
+## Fixed
+
+1. export top-level declarations for surveys
+
 # 4.11.3 - 2025-04-08
 
-1. fix: do not access `fs` or `readline` in when not available e.g. edge environments
+## Fixed
+
+1. do not access `fs` or `readline` in when not available e.g. edge environments
 
 # 4.11.2 - 2025-04-07
+
+## Fixed
 
 1. chore: bump axios to 1.8.2 (fixes [CVE-2025-27152](https://github.com/advisories/GHSA-jr5f-v2jv-69x6))
 

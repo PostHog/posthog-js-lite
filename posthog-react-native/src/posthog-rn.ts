@@ -9,6 +9,7 @@ import {
   PostHogFetchOptions,
   PostHogFetchResponse,
   PostHogPersistedProperty,
+  SurveyResponse,
 } from '../../posthog-core/src'
 import { getLegacyValues } from './legacy'
 import { PostHogRNStorage, PostHogRNSyncMemoryStorage } from './storage'
@@ -22,7 +23,6 @@ import {
 } from './types'
 import { withReactNativeNavigation } from './frameworks/wix-navigation'
 import { OptionalReactNativeSessionReplay } from './optional/OptionalSessionReplay'
-import { SurveyResponse } from '../../posthog-core/src/surveys-types'
 
 export type PostHogOptions = PostHogCoreOptions & {
   /** Allows you to provide the storage type. By default 'file'.
