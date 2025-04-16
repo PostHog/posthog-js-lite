@@ -1,3 +1,4 @@
+import { hashSHA1 } from './crypto'
 import { FetchLike } from './types'
 
 export function assert(truthyValue: any, message: string): void {
@@ -79,4 +80,30 @@ export function getFetch(): FetchLike | undefined {
 // copied from: https://github.com/PostHog/posthog-js/blob/main/react/src/utils/type-utils.ts#L4
 export const isFunction = function (f: any): f is (...args: any[]) => any {
   return typeof f === 'function'
+}
+
+// Helper method to check if token is in rollout
+export async function isTokenInRollout(
+  token: string,
+  percentage: number = 0,
+  includedHashes?: Set<string>,
+  excludedHashes?: Set<string>
+): Promise<boolean> {
+  const tokenHash = await hashSHA1(token)
+
+  // Check included hashes
+  if (includedHashes?.has(tokenHash)) {
+    return true
+  }
+
+  // Check excluded hashes
+  if (excludedHashes?.has(tokenHash)) {
+    return false
+  }
+
+  // Convert first 8 chars of hash to int and divide by max value to get number between 0-1
+  const hashInt = parseInt(tokenHash.slice(0, 8), 16)
+  const hashFloat = hashInt / 0xffffffff
+
+  return hashFloat < percentage
 }
