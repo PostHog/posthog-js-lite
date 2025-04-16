@@ -1,3 +1,7 @@
+# 4.11.4 - 2025-04-16
+
+1. fix: do not reference `node:` prefix as it is not supported by Next.js edge runtime
+
 # 4.11.3 - 2025-04-08
 
 1. fix: do not access `fs` or `readline` in when not available e.g. edge environments
