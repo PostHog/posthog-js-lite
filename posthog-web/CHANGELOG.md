@@ -1,5 +1,9 @@
 # Next
 
+## Added
+
+1. Added `captureHistoryEvents` option to automatically capture navigation events in single-page applications using the History API.
+
 ## Fixed
 
 1. apiKey cannot be empty.

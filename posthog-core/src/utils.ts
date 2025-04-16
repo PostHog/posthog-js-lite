@@ -75,3 +75,8 @@ export const isError = (x: unknown): x is Error => {
 export function getFetch(): FetchLike | undefined {
   return typeof fetch !== 'undefined' ? fetch : typeof global.fetch !== 'undefined' ? global.fetch : undefined
 }
+
+// copied from: https://github.com/PostHog/posthog-js/blob/main/react/src/utils/type-utils.ts#L4
+export const isFunction = function (f: any): f is (...args: any[]) => any {
+  return typeof f === 'function'
+}
