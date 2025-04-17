@@ -2,6 +2,10 @@
 
 ## Added
 
+1. chore: roll out new flag evaluation backend to majority of customers
+
+## Added
+
 1. Added `captureHistoryEvents` option to automatically capture navigation events in single-page applications using the History API.
 
 ## Fixed
