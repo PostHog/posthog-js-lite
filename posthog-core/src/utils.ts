@@ -1,4 +1,3 @@
-import { hashSHA1 } from './crypto'
 import { FetchLike } from './types'
 
 export function assert(truthyValue: any, message: string): void {
@@ -82,14 +81,23 @@ export const isFunction = function (f: any): f is (...args: any[]) => any {
   return typeof f === 'function'
 }
 
-// Helper method to check if token is in rollout
-export async function isTokenInRollout(
+function fnv1a(str: string): string {
+  let hash = 0x811c9dc5 // FNV offset basis
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i)
+    hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24)
+  }
+  // Convert to hex string, padding to 8 chars
+  return (hash >>> 0).toString(16).padStart(8, '0')
+}
+
+export function isTokenInRollout(
   token: string,
   percentage: number = 0,
   includedHashes?: Set<string>,
   excludedHashes?: Set<string>
-): Promise<boolean> {
-  const tokenHash = await hashSHA1(token)
+): boolean {
+  const tokenHash = fnv1a(token)
 
   // Check included hashes
   if (includedHashes?.has(tokenHash)) {
@@ -101,8 +109,8 @@ export async function isTokenInRollout(
     return false
   }
 
-  // Convert first 8 chars of hash to int and divide by max value to get number between 0-1
-  const hashInt = parseInt(tokenHash.slice(0, 8), 16)
+  // Convert hash to int and divide by max value to get number between 0-1
+  const hashInt = parseInt(tokenHash, 16)
   const hashFloat = hashInt / 0xffffffff
 
   return hashFloat < percentage

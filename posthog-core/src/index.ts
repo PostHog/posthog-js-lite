@@ -425,7 +425,7 @@ export abstract class PostHogCoreStateless {
     await this._initPromise
 
     // Check if token is in rollout
-    const useFlags = await isTokenInRollout(this.apiKey, ROLLOUT_PERCENTAGE, INCLUDED_HASHES, EXCLUDED_HASHES)
+    const useFlags = isTokenInRollout(this.apiKey, ROLLOUT_PERCENTAGE, INCLUDED_HASHES, EXCLUDED_HASHES)
 
     const url = useFlags ? `${this.host}/flags/?v=2` : `${this.host}/decide/?v=4`
     const fetchOptions: PostHogFetchOptions = {

@@ -1,4 +1,4 @@
-import { Lazy } from 'posthog-core/src/lazy'
+import { Lazy } from 'posthog-node/src/lazy'
 
 describe('Lazy', () => {
   it('should only call the factory once', async (): Promise<void> => {

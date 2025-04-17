@@ -4,10 +4,10 @@ import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } f
 import { parseBody, waitForPromises } from './test-utils/test-utils'
 
 // mock the isTokenInRollout function
-jest.mock('../src/utils', () => ({
-  ...jest.requireActual('../src/utils'),
-  isTokenInRollout: jest.fn().mockResolvedValue(true),
-}))
+// jest.mock('../src/utils', () => ({
+//   ...jest.requireActual('../src/utils'),
+//   isTokenInRollout: jest.fn().mockResolvedValue(true),
+// }))
 
 describe('PostHog Feature Flags v3', () => {
   let posthog: PostHogCoreTestClient

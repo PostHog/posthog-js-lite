@@ -3,11 +3,11 @@ import { normalizeDecideResponse } from '../src/featureFlagUtils'
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
 import { parseBody, waitForPromises } from './test-utils/test-utils'
 
-// mock the isTokenInRollout function
-jest.mock('../src/utils', () => ({
-  ...jest.requireActual('../src/utils'),
-  isTokenInRollout: jest.fn().mockResolvedValue(true),
-}))
+// // mock the isTokenInRollout function
+// jest.mock('../src/utils', () => ({
+//   ...jest.requireActual('../src/utils'),
+//   isTokenInRollout: jest.fn().mockResolvedValue(true),
+// }))
 
 describe('PostHog Feature Flags v4', () => {
   let posthog: PostHogCoreTestClient
