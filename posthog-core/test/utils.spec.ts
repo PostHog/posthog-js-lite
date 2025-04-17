@@ -1,11 +1,4 @@
-import {
-  assert,
-  removeTrailingSlash,
-  currentISOTime,
-  currentTimestamp,
-  isTokenInRollout,
-  NEW_FLAGS_EXCLUDED_HASHES,
-} from '../src/utils'
+import { assert, removeTrailingSlash, currentISOTime, currentTimestamp, isTokenInRollout } from '../src/utils'
 
 describe('utils', () => {
   describe('assert', () => {
