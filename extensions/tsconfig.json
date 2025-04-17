@@ -5,6 +5,6 @@
     "target": "es2020"
   },
   "references": [{
-    "path": "../extensions"
+    "path": "../posthog-core"
   }],
 }

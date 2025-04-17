@@ -107,7 +107,7 @@ class FeatureFlagsPoller {
     await this.loadFeatureFlags()
 
     let response: FeatureFlagValue | undefined = undefined
-    let featureFlag = undefined
+    let featureFlag: PostHogFeatureFlag | undefined = undefined
 
     if (!this.loadedSuccessfullyOnce) {
       return response
@@ -139,7 +139,7 @@ class FeatureFlagsPoller {
   async computeFeatureFlagPayloadLocally(key: string, matchValue: FeatureFlagValue): Promise<JsonType | undefined> {
     await this.loadFeatureFlags()
 
-    let response = undefined
+    let response: string | undefined = undefined
 
     if (!this.loadedSuccessfullyOnce) {
       return undefined
@@ -254,7 +254,7 @@ class FeatureFlagsPoller {
     const flagFilters = flag.filters || {}
     const flagConditions = flagFilters.groups || []
     let isInconclusive = false
-    let result = undefined
+    let result: FeatureFlagValue | undefined = undefined
 
     // # Stable sort conditions with variant overrides to the top. This ensures that if overrides are present, they are
     // # evaluated first, and the variant override is applied to the first matching condition.

@@ -1,3 +1,3 @@
 export * from './src/posthog-node'
-export * from './extensions/sentry-integration'
-export * from './extensions/express'
+export * from './src/extensions/sentry-integration'
+export * from './src/extensions/express'

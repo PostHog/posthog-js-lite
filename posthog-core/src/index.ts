@@ -21,6 +21,8 @@ import {
   PostHogBackendOptions,
   GroupIdentifyMessage,
   EventMessage,
+  IdentifyMessage,
+  PostHogFlagsAndPayloadsResponse,
 } from './types'
 import {
   createDecideResponseFromFlagsAndPayloads,
@@ -44,8 +46,8 @@ import { LZString } from './lz-string'
 import { SimpleEventEmitter } from './eventemitter'
 import { uuidv7 } from './vendor/uuidv7'
 import { PostHogMemoryStorage } from './storage-memory'
-import { FeatureFlagsPoller } from 'extensions/feature-flags'
-import ErrorTracking from 'extensions/error-tracking'
+import { FeatureFlagsPoller } from '../../extensions/feature-flags'
+import ErrorTracking from '../../extensions/error-tracking'
 
 export * as utils from './utils'
 
@@ -2034,7 +2036,7 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless {
     )
 
     const flagWasLocallyEvaluated = response !== undefined
-    let requestId = undefined
+    let requestId: string | undefined = undefined
     let flagDetail: FeatureFlagDetail | undefined = undefined
     if (!flagWasLocallyEvaluated && !onlyEvaluateLocally) {
       const remoteResponse = await super.getFeatureFlagDetailStateless(
@@ -2116,7 +2118,7 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless {
     personProperties = adjustedProperties.allPersonProperties
     groupProperties = adjustedProperties.allGroupProperties
 
-    let response = undefined
+    let response: JsonType | undefined = undefined
 
     const localEvaluationEnabled = this.featureFlagsPoller !== undefined
     if (localEvaluationEnabled) {

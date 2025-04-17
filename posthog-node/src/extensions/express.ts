@@ -1,4 +1,4 @@
-import ErrorTracking from 'extensions/error-tracking'
+import ErrorTracking from '../../../extensions/error-tracking'
 import type * as http from 'node:http'
 import { PostHogBackendClient } from 'posthog-core/src'
 import { uuidv7 } from 'posthog-core/src/vendor/uuidv7'
