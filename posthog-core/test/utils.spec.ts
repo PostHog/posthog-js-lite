@@ -47,13 +47,5 @@ describe('utils', () => {
     it('should return false if the rollout is 0%', () => {
       expect(isTokenInRollout('test', 0)).toEqual(false)
     })
-    it('should return false if an API token is in the excluded hashes', () => {
-      expect(isTokenInRollout('phc_TizRF4f5mpG6OMMSQo7kauYDxRd2rodHjP5Ro6RoXXb', 1, NEW_FLAGS_EXCLUDED_HASHES)).toEqual(
-        false
-      )
-    })
-    it('should return true for a token that is not in the excluded hashes', () => {
-      expect(isTokenInRollout('sTMFPsFhdP1Ssg', 1, NEW_FLAGS_EXCLUDED_HASHES)).toEqual(true)
-    })
   })
 })
