@@ -24,6 +24,7 @@
 - [ ] posthog-web
 - [ ] posthog-node
 - [ ] posthog-ai
+- [ ] posthog-edge
 - [ ] posthog-react-native
 
 ### Changelog notes

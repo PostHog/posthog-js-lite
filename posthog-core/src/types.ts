@@ -57,6 +57,18 @@ export type PostHogCoreOptions = {
   historicalMigration?: boolean
 }
 
+export type PostHogBackendOptions = PostHogCoreOptions & {
+  persistence?: 'memory'
+  personalApiKey?: string
+  privacyMode?: boolean
+  enableExceptionAutocapture?: boolean
+  // The interval in milliseconds between polls for refreshing feature flag definitions. Defaults to 30 seconds.
+  featureFlagsPollingInterval?: number
+  // Maximum size of cache that deduplicates $feature_flag_called calls per user.
+  maxCacheSize?: number
+  fetch?: (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
+}
+
 export enum PostHogPersistedProperty {
   AnonymousId = 'anonymous_id',
   DistinctId = 'distinct_id',
@@ -483,4 +495,26 @@ export type ActionStepType = {
   url?: string
   /** @default StringMatching.Contains */
   url_matching?: ActionStepStringMatching
+}
+
+export interface IdentifyMessage {
+  distinctId: string
+  properties?: Record<string | number, any>
+  disableGeoip?: boolean
+}
+
+export interface EventMessage extends IdentifyMessage {
+  event: string
+  groups?: Record<string, string | number> // Mapping of group type to group id
+  sendFeatureFlags?: boolean
+  timestamp?: Date
+  uuid?: string
+}
+
+export interface GroupIdentifyMessage {
+  groupType: string
+  groupKey: string // Unique identifier for the group
+  properties?: Record<string | number, any>
+  distinctId?: string // optional distinctId to associate message with a person
+  disableGeoip?: boolean
 }

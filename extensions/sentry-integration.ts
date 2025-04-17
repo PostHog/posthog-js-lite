@@ -22,8 +22,8 @@
  * @param {SeverityLevel[] | '*'} [severityAllowList] Optional: send events matching the provided levels. Use '*' to send all events (default: ['error'])
  */
 
-import { SeverityLevel } from 'posthog-node/src/extensions/error-tracking/types'
-import { type PostHog } from '../posthog-node'
+import { SeverityLevel } from 'posthog-node/extensions/error-tracking/types'
+import { type PostHog } from '../src/posthog-node'
 
 // NOTE - we can't import from @sentry/types because it changes frequently and causes clashes
 // We only use a small subset of the types, so we can just define the integration overall and use any for the rest

@@ -1,19 +1,18 @@
-import { EventHint } from './extensions/error-tracking/types'
-import { addUncaughtExceptionListener, addUnhandledRejectionListener } from './extensions/error-tracking/autocapture'
-import { PostHog, PostHogOptions } from './posthog-node'
+import { EventHint } from './types'
+import { addUncaughtExceptionListener, addUnhandledRejectionListener } from './autocapture'
 import { uuidv7 } from 'posthog-core/src/vendor/uuidv7'
-import { propertiesFromUnknownInput } from './extensions/error-tracking/error-conversion'
-import { EventMessage } from './types'
-import { defaultStackParser } from './extensions/error-tracking/stack-trace'
+import { propertiesFromUnknownInput } from './error-conversion'
+import { defaultStackParser } from './stack-trace'
+import { EventMessage, PostHogBackendClient, PostHogBackendOptions } from 'posthog-core/src'
 
 const SHUTDOWN_TIMEOUT = 2000
 
 export default class ErrorTracking {
-  private client: PostHog
+  private client: PostHogBackendClient
   private _exceptionAutocaptureEnabled: boolean
 
   static async captureException(
-    client: PostHog,
+    client: PostHogBackendClient,
     error: unknown,
     hint: EventHint,
     distinctId?: string,
@@ -39,7 +38,7 @@ export default class ErrorTracking {
     })
   }
 
-  constructor(client: PostHog, options: PostHogOptions) {
+  constructor(client: PostHogBackendClient, options: PostHogBackendOptions) {
     this.client = client
     this._exceptionAutocaptureEnabled = options.enableExceptionAutocapture || false
 
