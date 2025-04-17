@@ -1,7 +1,7 @@
+import ErrorTracking from 'extensions/error-tracking'
 import type * as http from 'node:http'
+import { PostHogBackendClient } from 'posthog-core/src'
 import { uuidv7 } from 'posthog-core/src/vendor/uuidv7'
-import ErrorTracking from '../src/error-tracking'
-import { PostHog } from '../src/posthog-node'
 
 type ExpressMiddleware = (req: http.IncomingMessage, res: http.ServerResponse, next: () => void) => void
 
@@ -22,7 +22,7 @@ interface MiddlewareError extends Error {
 }
 
 export function setupExpressErrorHandler(
-  _posthog: PostHog,
+  _posthog: PostHogBackendClient,
   app: {
     use: (middleware: ExpressMiddleware | ExpressErrorMiddleware) => unknown
   }
