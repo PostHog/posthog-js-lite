@@ -1,7 +1,7 @@
+import ErrorTracking from '../../../posthog-core/src/extensions/error-tracking'
 import type * as http from 'node:http'
+import { PostHogBackendClient } from 'posthog-core/src'
 import { uuidv7 } from 'posthog-core/src/vendor/uuidv7'
-import ErrorTracking from '../error-tracking'
-import { PostHog } from '../posthog-node'
 
 type ExpressMiddleware = (req: http.IncomingMessage, res: http.ServerResponse, next: () => void) => void
 
@@ -22,7 +22,7 @@ interface MiddlewareError extends Error {
 }
 
 export function setupExpressErrorHandler(
-  _posthog: PostHog,
+  _posthog: PostHogBackendClient,
   app: {
     use: (middleware: ExpressMiddleware | ExpressErrorMiddleware) => unknown
   }
@@ -31,7 +31,17 @@ export function setupExpressErrorHandler(
     const hint = { mechanism: { type: 'middleware', handled: false } }
     // Given stateless nature of Node SDK we capture exceptions using personless processing
     // when no user can be determined e.g. in the case of exception autocapture
-    ErrorTracking.captureException(_posthog, error, hint, uuidv7(), { $process_person_profile: false })
+    ErrorTracking.captureException(
+      _posthog,
+      error,
+      hint,
+      _posthog.getStackFrameModifiers(),
+      _posthog.getStackParser(),
+      uuidv7(),
+      {
+        $process_person_profile: false,
+      }
+    )
     next(error)
   })
 }

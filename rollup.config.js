@@ -11,7 +11,7 @@ const extensions = ['.js', '.jsx', '.ts', '.tsx']
 
 let globalExternal = Object.keys(pkg.dependencies || {}).concat(Object.keys(pkg.peerDependencies || {}))
 
-const configs = ['posthog-node', 'posthog-web', 'posthog-ai'].reduce((acc, x) => {
+const configs = ['posthog-node', 'posthog-web', 'posthog-ai', 'posthog-edge'].reduce((acc, x) => {
   const localPkg = require(`./${x}/package.json`)
   let external = [...globalExternal]
     .concat(Object.keys(localPkg.dependencies || {}))
@@ -63,9 +63,7 @@ const configs = ['posthog-node', 'posthog-web', 'posthog-ai'].reduce((acc, x) =>
     {
       input: `./${x}/lib/${x}/index.d.ts`,
       output: [{ file: `./${x}/lib/index.d.ts`, format: 'es' }],
-      plugins: [
-        dts(),
-      ],
+      plugins: [dts()],
     },
   ]
 }, [])

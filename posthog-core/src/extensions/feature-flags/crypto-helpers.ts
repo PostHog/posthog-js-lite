@@ -1,4 +1,5 @@
 /// <reference lib="dom" />
+
 import { Lazy } from './lazy'
 
 const nodeCrypto = new Lazy(async () => {

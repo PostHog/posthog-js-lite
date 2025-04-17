@@ -7,7 +7,8 @@
     "posthog-node",
     "posthog-react-native",
     "posthog-web",
-    "posthog-ai"
+    "posthog-ai",
+    "posthog-edge"
   ],
   "author": "PostHog",
   "private": true,
@@ -17,13 +18,14 @@
     "lint": "eslint -c .eslintrc.js --fix posthog-*",
     "prettier": "prettier --write \"./**/*.{ts,tsx}\"",
     "prettier:check": "prettier --check \"./**/*.{ts,tsx}\"",
-    "test": "jest posthog-core posthog-node posthog-web posthog-ai",
+    "test": "jest posthog-core posthog-node posthog-web posthog-ai posthog-edge",
     "test:node": "jest posthog-node",
     "test:core": "jest posthog-core",
     "test:web": "jest posthog-web",
     "test:ai": "jest posthog-ai",
+    "test:edge": "jest posthog-edge",
     "test:rn": "cd posthog-react-native && yarn test",
-    "test:all": "jest posthog-core posthog-node posthog-ai posthog-web && yarn test:rn",
+    "test:all": "jest posthog-core posthog-node posthog-web posthog-ai posthog-edge && yarn test:rn",
     "build-rollup": "rollup -c",
     "build-react-native": "cd posthog-react-native && yarn build"
   },
