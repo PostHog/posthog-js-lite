@@ -2,9 +2,11 @@ import { FetchLike } from './types'
 
 // Rollout constants
 export const NEW_FLAGS_ROLLOUT_PERCENTAGE = 1
-// The fnv1a hashes of the tokens that are explicitly included in the rollout
+// The fnv1a hashes of the tokens that are explicitly excluded from the rollout
 // see https://github.com/PostHog/posthog-js-lite/blob/main/posthog-core/src/utils.ts#L84
+// are hashed API tokens from our top 10 for each category supported by this SDK.
 export const NEW_FLAGS_EXCLUDED_HASHES = new Set([
+  // Node
   '61be3dd8',
   '96f6df5f',
   '8cfdba9b',
@@ -27,6 +29,60 @@ export const NEW_FLAGS_EXCLUDED_HASHES = new Set([
   '29ef8843',
   '2cdbf767',
   '38084b54',
+  // React Native
+  '50f9f8de',
+  '41d0df91',
+  '5c236689',
+  'c11aedd3',
+  'ada46672',
+  'f4331ee1',
+  '42fed62a',
+  'c957462c',
+  'd62f705a',
+  // Web (lots of teams per org, hence lots of API tokens)
+  'e0162666',
+  '01b3e5cf',
+  '441cef7f',
+  'bb9cafee',
+  '8f348eb0',
+  'b2553f3a',
+  '97469d7d',
+  '39f21a76',
+  '03706dcc',
+  '27d50569',
+  '307584a7',
+  '6433e92e',
+  '150c7fbb',
+  '49f57f22',
+  '3772f65b',
+  '01eb8256',
+  '3c9e9234',
+  'f853c7f7',
+  'c0ac4b67',
+  'cd609d40',
+  '10ca9b1a',
+  '8a87f11b',
+  '8e8e5216',
+  '1f6b63b3',
+  'db7943dd',
+  '79b7164c',
+  '07f78e33',
+  '2d21b6fd',
+  '952db5ee',
+  'a7d3b43f',
+  '1924dd9c',
+  '84e1b8f6',
+  'dff631b6',
+  'c5aa8a79',
+  'fa133a95',
+  '498a4508',
+  '24748755',
+  '98f3d658',
+  '21bbda67',
+  '7dbfed69',
+  'be3ec24c',
+  'fc80b8e2',
+  '75cc0998',
 ])
 
 export function assert(truthyValue: any, message: string): void {
