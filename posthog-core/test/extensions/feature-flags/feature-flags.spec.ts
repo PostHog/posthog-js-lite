@@ -1,9 +1,9 @@
 // import { PostHog, PostHogOptions } from '../'
 // Uncomment below line while developing to not compile code everytime
-import { PostHog as PostHog, PostHogOptions } from '../src/posthog-node'
+import { PostHog as PostHog, PostHogOptions } from '../../../../posthog-node/src/posthog-node'
 import { matchProperty, InconclusiveMatchError, relativeDateParseForFeatureFlagMatching } from '../src/feature-flags'
 import fetch from '../src/fetch'
-import { anyDecideCall, anyLocalEvalCall, apiImplementation } from './test-utils'
+import { anyDecideCall, anyLocalEvalCall, apiImplementation } from '../../../../posthog-node/test/test-utils'
 import { waitForPromises } from 'posthog-core/test/test-utils/test-utils'
 jest.mock('../src/fetch')
 

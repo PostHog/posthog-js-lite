@@ -1,4 +1,4 @@
-import { FeatureFlagValue, JsonType } from '../../posthog-core/src'
+import { EventMessage, FeatureFlagValue, GroupIdentifyMessage, IdentifyMessage, JsonType } from '../../posthog-core/src'
 
 export type PostHogNodeV1 = {
   /**

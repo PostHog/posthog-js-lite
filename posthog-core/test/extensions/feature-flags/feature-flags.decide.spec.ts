@@ -1,16 +1,30 @@
-import { PostHog as PostHog, PostHogOptions } from '../src/posthog-node'
-import fetch from '../src/fetch'
-import { apiImplementation, apiImplementationV4 } from './test-utils'
-import { waitForPromises } from 'posthog-core/test/test-utils/test-utils'
-import { PostHogV4DecideResponse } from 'posthog-core/src/types'
+import { apiImplementation, apiImplementationV4, waitForPromises } from 'posthog-core/test/test-utils/test-utils'
+import { PostHogCoreOptions, PostHogV4DecideResponse } from 'posthog-core/src/types'
+import { PostHogBackendClient } from '../../../src'
+import { StackParser, StackFrameModifierFn } from '../../../src/extensions/error-tracking/types'
 jest.mock('../src/fetch')
 
 jest.spyOn(console, 'debug').mockImplementation()
 
 const mockedFetch = jest.mocked(fetch, true)
 
-const posthogImmediateResolveOptions: PostHogOptions = {
+const posthogImmediateResolveOptions: PostHogCoreOptions = {
   fetchRetryCount: 0,
+}
+
+class PostHog extends PostHogBackendClient {
+  getStackParser(): StackParser | undefined {
+    return undefined
+  }
+  getStackFrameModifiers(): StackFrameModifierFn[] {
+    return []
+  }
+  getLibraryId(): string {
+    return 'flags-test'
+  }
+  getLibraryVersion(): string {
+    return '0.0.0'
+  }
 }
 
 describe('decide v4', () => {

@@ -1,8 +1,8 @@
 // Portions of this file are derived from getsentry/sentry-javascript by Software, Inc. dba Sentry
 // Licensed under the MIT License
 
-import { StackFrame } from './types'
-import { ReduceableCache } from './reduceable-cache'
+import { StackFrame } from 'posthog-core/src/extensions/error-tracking/types'
+import { ReduceableCache } from 'posthog-core/src/extensions/error-tracking/reduceable-cache'
 import { createReadStream } from 'fs'
 import { createInterface } from 'readline'
 

@@ -46,8 +46,9 @@ import { LZString } from './lz-string'
 import { SimpleEventEmitter } from './eventemitter'
 import { uuidv7 } from './vendor/uuidv7'
 import { PostHogMemoryStorage } from './storage-memory'
-import { FeatureFlagsPoller } from '../../extensions/feature-flags'
-import ErrorTracking from '../../extensions/error-tracking'
+import { FeatureFlagsPoller } from './extensions/feature-flags'
+import ErrorTracking from './extensions/error-tracking'
+import { StackFrameModifierFn, StackParser } from './extensions/error-tracking/types'
 
 export * as utils from './utils'
 
@@ -1859,10 +1860,13 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless {
         customHeaders: this.getCustomHeaders(),
       })
     }
-    this.errorTracking = new ErrorTracking(this, options)
+    this.errorTracking = new ErrorTracking(this, options, this.getStackParser(), this.getStackFrameModifiers())
     this.distinctIdHasSentFlagCalls = {}
     this.maxCacheSize = options.maxCacheSize || MAX_CACHE_SIZE
   }
+
+  abstract getStackParser(): StackParser | undefined
+  abstract getStackFrameModifiers(): StackFrameModifierFn[]
 
   getPersistedProperty(key: PostHogPersistedProperty): any | undefined {
     return this._memoryStorage.getProperty(key)
@@ -2303,7 +2307,15 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless {
 
   captureException(error: unknown, distinctId?: string, additionalProperties?: Record<string | number, any>): void {
     const syntheticException = new Error('PostHog syntheticException')
-    ErrorTracking.captureException(this, error, { syntheticException }, distinctId, additionalProperties)
+    ErrorTracking.captureException(
+      this,
+      error,
+      { syntheticException },
+      this.getStackFrameModifiers(),
+      this.getStackParser(),
+      distinctId,
+      additionalProperties
+    )
   }
 }
 

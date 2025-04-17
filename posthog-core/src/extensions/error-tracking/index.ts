@@ -1,8 +1,7 @@
-import { EventHint } from './types'
+import { EventHint, StackFrameModifierFn, StackParser } from './types'
 import { addUncaughtExceptionListener, addUnhandledRejectionListener } from './autocapture'
 import { uuidv7 } from 'posthog-core/src/vendor/uuidv7'
 import { propertiesFromUnknownInput } from './error-conversion'
-import { defaultStackParser } from './stack-trace'
 import { EventMessage, PostHogBackendClient, PostHogBackendOptions } from 'posthog-core/src'
 
 const SHUTDOWN_TIMEOUT = 2000
@@ -10,11 +9,15 @@ const SHUTDOWN_TIMEOUT = 2000
 export default class ErrorTracking {
   private client: PostHogBackendClient
   private _exceptionAutocaptureEnabled: boolean
+  private stackParser: StackParser | undefined
+  private stackFrameModifiers: StackFrameModifierFn[]
 
   static async captureException(
     client: PostHogBackendClient,
     error: unknown,
     hint: EventHint,
+    frameModifiers: StackFrameModifierFn[],
+    stackParser?: StackParser,
     distinctId?: string,
     additionalProperties?: Record<string | number, any>
   ): Promise<void> {
@@ -26,7 +29,7 @@ export default class ErrorTracking {
       properties.$process_person_profile = false
     }
 
-    const exceptionProperties = await propertiesFromUnknownInput(defaultStackParser, error, hint)
+    const exceptionProperties = await propertiesFromUnknownInput(stackParser, frameModifiers, error, hint)
 
     client.capture({
       event: '$exception',
@@ -38,9 +41,16 @@ export default class ErrorTracking {
     })
   }
 
-  constructor(client: PostHogBackendClient, options: PostHogBackendOptions) {
+  constructor(
+    client: PostHogBackendClient,
+    options: PostHogBackendOptions,
+    stackParser: StackParser | undefined,
+    stackFrameModifiers: StackFrameModifierFn[]
+  ) {
     this.client = client
     this._exceptionAutocaptureEnabled = options.enableExceptionAutocapture || false
+    this.stackParser = stackParser
+    this.stackFrameModifiers = stackFrameModifiers
 
     this.startAutocaptureIfEnabled()
   }
@@ -53,7 +63,7 @@ export default class ErrorTracking {
   }
 
   private onException(exception: unknown, hint: EventHint): void {
-    ErrorTracking.captureException(this.client, exception, hint)
+    ErrorTracking.captureException(this.client, exception, hint, this.stackFrameModifiers, this.stackParser)
   }
 
   private async onFatalError(): Promise<void> {

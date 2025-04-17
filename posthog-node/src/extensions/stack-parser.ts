@@ -2,7 +2,12 @@
 // Licensed under the MIT License
 
 import { posix, sep, dirname } from 'path'
-import { StackFrame, StackLineParser, StackLineParserFn, StackParser } from './types'
+import {
+  StackFrame,
+  StackLineParser,
+  StackLineParserFn,
+  StackParser,
+} from 'posthog-core/src/extensions/error-tracking/types'
 
 type GetModuleFn = (filename: string | undefined) => string | undefined
 
