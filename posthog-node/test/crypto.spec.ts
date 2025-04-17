@@ -1,5 +1,5 @@
-import * as crypto from 'posthog-node/src/crypto'
-import * as cryptoHelpers from 'posthog-node/src/crypto-helpers'
+import * as crypto from '../src/crypto'
+import * as cryptoHelpers from '../src/crypto-helpers'
 
 describe('crypto', () => {
   describe('hashSHA1', () => {
