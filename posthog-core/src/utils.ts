@@ -1,5 +1,34 @@
 import { FetchLike } from './types'
 
+// Rollout constants
+export const NEW_FLAGS_ROLLOUT_PERCENTAGE = 1
+// The fnv1a hashes of the tokens that are explicitly included in the rollout
+// see https://github.com/PostHog/posthog-js-lite/blob/main/posthog-core/src/utils.ts#L84
+export const NEW_FLAGS_EXCLUDED_HASHES = new Set([
+  '61be3dd8',
+  '96f6df5f',
+  '8cfdba9b',
+  'bf027177',
+  'e59430a8',
+  '7fa5500b',
+  '569798e9',
+  '04809ff7',
+  '0ebc61a5',
+  '32de7f98',
+  '3beeb69a',
+  '12d34ad9',
+  '733853ec',
+  '0645bb64',
+  '5dcbee21',
+  'b1f95fa3',
+  '2189e408',
+  '82b460c2',
+  '3a8cc979',
+  '29ef8843',
+  '2cdbf767',
+  '38084b54',
+])
+
 export function assert(truthyValue: any, message: string): void {
   if (!truthyValue || typeof truthyValue !== 'string' || isEmpty(truthyValue)) {
     throw new Error(message)
@@ -81,6 +110,10 @@ export const isFunction = function (f: any): f is (...args: any[]) => any {
   return typeof f === 'function'
 }
 
+// FNV-1a hash function
+// https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
+// I know, I know, I'm rolling my own hash function, but I didn't want to take on
+// a crypto dependency and this is just temporary anyway
 function fnv1a(str: string): string {
   let hash = 0x811c9dc5 // FNV offset basis
   for (let i = 0; i < str.length; i++) {
@@ -91,20 +124,9 @@ function fnv1a(str: string): string {
   return (hash >>> 0).toString(16).padStart(8, '0')
 }
 
-export function isTokenInRollout(
-  token: string,
-  percentage: number = 0,
-  includedHashes?: Set<string>,
-  excludedHashes?: Set<string>
-): boolean {
+export function isTokenInRollout(token: string, percentage: number = 0, excludedHashes?: Set<string>): boolean {
   const tokenHash = fnv1a(token)
-
-  // Check included hashes
-  if (includedHashes?.has(tokenHash)) {
-    return true
-  }
-
-  // Check excluded hashes
+  // Check excluded hashes (we're explicitly including these tokens from the rollout)
   if (excludedHashes?.has(tokenHash)) {
     return false
   }

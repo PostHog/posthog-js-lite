@@ -33,6 +33,8 @@ import {
   currentTimestamp,
   isError,
   isTokenInRollout,
+  NEW_FLAGS_EXCLUDED_HASHES,
+  NEW_FLAGS_ROLLOUT_PERCENTAGE,
   removeTrailingSlash,
   retriable,
   RetriableOptions,
@@ -43,73 +45,6 @@ import { SimpleEventEmitter } from './eventemitter'
 import { uuidv7 } from './vendor/uuidv7'
 
 export * as utils from './utils'
-
-// Rollout constants
-const ROLLOUT_PERCENTAGE = 1
-const INCLUDED_HASHES = new Set(['bc94e67150c97dbcbf52549d50a7b80814841dbf'])
-const EXCLUDED_HASHES = new Set([
-  '03005596796f9ee626e9596b8062972cb6a556a0',
-  '05620a20b287e0d5cb1d4a0dd492797f36b952c5',
-  '0f95b5ca12878693c01c6420e727904f1737caa7',
-  '1212b6287a6e7e5ff6be5cb30ec563f35c2139d6',
-  '171ec1bb2caf762e06b1fde2e36a38c4638691a8',
-  '171faa9fc754b1aa42252a4eedb948b7c805d5cb',
-  '178ddde3f628fb0030321387acf939e4e6946d35',
-  '1790085d7e9aa136e8b73c180dd6a6060e2ef949',
-  '1895a3349c2371559c886f19ef1bf60617a934e0',
-  '1f01267d4f0295f88e8943bc963d816ee4abc84b',
-  '213df54990a34e62e3570b430f7ee36ec0928743',
-  '23d235537d988ab98ad259853eab02b07d828c2b',
-  '27135f7ae8f936222a5fcfcdc75c139b27dd3254',
-  '2817396d80fafc86c0816af8e73880f8b3e54320',
-  '29d3235e63db42056858ef04c6a5488c2a459eaa',
-  '2a76d9b5eb9307e540de9d516aa80f6cb5a0292f',
-  '2a92965a1344ab8a1f7dac2507e858f579a88ac2',
-  '2d5823818261512d616161de2bb8a161d48f1e35',
-  '32942f6a879dbfa8011cc68288c098e4a76e6cc0',
-  '3db6c17ab65827ceadf77d9a8462fabd94170ca6',
-  '4975b24f9ced9b2c06b604ddc9612f663f9452d5',
-  '497c7b017b13cd6cdbfe641c71f0dfb660a4c518',
-  '49c79e1dbce4a7b9394d6c14bf0421e04cecb445',
-  '4d63e1c5cd3a80972eac4e7526f03357ac538043',
-  '4da0f42a6f8f116822411152e5cda3c65ed2561f',
-  '4e494675ecd2b841784d6f29b658b38a0877a62e',
-  '4e852d8422130cec991eca2d6416dbe321d0a689',
-  '5120bfd92c9c6731074a89e4a82f49e947d34369',
-  '512cd72f9aa7ab11dfd012cc2e19394a020bd9a8',
-  '5b175d4064cc62f01118a2c6818c2c02fc8f27e1',
-  '5ba4bba3979e97d2c84df2aba394ca29c6c43187',
-  '639014946463614353ca640b268dc6592f62b652',
-  '643b9be9d50104e2b4ba94bc56688adba69c80fe',
-  '658f92992af9fc6a360143d72d93a36f63bbccb0',
-  '673a59c99739dfcee35202e428dd020b94866d52',
-  '67a9829b4997f5c6f3ab8173ad299f634adcfa53',
-  '6d686043e914ae8275df65e1ad890bd32a3b6fdd',
-  '6e4b5e1d649ad006d78f1f1617a9a0f35fc73078',
-  '6f1fc3a8fa9df54d00cbc1ef9ad5f24640589fd0',
-  '764e5fec2c7899cfee620fae8450fcc62cd72bf0',
-  '80ea6d6ed9a5895633c7bee7aba4323eeacdc90e',
-  '872e420156f583bc97351f3d83c02dae734a85df',
-  '8a24844cbeae31e74b4372964cdea74e99d9c0e2',
-  '975ae7330506d4583b000f96ad87abb41a0141ce',
-  '9e3d71378b340def3080e0a3a785a1b964cf43ef',
-  '9ede7b21365661331d024d92915de6e69749892b',
-  'a1ed1b4216ef4cec542c6b3b676507770be24ddc',
-  'a4f66a70a9647b3b89fc59f7642af8ffab073ba1',
-  'a7adb80be9e90948ab6bb726cc6e8e52694aec74',
-  'bca4b14ac8de49cccc02306c7bb6e5ae2acc0f72',
-  'bde5fe49f61e13629c5498d7428a7f6215e482a6',
-  'c54a7074c323aa7c5cb7b24bf826751b2a58f5d8',
-  'c552d20da0c87fb4ebe2da97c7f95c05eef2bca1',
-  'd7682f2d268f3064d433309af34f2935810989d2',
-  'd794ac43d8be26bf99f369ea79501eb774fe1b16',
-  'e0963e2552af77d46bb24d5b5806b5b456c64c5f',
-  'e6f14b2100cb0598925958b097ace82486037a25',
-  'e79ec399ad45f44a4295a5bb1322e2f14600ae39',
-  'eecf29f73f9c31009e5737a6c5ec3f87ec5b8ea6',
-  'f2c01f3cc770c7788257ee60910e2530f92eefc3',
-  'f7bbc58f4122b1e2812c0f1962c584cb404a1ac3',
-])
 
 class PostHogFetchHttpError extends Error {
   name = 'PostHogFetchHttpError'
@@ -424,8 +359,10 @@ export abstract class PostHogCoreStateless {
   ): Promise<PostHogDecideResponse | undefined> {
     await this._initPromise
 
-    // Check if token is in rollout
-    const useFlags = isTokenInRollout(this.apiKey, ROLLOUT_PERCENTAGE, INCLUDED_HASHES, EXCLUDED_HASHES)
+    // Check if the API token is in the new flags rollout
+    // This is a temporary measure to ensure that we can still use the old flags API
+    // while we migrate to the new flags API
+    const useFlags = isTokenInRollout(this.apiKey, NEW_FLAGS_ROLLOUT_PERCENTAGE, NEW_FLAGS_EXCLUDED_HASHES)
 
     const url = useFlags ? `${this.host}/flags/?v=2` : `${this.host}/decide/?v=4`
     const fetchOptions: PostHogFetchOptions = {
