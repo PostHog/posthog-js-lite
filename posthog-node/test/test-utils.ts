@@ -7,7 +7,7 @@ type ErrorResponse = {
 
 export const apiImplementationV4 = (decideResponse: PostHogV4DecideResponse | ErrorResponse) => {
   return (url: any): Promise<any> => {
-    if ((url as any).includes('/decide/?v=4')) {
+    if ((url as any).includes('/flags/?v=2')) {
       // Check if the response is a decide response or an error response
       return 'flags' in decideResponse
         ? Promise.resolve({
@@ -49,7 +49,7 @@ export const apiImplementation = ({
   errorsWhileComputingFlags?: boolean
 }) => {
   return (url: any): Promise<any> => {
-    if ((url as any).includes('/decide/')) {
+    if ((url as any).includes('/flags/')) {
       return Promise.resolve({
         status: decideStatus,
         text: () => Promise.resolve('ok'),
@@ -103,4 +103,4 @@ export const anyLocalEvalCall = [
   'http://example.com/api/feature_flag/local_evaluation?token=TEST_API_KEY&send_cohorts',
   expect.any(Object),
 ]
-export const anyDecideCall = ['http://example.com/decide/?v=4', expect.any(Object)]
+export const anyDecideCall = ['http://example.com/flags/?v=2', expect.any(Object)]

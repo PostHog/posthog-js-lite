@@ -1,5 +1,9 @@
 # Next
 
+# 3.14.0 – 2025-04-17
+
+1. chore: roll out new feature flag evaluation backend to majority of customers
+
 # 3.13.2 - 2025-04-16
 
 ## Fixed

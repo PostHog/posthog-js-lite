@@ -251,7 +251,7 @@ describe('local evaluation', () => {
       personalApiKey: 'TEST_PERSONAL_API_KEY',
       ...posthogImmediateResolveOptions,
     })
-    // # group_type_mappings not present, so fallback to `/decide`
+    // # group_type_mappings not present, so fallback to `/flags`
     expect(
       await posthog.getFeatureFlag('group-flag', 'some-distinct-2', {
         groupProperties: {
@@ -340,14 +340,14 @@ describe('local evaluation', () => {
     ).toEqual(true)
     expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
 
-    // # will fall back on `/decide`, as all properties present for second group, but that group resolves to false
+    // # will fall back on `/flags`, as all properties present for second group, but that group resolves to false
     expect(
       await posthog.getFeatureFlag('complex-flag', 'some-distinct-id_outside_rollout?', {
         personProperties: { region: 'USA', email: 'a@b.com' },
       })
     ).toEqual('decide-fallback-value')
     expect(mockedFetch).toHaveBeenCalledWith(
-      'http://example.com/decide/?v=4',
+      'http://example.com/flags/?v=2',
       expect.objectContaining({
         body: JSON.stringify({
           token: 'TEST_API_KEY',
@@ -371,7 +371,7 @@ describe('local evaluation', () => {
       await posthog.getFeatureFlag('complex-flag', 'some-distinct-id', { personProperties: { doesnt_matter: '1' } })
     ).toEqual('decide-fallback-value')
     expect(mockedFetch).toHaveBeenCalledWith(
-      'http://example.com/decide/?v=4',
+      'http://example.com/flags/?v=2',
       expect.objectContaining({
         body: JSON.stringify({
           token: 'TEST_API_KEY',
@@ -672,7 +672,7 @@ describe('local evaluation', () => {
       ...posthogImmediateResolveOptions,
     })
 
-    // # beta-feature value overridden by /decide
+    // # beta-feature value overridden by /flags
     expect(await posthog.getAllFlags('distinct-id')).toEqual({
       'beta-feature': 'variant-1',
       'beta-feature2': 'variant-2',
@@ -753,7 +753,7 @@ describe('local evaluation', () => {
       ...posthogImmediateResolveOptions,
     })
 
-    // # beta-feature value overridden by /decide
+    // # beta-feature value overridden by /flags
     expect((await posthog.getAllFlagsAndPayloads('distinct-id')).featureFlagPayloads).toEqual({
       'beta-feature': 100,
       'beta-feature2': 300,
