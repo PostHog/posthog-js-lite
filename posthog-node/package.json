@@ -26,7 +26,7 @@
     "axios": "^1.8.2"
   },
   "devDependencies": {
-    "@types/node": "^18.0.0",
+    "@types/node": "^22.0.0",
     "commander": "^9.3.0",
     "mitata": "^1.0.21"
   },
