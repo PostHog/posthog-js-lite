@@ -1,5 +1,13 @@
 # Next
 
+# 3.5.0 – 2025-04-17
+
+## Added
+
+1. chore: roll out new flag evaluation backend to majority of customers
+
+# 3.4.2 - 2025-02-27
+
 ## Added
 
 1. Added `captureHistoryEvents` option to automatically capture navigation events in single-page applications using the History API.

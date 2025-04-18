@@ -1,3 +1,7 @@
+# 4.12.0 – 2025-04-17
+
+1. chore: roll out new feature flag evaluation backend to majority of customers
+
 # 4.11.7 - 2025-04-16
 
 1. fix: do not reference `node:` prefix as it is not supported by Next.js edge runtime

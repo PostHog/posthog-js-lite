@@ -32,6 +32,9 @@ import {
   currentISOTime,
   currentTimestamp,
   isError,
+  isTokenInRollout,
+  NEW_FLAGS_EXCLUDED_HASHES,
+  NEW_FLAGS_ROLLOUT_PERCENTAGE,
   removeTrailingSlash,
   retriable,
   RetriableOptions,
@@ -356,7 +359,12 @@ export abstract class PostHogCoreStateless {
   ): Promise<PostHogDecideResponse | undefined> {
     await this._initPromise
 
-    const url = `${this.host}/decide/?v=4`
+    // Check if the API token is in the new flags rollout
+    // This is a temporary measure to ensure that we can still use the old flags API
+    // while we migrate to the new flags API
+    const useFlags = isTokenInRollout(this.apiKey, NEW_FLAGS_ROLLOUT_PERCENTAGE, NEW_FLAGS_EXCLUDED_HASHES)
+
+    const url = useFlags ? `${this.host}/flags/?v=2` : `${this.host}/decide/?v=4`
     const fetchOptions: PostHogFetchOptions = {
       method: 'POST',
       headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },
