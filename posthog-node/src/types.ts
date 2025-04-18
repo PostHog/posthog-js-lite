@@ -215,4 +215,17 @@ export type PostHogNodeV1 = {
    * @param shutdownTimeoutMs The shutdown timeout, in milliseconds. Defaults to 30000 (30s).
    */
   shutdown(shutdownTimeoutMs?: number): void
+
+  /**
+   * @description Waits for local evaluation to be ready, with an optional timeout.
+   * @param timeoutMs - Maximum time to wait in milliseconds. Defaults to 30 seconds.
+   * @returns A promise that resolves to true if local evaluation is ready, false if the timeout was reached.
+   */
+  waitForLocalEvaluationReady(timeoutMs?: number): Promise<boolean>
+
+  /**
+   * @description Returns true if local evaluation is ready, false if it's not.
+   * @returns true if local evaluation is ready, false if it's not.
+   */
+  isLocalEvaluationReady(): boolean
 }
