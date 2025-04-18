@@ -518,3 +518,5 @@ export interface GroupIdentifyMessage {
   distinctId?: string // optional distinctId to associate message with a person
   disableGeoip?: boolean
 }
+
+export * from './extensions/types'

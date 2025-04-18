@@ -23,6 +23,8 @@ import {
   EventMessage,
   IdentifyMessage,
   PostHogFlagsAndPayloadsResponse,
+  StackParser,
+  StackFrameModifierFn,
 } from './types'
 import {
   createDecideResponseFromFlagsAndPayloads,
@@ -48,7 +50,6 @@ import { uuidv7 } from './vendor/uuidv7'
 import { PostHogMemoryStorage } from './storage-memory'
 import { FeatureFlagsPoller } from './extensions/feature-flags'
 import ErrorTracking from './extensions/error-tracking'
-import { StackFrameModifierFn, StackParser } from './extensions/error-tracking/types'
 
 export * as utils from './utils'
 

@@ -1,18 +1,42 @@
 // import { PostHog, PostHogOptions } from '../'
 // Uncomment below line while developing to not compile code everytime
-import { PostHog as PostHog, PostHogOptions } from '../../../../posthog-node/src/posthog-node'
-import { matchProperty, InconclusiveMatchError, relativeDateParseForFeatureFlagMatching } from '../src/feature-flags'
-import fetch from '../src/fetch'
-import { anyDecideCall, anyLocalEvalCall, apiImplementation } from '../../../../posthog-node/test/test-utils'
-import { waitForPromises } from 'posthog-core/test/test-utils/test-utils'
+import {
+  matchProperty,
+  InconclusiveMatchError,
+  relativeDateParseForFeatureFlagMatching,
+} from 'posthog-core/src/extensions/feature-flags'
+import fetch from 'posthog-core/src/fetch'
+import {
+  anyDecideCall,
+  anyLocalEvalCall,
+  apiImplementation,
+  waitForPromises,
+} from 'posthog-core/test/test-utils/test-utils'
+import { PostHogBackendClient, PostHogBackendOptions } from 'posthog-core/src'
+import { StackFrameModifierFn } from '../../../src/extensions/error-tracking/types'
 jest.mock('../src/fetch')
 
 jest.spyOn(console, 'debug').mockImplementation()
 
 const mockedFetch = jest.mocked(fetch, true)
 
-const posthogImmediateResolveOptions: PostHogOptions = {
+const posthogImmediateResolveOptions: PostHogBackendOptions = {
   fetchRetryCount: 0,
+}
+
+export class PostHog extends PostHogBackendClient {
+  getLibraryId(): string {
+    return 'posthog-backend-test'
+  }
+  getLibraryVersion(): string {
+    return '0.0.0'
+  }
+  getStackParser(): undefined {
+    return undefined
+  }
+  getStackFrameModifiers(): StackFrameModifierFn[] {
+    return []
+  }
 }
 
 describe('local evaluation', () => {
