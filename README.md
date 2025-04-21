@@ -15,7 +15,7 @@ Information on how to contribute to the project and run tests can be found [here
 
 ## Releasing
 
-Information on how to release the individual libraries can be found [here](RELEASE.md).
+Information on how to release the individual libraries can be found [here](RELEASING.md).
 
 ## License
 
