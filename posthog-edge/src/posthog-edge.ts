@@ -5,7 +5,7 @@ import { StackFrameModifierFn, StackParser } from 'posthog-core/src/extensions/e
 
 export class PostHog extends PostHogBackendClient {
   getLibraryId(): string {
-    return 'posthog-node'
+    return 'posthog-edge'
   }
   getLibraryVersion(): string {
     return version

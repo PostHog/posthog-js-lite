@@ -1877,7 +1877,7 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless {
     this.maxCacheSize = options.maxCacheSize || MAX_CACHE_SIZE
   }
 
-  abstract getStackParser(): StackParser
+  abstract getStackParser(): StackParser | undefined
   abstract getStackFrameModifiers(): StackFrameModifierFn[]
 
   getPersistedProperty(key: PostHogPersistedProperty): any | undefined {
