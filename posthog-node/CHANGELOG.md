@@ -1,3 +1,7 @@
+# 4.13.0 - 2025-04-21
+
+1. feat: Add method to wait for local evaluation feature flag definitions to be loaded
+
 # 4.12.0 – 2025-04-17
 
 1. chore: roll out new feature flag evaluation backend to majority of customers
