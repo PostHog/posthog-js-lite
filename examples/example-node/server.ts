@@ -23,6 +23,12 @@ const posthog = new PostHog(PH_API_KEY, {
   },
 })
 
+console.log('LOCAL EVALUATION READY RIGHT AFTER CREATION: ', posthog.isLocalEvaluationReady())
+
+posthog.on('localEvaluationFlagsLoaded', (count) => {
+  console.log('LOCAL EVALUATION READY (localEvaluationFlagsLoaded) EVENT EMITTED: flags count: ', count)
+})
+
 posthog.debug()
 
 Sentry.init({
@@ -53,6 +59,12 @@ app.get('/error', (req, res) => {
   })
   posthog.captureException(error, 'EXAMPLE_APP_GLOBAL')
   res.send({ status: 'error!!' })
+})
+
+app.get('/wait-for-local-evaluation-ready', async (req, res) => {
+  const FIVE_SECONDS = 5000
+  const ready = await posthog.waitForLocalEvaluationReady(FIVE_SECONDS)
+  res.send({ ready })
 })
 
 app.get('/user/:userId/action', (req, res) => {
