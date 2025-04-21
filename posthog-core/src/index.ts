@@ -39,6 +39,9 @@ import {
   currentISOTime,
   currentTimestamp,
   isError,
+  isTokenInRollout,
+  NEW_FLAGS_EXCLUDED_HASHES,
+  NEW_FLAGS_ROLLOUT_PERCENTAGE,
   removeTrailingSlash,
   retriable,
   RetriableOptions,
@@ -366,7 +369,12 @@ export abstract class PostHogCoreStateless {
   ): Promise<PostHogDecideResponse | undefined> {
     await this._initPromise
 
-    const url = `${this.host}/decide/?v=4`
+    // Check if the API token is in the new flags rollout
+    // This is a temporary measure to ensure that we can still use the old flags API
+    // while we migrate to the new flags API
+    const useFlags = isTokenInRollout(this.apiKey, NEW_FLAGS_ROLLOUT_PERCENTAGE, NEW_FLAGS_EXCLUDED_HASHES)
+
+    const url = useFlags ? `${this.host}/flags/?v=2` : `${this.host}/decide/?v=4`
     const fetchOptions: PostHogFetchOptions = {
       method: 'POST',
       headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },
@@ -1858,6 +1866,9 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless {
         onError: (err: Error) => {
           this._events.emit('error', err)
         },
+        onLoad: (count: number) => {
+          this._events.emit('localEvaluationFlagsLoaded', count)
+        },
         customHeaders: this.getCustomHeaders(),
       })
     }
@@ -1866,7 +1877,7 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless {
     this.maxCacheSize = options.maxCacheSize || MAX_CACHE_SIZE
   }
 
-  abstract getStackParser(): StackParser | undefined
+  abstract getStackParser(): StackParser
   abstract getStackFrameModifiers(): StackFrameModifierFn[]
 
   getPersistedProperty(key: PostHogPersistedProperty): any | undefined {
@@ -1999,6 +2010,33 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless {
     super.aliasStateless(data.alias, data.distinctId, undefined, { disableGeoip: data.disableGeoip })
   }
 
+  isLocalEvaluationReady(): boolean {
+    return this.featureFlagsPoller?.isLocalEvaluationReady() ?? false
+  }
+
+  async waitForLocalEvaluationReady(timeoutMs: number = THIRTY_SECONDS): Promise<boolean> {
+    if (this.isLocalEvaluationReady()) {
+      return true
+    }
+
+    if (this.featureFlagsPoller === undefined) {
+      return false
+    }
+
+    return new Promise((resolve) => {
+      const timeout = setTimeout(() => {
+        cleanup()
+        resolve(false)
+      }, timeoutMs)
+
+      const cleanup = this._events.on('localEvaluationFlagsLoaded', (count: number) => {
+        clearTimeout(timeout)
+        cleanup()
+        resolve(count > 0)
+      })
+    })
+  }
+
   async getFeatureFlag(
     key: string,
     distinctId: string,
@@ -2041,7 +2079,7 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless {
     )
 
     const flagWasLocallyEvaluated = response !== undefined
-    let requestId: string | undefined = undefined
+    let requestId = undefined
     let flagDetail: FeatureFlagDetail | undefined = undefined
     if (!flagWasLocallyEvaluated && !onlyEvaluateLocally) {
       const remoteResponse = await super.getFeatureFlagDetailStateless(
@@ -2123,7 +2161,7 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless {
     personProperties = adjustedProperties.allPersonProperties
     groupProperties = adjustedProperties.allGroupProperties
 
-    let response: JsonType | undefined = undefined
+    let response = undefined
 
     const localEvaluationEnabled = this.featureFlagsPoller !== undefined
     if (localEvaluationEnabled) {
@@ -2276,6 +2314,10 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless {
     super.groupIdentifyStateless(groupType, groupKey, properties, { disableGeoip }, distinctId)
   }
 
+  /**
+   * Reloads the feature flag definitions from the server for local evaluation.
+   * This is useful to call if you want to ensure that the feature flags are up to date before calling getFeatureFlag.
+   */
   async reloadFeatureFlags(): Promise<void> {
     await this.featureFlagsPoller?.loadFeatureFlags(true)
   }

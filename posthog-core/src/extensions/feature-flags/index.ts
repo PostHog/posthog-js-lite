@@ -38,6 +38,7 @@ type FeatureFlagsPollerOptions = {
   timeout?: number
   fetch?: (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
   onError?: (error: Error) => void
+  onLoad?: (count: number) => void
   customHeaders?: { [key: string]: string }
 }
 
@@ -59,6 +60,7 @@ class FeatureFlagsPoller {
   customHeaders?: { [key: string]: string }
   shouldBeginExponentialBackoff: boolean = false
   backOffCount: number = 0
+  onLoad?: (count: number) => void
 
   constructor({
     pollingInterval,
@@ -83,7 +85,7 @@ class FeatureFlagsPoller {
     this.fetch = options.fetch || fetch
     this.onError = options.onError
     this.customHeaders = customHeaders
-
+    this.onLoad = options.onLoad
     void this.loadFeatureFlags()
   }
 
@@ -379,6 +381,14 @@ class FeatureFlagsPoller {
   }
 
   /**
+   * Returns true if the feature flags poller has loaded successfully at least once and has more than 0 feature flags.
+   * This is useful to check if local evaluation is ready before calling getFeatureFlag.
+   */
+  isLocalEvaluationReady(): boolean {
+    return (this.loadedSuccessfullyOnce ?? false) && (this.featureFlags?.length ?? 0) > 0
+  }
+
+  /**
    * If a client is misconfigured with an invalid or improper API key, the polling interval is doubled each time
    * until a successful request is made, up to a maximum of 60 seconds.
    *
@@ -474,6 +484,7 @@ class FeatureFlagsPoller {
           this.loadedSuccessfullyOnce = true
           this.shouldBeginExponentialBackoff = false
           this.backOffCount = 0
+          this.onLoad?.(this.featureFlags.length)
           break
         }
 

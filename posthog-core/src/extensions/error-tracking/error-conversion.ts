@@ -24,16 +24,29 @@ export async function propertiesFromUnknownInput(
     type: 'generic',
   }
 
-  const error = getError(mechanism, input, hint)
-  const exception = await exceptionFromError(stackParser, frameModifiers, error)
+  const errorList = getErrorList(mechanism, input, hint)
+  const exceptionList = await Promise.all(
+    errorList.map(async (error) => {
+      const exception = await exceptionFromError(stackParser, frameModifiers, error)
+      exception.value = exception.value || ''
+      exception.type = exception.type || 'Error'
+      exception.mechanism = mechanism
+      return exception
+    })
+  )
 
-  exception.value = exception.value || ''
-  exception.type = exception.type || 'Error'
-  exception.mechanism = mechanism
-
-  const properties = { $exception_list: [exception] }
-
+  const properties = { $exception_list: exceptionList }
   return properties
+}
+
+// Flatten error causes into a list of errors
+// See: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error/cause
+function getErrorList(mechanism: Mechanism, input: unknown, hint?: EventHint): Error[] {
+  const error = getError(mechanism, input, hint)
+  if (error.cause) {
+    return [error, ...getErrorList(mechanism, error.cause, hint)]
+  }
+  return [error]
 }
 
 function getError(mechanism: Mechanism, exception: unknown, hint?: EventHint): Error {
@@ -69,7 +82,7 @@ function getErrorPropertyFromObject(obj: Record<string, unknown>): Error | undef
   for (const prop in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, prop)) {
       const value = obj[prop]
-      if (value instanceof Error) {
+      if (isError(value)) {
         return value
       }
     }

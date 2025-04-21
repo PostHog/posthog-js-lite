@@ -12,7 +12,7 @@ describe('PostHogWeb', () => {
   beforeEach(() => {
     ;(global as any).window.fetch = fetch = jest.fn(async (url) => {
       let res: any = { status: 'ok' }
-      if (url.includes('decide')) {
+      if (url.includes('flags')) {
         res = {
           featureFlags: {
             'feature-1': true,
@@ -61,7 +61,7 @@ describe('PostHogWeb', () => {
 
       await waitForPromises()
 
-      expect(fetch).toHaveBeenCalledWith('https://us.i.posthog.com/decide/?v=4', {
+      expect(fetch).toHaveBeenCalledWith('https://us.i.posthog.com/flags/?v=2', {
         body: JSON.stringify({
           token: 'TEST_API_KEY',
           distinct_id: posthog.getDistinctId(),
