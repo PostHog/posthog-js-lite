@@ -114,7 +114,7 @@ export async function retriable<T>(fn: () => Promise<T>, props: RetriableOptions
   for (let i = 0; i < props.retryCount + 1; i++) {
     if (i > 0) {
       // don't wait when it's the last try
-      await new Promise((r) => setTimeout(r, props.retryDelay))
+      await new Promise<void>((r) => setTimeout(r, props.retryDelay))
     }
 
     try {
@@ -158,7 +158,7 @@ export const isError = (x: unknown): x is Error => {
 }
 
 export function getFetch(): FetchLike | undefined {
-  return typeof fetch !== 'undefined' ? fetch : typeof global.fetch !== 'undefined' ? global.fetch : undefined
+  return typeof fetch !== 'undefined' ? fetch : typeof globalThis.fetch !== 'undefined' ? globalThis.fetch : undefined
 }
 
 // copied from: https://github.com/PostHog/posthog-js/blob/main/react/src/utils/type-utils.ts#L4
