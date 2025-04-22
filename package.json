@@ -13,6 +13,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
+    "prebuild": "yarn workspace posthog-react-native run prebuild",
     "build": "rollup -c",
     "lint": "eslint -c .eslintrc.js --fix posthog-*",
     "prettier": "prettier --write \"./**/*.{ts,tsx}\"",
