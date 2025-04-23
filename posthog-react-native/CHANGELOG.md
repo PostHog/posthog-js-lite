@@ -1,6 +1,6 @@
 # Next
 
-# 3.15.0 – 2025-04-22
+# 3.15.0 – 2025-04-23
 
 1. chore: migrate to bundle using rollup
 
