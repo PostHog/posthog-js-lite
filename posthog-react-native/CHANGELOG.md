@@ -1,5 +1,108 @@
 # Next
 
+# 3.14.0 – 2025-04-17
+
+1. chore: roll out new feature flag evaluation backend to majority of customers
+
+# 3.13.2 - 2025-04-16
+
+## Fixed
+
+1. react native navigation missing navigationRef
+
+# 3.13.1 - 2025-04-15
+
+## Fixed
+
+1. broken relative imports for surveys
+
+# 3.13.0 - 2025-04-08
+
+## Added
+
+1. `$feature_flag_called` event now includes additional properties such as `feature_flag_id`, `feature_flag_version`, `feature_flag_reason`, and `feature_flag_request_id`.
+
+## Fixed
+
+1. apiKey cannot be empty.
+2. Survey modal now moves up when the keyboard is open.
+
+# 3.12.0 - 2025-03-13
+
+## Added
+
+1. Adds support for [surveys on react native](https://github.com/PostHog/posthog.com/pull/10843/)
+   1. Thanks @ian-craig for initial PR.
+
+# 3.11.2 - 2025-02-27
+
+## Fixed
+
+1. Supports gracefully handling quotaLimited responses from the PostHog API for feature flags.
+
+# 3.11.1 - 2025-02-21
+
+## Fixed
+
+1. fix: handle cases when non Error is passed to `captureException`
+
+# 3.11.0 - 2025-02-21
+
+1. fix: Autocapture native app lifecycle events
+   1. the `captureNativeAppLifecycleEvents` client option now takes priority over the `captureLifecycleEvents` autocapture option.
+   2. the `captureLifecycleEvents` autocapture option now captures Application Installed and Application Updated events.
+   3. If you don't want to capture these events, set the `captureLifecycleEvents` autocapture option to `false` and capture the events manually, example below.
+
+```js
+AppState.addEventListener('change', (state) => {
+  if (state === 'active') {
+    posthog.capture('Application Became Active')
+  } else if (state === 'background') {
+    posthog.capture('Application Backgrounded')
+  }
+})
+```
+
+# 3.10.0 - 2025-02-20
+
+## Added
+
+1. Adds the ability to capture user feedback in LLM Observability using the `captureTraceFeedback` and `captureTraceMetric` methods.
+
+# 3.9.1 - 2025-02-13
+
+1. fix: ensure feature flags are reloaded after reset() to prevent undefined values
+
+# 3.9.0 - 2025-02-07
+
+1. chore: Session Replay - GA
+
+# 3.8.0 - 2025-02-06
+
+## Added
+
+1. Adds `captureException` function to allow basic manual capture of JavaScript exceptions
+
+# 3.7.0 - 2025-02-05
+
+1. chore: set locale and timezone using the react-native-localize library
+
+# 3.6.4 - 2025-02-03
+
+1. fix: improve session replay linked flag type handling
+
+# 3.6.3 - 2025-01-16
+
+1. fix: session replay respect linked feature flags
+
+# 3.6.2 - 2025-01-13
+
+1. fix: Set initial currentSessionId, log only with debug flag on
+
+# 3.6.1 - 2024-12-17
+
+1. fix: os_name was not being set correctly for some devices using expo-device
+
 # 3.6.0 - 2024-12-12
 
 1. Add new debugging property `$feature_flag_bootstrapped_response`, `$feature_flag_bootstrapped_payload` and `$used_bootstrap_value` to `$feature_flag_called` event
@@ -11,7 +114,7 @@
 # 3.4.0 - 2024-11-26
 
 1. feat: automatically mask out user photos and sandboxed views like photo picker (iOS Only)
-  1. To disable masking set `maskAllSandboxedViews` and `maskPhotoLibraryImages` to false
+   1. To disable masking set `maskAllSandboxedViews` and `maskPhotoLibraryImages` to false
 
 ```js
 export const posthog = new PostHog(
@@ -87,16 +190,13 @@ export const posthog = new PostHog(
 ## Changed
 
 1. chore: session id will be rotate on app restart.
-    1. To keep the session id across restarts, set the `enablePersistSessionIdAcrossRestart` option to `true` when initializing the PostHog client.
+   1. To keep the session id across restarts, set the `enablePersistSessionIdAcrossRestart` option to `true` when initializing the PostHog client.
 
 ```js
-export const posthog = new PostHog(
-  'apiKey...',
-  {
-    // ...
-    enablePersistSessionIdAcrossRestart: true,
-  },
-);
+export const posthog = new PostHog('apiKey...', {
+  // ...
+  enablePersistSessionIdAcrossRestart: true,
+})
 ```
 
 # 3.2.1 - 2024-09-24
@@ -110,7 +210,7 @@ export const posthog = new PostHog(
 ## Changed
 
 1. chore: default `captureMode` changed to `json`.
-    1. To keep using the `form` mode, just set the `captureMode` option to `form` when initializing the PostHog client.
+   1. To keep using the `form` mode, just set the `captureMode` option to `form` when initializing the PostHog client.
 2. chore: Session Replay for React-Native - Experimental support
 
 Install Session Replay for React-Native:
@@ -124,13 +224,10 @@ npm i -s posthog-react-native-session-replay
 Enable Session Replay for React-Native:
 
 ```js
-export const posthog = new PostHog(
-  'apiKey...',
-  {
-    // ...
-    enableSessionReplay: true,
-  },
-);
+export const posthog = new PostHog('apiKey...', {
+  // ...
+  enableSessionReplay: true,
+})
 ```
 
 Or using the `PostHogProvider`

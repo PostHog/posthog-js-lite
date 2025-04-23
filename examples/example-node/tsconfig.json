@@ -5,7 +5,8 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "allowJs": true
+    "allowJs": true,
+    "resolveJsonModule": true
   },
   "exclude": ["node_modules"]
 }

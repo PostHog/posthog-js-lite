@@ -1,8 +1,9 @@
-import { createHash } from 'rusha'
 import { FeatureFlagCondition, FlagProperty, PostHogFeatureFlag, PropertyGroup } from './types'
-import { JsonType, PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src'
+import { FeatureFlagValue, JsonType, PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src'
 import { safeSetTimeout } from 'posthog-core/src/utils'
 import fetch from './fetch'
+import { SIXTY_SECONDS } from './posthog-node'
+import { hashSHA1 } from 'posthog-node/src/crypto'
 
 // eslint-disable-next-line
 const LONG_SCALE = 0xfffffffffffffff
@@ -38,6 +39,7 @@ type FeatureFlagsPollerOptions = {
   timeout?: number
   fetch?: (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
   onError?: (error: Error) => void
+  onLoad?: (count: number) => void
   customHeaders?: { [key: string]: string }
 }
 
@@ -57,6 +59,9 @@ class FeatureFlagsPoller {
   debugMode: boolean = false
   onError?: (error: Error) => void
   customHeaders?: { [key: string]: string }
+  shouldBeginExponentialBackoff: boolean = false
+  backOffCount: number = 0
+  onLoad?: (count: number) => void
 
   constructor({
     pollingInterval,
@@ -78,11 +83,10 @@ class FeatureFlagsPoller {
     this.projectApiKey = projectApiKey
     this.host = host
     this.poller = undefined
-    // NOTE: as any is required here as the AbortSignal typing is slightly misaligned but works just fine
     this.fetch = options.fetch || fetch
     this.onError = options.onError
     this.customHeaders = customHeaders
-
+    this.onLoad = options.onLoad
     void this.loadFeatureFlags()
   }
 
@@ -102,10 +106,10 @@ class FeatureFlagsPoller {
     groups: Record<string, string> = {},
     personProperties: Record<string, string> = {},
     groupProperties: Record<string, Record<string, string>> = {}
-  ): Promise<string | boolean | undefined> {
+  ): Promise<FeatureFlagValue | undefined> {
     await this.loadFeatureFlags()
 
-    let response: string | boolean | undefined = undefined
+    let response: FeatureFlagValue | undefined = undefined
     let featureFlag = undefined
 
     if (!this.loadedSuccessfullyOnce) {
@@ -121,7 +125,7 @@ class FeatureFlagsPoller {
 
     if (featureFlag !== undefined) {
       try {
-        response = this.computeFlagLocally(featureFlag, distinctId, groups, personProperties, groupProperties)
+        response = await this.computeFlagLocally(featureFlag, distinctId, groups, personProperties, groupProperties)
         this.logMsgIfDebug(() => console.debug(`Successfully computed flag locally: ${key} -> ${response}`))
       } catch (e) {
         if (e instanceof InconclusiveMatchError) {
@@ -135,7 +139,7 @@ class FeatureFlagsPoller {
     return response
   }
 
-  async computeFeatureFlagPayloadLocally(key: string, matchValue: string | boolean): Promise<JsonType | undefined> {
+  async computeFeatureFlagPayloadLocally(key: string, matchValue: FeatureFlagValue): Promise<JsonType | undefined> {
     await this.loadFeatureFlags()
 
     let response = undefined
@@ -168,44 +172,46 @@ class FeatureFlagsPoller {
     personProperties: Record<string, string> = {},
     groupProperties: Record<string, Record<string, string>> = {}
   ): Promise<{
-    response: Record<string, string | boolean>
+    response: Record<string, FeatureFlagValue>
     payloads: Record<string, JsonType>
     fallbackToDecide: boolean
   }> {
     await this.loadFeatureFlags()
 
-    const response: Record<string, string | boolean> = {}
+    const response: Record<string, FeatureFlagValue> = {}
     const payloads: Record<string, JsonType> = {}
     let fallbackToDecide = this.featureFlags.length == 0
 
-    this.featureFlags.map(async (flag) => {
-      try {
-        const matchValue = this.computeFlagLocally(flag, distinctId, groups, personProperties, groupProperties)
-        response[flag.key] = matchValue
-        const matchPayload = await this.computeFeatureFlagPayloadLocally(flag.key, matchValue)
-        if (matchPayload) {
-          payloads[flag.key] = matchPayload
+    await Promise.all(
+      this.featureFlags.map(async (flag) => {
+        try {
+          const matchValue = await this.computeFlagLocally(flag, distinctId, groups, personProperties, groupProperties)
+          response[flag.key] = matchValue
+          const matchPayload = await this.computeFeatureFlagPayloadLocally(flag.key, matchValue)
+          if (matchPayload) {
+            payloads[flag.key] = matchPayload
+          }
+        } catch (e) {
+          if (e instanceof InconclusiveMatchError) {
+            // do nothing
+          } else if (e instanceof Error) {
+            this.onError?.(new Error(`Error computing flag locally: ${flag.key}: ${e}`))
+          }
+          fallbackToDecide = true
         }
-      } catch (e) {
-        if (e instanceof InconclusiveMatchError) {
-          // do nothing
-        } else if (e instanceof Error) {
-          this.onError?.(new Error(`Error computing flag locally: ${flag.key}: ${e}`))
-        }
-        fallbackToDecide = true
-      }
-    })
+      })
+    )
 
     return { response, payloads, fallbackToDecide }
   }
 
-  computeFlagLocally(
+  async computeFlagLocally(
     flag: PostHogFeatureFlag,
     distinctId: string,
     groups: Record<string, string> = {},
     personProperties: Record<string, string> = {},
     groupProperties: Record<string, Record<string, string>> = {}
-  ): string | boolean {
+  ): Promise<FeatureFlagValue> {
     if (flag.ensure_experience_continuity) {
       throw new InconclusiveMatchError('Flag has experience continuity enabled')
     }
@@ -237,17 +243,17 @@ class FeatureFlagsPoller {
       }
 
       const focusedGroupProperties = groupProperties[groupName]
-      return this.matchFeatureFlagProperties(flag, groups[groupName], focusedGroupProperties)
+      return await this.matchFeatureFlagProperties(flag, groups[groupName], focusedGroupProperties)
     } else {
-      return this.matchFeatureFlagProperties(flag, distinctId, personProperties)
+      return await this.matchFeatureFlagProperties(flag, distinctId, personProperties)
     }
   }
 
-  matchFeatureFlagProperties(
+  async matchFeatureFlagProperties(
     flag: PostHogFeatureFlag,
     distinctId: string,
     properties: Record<string, string>
-  ): string | boolean {
+  ): Promise<FeatureFlagValue> {
     const flagFilters = flag.filters || {}
     const flagConditions = flagFilters.groups || []
     let isInconclusive = false
@@ -272,13 +278,13 @@ class FeatureFlagsPoller {
 
     for (const condition of sortedFlagConditions) {
       try {
-        if (this.isConditionMatch(flag, distinctId, condition, properties)) {
+        if (await this.isConditionMatch(flag, distinctId, condition, properties)) {
           const variantOverride = condition.variant
           const flagVariants = flagFilters.multivariate?.variants || []
           if (variantOverride && flagVariants.some((variant) => variant.key === variantOverride)) {
             result = variantOverride
           } else {
-            result = this.getMatchingVariant(flag, distinctId) || true
+            result = (await this.getMatchingVariant(flag, distinctId)) || true
           }
           break
         }
@@ -301,12 +307,12 @@ class FeatureFlagsPoller {
     return false
   }
 
-  isConditionMatch(
+  async isConditionMatch(
     flag: PostHogFeatureFlag,
     distinctId: string,
     condition: FeatureFlagCondition,
     properties: Record<string, string>
-  ): boolean {
+  ): Promise<boolean> {
     const rolloutPercentage = condition.rollout_percentage
     const warnFunction = (msg: string): void => {
       this.logMsgIfDebug(() => console.warn(msg))
@@ -332,15 +338,15 @@ class FeatureFlagsPoller {
       }
     }
 
-    if (rolloutPercentage != undefined && _hash(flag.key, distinctId) > rolloutPercentage / 100.0) {
+    if (rolloutPercentage != undefined && (await _hash(flag.key, distinctId)) > rolloutPercentage / 100.0) {
       return false
     }
 
     return true
   }
 
-  getMatchingVariant(flag: PostHogFeatureFlag, distinctId: string): string | boolean | undefined {
-    const hashValue = _hash(flag.key, distinctId, 'variant')
+  async getMatchingVariant(flag: PostHogFeatureFlag, distinctId: string): Promise<FeatureFlagValue | undefined> {
+    const hashValue = await _hash(flag.key, distinctId, 'variant')
     const matchingVariant = this.variantLookupTable(flag).find((variant) => {
       return hashValue >= variant.valueMin && hashValue < variant.valueMax
     })
@@ -375,61 +381,141 @@ class FeatureFlagsPoller {
     }
   }
 
+  /**
+   * Returns true if the feature flags poller has loaded successfully at least once and has more than 0 feature flags.
+   * This is useful to check if local evaluation is ready before calling getFeatureFlag.
+   */
+  isLocalEvaluationReady(): boolean {
+    return (this.loadedSuccessfullyOnce ?? false) && (this.featureFlags?.length ?? 0) > 0
+  }
+
+  /**
+   * If a client is misconfigured with an invalid or improper API key, the polling interval is doubled each time
+   * until a successful request is made, up to a maximum of 60 seconds.
+   *
+   * @returns The polling interval to use for the next request.
+   */
+  private getPollingInterval(): number {
+    if (!this.shouldBeginExponentialBackoff) {
+      return this.pollingInterval
+    }
+
+    return Math.min(SIXTY_SECONDS, this.pollingInterval * 2 ** this.backOffCount)
+  }
+
   async _loadFeatureFlags(): Promise<void> {
     if (this.poller) {
       clearTimeout(this.poller)
       this.poller = undefined
     }
-    this.poller = setTimeout(() => this._loadFeatureFlags(), this.pollingInterval)
+
+    this.poller = setTimeout(() => this._loadFeatureFlags(), this.getPollingInterval())
 
     try {
       const res = await this._requestFeatureFlagDefinitions()
 
-      if (res && res.status === 401) {
-        throw new ClientError(
-          `Your personalApiKey is invalid. Are you sure you're not using your Project API key? More information: https://posthog.com/docs/api/overview`
-        )
-      }
-
-      if (res && res.status !== 200) {
-        // something else went wrong, or the server is down.
-        // In this case, don't override existing flags
+      // Handle undefined res case, this shouldn't happen, but it doesn't hurt to handle it anyway
+      if (!res) {
+        // Don't override existing flags when something goes wrong
         return
       }
 
-      const responseJson = await res.json()
-      if (!('flags' in responseJson)) {
-        this.onError?.(new Error(`Invalid response when getting feature flags: ${JSON.stringify(responseJson)}`))
-      }
+      // NB ON ERROR HANDLING & `loadedSuccessfullyOnce`:
+      //
+      // `loadedSuccessfullyOnce` indicates we've successfully loaded a valid set of flags at least once.
+      // If we set it to `true` in an error scenario (e.g. 402 Over Quota, 401 Invalid Key, etc.),
+      // any manual call to `loadFeatureFlags()` (without forceReload) will skip refetching entirely,
+      // leaving us stuck with zero or outdated flags. The poller does keep running, but we also want
+      // manual reloads to be possible as soon as the error condition is resolved.
+      //
+      // Therefore, on error statuses, we do *not* set `loadedSuccessfullyOnce = true`, ensuring that
+      // both the background poller and any subsequent manual calls can keep trying to load flags
+      // once the issue (quota, permission, rate limit, etc.) is resolved.
+      switch (res.status) {
+        case 401:
+          // Invalid API key
+          this.shouldBeginExponentialBackoff = true
+          this.backOffCount += 1
+          throw new ClientError(
+            `Your project key or personal API key is invalid. Setting next polling interval to ${this.getPollingInterval()}ms. More information: https://posthog.com/docs/api#rate-limiting`
+          )
 
-      this.featureFlags = responseJson.flags || []
-      this.featureFlagsByKey = this.featureFlags.reduce(
-        (acc, curr) => ((acc[curr.key] = curr), acc),
-        <Record<string, PostHogFeatureFlag>>{}
-      )
-      this.groupTypeMapping = responseJson.group_type_mapping || {}
-      this.cohorts = responseJson.cohorts || []
-      this.loadedSuccessfullyOnce = true
+        case 402:
+          // Quota exceeded - clear all flags
+          console.warn(
+            '[FEATURE FLAGS] Feature flags quota limit exceeded - unsetting all local flags. Learn more about billing limits at https://posthog.com/docs/billing/limits-alerts'
+          )
+          this.featureFlags = []
+          this.featureFlagsByKey = {}
+          this.groupTypeMapping = {}
+          this.cohorts = {}
+          return
+
+        case 403:
+          // Permissions issue
+          this.shouldBeginExponentialBackoff = true
+          this.backOffCount += 1
+          throw new ClientError(
+            `Your personal API key does not have permission to fetch feature flag definitions for local evaluation. Setting next polling interval to ${this.getPollingInterval()}ms. Are you sure you're using the correct personal and Project API key pair? More information: https://posthog.com/docs/api/overview`
+          )
+
+        case 429:
+          // Rate limited
+          this.shouldBeginExponentialBackoff = true
+          this.backOffCount += 1
+          throw new ClientError(
+            `You are being rate limited. Setting next polling interval to ${this.getPollingInterval()}ms. More information: https://posthog.com/docs/api#rate-limiting`
+          )
+
+        case 200: {
+          // Process successful response
+          const responseJson = await res.json()
+          if (!('flags' in responseJson)) {
+            this.onError?.(new Error(`Invalid response when getting feature flags: ${JSON.stringify(responseJson)}`))
+            return
+          }
+
+          this.featureFlags = responseJson.flags || []
+          this.featureFlagsByKey = this.featureFlags.reduce(
+            (acc, curr) => ((acc[curr.key] = curr), acc),
+            <Record<string, PostHogFeatureFlag>>{}
+          )
+          this.groupTypeMapping = responseJson.group_type_mapping || {}
+          this.cohorts = responseJson.cohorts || {}
+          this.loadedSuccessfullyOnce = true
+          this.shouldBeginExponentialBackoff = false
+          this.backOffCount = 0
+          this.onLoad?.(this.featureFlags.length)
+          break
+        }
+
+        default:
+          // Something else went wrong, or the server is down.
+          // In this case, don't override existing flags
+          return
+      }
     } catch (err) {
-      // if an error that is not an instance of ClientError is thrown
-      // we silently ignore the error when reloading feature flags
       if (err instanceof ClientError) {
         this.onError?.(err)
       }
     }
   }
 
-  async _requestFeatureFlagDefinitions(): Promise<PostHogFetchResponse> {
-    const url = `${this.host}/api/feature_flag/local_evaluation?token=${this.projectApiKey}&send_cohorts`
-
-    const options: PostHogFetchOptions = {
-      method: 'GET',
+  private getPersonalApiKeyRequestOptions(method: 'GET' | 'POST' | 'PUT' | 'PATCH' = 'GET'): PostHogFetchOptions {
+    return {
+      method,
       headers: {
         ...this.customHeaders,
         'Content-Type': 'application/json',
         Authorization: `Bearer ${this.personalApiKey}`,
       },
     }
+  }
+
+  async _requestFeatureFlagDefinitions(): Promise<PostHogFetchResponse> {
+    const url = `${this.host}/api/feature_flag/local_evaluation?token=${this.projectApiKey}&send_cohorts`
+
+    const options = this.getPersonalApiKeyRequestOptions()
 
     let abortTimeout = null
 
@@ -451,17 +537,35 @@ class FeatureFlagsPoller {
   stopPoller(): void {
     clearTimeout(this.poller)
   }
+
+  _requestRemoteConfigPayload(flagKey: string): Promise<PostHogFetchResponse> {
+    const url = `${this.host}/api/projects/@current/feature_flags/${flagKey}/remote_config/`
+
+    const options = this.getPersonalApiKeyRequestOptions()
+
+    let abortTimeout = null
+    if (this.timeout && typeof this.timeout === 'number') {
+      const controller = new AbortController()
+      abortTimeout = safeSetTimeout(() => {
+        controller.abort()
+      }, this.timeout)
+      options.signal = controller.signal
+    }
+    try {
+      return this.fetch(url, options)
+    } finally {
+      clearTimeout(abortTimeout)
+    }
+  }
 }
 
 // # This function takes a distinct_id and a feature flag key and returns a float between 0 and 1.
 // # Given the same distinct_id and key, it'll always return the same float. These floats are
 // # uniformly distributed between 0 and 1, so if we want to show this feature to 20% of traffic
 // # we can do _hash(key, distinct_id) < 0.2
-function _hash(key: string, distinctId: string, salt: string = ''): number {
-  // rusha is a fast sha1 implementation in pure javascript
-  const sha1Hash = createHash()
-  sha1Hash.update(`${key}.${distinctId}${salt}`)
-  return parseInt(sha1Hash.digest('hex').slice(0, 15), 16) / LONG_SCALE
+async function _hash(key: string, distinctId: string, salt: string = ''): Promise<number> {
+  const hashString = await hashSHA1(`${key}.${distinctId}${salt}`)
+  return parseInt(hashString.slice(0, 15), 16) / LONG_SCALE
 }
 
 function matchProperty(

@@ -1,4 +1,4 @@
-import { JsonType } from '../../posthog-core/src'
+import { FeatureFlagValue, JsonType } from '../../posthog-core/src'
 
 export interface IdentifyMessage {
   distinctId: string
@@ -58,6 +58,7 @@ export type PostHogFeatureFlag = {
   }
   deleted: boolean
   active: boolean
+  /** @deprecated This field will be removed in a future version. **/
   is_simple_flag: boolean
   rollout_percentage: null | number
   ensure_experience_continuity: boolean
@@ -154,17 +155,29 @@ export type PostHogNodeV1 = {
       onlyEvaluateLocally?: boolean
       sendFeatureFlagEvents?: boolean
     }
-  ): Promise<string | boolean | undefined>
+  ): Promise<FeatureFlagValue | undefined>
 
   /**
    * @description Retrieves payload associated with the specified flag and matched value that is passed in.
-   * (Expected to be used in conjunction with getFeatureFlag but allows for manual lookup).
-   * If matchValue isn't passed, getFeatureFlag is called implicitly.
-   * Will try to evaluate for payload locally first otherwise default to network call if allowed
+   *
+   * IMPORTANT: The `matchValue` parameter should be the value you previously obtained from `getFeatureFlag()`.
+   * If matchValue isn't passed (or is undefined), this method will automatically call `getFeatureFlag()`
+   * internally to fetch the flag value, which could result in a network call to the PostHog server if this flag can
+   * not be evaluated locally. This means that omitting `matchValue` will potentially:
+   * - Bypass local evaluation
+   * - Count as an additional flag evaluation against your quota
+   * - Impact performance due to the extra network request
+   *
+   * Example usage:
+   * ```js
+   * const flagValue = await client.getFeatureFlag('my-flag', distinctId);
+   * const payload = await client.getFeatureFlagPayload('my-flag', distinctId, flagValue);
+   * ```
    *
    * @param key the unique key of your feature flag
    * @param distinctId the current unique id
-   * @param matchValue optional- the matched flag string or boolean
+   * @param matchValue The flag value previously obtained from calling `getFeatureFlag()`. Can be a string or boolean.
+   *                   To avoid extra network calls, pass this parameter when you can.
    * @param options: dict with optional parameters below
    * @param onlyEvaluateLocally optional - whether to only evaluate the flag locally. Defaults to false.
    *
@@ -173,7 +186,7 @@ export type PostHogNodeV1 = {
   getFeatureFlagPayload(
     key: string,
     distinctId: string,
-    matchValue?: string | boolean,
+    matchValue?: FeatureFlagValue,
     options?: {
       onlyEvaluateLocally?: boolean
     }
@@ -202,4 +215,17 @@ export type PostHogNodeV1 = {
    * @param shutdownTimeoutMs The shutdown timeout, in milliseconds. Defaults to 30000 (30s).
    */
   shutdown(shutdownTimeoutMs?: number): void
+
+  /**
+   * @description Waits for local evaluation to be ready, with an optional timeout.
+   * @param timeoutMs - Maximum time to wait in milliseconds. Defaults to 30 seconds.
+   * @returns A promise that resolves to true if local evaluation is ready, false if the timeout was reached.
+   */
+  waitForLocalEvaluationReady(timeoutMs?: number): Promise<boolean>
+
+  /**
+   * @description Returns true if local evaluation is ready, false if it's not.
+   * @returns true if local evaluation is ready, false if it's not.
+   */
+  isLocalEvaluationReady(): boolean
 }

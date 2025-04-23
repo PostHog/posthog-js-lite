@@ -12,12 +12,17 @@ import {
 } from '../../posthog-core/src'
 import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
 import { EventMessage, GroupIdentifyMessage, IdentifyMessage, PostHogNodeV1 } from './types'
+import { FeatureFlagDetail, FeatureFlagValue } from '../../posthog-core/src/types'
 import { FeatureFlagsPoller } from './feature-flags'
 import fetch from './fetch'
+import ErrorTracking from './error-tracking'
+import { getFeatureFlagValue } from 'posthog-core/src/featureFlagUtils'
 
 export type PostHogOptions = PostHogCoreOptions & {
   persistence?: 'memory'
   personalApiKey?: string
+  privacyMode?: boolean
+  enableExceptionAutocapture?: boolean
   // The interval in milliseconds between polls for refreshing feature flag definitions. Defaults to 30 seconds.
   featureFlagsPollingInterval?: number
   // Maximum size of cache that deduplicates $feature_flag_called calls per user.
@@ -25,7 +30,11 @@ export type PostHogOptions = PostHogCoreOptions & {
   fetch?: (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
 }
 
-const THIRTY_SECONDS = 30 * 1000
+// Standard local evaluation rate limit is 600 per minute (10 per second),
+// so the fastest a poller should ever be set is 100ms.
+export const MINIMUM_POLLING_INTERVAL = 100
+export const THIRTY_SECONDS = 30 * 1000
+export const SIXTY_SECONDS = 60 * 1000
 const MAX_CACHE_SIZE = 50 * 1000
 
 // The actual exported Nodejs API.
@@ -33,6 +42,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
   private _memoryStorage = new PostHogMemoryStorage()
 
   private featureFlagsPoller?: FeatureFlagsPoller
+  protected errorTracking: ErrorTracking
   private maxCacheSize: number
   public readonly options: PostHogOptions
 
@@ -43,12 +53,20 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
 
     this.options = options
 
+    this.options.featureFlagsPollingInterval =
+      typeof options.featureFlagsPollingInterval === 'number'
+        ? Math.max(options.featureFlagsPollingInterval, MINIMUM_POLLING_INTERVAL)
+        : THIRTY_SECONDS
+
     if (options.personalApiKey) {
+      if (options.personalApiKey.includes('phc_')) {
+        throw new Error(
+          'Your Personal API key is invalid. These keys are prefixed with "phx_" and can be created in PostHog project settings.'
+        )
+      }
+
       this.featureFlagsPoller = new FeatureFlagsPoller({
-        pollingInterval:
-          typeof options.featureFlagsPollingInterval === 'number'
-            ? options.featureFlagsPollingInterval
-            : THIRTY_SECONDS,
+        pollingInterval: this.options.featureFlagsPollingInterval,
         personalApiKey: options.personalApiKey,
         projectApiKey: apiKey,
         timeout: options.requestTimeout ?? 10000, // 10 seconds
@@ -57,9 +75,13 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         onError: (err: Error) => {
           this._events.emit('error', err)
         },
+        onLoad: (count: number) => {
+          this._events.emit('localEvaluationFlagsLoaded', count)
+        },
         customHeaders: this.getCustomHeaders(),
       })
     }
+    this.errorTracking = new ErrorTracking(this, options)
     this.distinctIdHasSentFlagCalls = {}
     this.maxCacheSize = options.maxCacheSize || MAX_CACHE_SIZE
   }
@@ -99,26 +121,24 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     this.featureFlagsPoller?.debug(enabled)
   }
 
-  capture({
-    distinctId,
-    event,
-    properties,
-    groups,
-    sendFeatureFlags,
-    timestamp,
-    disableGeoip,
-    uuid,
-  }: EventMessage): void {
+  capture(props: EventMessage): void {
+    if (typeof props === 'string') {
+      this.logMsgIfDebug(() =>
+        console.warn('Called capture() with a string as the first argument when an object was expected.')
+      )
+    }
+    const { distinctId, event, properties, groups, sendFeatureFlags, timestamp, disableGeoip, uuid }: EventMessage =
+      props
     const _capture = (props: EventMessage['properties']): void => {
       super.captureStateless(distinctId, event, props, { timestamp, disableGeoip, uuid })
     }
 
-    const _getFlags = (
+    const _getFlags = async (
       distinctId: EventMessage['distinctId'],
       groups: EventMessage['groups'],
       disableGeoip: EventMessage['disableGeoip']
     ): Promise<PostHogDecideResponse['featureFlags'] | undefined> => {
-      return super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)
+      return (await super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)).flags
     }
 
     // :TRICKY: If we flush, or need to shut down, to not lose events we want this promise to resolve before we flush
@@ -130,8 +150,13 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
           return await _getFlags(distinctId, groups, disableGeoip)
         }
 
+        if (event === '$feature_flag_called') {
+          // If we're capturing a $feature_flag_called event, we don't want to enrich the event with cached flags that may be out of date.
+          return {}
+        }
+
         if ((this.featureFlagsPoller?.featureFlags?.length || 0) > 0) {
-          // Otherwise we may as well check for the flags locally and include them if there
+          // Otherwise we may as well check for the flags locally and include them if they are already loaded
           const groupsWithStringValues: Record<string, string> = {}
           for (const [key, value] of Object.entries(groups || {})) {
             groupsWithStringValues[key] = String(value)
@@ -153,7 +178,9 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
             additionalProperties[`$feature/${feature}`] = variant
           }
         }
-        const activeFlags = Object.keys(flags || {}).filter((flag) => flags?.[flag] !== false)
+        const activeFlags = Object.keys(flags || {})
+          .filter((flag) => flags?.[flag] !== false)
+          .sort()
         if (activeFlags.length > 0) {
           additionalProperties['$active_feature_flags'] = activeFlags
         }
@@ -196,6 +223,33 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     super.aliasStateless(data.alias, data.distinctId, undefined, { disableGeoip: data.disableGeoip })
   }
 
+  isLocalEvaluationReady(): boolean {
+    return this.featureFlagsPoller?.isLocalEvaluationReady() ?? false
+  }
+
+  async waitForLocalEvaluationReady(timeoutMs: number = THIRTY_SECONDS): Promise<boolean> {
+    if (this.isLocalEvaluationReady()) {
+      return true
+    }
+
+    if (this.featureFlagsPoller === undefined) {
+      return false
+    }
+
+    return new Promise((resolve) => {
+      const timeout = setTimeout(() => {
+        cleanup()
+        resolve(false)
+      }, timeoutMs)
+
+      const cleanup = this._events.on('localEvaluationFlagsLoaded', (count: number) => {
+        clearTimeout(timeout)
+        cleanup()
+        resolve(count > 0)
+      })
+    })
+  }
+
   async getFeatureFlag(
     key: string,
     distinctId: string,
@@ -207,7 +261,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       sendFeatureFlagEvents?: boolean
       disableGeoip?: boolean
     }
-  ): Promise<string | boolean | undefined> {
+  ): Promise<FeatureFlagValue | undefined> {
     const { groups, disableGeoip } = options || {}
     let { onlyEvaluateLocally, sendFeatureFlagEvents, personProperties, groupProperties } = options || {}
 
@@ -238,9 +292,10 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     )
 
     const flagWasLocallyEvaluated = response !== undefined
-
+    let requestId = undefined
+    let flagDetail: FeatureFlagDetail | undefined = undefined
     if (!flagWasLocallyEvaluated && !onlyEvaluateLocally) {
-      response = await super.getFeatureFlagStateless(
+      const remoteResponse = await super.getFeatureFlagDetailStateless(
         key,
         distinctId,
         groups,
@@ -248,6 +303,14 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         groupProperties,
         disableGeoip
       )
+
+      if (remoteResponse === undefined) {
+        return undefined
+      }
+
+      flagDetail = remoteResponse.response
+      response = getFeatureFlagValue(flagDetail)
+      requestId = remoteResponse?.requestId
     }
 
     const featureFlagReportedKey = `${key}_${response}`
@@ -271,8 +334,12 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         properties: {
           $feature_flag: key,
           $feature_flag_response: response,
+          $feature_flag_id: flagDetail?.metadata?.id,
+          $feature_flag_version: flagDetail?.metadata?.version,
+          $feature_flag_reason: flagDetail?.reason?.description ?? flagDetail?.reason?.code,
           locally_evaluated: flagWasLocallyEvaluated,
           [`$feature/${key}`]: response,
+          $feature_flag_request_id: requestId,
         },
         groups,
         disableGeoip,
@@ -284,7 +351,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
   async getFeatureFlagPayload(
     key: string,
     distinctId: string,
-    matchValue?: string | boolean,
+    matchValue?: FeatureFlagValue,
     options?: {
       groups?: Record<string, string>
       personProperties?: Record<string, string>
@@ -309,17 +376,22 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
 
     let response = undefined
 
-    // Try to get match value locally if not provided
-    if (!matchValue) {
-      matchValue = await this.getFeatureFlag(key, distinctId, {
-        ...options,
-        onlyEvaluateLocally: true,
-      })
-    }
+    const localEvaluationEnabled = this.featureFlagsPoller !== undefined
+    if (localEvaluationEnabled) {
+      // Try to get match value locally if not provided
+      if (!matchValue) {
+        matchValue = await this.getFeatureFlag(key, distinctId, {
+          ...options,
+          onlyEvaluateLocally: true,
+          sendFeatureFlagEvents: false,
+        })
+      }
 
-    if (matchValue) {
-      response = await this.featureFlagsPoller?.computeFeatureFlagPayloadLocally(key, matchValue)
+      if (matchValue) {
+        response = await this.featureFlagsPoller?.computeFeatureFlagPayloadLocally(key, matchValue)
+      }
     }
+    //}
 
     // set defaults
     if (onlyEvaluateLocally == undefined) {
@@ -347,6 +419,10 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       )
     }
     return response
+  }
+
+  async getRemoteConfigPayload(flagKey: string): Promise<JsonType | undefined> {
+    return (await this.featureFlagsPoller?._requestRemoteConfigPayload(flagKey))?.json()
   }
 
   async isFeatureEnabled(
@@ -377,9 +453,9 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       onlyEvaluateLocally?: boolean
       disableGeoip?: boolean
     }
-  ): Promise<Record<string, string | boolean>> {
+  ): Promise<Record<string, FeatureFlagValue>> {
     const response = await this.getAllFlagsAndPayloads(distinctId, options)
-    return response.featureFlags
+    return response.featureFlags || {}
   }
 
   async getAllFlagsAndPayloads(
@@ -451,6 +527,10 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     super.groupIdentifyStateless(groupType, groupKey, properties, { disableGeoip }, distinctId)
   }
 
+  /**
+   * Reloads the feature flag definitions from the server for local evaluation.
+   * This is useful to call if you want to ensure that the feature flags are up to date before calling getFeatureFlag.
+   */
   async reloadFeatureFlags(): Promise<void> {
     await this.featureFlagsPoller?.loadFeatureFlags(true)
   }
@@ -479,5 +559,10 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     }
 
     return { allPersonProperties, allGroupProperties }
+  }
+
+  captureException(error: unknown, distinctId?: string, additionalProperties?: Record<string | number, any>): void {
+    const syntheticException = new Error('PostHog syntheticException')
+    ErrorTracking.captureException(this, error, { syntheticException }, distinctId, additionalProperties)
   }
 }

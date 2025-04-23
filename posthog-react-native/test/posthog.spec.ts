@@ -19,7 +19,7 @@ describe('PostHog React Native', () => {
   beforeEach(() => {
     ;(global as any).window.fetch = jest.fn(async (url) => {
       let res: any = { status: 'ok' }
-      if (url.includes('decide')) {
+      if (url.includes('flags')) {
         res = {
           featureFlags: {},
         }

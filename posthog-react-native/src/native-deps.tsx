@@ -6,8 +6,9 @@ import { OptionalExpoFileSystem } from './optional/OptionalExpoFileSystem'
 import { OptionalExpoLocalization } from './optional/OptionalExpoLocalization'
 import { OptionalReactNativeDeviceInfo } from './optional/OptionalReactNativeDeviceInfo'
 import { PostHogCustomAppProperties, PostHogCustomStorage } from './types'
+import { OptionalReactNativeLocalize } from './optional/OptionalReactNativeLocalize'
 
-export const getAppProperties = (): PostHogCustomAppProperties => {
+const getDeviceType = (): string => {
   let deviceType = 'Mobile'
 
   if (Platform.OS === 'macos' || Platform.OS === 'windows') {
@@ -15,9 +16,14 @@ export const getAppProperties = (): PostHogCustomAppProperties => {
   } else if (Platform.OS === 'web') {
     deviceType = 'Web'
   }
+  return deviceType
+}
 
+export const currentDeviceType = getDeviceType()
+
+export const getAppProperties = (): PostHogCustomAppProperties => {
   const properties: PostHogCustomAppProperties = {
-    $device_type: deviceType,
+    $device_type: currentDeviceType,
   }
 
   if (OptionalExpoApplication) {
@@ -36,7 +42,16 @@ export const getAppProperties = (): PostHogCustomAppProperties => {
     properties.$device_manufacturer = OptionalExpoDevice.manufacturer
     // expo-device already maps the device model identifier to a human readable name
     properties.$device_name = OptionalExpoDevice.modelName
-    properties.$os_name = OptionalExpoDevice.osName
+
+    // https://github.com/expo/expo/issues/6990
+    // some devices return a value similar to:
+    // HUAWEI/SNE-LX1/HWSNE:8.1.0/HUAWEISNE-LX1/131(C432):user/release-keys
+    if (Platform.OS === 'android') {
+      properties.$os_name = 'Android'
+    } else {
+      properties.$os_name = OptionalExpoDevice.osName
+    }
+
     properties.$os_version = OptionalExpoDevice.osVersion
   } else if (OptionalReactNativeDeviceInfo) {
     properties.$device_manufacturer = returnPropertyIfNotUnknown(OptionalReactNativeDeviceInfo.getManufacturerSync())
@@ -49,6 +64,27 @@ export const getAppProperties = (): PostHogCustomAppProperties => {
   if (OptionalExpoLocalization) {
     properties.$locale = OptionalExpoLocalization.locale
     properties.$timezone = OptionalExpoLocalization.timezone
+  } else if (OptionalReactNativeLocalize) {
+    const localesFn = OptionalReactNativeLocalize.getLocales
+    if (localesFn) {
+      const locales = localesFn()
+
+      if (locales && locales.length > 0) {
+        const languageTag = locales[0].languageTag
+        if (languageTag) {
+          properties.$locale = languageTag
+        }
+      }
+    }
+
+    const timezoneFn = OptionalReactNativeLocalize.getTimeZone
+    if (timezoneFn) {
+      const timezone = timezoneFn()
+
+      if (timezone) {
+        properties.$timezone = timezone
+      }
+    }
   }
 
   return properties

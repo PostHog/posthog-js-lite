@@ -22,10 +22,8 @@
  * @param {SeverityLevel[] | '*'} [severityAllowList] Optional: send events matching the provided levels. Use '*' to send all events (default: ['error'])
  */
 
+import { SeverityLevel } from 'posthog-node/src/extensions/error-tracking/types'
 import { type PostHog } from '../posthog-node'
-
-export const severityLevels = ['fatal', 'error', 'warning', 'log', 'info', 'debug'] as const
-export declare type SeverityLevel = (typeof severityLevels)[number]
 
 // NOTE - we can't import from @sentry/types because it changes frequently and causes clashes
 // We only use a small subset of the types, so we can just define the integration overall and use any for the rest
@@ -103,11 +101,18 @@ export function createEventProcessor(
 
     const exceptions: _SentryException[] = event.exception?.values || []
 
-    exceptions.map((exception) => {
-      if (exception.stacktrace) {
-        exception.stacktrace.type = 'raw'
-      }
-    })
+    const exceptionList = exceptions.map((exception) => ({
+      ...exception,
+      stacktrace: exception.stacktrace
+        ? {
+            ...exception.stacktrace,
+            type: 'raw',
+            frames: (exception.stacktrace.frames || []).map((frame: any) => {
+              return { ...frame, platform: 'node:javascript' }
+            }),
+          }
+        : undefined,
+    }))
 
     const properties: SentryExceptionProperties & {
       // two properties added to match any exception auto-capture
@@ -123,7 +128,7 @@ export function createEventProcessor(
       $exception_type: exceptions[0]?.type,
       $exception_personURL: personUrl,
       $exception_level: event.level,
-      $exception_list: exceptions,
+      $exception_list: exceptionList,
       // Sentry Exception Properties
       $sentry_event_id: event.event_id,
       $sentry_exception: event.exception,
