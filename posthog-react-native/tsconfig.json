@@ -6,7 +6,7 @@
     "target": "ES2018",
     "noEmitOnError": true,
     "skipLibCheck": true,
-    "types": ["react-native"],
+    "types": ["react-native", "jest"],
     "typeRoots": ["./node_modules/@types", "../node_modules/@types"]
   }
 }
