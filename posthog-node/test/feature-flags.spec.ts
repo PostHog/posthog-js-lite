@@ -2,9 +2,10 @@
 // Uncomment below line while developing to not compile code everytime
 import { PostHog as PostHog, PostHogOptions } from '../src/posthog-node'
 import { matchProperty, InconclusiveMatchError, relativeDateParseForFeatureFlagMatching } from '../src/feature-flags'
-jest.mock('../src/fetch')
 import fetch from '../src/fetch'
 import { anyDecideCall, anyLocalEvalCall, apiImplementation } from './test-utils'
+import { waitForPromises } from 'posthog-core/test/test-utils/test-utils'
+jest.mock('../src/fetch')
 
 jest.spyOn(console, 'debug').mockImplementation()
 
@@ -31,7 +32,6 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'person-flag',
-          is_simple_flag: true,
           active: true,
           filters: {
             groups: [
@@ -99,7 +99,6 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'person-flag',
-          is_simple_flag: true,
           active: true,
           filters: {
             groups: [
@@ -143,7 +142,6 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'group-flag',
-          is_simple_flag: true,
           active: true,
           filters: {
             aggregation_group_type_index: 0,
@@ -222,7 +220,6 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'group-flag',
-          is_simple_flag: true,
           active: true,
           filters: {
             aggregation_group_type_index: 0,
@@ -254,7 +251,7 @@ describe('local evaluation', () => {
       personalApiKey: 'TEST_PERSONAL_API_KEY',
       ...posthogImmediateResolveOptions,
     })
-    // # group_type_mappings not present, so fallback to `/decide`
+    // # group_type_mappings not present, so fallback to `/flags`
     expect(
       await posthog.getFeatureFlag('group-flag', 'some-distinct-2', {
         groupProperties: {
@@ -271,7 +268,6 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'complex-flag',
-          is_simple_flag: false,
           active: true,
           filters: {
             groups: [
@@ -344,14 +340,14 @@ describe('local evaluation', () => {
     ).toEqual(true)
     expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
 
-    // # will fall back on `/decide`, as all properties present for second group, but that group resolves to false
+    // # will fall back on `/flags`, as all properties present for second group, but that group resolves to false
     expect(
       await posthog.getFeatureFlag('complex-flag', 'some-distinct-id_outside_rollout?', {
         personProperties: { region: 'USA', email: 'a@b.com' },
       })
     ).toEqual('decide-fallback-value')
     expect(mockedFetch).toHaveBeenCalledWith(
-      'http://example.com/decide/?v=3',
+      'http://example.com/flags/?v=2',
       expect.objectContaining({
         body: JSON.stringify({
           token: 'TEST_API_KEY',
@@ -364,6 +360,7 @@ describe('local evaluation', () => {
           },
           group_properties: {},
           geoip_disable: true,
+          flag_keys_to_evaluate: ['complex-flag'],
         }),
       })
     )
@@ -374,7 +371,7 @@ describe('local evaluation', () => {
       await posthog.getFeatureFlag('complex-flag', 'some-distinct-id', { personProperties: { doesnt_matter: '1' } })
     ).toEqual('decide-fallback-value')
     expect(mockedFetch).toHaveBeenCalledWith(
-      'http://example.com/decide/?v=3',
+      'http://example.com/flags/?v=2',
       expect.objectContaining({
         body: JSON.stringify({
           token: 'TEST_API_KEY',
@@ -383,6 +380,7 @@ describe('local evaluation', () => {
           person_properties: { distinct_id: 'some-distinct-id', doesnt_matter: '1' },
           group_properties: {},
           geoip_disable: true,
+          flag_keys_to_evaluate: ['complex-flag'],
         }),
       })
     )
@@ -547,7 +545,6 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'beta-feature',
-          is_simple_flag: true,
           active: true,
           filters: {
             groups: [
@@ -574,52 +571,9 @@ describe('local evaluation', () => {
     expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
 
     // # beta-feature2 falls back to decide, and whatever decide returns is the value
-    expect(await posthog.getFeatureFlag('beta-feature2', 'some-distinct-id')).toEqual(false)
-    expect(await posthog.isFeatureEnabled('beta-feature2', 'some-distinct-id')).toEqual(false)
-    expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
-  })
-
-  it('returns undefined when decide errors out', async () => {
-    const flags = {
-      flags: [
-        {
-          id: 1,
-          name: 'Beta Feature',
-          key: 'beta-feature',
-          is_simple_flag: true,
-          active: true,
-          filters: {
-            groups: [
-              {
-                properties: [],
-                rollout_percentage: 0,
-              },
-            ],
-          },
-        },
-      ],
-    }
-    mockedFetch.mockImplementation(
-      apiImplementation({ localFlags: flags, decideFlags: { error: 'went wrong' }, decideStatus: 400 })
-    )
-
-    posthog = new PostHog('TEST_API_KEY', {
-      host: 'http://example.com',
-      personalApiKey: 'TEST_PERSONAL_API_KEY',
-      ...posthogImmediateResolveOptions,
-    })
-
-    let err: any = null
-    posthog.on('error', (e) => {
-      err = e
-    })
-
-    // # beta-feature2 falls back to decide, which on error returns undefined
     expect(await posthog.getFeatureFlag('beta-feature2', 'some-distinct-id')).toEqual(undefined)
     expect(await posthog.isFeatureEnabled('beta-feature2', 'some-distinct-id')).toEqual(undefined)
     expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
-    await posthog.shutdown()
-    expect(err).toHaveProperty('name', 'PostHogFetchHttpError')
   })
 
   it('experience continuity flags are not evaluated locally', async () => {
@@ -629,7 +583,6 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'beta-feature',
-          is_simple_flag: true,
           active: true,
           ensure_experience_continuity: true,
           filters: {
@@ -665,7 +618,6 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'beta-feature',
-          is_simple_flag: false,
           active: true,
           rollout_percentage: 100,
           filters: {
@@ -681,7 +633,6 @@ describe('local evaluation', () => {
           id: 2,
           name: 'Beta Feature',
           key: 'disabled-feature',
-          is_simple_flag: false,
           active: true,
           filters: {
             groups: [
@@ -696,7 +647,6 @@ describe('local evaluation', () => {
           id: 3,
           name: 'Beta Feature',
           key: 'beta-feature2',
-          is_simple_flag: false,
           active: true,
           filters: {
             groups: [
@@ -722,7 +672,7 @@ describe('local evaluation', () => {
       ...posthogImmediateResolveOptions,
     })
 
-    // # beta-feature value overridden by /decide
+    // # beta-feature value overridden by /flags
     expect(await posthog.getAllFlags('distinct-id')).toEqual({
       'beta-feature': 'variant-1',
       'beta-feature2': 'variant-2',
@@ -739,7 +689,6 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'beta-feature',
-          is_simple_flag: false,
           active: true,
           rollout_percentage: 100,
           filters: {
@@ -758,7 +707,6 @@ describe('local evaluation', () => {
           id: 2,
           name: 'Beta Feature',
           key: 'disabled-feature',
-          is_simple_flag: false,
           active: true,
           filters: {
             groups: [
@@ -776,7 +724,6 @@ describe('local evaluation', () => {
           id: 3,
           name: 'Beta Feature',
           key: 'beta-feature2',
-          is_simple_flag: false,
           active: true,
           filters: {
             groups: [
@@ -806,7 +753,7 @@ describe('local evaluation', () => {
       ...posthogImmediateResolveOptions,
     })
 
-    // # beta-feature value overridden by /decide
+    // # beta-feature value overridden by /flags
     expect((await posthog.getAllFlagsAndPayloads('distinct-id')).featureFlagPayloads).toEqual({
       'beta-feature': 100,
       'beta-feature2': 300,
@@ -822,7 +769,6 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'beta-feature',
-          is_simple_flag: false,
           active: true,
           rollout_percentage: 100,
           filters: {
@@ -838,7 +784,6 @@ describe('local evaluation', () => {
           id: 2,
           name: 'Beta Feature',
           key: 'disabled-feature',
-          is_simple_flag: false,
           active: true,
           filters: {
             groups: [
@@ -853,7 +798,6 @@ describe('local evaluation', () => {
           id: 3,
           name: 'Beta Feature',
           key: 'beta-feature2',
-          is_simple_flag: false,
           active: true,
           filters: {
             groups: [
@@ -894,7 +838,6 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'beta-feature',
-          is_simple_flag: false,
           active: true,
           rollout_percentage: 100,
           filters: {
@@ -913,7 +856,6 @@ describe('local evaluation', () => {
           id: 2,
           name: 'Beta Feature',
           key: 'disabled-feature',
-          is_simple_flag: false,
           active: true,
           filters: {
             groups: [
@@ -931,7 +873,6 @@ describe('local evaluation', () => {
           id: 3,
           name: 'Beta Feature',
           key: 'beta-feature2',
-          is_simple_flag: false,
           active: true,
           filters: {
             groups: [
@@ -1027,7 +968,6 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'beta-feature',
-          is_simple_flag: false,
           active: true,
           rollout_percentage: 100,
           filters: {
@@ -1043,7 +983,6 @@ describe('local evaluation', () => {
           id: 2,
           name: 'Beta Feature',
           key: 'disabled-feature',
-          is_simple_flag: false,
           active: true,
           filters: {
             groups: [
@@ -1080,7 +1019,6 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'beta-feature',
-          is_simple_flag: false,
           active: true,
           rollout_percentage: 100,
           filters: {
@@ -1099,7 +1037,6 @@ describe('local evaluation', () => {
           id: 2,
           name: 'Beta Feature',
           key: 'disabled-feature',
-          is_simple_flag: false,
           active: true,
           filters: {
             groups: [
@@ -1139,7 +1076,6 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'beta-feature',
-          is_simple_flag: false,
           active: true,
           rollout_percentage: 100,
           filters: {
@@ -1155,7 +1091,6 @@ describe('local evaluation', () => {
           id: 2,
           name: 'Beta Feature',
           key: 'disabled-feature',
-          is_simple_flag: false,
           active: true,
           filters: {
             groups: [
@@ -1191,7 +1126,6 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'beta-feature',
-          is_simple_flag: false,
           active: false,
           rollout_percentage: 100,
           filters: {
@@ -1207,7 +1141,6 @@ describe('local evaluation', () => {
           id: 2,
           name: 'Beta Feature',
           key: 'disabled-feature',
-          is_simple_flag: false,
           active: true,
           filters: {
             groups: [
@@ -1236,7 +1169,6 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'beta-feature',
-          is_simple_flag: false,
           active: true,
           rollout_percentage: 100,
           filters: {
@@ -1318,7 +1250,6 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'beta-feature',
-          is_simple_flag: false,
           active: true,
           rollout_percentage: 100,
           filters: {
@@ -1389,7 +1320,7 @@ describe('local evaluation', () => {
       await posthog.getFeatureFlag('beta-feature', 'some-distinct-id', {
         personProperties: { region: 'USA', other: 'thing' },
       })
-    ).toEqual(false)
+    ).toEqual(undefined)
     expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
 
     mockedFetch.mockClear()
@@ -1409,7 +1340,6 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'beta-feature',
-          is_simple_flag: true,
           active: true,
           filters: {
             groups: [
@@ -1478,7 +1408,6 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'beta-feature',
-          is_simple_flag: true,
           active: true,
           filters: {
             groups: [
@@ -1563,7 +1492,6 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'beta-feature',
-          is_simple_flag: true,
           active: true,
           filters: {
             groups: [
@@ -1632,7 +1560,6 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'beta-feature',
-          is_simple_flag: true,
           active: true,
           filters: {
             groups: [
@@ -1706,7 +1633,6 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'person-flag',
-          is_simple_flag: true,
           active: true,
           filters: {
             groups: [
@@ -1765,7 +1691,6 @@ describe('local evaluation', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'beta-feature',
-          is_simple_flag: true,
           active: true,
           filters: {
             groups: [
@@ -1829,6 +1754,302 @@ describe('local evaluation', () => {
     expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
     // decide not called
     expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+  })
+
+  describe('isLocalEvaluationReady', () => {
+    it('returns false when featureFlagsPoller is undefined', () => {
+      posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        ...posthogImmediateResolveOptions,
+      })
+      expect(posthog.isLocalEvaluationReady()).toBe(false)
+    })
+
+    it('returns false when featureFlagsPoller has not loaded successfully', () => {
+      posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        personalApiKey: 'TEST_PERSONAL_API_KEY',
+        ...posthogImmediateResolveOptions,
+      })
+      expect(posthog.isLocalEvaluationReady()).toBe(false)
+    })
+
+    it('returns false when featureFlagsPoller has no flags', async () => {
+      const flags = { flags: [] }
+      mockedFetch.mockImplementation(apiImplementation({ localFlags: flags }))
+      posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        personalApiKey: 'TEST_PERSONAL_API_KEY',
+        ...posthogImmediateResolveOptions,
+      })
+      await posthog.reloadFeatureFlags()
+      expect(posthog.isLocalEvaluationReady()).toBe(false)
+    })
+
+    it('returns true when featureFlagsPoller has loaded flags successfully', async () => {
+      const flags = {
+        flags: [
+          {
+            id: 1,
+            name: 'Beta Feature',
+            key: 'beta-feature',
+            active: true,
+            filters: {
+              groups: [
+                {
+                  properties: [],
+                  rollout_percentage: 100,
+                },
+              ],
+            },
+          },
+        ],
+      }
+      mockedFetch.mockImplementation(apiImplementation({ localFlags: flags }))
+      posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        personalApiKey: 'TEST_PERSONAL_API_KEY',
+        ...posthogImmediateResolveOptions,
+      })
+      await posthog.reloadFeatureFlags()
+      expect(posthog.isLocalEvaluationReady()).toBe(true)
+    })
+  })
+
+  describe('waitForLocalEvaluationReady', () => {
+    it('returns true when local evaluation is ready', async () => {
+      const flags = {
+        flags: [
+          {
+            id: 1,
+            name: 'Beta Feature',
+            key: 'beta-feature',
+            active: true,
+            filters: {
+              groups: [{ properties: [], rollout_percentage: 100 }],
+            },
+          },
+        ],
+      }
+      mockedFetch.mockImplementation(apiImplementation({ localFlags: flags }))
+      posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        personalApiKey: 'TEST_PERSONAL_API_KEY',
+        ...posthogImmediateResolveOptions,
+      })
+
+      expect(await posthog.waitForLocalEvaluationReady()).toBe(true)
+    })
+
+    it('returns false when local evaluation endpoint returns empty flags', async () => {
+      const flags = { flags: [] }
+      mockedFetch.mockImplementation(apiImplementation({ localFlags: flags }))
+      posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        personalApiKey: 'TEST_PERSONAL_API_KEY',
+        ...posthogImmediateResolveOptions,
+      })
+      expect(await posthog.waitForLocalEvaluationReady()).toBe(false)
+    })
+
+    it('returns false when local evaluation is not enabled', async () => {
+      const flags = { flags: [] }
+      mockedFetch.mockImplementation(apiImplementation({ localFlags: flags }))
+      posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        personalApiKey: undefined,
+        ...posthogImmediateResolveOptions,
+      })
+      expect(await posthog.waitForLocalEvaluationReady()).toBe(false)
+    })
+  })
+
+  it('emits localEvaluationFlagsLoaded event when flags are loaded', async () => {
+    const flags = {
+      flags: [
+        {
+          id: 1,
+          name: 'Beta Feature',
+          key: 'beta-feature',
+          active: true,
+          filters: {
+            groups: [
+              {
+                properties: [],
+                rollout_percentage: 100,
+              },
+            ],
+          },
+        },
+        {
+          id: 2,
+          name: 'Alpha Feature',
+          key: 'alpha-feature',
+          active: true,
+          filters: {
+            groups: [
+              {
+                properties: [],
+                rollout_percentage: 50,
+              },
+            ],
+          },
+        },
+      ],
+    }
+    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags }))
+
+    posthog = new PostHog('TEST_API_KEY', {
+      host: 'http://example.com',
+      personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
+    })
+
+    const eventHandler = jest.fn()
+    posthog.on('localEvaluationFlagsLoaded', eventHandler)
+
+    // Wait for initial load
+    await waitForPromises()
+
+    expect(eventHandler).toHaveBeenCalledWith(2) // Should be called with number of flags loaded
+  })
+
+  it('does not emit localEvaluationFlagsLoaded event when loading fails', async () => {
+    mockedFetch.mockImplementation(() => {
+      throw new Error('Failed to load flags')
+    })
+
+    posthog = new PostHog('TEST_API_KEY', {
+      host: 'http://example.com',
+      personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
+    })
+
+    const eventHandler = jest.fn()
+    posthog.on('localEvaluationFlagsLoaded', eventHandler)
+
+    // Wait for initial load
+    await waitForPromises()
+
+    expect(eventHandler).not.toHaveBeenCalled()
+  })
+
+  it('emits localEvaluationFlagsLoaded event on reload', async () => {
+    const flags = {
+      flags: [
+        {
+          id: 1,
+          name: 'Beta Feature',
+          key: 'beta-feature',
+          active: true,
+          filters: {
+            groups: [
+              {
+                properties: [],
+                rollout_percentage: 100,
+              },
+            ],
+          },
+        },
+      ],
+    }
+    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags }))
+
+    posthog = new PostHog('TEST_API_KEY', {
+      host: 'http://example.com',
+      personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
+    })
+
+    const eventHandler = jest.fn()
+    posthog.on('localEvaluationFlagsLoaded', eventHandler)
+
+    // Wait for initial load
+    await waitForPromises()
+    eventHandler.mockClear() // Clear initial call
+
+    // Reload flags
+    await posthog.reloadFeatureFlags()
+
+    expect(eventHandler).toHaveBeenCalledWith(1) // Should be called with number of flags loaded
+  })
+})
+
+describe('getFeatureFlag', () => {
+  it('should capture $feature_flag_called when called, but not add all cached flags', async () => {
+    const flags = {
+      flags: [
+        {
+          id: 1,
+          name: 'Beta Feature',
+          key: 'complex-flag',
+          active: true,
+          filters: {
+            groups: [
+              {
+                variant: null,
+                properties: [{ key: 'region', type: 'person', value: 'USA', operator: 'exact' }],
+                rollout_percentage: 100,
+              },
+            ],
+          },
+        },
+        {
+          id: 2,
+          name: 'Gamma Feature',
+          key: 'simple-flag',
+          active: true,
+          filters: {
+            groups: [
+              {
+                variant: null,
+                properties: [],
+                rollout_percentage: 100,
+              },
+            ],
+          },
+        },
+      ],
+    }
+    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags }))
+    const posthog = new PostHog('TEST_API_KEY', {
+      host: 'http://example.com',
+      personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
+    })
+    let capturedMessage: any
+    posthog.on('capture', (message) => {
+      capturedMessage = message
+    })
+
+    expect(
+      await posthog.getFeatureFlag('complex-flag', 'some-distinct-id', {
+        personProperties: {
+          region: 'USA',
+        } as unknown as Record<string, string>,
+      })
+    ).toEqual(true)
+
+    await waitForPromises()
+
+    expect(capturedMessage).toMatchObject({
+      distinct_id: 'some-distinct-id',
+      event: '$feature_flag_called',
+      library: posthog.getLibraryId(),
+      library_version: posthog.getLibraryVersion(),
+      properties: {
+        '$feature/complex-flag': true,
+        $feature_flag: 'complex-flag',
+        $feature_flag_response: true,
+        $groups: undefined,
+        $lib: posthog.getLibraryId(),
+        $lib_version: posthog.getLibraryVersion(),
+        locally_evaluated: true,
+      },
+    })
+
+    expect(capturedMessage.properties).not.toHaveProperty('$active_feature_flags')
+    expect(capturedMessage.properties).not.toHaveProperty('$feature/simple-flag')
   })
 })
 
@@ -2073,8 +2294,8 @@ describe('match properties', () => {
     ['is_date_after', '1h', new Date('2022-05-30'), true],
     ['is_date_after', '1h', '2022-04-30', false],
     // # Try all possible relative dates
-    ['is_date_before', '1h', '2022-05-01 00:00:00', false],
-    ['is_date_before', '1h', '2022-04-30 22:00:00', true],
+    ['is_date_before', '1h', '2022-05-01 00:00:00 GMT', false],
+    ['is_date_before', '1h', '2022-04-30 22:00:00 GMT', true],
     ['is_date_before', '-1d', '2022-04-29 23:59:00 GMT', true],
     ['is_date_before', '-1d', '2022-04-30 00:00:01 GMT', false],
     ['is_date_before', '1w', '2022-04-23 00:00:00 GMT', true],
@@ -2357,7 +2578,6 @@ describe('consistency tests', () => {
           name: '',
           key: 'simple-flag',
           active: true,
-          is_simple_flag: false,
           filters: {
             groups: [{ properties: [], rollout_percentage: 45 }],
           },
@@ -3390,7 +3610,6 @@ describe('consistency tests', () => {
           id: 1,
           name: 'Beta Feature',
           key: 'multivariate-flag',
-          is_simple_flag: false,
           active: true,
           filters: {
             groups: [{ properties: [], rollout_percentage: 55 }],
@@ -4424,5 +4643,41 @@ describe('consistency tests', () => {
       const value = await posthog.getFeatureFlag('multivariate-flag', distinctId)
       expect(value).toBe(result)
     })
+  })
+})
+
+describe('quota limiting', () => {
+  it('should clear local flags when quota limited', async () => {
+    const consoleSpy = jest.spyOn(console, 'warn')
+
+    mockedFetch.mockImplementation(
+      apiImplementation({
+        localFlagsStatus: 402,
+      })
+    )
+
+    const posthog = new PostHog('TEST_API_KEY', {
+      host: 'http://example.com',
+      personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
+    })
+
+    // Enable debug mode to see the messages
+    posthog.debug(true)
+
+    // Force a reload and wait for it to complete
+    await posthog.reloadFeatureFlags()
+
+    // locally evaluate the flags
+    const res = await posthog.getAllFlagsAndPayloads('distinct-id', { onlyEvaluateLocally: true })
+
+    // expect the flags to be cleared and for the debug message to be logged
+    expect(res.featureFlags).toEqual({})
+    expect(res.featureFlagPayloads).toEqual({})
+    expect(consoleSpy).toHaveBeenCalledWith(
+      '[FEATURE FLAGS] Feature flags quota limit exceeded - unsetting all local flags. Learn more about billing limits at https://posthog.com/docs/billing/limits-alerts'
+    )
+
+    consoleSpy.mockRestore()
   })
 })

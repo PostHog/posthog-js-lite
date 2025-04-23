@@ -11,6 +11,8 @@ module.exports = {
   fakeTimers: { enableGlobally: true },
   transformIgnorePatterns: ['<rootDir>/node_modules/'],
   testPathIgnorePatterns: ['<rootDir>/lib/', '/node_modules/', '/examples/'],
+  silent: true,
+  verbose: false,
 
   globals: {
     'ts-jest': {

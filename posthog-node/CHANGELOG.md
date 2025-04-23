@@ -1,4 +1,124 @@
-# Next
+# 4.13.0 - 2025-04-21
+
+1. feat: Add method to wait for local evaluation feature flag definitions to be loaded
+
+# 4.12.0 – 2025-04-17
+
+1. chore: roll out new feature flag evaluation backend to majority of customers
+
+# 4.11.7 - 2025-04-16
+
+1. fix: do not reference `node:` prefix as it is not supported by Next.js edge runtime
+
+# 4.11.6 - 2025-04-15
+
+## Fixed
+
+1. move survey export top-level declarations
+
+# 4.11.5 - 2025-04-14
+
+## Fixed
+
+1. export and declare top-level declarations for surveys
+
+# 4.11.4 - 2025-04-14
+
+## Fixed
+
+1. export top-level declarations for surveys
+
+# 4.11.3 - 2025-04-08
+
+## Fixed
+
+1. do not access `fs` or `readline` in when not available e.g. edge environments
+
+# 4.11.2 - 2025-04-07
+
+## Fixed
+
+1. chore: bump axios to 1.8.2 (fixes [CVE-2025-27152](https://github.com/advisories/GHSA-jr5f-v2jv-69x6))
+
+# 4.11.1 - 2025-03-28
+
+## Fixed
+
+1. `getFeatureFlag`, `isFeatureEnabled`, and `getAllFlagsAndPayloads` now return `undefined` if the flag is not found.
+
+# 4.11.0 - 2025-03-28
+
+## Added
+
+1. `$feature_flag_called` event now includes additional properties such as `feature_flag_id`, `feature_flag_version`, `feature_flag_reason`, and `feature_flag_request_id`.
+
+## Fixed
+
+1. apiKey cannot be empty.
+
+# 4.10.2 - 2025-03-06
+
+1. Add: log error message when feature flags have computation errors.
+
+# 4.10.1 – 2025-03-06
+
+1. Fix: only set `platform` on PostHog exception frame properties
+1. Fix: prevent fetch floods when rate-limited.
+
+# 4.10.0 – 2025-03-06
+
+1. Attach requestId to $feature_flag_called if present in /decide response
+
+# 4.9.0 – 2025-03-04
+
+1. Allow feature flags to be evaluated individually when local evaluation is not being used
+
+# 4.8.1 – 2025-02-26
+
+1. Supports gracefully handling quotaLimited responses from the PostHog API for feature flag evaluation
+
+# 4.8.0 - 2025-02-26
+
+1. Add guardrails and exponential error backoff in the feature flag local evaluation poller to prevent high rates of 401/403 traffic towards `/local_evaluation`
+
+# 4.7.0 - 2025-02-20
+
+## Added
+
+1. Adds the ability to capture user feedback in LLM Observability using the `captureTraceFeedback` and `captureTraceMetric` methods.
+
+# 4.6.0 - 2025-02-12
+
+## Added
+
+1. Adds ability to fetch decrypted remote config flag payloads via `getRemoteConfigPayload`
+
+# 4.5.2 - 2025-02-12
+
+## Fixed
+
+1. fix: Fixed edge case where `$feature_flag_called` events were enriched with additional feature flag data when they shouldn't be.
+
+# 4.5.1 - 2025-02-12
+
+## Fixed
+
+1. Do not require a `distinctId` as an argument to `captureException`
+
+# 4.5.0 - 2025-02-06
+
+## Added
+
+1. Adds manual exception capture with full stack trace processing via `captureException` function
+2. Adds ability to enable exception autocapture via the `enableExceptionAutocapture` init option
+
+# 4.4.1 - 2025-01-21
+
+- Add option privacyMode to remove input and output from LLM Observability
+
+# 4.4.0 - 2025-01-15
+
+Switch from rusha to native (node:crypto) sha1 implementation
 
 # 4.3.2 - 2024-12-11
 
