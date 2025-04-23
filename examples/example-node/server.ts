@@ -23,6 +23,12 @@ const posthog = new PostHog(PH_API_KEY, {
   },
 })
 
+console.log('LOCAL EVALUATION READY RIGHT AFTER CREATION: ', posthog.isLocalEvaluationReady())
+
+posthog.on('localEvaluationFlagsLoaded', (count) => {
+  console.log('LOCAL EVALUATION READY (localEvaluationFlagsLoaded) EVENT EMITTED: flags count: ', count)
+})
+
 posthog.debug()
 
 Sentry.init({
@@ -55,6 +61,12 @@ app.get('/error', (req, res) => {
   res.send({ status: 'error!!' })
 })
 
+app.get('/wait-for-local-evaluation-ready', async (req, res) => {
+  const FIVE_SECONDS = 5000
+  const ready = await posthog.waitForLocalEvaluationReady(FIVE_SECONDS)
+  res.send({ ready })
+})
+
 app.get('/user/:userId/action', (req, res) => {
   posthog.capture({ distinctId: req.params.userId, event: 'user did action', properties: req.params })
 
@@ -62,9 +74,16 @@ app.get('/user/:userId/action', (req, res) => {
 })
 
 app.get('/user/:userId/flags/:flagId', async (req, res) => {
-  const flag = await posthog.getFeatureFlag('key-1', req.params.userId).catch((e) => console.error(e))
+  const flag = await posthog.getFeatureFlag(req.params.flagId, req.params.userId).catch((e) => console.error(e))
+  const payload = await posthog
+    .getFeatureFlagPayload(req.params.flagId, req.params.userId)
+    .catch((e) => console.error(e))
+  res.send({ [req.params.flagId]: { flag, payload } })
+})
 
-  res.send({ [req.params.flagId]: flag })
+app.get('/user/:userId/flags', async (req, res) => {
+  const allFlags = await posthog.getAllFlagsAndPayloads(req.params.userId).catch((e) => console.error(e))
+  res.send(allFlags)
 })
 
 const server = app.listen(8020, () => {

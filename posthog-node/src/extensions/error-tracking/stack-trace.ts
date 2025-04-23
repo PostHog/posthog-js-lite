@@ -1,7 +1,7 @@
-// copied and adapted from https://github.com/getsentry/sentry-javascript/blob/41fef4b10f3a644179b77985f00f8696c908539f/packages/browser/src/stack-parsers.ts
-// 💖open source
+// Portions of this file are derived from getsentry/sentry-javascript by Software, Inc. dba Sentry
+// Licensed under the MIT License
 
-import { posix, sep, dirname } from 'node:path'
+import { posix, sep, dirname } from 'path'
 import { StackFrame, StackLineParser, StackLineParserFn, StackParser } from './types'
 
 type GetModuleFn = (filename: string | undefined) => string | undefined

@@ -70,9 +70,16 @@ export class WrappedMessages extends AnthropicOriginal.Messages {
     if (anthropicParams.stream) {
       return parentPromise.then((value) => {
         let accumulatedContent = ''
-        const usage: { inputTokens: number; outputTokens: number } = {
+        const usage: {
+          inputTokens: number
+          outputTokens: number
+          cacheCreationInputTokens?: number
+          cacheReadInputTokens?: number
+        } = {
           inputTokens: 0,
           outputTokens: 0,
+          cacheCreationInputTokens: 0,
+          cacheReadInputTokens: 0,
         }
         if ('tee' in value) {
           const [stream1, stream2] = value.tee()
@@ -87,6 +94,8 @@ export class WrappedMessages extends AnthropicOriginal.Messages {
                 }
                 if (chunk.type == 'message_start') {
                   usage.inputTokens = chunk.message.usage.input_tokens ?? 0
+                  usage.cacheCreationInputTokens = chunk.message.usage.cache_creation_input_tokens ?? 0
+                  usage.cacheReadInputTokens = chunk.message.usage.cache_read_input_tokens ?? 0
                 }
                 if ('usage' in chunk) {
                   usage.outputTokens = chunk.usage.output_tokens ?? 0
@@ -156,6 +165,8 @@ export class WrappedMessages extends AnthropicOriginal.Messages {
               usage: {
                 inputTokens: result.usage.input_tokens ?? 0,
                 outputTokens: result.usage.output_tokens ?? 0,
+                cacheCreationInputTokens: result.usage.cache_creation_input_tokens ?? 0,
+                cacheReadInputTokens: result.usage.cache_read_input_tokens ?? 0,
               },
             })
           }

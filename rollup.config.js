@@ -63,7 +63,9 @@ const configs = ['posthog-node', 'posthog-web', 'posthog-ai'].reduce((acc, x) =>
     {
       input: `./${x}/lib/${x}/index.d.ts`,
       output: [{ file: `./${x}/lib/index.d.ts`, format: 'es' }],
-      plugins: [dts()],
+      plugins: [
+        dts(),
+      ],
     },
   ]
 }, [])
