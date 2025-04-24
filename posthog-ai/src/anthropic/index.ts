@@ -202,3 +202,5 @@ export class WrappedMessages extends AnthropicOriginal.Messages {
 }
 
 export default PostHogAnthropic
+
+export { PostHogAnthropic as Anthropic }
