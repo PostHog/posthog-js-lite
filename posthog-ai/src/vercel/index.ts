@@ -1,1 +1,1 @@
-export { wrapVercelLanguageModel as wwithTracing} from './middleware'; 
+export { wrapVercelLanguageModel as withTracing } from './middleware'

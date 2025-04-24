@@ -434,14 +434,6 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
       const [inputTokens, outputTokens, additionalTokenData] = this.parseUsage(output)
       eventProperties['$ai_input_tokens'] = inputTokens
       eventProperties['$ai_output_tokens'] = outputTokens
-      
-      // Add additional token data to properties
-      if (additionalTokenData.cacheReadInputTokens) {
-        eventProperties['$ai_cache_read_tokens'] = additionalTokenData.cacheReadInputTokens
-      }
-      if (additionalTokenData.reasoningTokens) {
-        eventProperties['$ai_reasoning_tokens'] = additionalTokenData.reasoningTokens
-      }
 
       // Add additional token data to properties
       if (additionalTokenData.cacheReadInputTokens) {
