@@ -1,6 +1,6 @@
 {
   "name": "@posthog/ai",
-  "version": "3.3.2",
+  "version": "4.0.0",
   "description": "PostHog Node.js AI integrations",
   "repository": {
     "type": "git",
@@ -36,6 +36,33 @@
   "scripts": {
     "test": "jest",
     "prepublishOnly": "cd .. && yarn build"
+  },
+  "exports": {
+    ".": {
+      "require": "./lib/index.cjs.js",
+      "import": "./lib/index.esm.js",
+      "types": "./lib/index.d.ts"
+    },
+    "./anthropic": {
+      "require": "./lib/anthropic/index.cjs.js",
+      "import": "./lib/anthropic/index.esm.js",
+      "types": "./lib/anthropic/index.d.ts"
+    },
+    "./openai": {
+      "require": "./lib/openai/index.cjs.js",
+      "import": "./lib/openai/index.esm.js",
+      "types": "./lib/openai/index.d.ts"
+    },
+    "./vercel": {
+      "require": "./lib/vercel/index.cjs.js",
+      "import": "./lib/vercel/index.esm.js",
+      "types": "./lib/vercel/index.d.ts"
+    },
+    "./langchain": {
+      "require": "./lib/langchain/index.cjs.js",
+      "import": "./lib/langchain/index.esm.js",
+      "types": "./lib/langchain/index.d.ts"
+    }
   },
   "directories": {
     "lib": "lib",

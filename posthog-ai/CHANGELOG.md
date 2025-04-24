@@ -1,3 +1,7 @@
+# 4.0.0
+
+- feat: seperate out packages as seperate exports so you can import { OpenAI } from @posthog/ai/openai and reduce import size
+
 # 3.3.2 - 2025-03-25
 
 - fix: langchain name mapping
