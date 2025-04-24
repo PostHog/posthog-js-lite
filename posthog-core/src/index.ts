@@ -684,6 +684,39 @@ export abstract class PostHogCoreStateless {
   }
 
   /***
+   *** SUPER PROPERTIES
+   ***/
+  private _props: PostHogEventProperties | undefined
+
+  protected get props(): PostHogEventProperties {
+    if (!this._props) {
+      this._props = this.getPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.Props)
+    }
+    return this._props || {}
+  }
+
+  protected set props(val: PostHogEventProperties | undefined) {
+    this._props = val
+  }
+
+  async register(properties: { [key: string]: any }): Promise<void> {
+    this.wrap(() => {
+      this.props = {
+        ...this.props,
+        ...properties,
+      }
+      this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.Props, this.props)
+    })
+  }
+
+  async unregister(property: string): Promise<void> {
+    this.wrap(() => {
+      delete this.props[property]
+      this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.Props, this.props)
+    })
+  }
+
+  /***
    *** QUEUEING AND FLUSHING
    ***/
   protected enqueue(type: string, _message: any, options?: PostHogCaptureOptions): void {
@@ -1003,25 +1036,11 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     }
   }
 
-  // NOTE: Props are lazy loaded from localstorage hence the complex getter setter logic
-  private get props(): PostHogEventProperties {
-    if (!this._props) {
-      this._props = this.getPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.Props)
-    }
-    return this._props || {}
-  }
-
-  private set props(val: PostHogEventProperties | undefined) {
-    this._props = val
-  }
-
   private clearProps(): void {
     this.props = undefined
     this.sessionProps = {}
     this.flagCallReported = {}
   }
-
-  private _props: PostHogEventProperties | undefined
 
   on(event: string, cb: (...args: any[]) => void): () => void {
     return this._events.on(event, cb)
@@ -1121,23 +1140,6 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     }
 
     return this.getPersistedProperty<string>(PostHogPersistedProperty.DistinctId) || this.getAnonymousId()
-  }
-
-  async unregister(property: string): Promise<void> {
-    this.wrap(() => {
-      delete this.props[property]
-      this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.Props, this.props)
-    })
-  }
-
-  async register(properties: { [key: string]: any }): Promise<void> {
-    this.wrap(() => {
-      this.props = {
-        ...this.props,
-        ...properties,
-      }
-      this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.Props, this.props)
-    })
   }
 
   registerForSession(properties: { [key: string]: any }): void {
