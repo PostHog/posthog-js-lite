@@ -1,3 +1,6 @@
+// Portions of this file are derived from getsentry/sentry-javascript by Software, Inc. dba Sentry
+// Licensed under the MIT License
+
 /** A simple Least Recently Used map */
 export class ReduceableCache<K, V> {
   private readonly _cache: Map<K, V>

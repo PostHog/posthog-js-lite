@@ -51,6 +51,7 @@ export default function App() {
       <PostHogSurveyProvider client={posthog}>
         <View style={styles.container}>
           <Text onPress={handleClick}>{buttonText}</Text>
+          <Text>{posthog.getLibraryVersion()}</Text>
           <StatusBar style="auto" />
         </View>
       </PostHogSurveyProvider>

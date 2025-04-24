@@ -1,3 +1,6 @@
+// Portions of this file are derived from getsentry/sentry-javascript by Software, Inc. dba Sentry
+// Licensed under the MIT License
+
 import { PolymorphicEvent } from './types'
 
 export function isEvent(candidate: unknown): candidate is PolymorphicEvent {

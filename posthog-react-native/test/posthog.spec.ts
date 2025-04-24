@@ -17,9 +17,9 @@ describe('PostHog React Native', () => {
   let posthog: PostHog
 
   beforeEach(() => {
-    ;(global as any).window.fetch = jest.fn(async (url) => {
+    ;(globalThis as any).window.fetch = jest.fn(async (url) => {
       let res: any = { status: 'ok' }
-      if (url.includes('decide')) {
+      if (url.includes('flags')) {
         res = {
           featureFlags: {},
         }

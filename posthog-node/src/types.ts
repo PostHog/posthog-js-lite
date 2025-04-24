@@ -1,4 +1,4 @@
-import { JsonType } from '../../posthog-core/src'
+import { FeatureFlagValue, JsonType } from '../../posthog-core/src'
 
 export interface IdentifyMessage {
   distinctId: string
@@ -155,7 +155,7 @@ export type PostHogNodeV1 = {
       onlyEvaluateLocally?: boolean
       sendFeatureFlagEvents?: boolean
     }
-  ): Promise<string | boolean | undefined>
+  ): Promise<FeatureFlagValue | undefined>
 
   /**
    * @description Retrieves payload associated with the specified flag and matched value that is passed in.
@@ -186,7 +186,7 @@ export type PostHogNodeV1 = {
   getFeatureFlagPayload(
     key: string,
     distinctId: string,
-    matchValue?: string | boolean,
+    matchValue?: FeatureFlagValue,
     options?: {
       onlyEvaluateLocally?: boolean
     }
@@ -215,4 +215,17 @@ export type PostHogNodeV1 = {
    * @param shutdownTimeoutMs The shutdown timeout, in milliseconds. Defaults to 30000 (30s).
    */
   shutdown(shutdownTimeoutMs?: number): void
+
+  /**
+   * @description Waits for local evaluation to be ready, with an optional timeout.
+   * @param timeoutMs - Maximum time to wait in milliseconds. Defaults to 30 seconds.
+   * @returns A promise that resolves to true if local evaluation is ready, false if the timeout was reached.
+   */
+  waitForLocalEvaluationReady(timeoutMs?: number): Promise<boolean>
+
+  /**
+   * @description Returns true if local evaluation is ready, false if it's not.
+   * @returns true if local evaluation is ready, false if it's not.
+   */
+  isLocalEvaluationReady(): boolean
 }

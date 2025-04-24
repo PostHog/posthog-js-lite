@@ -443,6 +443,14 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
         eventProperties['$ai_reasoning_tokens'] = additionalTokenData.reasoningTokens
       }
 
+      // Add additional token data to properties
+      if (additionalTokenData.cacheReadInputTokens) {
+        eventProperties['$ai_cache_read_tokens'] = additionalTokenData.cacheReadInputTokens
+      }
+      if (additionalTokenData.reasoningTokens) {
+        eventProperties['$ai_reasoning_tokens'] = additionalTokenData.reasoningTokens
+      }
+
       // Handle generations/completions
       let completions
       if (output.generations && Array.isArray(output.generations)) {

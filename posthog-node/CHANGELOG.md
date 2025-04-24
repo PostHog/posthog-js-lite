@@ -1,4 +1,64 @@
-# Next
+# 4.14.0 - 2025-04-24
+
+1. feat: Add super properties as a concept to the Node SDK
+
+# 4.13.0 - 2025-04-21
+
+1. feat: Add method to wait for local evaluation feature flag definitions to be loaded
+
+# 4.12.0 – 2025-04-17
+
+1. chore: roll out new feature flag evaluation backend to majority of customers
+
+# 4.11.7 - 2025-04-16
+
+1. fix: do not reference `node:` prefix as it is not supported by Next.js edge runtime
+
+# 4.11.6 - 2025-04-15
+
+## Fixed
+
+1. move survey export top-level declarations
+
+# 4.11.5 - 2025-04-14
+
+## Fixed
+
+1. export and declare top-level declarations for surveys
+
+# 4.11.4 - 2025-04-14
+
+## Fixed
+
+1. export top-level declarations for surveys
+
+# 4.11.3 - 2025-04-08
+
+## Fixed
+
+1. do not access `fs` or `readline` in when not available e.g. edge environments
+
+# 4.11.2 - 2025-04-07
+
+## Fixed
+
+1. chore: bump axios to 1.8.2 (fixes [CVE-2025-27152](https://github.com/advisories/GHSA-jr5f-v2jv-69x6))
+
+# 4.11.1 - 2025-03-28
+
+## Fixed
+
+1. `getFeatureFlag`, `isFeatureEnabled`, and `getAllFlagsAndPayloads` now return `undefined` if the flag is not found.
+
+# 4.11.0 - 2025-03-28
+
+## Added
+
+1. `$feature_flag_called` event now includes additional properties such as `feature_flag_id`, `feature_flag_version`, `feature_flag_reason`, and `feature_flag_request_id`.
+
+## Fixed
+
+1. apiKey cannot be empty.
 
 # 4.10.2 - 2025-03-06
 
@@ -8,7 +68,6 @@
 
 1. Fix: only set `platform` on PostHog exception frame properties
 1. Fix: prevent fetch floods when rate-limited.
-
 
 # 4.10.0 – 2025-03-06
 

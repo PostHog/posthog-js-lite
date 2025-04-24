@@ -12,9 +12,11 @@ import {
 } from '../../posthog-core/src'
 import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
 import { EventMessage, GroupIdentifyMessage, IdentifyMessage, PostHogNodeV1 } from './types'
+import { FeatureFlagDetail, FeatureFlagValue } from '../../posthog-core/src/types'
 import { FeatureFlagsPoller } from './feature-flags'
 import fetch from './fetch'
 import ErrorTracking from './error-tracking'
+import { getFeatureFlagValue } from 'posthog-core/src/featureFlagUtils'
 
 export type PostHogOptions = PostHogCoreOptions & {
   persistence?: 'memory'
@@ -72,6 +74,9 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         fetch: options.fetch,
         onError: (err: Error) => {
           this._events.emit('error', err)
+        },
+        onLoad: (count: number) => {
+          this._events.emit('localEvaluationFlagsLoaded', count)
         },
         customHeaders: this.getCustomHeaders(),
       })
@@ -173,7 +178,9 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
             additionalProperties[`$feature/${feature}`] = variant
           }
         }
-        const activeFlags = Object.keys(flags || {}).filter((flag) => flags?.[flag] !== false)
+        const activeFlags = Object.keys(flags || {})
+          .filter((flag) => flags?.[flag] !== false)
+          .sort()
         if (activeFlags.length > 0) {
           additionalProperties['$active_feature_flags'] = activeFlags
         }
@@ -216,6 +223,33 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     super.aliasStateless(data.alias, data.distinctId, undefined, { disableGeoip: data.disableGeoip })
   }
 
+  isLocalEvaluationReady(): boolean {
+    return this.featureFlagsPoller?.isLocalEvaluationReady() ?? false
+  }
+
+  async waitForLocalEvaluationReady(timeoutMs: number = THIRTY_SECONDS): Promise<boolean> {
+    if (this.isLocalEvaluationReady()) {
+      return true
+    }
+
+    if (this.featureFlagsPoller === undefined) {
+      return false
+    }
+
+    return new Promise((resolve) => {
+      const timeout = setTimeout(() => {
+        cleanup()
+        resolve(false)
+      }, timeoutMs)
+
+      const cleanup = this._events.on('localEvaluationFlagsLoaded', (count: number) => {
+        clearTimeout(timeout)
+        cleanup()
+        resolve(count > 0)
+      })
+    })
+  }
+
   async getFeatureFlag(
     key: string,
     distinctId: string,
@@ -227,7 +261,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       sendFeatureFlagEvents?: boolean
       disableGeoip?: boolean
     }
-  ): Promise<string | boolean | undefined> {
+  ): Promise<FeatureFlagValue | undefined> {
     const { groups, disableGeoip } = options || {}
     let { onlyEvaluateLocally, sendFeatureFlagEvents, personProperties, groupProperties } = options || {}
 
@@ -259,8 +293,9 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
 
     const flagWasLocallyEvaluated = response !== undefined
     let requestId = undefined
+    let flagDetail: FeatureFlagDetail | undefined = undefined
     if (!flagWasLocallyEvaluated && !onlyEvaluateLocally) {
-      const remoteResponse = await super.getFeatureFlagStateless(
+      const remoteResponse = await super.getFeatureFlagDetailStateless(
         key,
         distinctId,
         groups,
@@ -268,8 +303,14 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         groupProperties,
         disableGeoip
       )
-      response = remoteResponse.response
-      requestId = remoteResponse.requestId
+
+      if (remoteResponse === undefined) {
+        return undefined
+      }
+
+      flagDetail = remoteResponse.response
+      response = getFeatureFlagValue(flagDetail)
+      requestId = remoteResponse?.requestId
     }
 
     const featureFlagReportedKey = `${key}_${response}`
@@ -293,6 +334,9 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
         properties: {
           $feature_flag: key,
           $feature_flag_response: response,
+          $feature_flag_id: flagDetail?.metadata?.id,
+          $feature_flag_version: flagDetail?.metadata?.version,
+          $feature_flag_reason: flagDetail?.reason?.description ?? flagDetail?.reason?.code,
           locally_evaluated: flagWasLocallyEvaluated,
           [`$feature/${key}`]: response,
           $feature_flag_request_id: requestId,
@@ -307,7 +351,7 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
   async getFeatureFlagPayload(
     key: string,
     distinctId: string,
-    matchValue?: string | boolean,
+    matchValue?: FeatureFlagValue,
     options?: {
       groups?: Record<string, string>
       personProperties?: Record<string, string>
@@ -332,17 +376,22 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
 
     let response = undefined
 
-    // Try to get match value locally if not provided
-    if (!matchValue) {
-      matchValue = await this.getFeatureFlag(key, distinctId, {
-        ...options,
-        onlyEvaluateLocally: true,
-      })
-    }
+    const localEvaluationEnabled = this.featureFlagsPoller !== undefined
+    if (localEvaluationEnabled) {
+      // Try to get match value locally if not provided
+      if (!matchValue) {
+        matchValue = await this.getFeatureFlag(key, distinctId, {
+          ...options,
+          onlyEvaluateLocally: true,
+          sendFeatureFlagEvents: false,
+        })
+      }
 
-    if (matchValue) {
-      response = await this.featureFlagsPoller?.computeFeatureFlagPayloadLocally(key, matchValue)
+      if (matchValue) {
+        response = await this.featureFlagsPoller?.computeFeatureFlagPayloadLocally(key, matchValue)
+      }
     }
+    //}
 
     // set defaults
     if (onlyEvaluateLocally == undefined) {
@@ -404,9 +453,9 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
       onlyEvaluateLocally?: boolean
       disableGeoip?: boolean
     }
-  ): Promise<Record<string, string | boolean>> {
+  ): Promise<Record<string, FeatureFlagValue>> {
     const response = await this.getAllFlagsAndPayloads(distinctId, options)
-    return response.featureFlags
+    return response.featureFlags || {}
   }
 
   async getAllFlagsAndPayloads(
@@ -478,6 +527,10 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     super.groupIdentifyStateless(groupType, groupKey, properties, { disableGeoip }, distinctId)
   }
 
+  /**
+   * Reloads the feature flag definitions from the server for local evaluation.
+   * This is useful to call if you want to ensure that the feature flags are up to date before calling getFeatureFlag.
+   */
   async reloadFeatureFlags(): Promise<void> {
     await this.featureFlagsPoller?.loadFeatureFlags(true)
   }

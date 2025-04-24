@@ -8,3 +8,16 @@ The short-term goal is to have a dedicated React Native library free from any pl
 
 1. Installation to Expo managed projects without any separate compilation / ejecting
 2. Tighter integration to RN enabling hooks, context, autocapture etc.
+
+## Contributing
+
+Information on how to contribute to the project and run tests can be found [here](CONTRIBUTING.md).
+
+## Releasing
+
+Information on how to release the individual libraries can be found [here](RELEASING.md).
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
