@@ -13,7 +13,8 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "build": "yarn build-rollup && yarn build-react-native",
+    "prebuild": "yarn workspace posthog-react-native run prebuild",
+    "build": "rollup -c",
     "lint": "eslint -c .eslintrc.js --fix posthog-*",
     "prettier": "prettier --write \"./**/*.{ts,tsx}\"",
     "prettier:check": "prettier --check \"./**/*.{ts,tsx}\"",
@@ -23,9 +24,7 @@
     "test:web": "jest posthog-web",
     "test:ai": "jest posthog-ai",
     "test:rn": "cd posthog-react-native && yarn test",
-    "test:all": "jest posthog-core posthog-node posthog-ai posthog-web && yarn test:rn",
-    "build-rollup": "rollup -c",
-    "build-react-native": "cd posthog-react-native && yarn build"
+    "test:all": "jest posthog-core posthog-node posthog-ai posthog-web && yarn test:rn"
   },
   "devDependencies": {
     "@babel/core": "^7.18.6",
