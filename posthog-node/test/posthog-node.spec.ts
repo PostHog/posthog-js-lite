@@ -1,13 +1,11 @@
 import { MINIMUM_POLLING_INTERVAL, PostHog as PostHog, THIRTY_SECONDS } from '../src/posthog-node'
-import fetch from '../src/fetch'
 import { anyDecideCall, anyLocalEvalCall, apiImplementation } from './test-utils'
 import { waitForPromises, wait } from '../../posthog-core/test/test-utils/test-utils'
 import { randomUUID } from 'crypto'
-jest.mock('../src/fetch')
 
 jest.mock('../package.json', () => ({ version: '1.2.3' }))
 
-const mockedFetch = jest.mocked(fetch, true)
+const mockedFetch = jest.spyOn(globalThis, 'fetch').mockImplementation()
 
 const waitForFlushTimer = async (): Promise<void> => {
   await waitForPromises()
@@ -1122,7 +1120,7 @@ describe('PostHog Node.js', () => {
 
       await expect(posthog.getFeatureFlagPayload('false-flag', '123', true)).resolves.toEqual(300)
       // Check no non-batch API calls were made
-      const additionalNonBatchCalls = mockedFetch.mock.calls.filter((call) => !call[0].includes('/batch'))
+      const additionalNonBatchCalls = mockedFetch.mock.calls.filter((call) => !(call[0] as string).includes('/batch'))
       expect(additionalNonBatchCalls.length).toBe(0)
     })
 
