@@ -1,3 +1,7 @@
+# 4.14.0 - 2025-04-24
+
+1. feat: Add super properties as a concept to the Node SDK
+
 # 4.13.0 - 2025-04-21
 
 1. feat: Add method to wait for local evaluation feature flag definitions to be loaded
