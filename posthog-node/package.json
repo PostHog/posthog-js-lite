@@ -11,7 +11,7 @@
     "prepublishOnly": "cd .. && yarn build"
   },
   "engines": {
-    "node": ">=15.0.0"
+    "node": ">=18.0.0"
   },
   "license": "MIT",
   "author": {
@@ -22,9 +22,6 @@
   "main": "lib/node/index.cjs",
   "module": "lib/node/index.mjs",
   "types": "lib/index.d.ts",
-  "dependencies": {
-    "axios": "^1.8.2"
-  },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "commander": "^9.3.0",

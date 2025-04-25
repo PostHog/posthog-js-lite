@@ -2,7 +2,11 @@ module.exports = {
   roots: ['<rootDir>'],
   testEnvironment: 'node',
   transform: {
-    '^.+\\.ts?$': 'ts-jest',
+    '^.+\\.ts?$': ['ts-jest', {
+      tsconfig: {
+        lib: ['ES2020', 'ES2022.Error', 'DOM'], // We need to include DOM for tests
+      },
+    }],
   },
   moduleFileExtensions: ['ts', 'js', 'json', 'node'],
   collectCoverage: true,
@@ -13,12 +17,4 @@ module.exports = {
   testPathIgnorePatterns: ['<rootDir>/lib/', '/node_modules/', '/examples/'],
   silent: true,
   verbose: false,
-
-  globals: {
-    'ts-jest': {
-      tsconfig: {
-        lib: ['ES2020', 'ES2022.Error', 'DOM'], // We need to include DOM for tests
-      },
-    },
-  },
 }
