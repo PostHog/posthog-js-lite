@@ -68,4 +68,56 @@ const configs = ['posthog-node', 'posthog-web', 'posthog-ai', 'posthog-react-nat
   ]
 }, [])
 
+// Add submodule builds for posthog-ai
+const aiPkg = require('./posthog-ai/package.json')
+const aiExternal = [...globalExternal]
+  .concat(Object.keys(aiPkg.dependencies || {}))
+  .concat(Object.keys(aiPkg.peerDependencies || {}))
+  .concat(Object.keys(aiPkg.devDependencies || {}))
+
+const providers = ['anthropic', 'openai', 'vercel', 'langchain']
+
+providers.forEach((provider) => {
+  configs.push({
+    input: `./posthog-ai/src/${provider}/index.ts`,
+    output: [
+      {
+        file: `./posthog-ai/lib/${provider}/index.cjs.js`,
+        sourcemap: true,
+        exports: 'named',
+        format: 'cjs',
+      },
+      {
+        file: `./posthog-ai/lib/${provider}/index.esm.js`,
+        sourcemap: true,
+        format: 'es',
+      },
+    ],
+    external: aiExternal,
+    plugins: [
+      resolve({ extensions }),
+      commonjs(),
+      json(),
+      babel({
+        extensions,
+        babelHelpers: 'bundled',
+        include: ['posthog-ai/src/**/*.{js,jsx,ts,tsx}'],
+        presets: [
+          ['@babel/preset-env', { targets: { node: 'current' } }],
+          '@babel/preset-typescript',
+          '@babel/preset-react',
+        ],
+      }),
+    ],
+  })
+
+  configs.push({
+    input: `./posthog-ai/src/${provider}/index.ts`,
+    output: [{ file: `./posthog-ai/lib/${provider}/index.d.ts`, format: 'es' }],
+    plugins: [
+      dts({ tsconfig: './posthog-ai/tsconfig.json' })
+    ],
+  })
+})
+
 export default configs
