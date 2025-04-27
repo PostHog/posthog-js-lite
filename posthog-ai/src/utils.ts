@@ -133,6 +133,9 @@ export type SendEventToPosthogParams = {
 }
 
 function sanitizeValues(obj: any): any {
+  if (obj === undefined || obj === null) {
+    return obj
+  }
   const jsonSafe = JSON.parse(JSON.stringify(obj))
   if (typeof jsonSafe === 'string') {
     return Buffer.from(jsonSafe, 'utf8').toString('utf8')
