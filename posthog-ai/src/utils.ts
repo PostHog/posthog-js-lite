@@ -1,4 +1,5 @@
 import { PostHog } from 'posthog-node'
+import { Buffer } from 'buffer'
 import OpenAIOrignal from 'openai'
 import AnthropicOriginal from '@anthropic-ai/sdk'
 
@@ -131,6 +132,20 @@ export type SendEventToPosthogParams = {
   tools?: any
 }
 
+function sanitizeValues(obj: any): any {
+  const jsonSafe = JSON.parse(JSON.stringify(obj))
+  if (typeof jsonSafe === 'string') {
+    return Buffer.from(jsonSafe, 'utf8').toString('utf8')
+  } else if (Array.isArray(jsonSafe)) {
+    return jsonSafe.map(sanitizeValues)
+  } else if (jsonSafe && typeof jsonSafe === 'object') {
+    return Object.fromEntries(
+      Object.entries(jsonSafe).map(([k, v]) => [k, sanitizeValues(v)])
+    )
+  }
+  return jsonSafe
+}
+
 export const sendEventToPosthog = ({
   client,
   distinctId,
@@ -149,11 +164,16 @@ export const sendEventToPosthog = ({
   tools,
 }: SendEventToPosthogParams): void => {
   if (client.capture) {
+    // sanitize input and output for UTF-8 validity
+    const safeInput = sanitizeValues(input)
+    const safeOutput = sanitizeValues(output)
+    const safeError = sanitizeValues(error)
+
     let errorData = {}
     if (isError) {
       errorData = {
         $ai_is_error: true,
-        $ai_error: error,
+        $ai_error: safeError,
       }
     }
     let costOverrideData = {}
@@ -180,8 +200,8 @@ export const sendEventToPosthog = ({
         $ai_provider: params.posthogProviderOverride ?? provider,
         $ai_model: params.posthogModelOverride ?? model,
         $ai_model_parameters: getModelParams(params),
-        $ai_input: withPrivacyMode(client, params.posthogPrivacyMode ?? false, input),
-        $ai_output_choices: withPrivacyMode(client, params.posthogPrivacyMode ?? false, output),
+        $ai_input: withPrivacyMode(client, params.posthogPrivacyMode ?? false, safeInput),
+        $ai_output_choices: withPrivacyMode(client, params.posthogPrivacyMode ?? false, safeOutput),
         $ai_http_status: httpStatus,
         $ai_input_tokens: usage.inputTokens ?? 0,
         $ai_output_tokens: usage.outputTokens ?? 0,

@@ -1,3 +1,7 @@
+# 4.0.1
+
+- add new util to santitize inputs, outputs and errors
+
 # 4.0.0
 
 - feat: seperate out packages as seperate exports so you can import { OpenAI } from @posthog/ai/openai and reduce import size
