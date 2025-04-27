@@ -142,9 +142,7 @@ function sanitizeValues(obj: any): any {
   } else if (Array.isArray(jsonSafe)) {
     return jsonSafe.map(sanitizeValues)
   } else if (jsonSafe && typeof jsonSafe === 'object') {
-    return Object.fromEntries(
-      Object.entries(jsonSafe).map(([k, v]) => [k, sanitizeValues(v)])
-    )
+    return Object.fromEntries(Object.entries(jsonSafe).map(([k, v]) => [k, sanitizeValues(v)]))
   }
   return jsonSafe
 }
