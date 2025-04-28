@@ -48,11 +48,20 @@ const mapVercelParams = (params: any): Record<string, any> => {
   }
 }
 
-const mapVercelPrompt = (prompt: LanguageModelV1Prompt): PostHogInput[] => {
-  return prompt.map((p) => {
+const mapVercelPrompt = (prompt: LanguageModelV1Prompt | string | any): PostHogInput[] => {
+  // normalize single inputs into an array of messages
+  let promptsArray: any[];
+  if (typeof prompt === 'string') {
+    promptsArray = [{ role: 'user', content: prompt }];
+  } else if (!Array.isArray(prompt)) {
+    promptsArray = [prompt];
+  } else {
+    promptsArray = prompt;
+  }
+  return promptsArray.map((p) => {
     let content = {}
     if (Array.isArray(p.content)) {
-      content = p.content.map((c) => {
+      content = p.content.map((c: any) => {
         if (c.type === 'text') {
           return {
             type: 'text',
@@ -113,25 +122,40 @@ const mapVercelPrompt = (prompt: LanguageModelV1Prompt): PostHogInput[] => {
 }
 
 const mapVercelOutput = (result: any): PostHogInput[] => {
+  // normalize string results to object
+  const normalizedResult = typeof result === 'string' ? { text: result } : result;
   const output = {
-    ...(result.text ? { text: result.text } : {}),
-    ...(result.object ? { object: result.object } : {}),
-    ...(result.reasoning ? { reasoning: result.reasoning } : {}),
-    ...(result.response ? { response: result.response } : {}),
-    ...(result.finishReason ? { finishReason: result.finishReason } : {}),
-    ...(result.usage ? { usage: result.usage } : {}),
-    ...(result.warnings ? { warnings: result.warnings } : {}),
-    ...(result.providerMetadata ? { toolCalls: result.providerMetadata } : {}),
-  }
-  // if text and no object or reasoning, return text
+    ...(normalizedResult.text ? { text: normalizedResult.text } : {}),
+    ...(normalizedResult.object ? { object: normalizedResult.object } : {}),
+    ...(normalizedResult.reasoning ? { reasoning: normalizedResult.reasoning } : {}),
+    ...(normalizedResult.response ? { response: normalizedResult.response } : {}),
+    ...(normalizedResult.finishReason ? { finishReason: normalizedResult.finishReason } : {}),
+    ...(normalizedResult.usage ? { usage: normalizedResult.usage } : {}),
+    ...(normalizedResult.warnings ? { warnings: normalizedResult.warnings } : {}),
+    ...(normalizedResult.providerMetadata ? { toolCalls: normalizedResult.providerMetadata } : {}),
+    ...(normalizedResult.files
+      ? {
+          files: normalizedResult.files.map((file: any) => ({
+            name: file.name,
+            size: file.size,
+            type: file.type,
+          })),
+        }
+      : {}),
+  };
+  // limit large outputs by truncating to 200kb (approx 200k chars)
+  const MAX_OUTPUT_SIZE = 200000;
+  const truncate = (str: string): string =>
+    str.length > MAX_OUTPUT_SIZE ? `${str.slice(0, MAX_OUTPUT_SIZE)}... [truncated]` : str;
   if (output.text && !output.object && !output.reasoning) {
-    return [{ content: output.text, role: 'assistant' }]
+    return [{ content: truncate(output.text as string), role: 'assistant' }];
   }
-  return [{ content: JSON.stringify(output), role: 'assistant' }]
+  // otherwise stringify and truncate
+  const jsonOutput = JSON.stringify(output);
+  return [{ content: truncate(jsonOutput), role: 'assistant' }];
 }
 
 const extractProvider = (model: LanguageModelV1): string => {
-  // vercel provider is in the format of provider.endpoint
   const provider = model.provider.toLowerCase()
   const providerName = provider.split('.')[0]
   return providerName
