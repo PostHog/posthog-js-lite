@@ -1,3 +1,7 @@
+# 4.1.0
+
+- add truncation to vercel ai sdk inputs and outputs
+
 # 4.0.1
 
 - add new util to sanitize inputs, outputs and errors
