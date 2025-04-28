@@ -110,8 +110,8 @@ export const withPrivacyMode = (client: PostHog, privacyMode: boolean, input: an
 
 export const truncate = (str: string): string => {
   // limit large outputs by truncating to 200kb (approx 200k chars)
-  const MAX_OUTPUT_SIZE = 200000;
-  return str.length > MAX_OUTPUT_SIZE ? `${str.slice(0, MAX_OUTPUT_SIZE)}... [truncated]` : str;
+  const MAX_OUTPUT_SIZE = 200000
+  return str.length > MAX_OUTPUT_SIZE ? `${str.slice(0, MAX_OUTPUT_SIZE)}... [truncated]` : str
 }
 
 export type SendEventToPosthogParams = {
