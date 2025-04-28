@@ -48,7 +48,7 @@ const mapVercelParams = (params: any): Record<string, any> => {
   }
 }
 
-const mapVercelPrompt = (prompt: LanguageModelV1Prompt | string | any): PostHogInput[] => {
+const mapVercelPrompt = (prompt: LanguageModelV1Prompt): PostHogInput[] => {
   // normalize single inputs into an array of messages
   let promptsArray: any[]
   if (typeof prompt === 'string') {
