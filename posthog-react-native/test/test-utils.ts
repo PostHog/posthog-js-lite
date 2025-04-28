@@ -1,5 +1,5 @@
 export const wait = async (t: number): Promise<void> => {
-  await new Promise<void>((r) => setTimeout(r, t))
+  await new Promise((r) => setTimeout(r, t))
 }
 
 export const waitForExpect = async (timeout: number, fn: () => void): Promise<void> => {

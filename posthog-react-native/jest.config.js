@@ -11,7 +11,5 @@ module.exports = {
   coverageDirectory: 'coverage',
   testPathIgnorePatterns: ['<rootDir>/lib/', 'node_modules', 'examples'],
   fakeTimers: { enableGlobally: true },
-  transformIgnorePatterns: [
-    '<rootDir>/node_modules/(?!(jest-)?react-native|@react-native|react-clone-referenced-element|@react-navigation/.*)',
-  ],
+  transformIgnorePatterns: [],
 }
