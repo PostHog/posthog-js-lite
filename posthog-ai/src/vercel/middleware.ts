@@ -2,7 +2,7 @@ import { experimental_wrapLanguageModel as wrapLanguageModel } from 'ai'
 import type { LanguageModelV1, LanguageModelV1Middleware, LanguageModelV1Prompt, LanguageModelV1StreamPart } from 'ai'
 import { v4 as uuidv4 } from 'uuid'
 import { PostHog } from 'posthog-node'
-import { CostOverride, sendEventToPosthog } from '../utils'
+import { CostOverride, sendEventToPosthog, truncate } from '../utils'
 
 interface ClientOptions {
   posthogDistinctId?: string
@@ -50,13 +50,13 @@ const mapVercelParams = (params: any): Record<string, any> => {
 
 const mapVercelPrompt = (prompt: LanguageModelV1Prompt | string | any): PostHogInput[] => {
   // normalize single inputs into an array of messages
-  let promptsArray: any[];
+  let promptsArray: any[]
   if (typeof prompt === 'string') {
-    promptsArray = [{ role: 'user', content: prompt }];
+    promptsArray = [{ role: 'user', content: prompt }]
   } else if (!Array.isArray(prompt)) {
-    promptsArray = [prompt];
+    promptsArray = [prompt]
   } else {
-    promptsArray = prompt;
+    promptsArray = prompt
   }
   return promptsArray.map((p) => {
     let content = {}
@@ -65,7 +65,7 @@ const mapVercelPrompt = (prompt: LanguageModelV1Prompt | string | any): PostHogI
         if (c.type === 'text') {
           return {
             type: 'text',
-            content: c.text,
+            content: truncate(c.text),
           }
         } else if (c.type === 'image') {
           return {
@@ -111,7 +111,7 @@ const mapVercelPrompt = (prompt: LanguageModelV1Prompt | string | any): PostHogI
     } else {
       content = {
         type: 'text',
-        text: p.content,
+        text: truncate(p.content),
       }
     }
     return {
@@ -123,7 +123,7 @@ const mapVercelPrompt = (prompt: LanguageModelV1Prompt | string | any): PostHogI
 
 const mapVercelOutput = (result: any): PostHogInput[] => {
   // normalize string results to object
-  const normalizedResult = typeof result === 'string' ? { text: result } : result;
+  const normalizedResult = typeof result === 'string' ? { text: result } : result
   const output = {
     ...(normalizedResult.text ? { text: normalizedResult.text } : {}),
     ...(normalizedResult.object ? { object: normalizedResult.object } : {}),
@@ -142,17 +142,13 @@ const mapVercelOutput = (result: any): PostHogInput[] => {
           })),
         }
       : {}),
-  };
-  // limit large outputs by truncating to 200kb (approx 200k chars)
-  const MAX_OUTPUT_SIZE = 200000;
-  const truncate = (str: string): string =>
-    str.length > MAX_OUTPUT_SIZE ? `${str.slice(0, MAX_OUTPUT_SIZE)}... [truncated]` : str;
+  }
   if (output.text && !output.object && !output.reasoning) {
-    return [{ content: truncate(output.text as string), role: 'assistant' }];
+    return [{ content: truncate(output.text as string), role: 'assistant' }]
   }
   // otherwise stringify and truncate
-  const jsonOutput = JSON.stringify(output);
-  return [{ content: truncate(jsonOutput), role: 'assistant' }];
+  const jsonOutput = JSON.stringify(output)
+  return [{ content: truncate(jsonOutput), role: 'assistant' }]
 }
 
 const extractProvider = (model: LanguageModelV1): string => {
@@ -236,7 +232,7 @@ export const createInstrumentationMiddleware = (
             outputTokens: 0,
           },
           isError: true,
-          error: JSON.stringify(error),
+          error: truncate(JSON.stringify(error)),
         })
         throw error
       }
@@ -329,7 +325,7 @@ export const createInstrumentationMiddleware = (
             outputTokens: 0,
           },
           isError: true,
-          error: JSON.stringify(error),
+          error: truncate(JSON.stringify(error)),
         })
         throw error
       }
