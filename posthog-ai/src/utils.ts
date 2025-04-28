@@ -6,6 +6,10 @@ import AnthropicOriginal from '@anthropic-ai/sdk'
 type ChatCompletionCreateParamsBase = OpenAIOrignal.Chat.Completions.ChatCompletionCreateParams
 type MessageCreateParams = AnthropicOriginal.Messages.MessageCreateParams
 
+// limit large outputs by truncating to 200kb (approx 200k bytes)
+const MAX_OUTPUT_SIZE = 200000
+const STRING_FORMAT = 'utf8'
+
 export interface MonitoringParams {
   posthogDistinctId?: string
   posthogTraceId?: string
@@ -109,14 +113,17 @@ export const withPrivacyMode = (client: PostHog, privacyMode: boolean, input: an
 }
 
 export const truncate = (str: string): string => {
-  // limit large outputs by truncating to 200kb (approx 200k bytes)
-  const MAX_OUTPUT_SIZE = 200000
-  const buffer = Buffer.from(str, 'utf8')
-  if (buffer.length <= MAX_OUTPUT_SIZE) {
+  try {
+    const buffer = Buffer.from(str, STRING_FORMAT)
+    if (buffer.length <= MAX_OUTPUT_SIZE) {
+      return str
+    }
+    const truncatedBuffer = buffer.slice(0, MAX_OUTPUT_SIZE)
+    return `${truncatedBuffer.toString(STRING_FORMAT)}... [truncated]`
+  } catch (error) {
+    console.error('Error truncating, likely not a string')
     return str
   }
-  const truncatedBuffer = buffer.slice(0, MAX_OUTPUT_SIZE)
-  return `${truncatedBuffer.toString('utf8')}... [truncated]`
 }
 
 export type SendEventToPosthogParams = {
@@ -149,7 +156,7 @@ function sanitizeValues(obj: any): any {
   }
   const jsonSafe = JSON.parse(JSON.stringify(obj))
   if (typeof jsonSafe === 'string') {
-    return Buffer.from(jsonSafe, 'utf8').toString('utf8')
+    return Buffer.from(jsonSafe, STRING_FORMAT).toString(STRING_FORMAT)
   } else if (Array.isArray(jsonSafe)) {
     return jsonSafe.map(sanitizeValues)
   } else if (jsonSafe && typeof jsonSafe === 'object') {

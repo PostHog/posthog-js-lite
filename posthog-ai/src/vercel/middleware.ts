@@ -147,8 +147,13 @@ const mapVercelOutput = (result: any): PostHogInput[] => {
     return [{ content: truncate(output.text as string), role: 'assistant' }]
   }
   // otherwise stringify and truncate
-  const jsonOutput = JSON.stringify(output)
-  return [{ content: truncate(jsonOutput), role: 'assistant' }]
+  try {
+    const jsonOutput = JSON.stringify(output)
+    return [{ content: truncate(jsonOutput), role: 'assistant' }]
+  } catch (error) {
+    console.error('Error stringifying output')
+    return []
+  }
 }
 
 const extractProvider = (model: LanguageModelV1): string => {
