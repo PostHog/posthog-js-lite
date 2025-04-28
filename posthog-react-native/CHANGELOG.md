@@ -1,5 +1,13 @@
 # Next
 
+# 3.16.0 – 2025-04-23
+
+1. fix: revert migration to rollup
+
+# 3.15.0 – 2025-04-23
+
+1. chore: migrate to bundle using rollup
+
 # 3.14.0 – 2025-04-17
 
 1. chore: roll out new feature flag evaluation backend to majority of customers
