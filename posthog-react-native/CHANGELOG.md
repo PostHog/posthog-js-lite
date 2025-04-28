@@ -1,6 +1,6 @@
 # Next
 
-# 3.16.0 – 2025-04-23
+# 3.15.1 – 2025-04-28
 
 1. fix: revert migration to rollup
 
