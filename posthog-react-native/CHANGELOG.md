@@ -1,8 +1,14 @@
 # Next
 
+# 3.15.1 – 2025-04-28
+
+1. fix: revert migration to rollup
+
 # 3.15.0 – 2025-04-23
 
 1. chore: migrate to bundle using rollup
+
+Do not use this version, please use [3.15.1](https://github.com/PostHog/posthog-js-lite/releases/tag/posthog-react-native-v3.15.1) instead.
 
 # 3.14.0 – 2025-04-17
 

@@ -2,7 +2,8 @@ import { experimental_wrapLanguageModel as wrapLanguageModel } from 'ai'
 import type { LanguageModelV1, LanguageModelV1Middleware, LanguageModelV1Prompt, LanguageModelV1StreamPart } from 'ai'
 import { v4 as uuidv4 } from 'uuid'
 import { PostHog } from 'posthog-node'
-import { CostOverride, sendEventToPosthog } from '../utils'
+import { CostOverride, sendEventToPosthog, truncate, MAX_OUTPUT_SIZE } from '../utils'
+import { Buffer } from 'buffer'
 
 interface ClientOptions {
   posthogDistinctId?: string
@@ -13,6 +14,7 @@ interface ClientOptions {
   posthogModelOverride?: string
   posthogProviderOverride?: string
   posthogCostOverride?: CostOverride
+  fullDebug?: boolean
 }
 
 interface CreateInstrumentationMiddlewareOptions {
@@ -24,6 +26,7 @@ interface CreateInstrumentationMiddlewareOptions {
   posthogModelOverride?: string
   posthogProviderOverride?: string
   posthogCostOverride?: CostOverride
+  fullDebug?: boolean
 }
 
 interface PostHogInput {
@@ -49,14 +52,25 @@ const mapVercelParams = (params: any): Record<string, any> => {
 }
 
 const mapVercelPrompt = (prompt: LanguageModelV1Prompt): PostHogInput[] => {
-  return prompt.map((p) => {
+  // normalize single inputs into an array of messages
+  let promptsArray: any[]
+  if (typeof prompt === 'string') {
+    promptsArray = [{ role: 'user', content: prompt }]
+  } else if (!Array.isArray(prompt)) {
+    promptsArray = [prompt]
+  } else {
+    promptsArray = prompt
+  }
+
+  // Map and truncate individual content
+  const inputs: PostHogInput[] = promptsArray.map((p) => {
     let content = {}
     if (Array.isArray(p.content)) {
-      content = p.content.map((c) => {
+      content = p.content.map((c: any) => {
         if (c.type === 'text') {
           return {
             type: 'text',
-            content: c.text,
+            content: truncate(c.text),
           }
         } else if (c.type === 'image') {
           return {
@@ -102,7 +116,7 @@ const mapVercelPrompt = (prompt: LanguageModelV1Prompt): PostHogInput[] => {
     } else {
       content = {
         type: 'text',
-        text: p.content,
+        text: truncate(p.content),
       }
     }
     return {
@@ -110,28 +124,65 @@ const mapVercelPrompt = (prompt: LanguageModelV1Prompt): PostHogInput[] => {
       content,
     }
   })
+  try {
+    // Trim the inputs array until its JSON size fits within MAX_OUTPUT_SIZE
+    let serialized = JSON.stringify(inputs)
+    let removedCount = 0
+    while (Buffer.byteLength(serialized, 'utf8') > MAX_OUTPUT_SIZE && inputs.length > 0) {
+      inputs.shift()
+      removedCount++
+      serialized = JSON.stringify(inputs)
+    }
+    if (removedCount > 0) {
+      // Add one placeholder to indicate how many were removed
+      inputs.unshift({
+        role: 'assistant',
+        content: `[${removedCount} message${removedCount === 1 ? '' : 's'} removed due to size limit]`,
+      })
+    }
+  } catch (error) {
+    console.error('Error stringifying inputs', error)
+    return [{ role: 'posthog', content: 'An error occurred while processing your request. Please try again.' }]
+  }
+  return inputs
 }
 
 const mapVercelOutput = (result: any): PostHogInput[] => {
+  // normalize string results to object
+  const normalizedResult = typeof result === 'string' ? { text: result } : result
   const output = {
-    ...(result.text ? { text: result.text } : {}),
-    ...(result.object ? { object: result.object } : {}),
-    ...(result.reasoning ? { reasoning: result.reasoning } : {}),
-    ...(result.response ? { response: result.response } : {}),
-    ...(result.finishReason ? { finishReason: result.finishReason } : {}),
-    ...(result.usage ? { usage: result.usage } : {}),
-    ...(result.warnings ? { warnings: result.warnings } : {}),
-    ...(result.providerMetadata ? { toolCalls: result.providerMetadata } : {}),
+    ...(normalizedResult.text ? { text: normalizedResult.text } : {}),
+    ...(normalizedResult.object ? { object: normalizedResult.object } : {}),
+    ...(normalizedResult.reasoning ? { reasoning: normalizedResult.reasoning } : {}),
+    ...(normalizedResult.response ? { response: normalizedResult.response } : {}),
+    ...(normalizedResult.finishReason ? { finishReason: normalizedResult.finishReason } : {}),
+    ...(normalizedResult.usage ? { usage: normalizedResult.usage } : {}),
+    ...(normalizedResult.warnings ? { warnings: normalizedResult.warnings } : {}),
+    ...(normalizedResult.providerMetadata ? { toolCalls: normalizedResult.providerMetadata } : {}),
+    ...(normalizedResult.files
+      ? {
+          files: normalizedResult.files.map((file: any) => ({
+            name: file.name,
+            size: file.size,
+            type: file.type,
+          })),
+        }
+      : {}),
   }
-  // if text and no object or reasoning, return text
   if (output.text && !output.object && !output.reasoning) {
-    return [{ content: output.text, role: 'assistant' }]
+    return [{ content: truncate(output.text as string), role: 'assistant' }]
   }
-  return [{ content: JSON.stringify(output), role: 'assistant' }]
+  // otherwise stringify and truncate
+  try {
+    const jsonOutput = JSON.stringify(output)
+    return [{ content: truncate(jsonOutput), role: 'assistant' }]
+  } catch (error) {
+    console.error('Error stringifying output')
+    return []
+  }
 }
 
 const extractProvider = (model: LanguageModelV1): string => {
-  // vercel provider is in the format of provider.endpoint
   const provider = model.provider.toLowerCase()
   const providerName = provider.split('.')[0]
   return providerName
@@ -190,6 +241,7 @@ export const createInstrumentationMiddleware = (
             outputTokens: result.usage.completionTokens,
             ...additionalTokenValues,
           },
+          fullDebug: options.fullDebug,
         })
 
         return result
@@ -212,7 +264,8 @@ export const createInstrumentationMiddleware = (
             outputTokens: 0,
           },
           isError: true,
-          error: JSON.stringify(error),
+          error: truncate(JSON.stringify(error)),
+          fullDebug: options.fullDebug,
         })
         throw error
       }
@@ -279,6 +332,7 @@ export const createInstrumentationMiddleware = (
               params: mergedParams as any,
               httpStatus: 200,
               usage,
+              fullDebug: options.fullDebug,
             })
           },
         })
@@ -305,7 +359,8 @@ export const createInstrumentationMiddleware = (
             outputTokens: 0,
           },
           isError: true,
-          error: JSON.stringify(error),
+          error: truncate(JSON.stringify(error)),
+          fullDebug: options.fullDebug,
         })
         throw error
       }

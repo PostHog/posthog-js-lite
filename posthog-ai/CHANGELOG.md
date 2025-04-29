@@ -1,6 +1,18 @@
+# 4.2.1
+
+- Add fullDebug mode and limit full size of event input
+
+# 4.1.0
+
+- add truncation to vercel ai sdk inputs and outputs
+
+# 4.0.1
+
+- add new util to sanitize inputs, outputs and errors
+
 # 4.0.0
 
-- feat: seperate out packages as seperate exports so you can import { OpenAI } from @posthog/ai/openai and reduce import size
+- feat: separate out packages as separate exports so you can import { OpenAI } from @posthog/ai/openai and reduce import size
 
 # 3.3.2 - 2025-03-25
 
