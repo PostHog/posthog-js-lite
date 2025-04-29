@@ -1,4 +1,4 @@
-import { PostHogPersistedProperty } from 'posthog-core/src'
+import { PostHogPersistedProperty } from 'posthog-core'
 
 export class PostHogMemoryStorage {
   private _memoryStorage: { [key: string]: any | undefined } = {}

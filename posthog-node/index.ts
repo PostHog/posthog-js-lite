@@ -3,8 +3,8 @@ export * from './src/extensions/sentry-integration'
 export * from './src/extensions/express'
 
 import { defaultStackParser } from './src/extensions/error-tracking/stack-parser.node'
-import ErrorTracking from './src/error-tracking'
 import { addSourceContext } from './src/extensions/error-tracking/context-lines.node'
+import ErrorTracking from './src/error-tracking'
 
 import { PostHogBackendClient } from './src/posthog-node'
 

@@ -109,6 +109,7 @@ runtimes.forEach((runtime) => {
         babelHelpers: 'bundled',
         include: ['posthog-node/src/**/*.{js,jsx,ts,tsx}'],
         presets: [
+          // node is used because there is no support for edge environments currently
           ['@babel/preset-env', { targets: { node: 'current' } }],
           '@babel/preset-typescript',
           '@babel/preset-react',
