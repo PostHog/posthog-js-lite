@@ -847,7 +847,7 @@ export abstract class PostHogCoreStateless {
     const url =
       this.captureMode === 'form'
         ? `${this.host}/e/?ip=1&_=${currentTimestamp()}&v=${this.getLibraryVersion()}`
-        : `${this.host}/batch/${useGzip ? '?compression=gzip-js' : ''}`
+        : `${this.host}/batch/`
 
     const fetchOptions: PostHogFetchOptions =
       this.captureMode === 'form'
@@ -860,7 +860,7 @@ export abstract class PostHogCoreStateless {
           }
         : {
             method: 'POST',
-            headers: { ...this.getCustomHeaders(), 'Content-Type': useGzip ? 'text/plain' : 'application/json' },
+            headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json', ...(useGzip ? { 'Content-Encoding': 'gzip' } : {}) },
             body: useGzip ? await gzipCompress(payload) : payload,
           }
 
