@@ -1,12 +1,18 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
+    "declaration": true,
+    "esModuleInterop": true,
     "jsx": "react-native",
     "lib": ["ESNext"],
-    "target": "ES2018",
+    "module": "ESNext",
+    "moduleResolution": "node16",
     "noEmitOnError": true,
+    "outDir": "./lib",
     "skipLibCheck": true,
-    "types": ["react-native", "jest"],
-    "typeRoots": ["./node_modules/@types", "../node_modules/@types"]
-  }
+    "sourceMap": true,
+    "strict": true,
+    "target": "ES2018"
+  },
+  "include": ["index.ts", "src/**/*.ts", "src/**/*.tsx"]
 }
