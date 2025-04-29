@@ -3,7 +3,7 @@ import { FeatureFlagValue, JsonType, PostHogFetchOptions, PostHogFetchResponse }
 import { safeSetTimeout } from 'posthog-core/src/utils'
 import fetch from './fetch'
 import { SIXTY_SECONDS } from './posthog-node'
-import { hashSHA1 } from 'posthog-node/src/crypto'
+import { hashSHA1 } from './crypto'
 
 // eslint-disable-next-line
 const LONG_SCALE = 0xfffffffffffffff

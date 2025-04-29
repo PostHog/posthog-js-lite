@@ -35,5 +35,22 @@
     "stats",
     "analysis",
     "funnels"
-  ]
+  ],
+  "exports": {
+    ".": {
+      "require": "./lib/index.cjs.js",
+      "import": "./lib/index.esm.js",
+      "types": "./lib/index.d.ts"
+    },
+    "./express": {
+      "require": "./lib/express/index.cjs.js",
+      "import": "./lib/express/index.esm.js",
+      "types": "./lib/express/index.d.ts"
+    },
+    "./edge": {
+      "require": "./lib/edge/index.cjs.js",
+      "import": "./lib/edge/index.esm.js",
+      "types": "./lib/edge/index.d.ts"
+    }
+  }
 }

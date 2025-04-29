@@ -1,10 +1,10 @@
-import { EventHint } from './extensions/error-tracking/types'
-import { addUncaughtExceptionListener, addUnhandledRejectionListener } from './extensions/error-tracking/autocapture'
-import { PostHog, PostHogOptions } from './posthog-node'
+import { EventHint } from './types'
+import { addUncaughtExceptionListener, addUnhandledRejectionListener } from './autocapture'
+import { PostHog, PostHogOptions } from '../posthog-node'
 import { uuidv7 } from 'posthog-core/src/vendor/uuidv7'
-import { propertiesFromUnknownInput } from './extensions/error-tracking/error-conversion'
-import { EventMessage } from './types'
-import { defaultStackParser } from './extensions/error-tracking/stack-trace'
+import { propertiesFromUnknownInput } from './error-conversion'
+import { EventMessage } from '../types'
+import { runtime } from 'posthog-node/src/runtime'
 
 const SHUTDOWN_TIMEOUT = 2000
 
@@ -27,7 +27,7 @@ export default class ErrorTracking {
       properties.$process_person_profile = false
     }
 
-    const exceptionProperties = await propertiesFromUnknownInput(defaultStackParser, error, hint)
+    const exceptionProperties = await propertiesFromUnknownInput(runtime.stackParser, error, hint)
 
     client.capture({
       event: '$exception',

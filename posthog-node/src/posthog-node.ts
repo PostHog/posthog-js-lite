@@ -9,10 +9,10 @@ import {
   PostHogFetchResponse,
   PostHogFlagsAndPayloadsResponse,
   PostHogPersistedProperty,
-} from '../../posthog-core/src'
-import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
+} from 'posthog-core/src'
+import { PostHogMemoryStorage } from './storage-memory'
 import { EventMessage, GroupIdentifyMessage, IdentifyMessage, PostHogNodeV1 } from './types'
-import { FeatureFlagDetail, FeatureFlagValue } from '../../posthog-core/src/types'
+import { FeatureFlagDetail, FeatureFlagValue } from 'posthog-core/src/types'
 import { FeatureFlagsPoller } from './feature-flags'
 import fetch from './fetch'
 import ErrorTracking from './error-tracking'

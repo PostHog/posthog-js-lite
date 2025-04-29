@@ -1,4 +1,5 @@
 import { FeatureFlagValue, JsonType } from '../../posthog-core/src'
+import { StackParser } from './error-tracking/types'
 
 export interface IdentifyMessage {
   distinctId: string
@@ -228,4 +229,8 @@ export type PostHogNodeV1 = {
    * @returns true if local evaluation is ready, false if it's not.
    */
   isLocalEvaluationReady(): boolean
+}
+
+export interface RuntimeTypes {
+  stackParser: StackParser
 }

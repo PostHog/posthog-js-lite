@@ -2,7 +2,7 @@
 // Licensed under the MIT License
 
 import { posix, sep, dirname } from 'path'
-import { StackFrame, StackLineParser, StackLineParserFn, StackParser } from './types'
+import { StackFrame, StackLineParser, StackLineParserFn, StackParser } from '../error-tracking/types'
 
 type GetModuleFn = (filename: string | undefined) => string | undefined
 
@@ -37,7 +37,7 @@ const STACKTRACE_FRAME_LIMIT = 50
 const UNKNOWN_FUNCTION = '?'
 
 /** Node Stack line parser */
-export function node(getModule?: GetModuleFn): StackLineParserFn {
+function node(getModule?: GetModuleFn): StackLineParserFn {
   const FILENAME_MATCH = /^\s*[-]{4,}$/
   const FULL_MATCH = /at (?:async )?(?:(.+?)\s+\()?(?:(.+):(\d+):(\d+)?|([^)]+))\)?/
 
@@ -123,7 +123,7 @@ export function node(getModule?: GetModuleFn): StackLineParserFn {
 /**
  * Does this filename look like it's part of the app code?
  */
-export function filenameIsInApp(filename: string, isNative: boolean = false): boolean {
+function filenameIsInApp(filename: string, isNative: boolean = false): boolean {
   const isInternal =
     isNative ||
     (filename &&
@@ -147,14 +147,12 @@ function _parseIntOrUndefined(input: string | undefined): number | undefined {
   return parseInt(input || '', 10) || undefined
 }
 
-export function nodeStackLineParser(getModule?: GetModuleFn): StackLineParser {
+function nodeStackLineParser(getModule?: GetModuleFn): StackLineParser {
   return [90, node(getModule)]
 }
 
-export const defaultStackParser: StackParser = createStackParser(nodeStackLineParser(createGetModuleFromFilename()))
-
 /** Creates a function that gets the module name from a filename */
-export function createGetModuleFromFilename(
+function createGetModuleFromFilename(
   basePath: string = process.argv[1] ? dirname(process.argv[1]) : process.cwd(),
   isWindows: boolean = sep === '\\'
 ): (filename: string | undefined) => string | undefined {
@@ -206,7 +204,7 @@ function normalizeWindowsPath(path: string): string {
     .replace(/\\/g, '/') // replace all `\` instances with `/`
 }
 
-export function createStackParser(...parsers: StackLineParser[]): StackParser {
+function createStackParser(...parsers: StackLineParser[]): StackParser {
   const sortedParsers = parsers.sort((a, b) => a[0] - b[0]).map((p) => p[1])
 
   return (stack: string, skipFirstLines: number = 0): StackFrame[] => {
@@ -248,7 +246,7 @@ export function createStackParser(...parsers: StackLineParser[]): StackParser {
   }
 }
 
-export function reverseAndStripFrames(stack: ReadonlyArray<StackFrame>): StackFrame[] {
+function reverseAndStripFrames(stack: ReadonlyArray<StackFrame>): StackFrame[] {
   if (!stack.length) {
     return []
   }
@@ -267,3 +265,5 @@ export function reverseAndStripFrames(stack: ReadonlyArray<StackFrame>): StackFr
 function getLastStackFrame(arr: StackFrame[]): StackFrame {
   return arr[arr.length - 1] || {}
 }
+
+export const defaultStackParser: StackParser = createStackParser(nodeStackLineParser(createGetModuleFromFilename()))
