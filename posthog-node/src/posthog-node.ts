@@ -9,15 +9,15 @@ import {
   PostHogFetchResponse,
   PostHogFlagsAndPayloadsResponse,
   PostHogPersistedProperty,
-} from '../../posthog-core/src'
-import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
+} from 'posthog-core/src'
 import { EventMessage, GroupIdentifyMessage, IdentifyMessage, PostHogNodeV1 } from './types'
-import { FeatureFlagDetail, FeatureFlagValue } from '../../posthog-core/src/types'
+import { FeatureFlagDetail, FeatureFlagValue } from 'posthog-core/src/types'
 import { FeatureFlagsPoller } from './feature-flags'
 import fetch from './fetch'
 import ErrorTracking from './error-tracking'
 import { getFeatureFlagValue } from 'posthog-core/src/featureFlagUtils'
 import { MINIMUM_POLLING_INTERVAL, THIRTY_SECONDS } from './constants'
+import { PostHogMemoryStorage } from './storage-memory'
 
 export type PostHogOptions = PostHogCoreOptions & {
   persistence?: 'memory'
