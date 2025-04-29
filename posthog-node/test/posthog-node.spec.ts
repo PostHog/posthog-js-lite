@@ -1,6 +1,6 @@
 import fetch from '../src/fetch'
 import { MINIMUM_POLLING_INTERVAL, THIRTY_SECONDS } from '../src/constants'
-import { PostHog } from '../index.node'
+import { PostHog } from '../index'
 import { anyDecideCall, anyLocalEvalCall, apiImplementation } from './test-utils'
 import { waitForPromises, wait } from '../../posthog-core/test/test-utils/test-utils'
 import { randomUUID } from 'crypto'

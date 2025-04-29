@@ -1,4 +1,5 @@
-import { PostHog as PostHog, PostHogOptions } from '../src/posthog-node'
+import { PostHog } from '../index'
+import { PostHogOptions } from '../src/posthog-node'
 import fetch from '../src/fetch'
 import { apiImplementation, apiImplementationV4 } from './test-utils'
 import { waitForPromises } from 'posthog-core/test/test-utils/test-utils'
