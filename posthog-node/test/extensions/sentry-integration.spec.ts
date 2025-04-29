@@ -69,6 +69,7 @@ describe('PostHogSentryIntegration', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       fetchRetryCount: 0,
+      disableCompression: true,
     })
 
     posthogSentry = new PostHogSentryIntegration(posthog)

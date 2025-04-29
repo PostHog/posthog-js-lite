@@ -147,7 +147,7 @@ export abstract class PostHogCoreStateless {
     // Init promise allows the derived class to block calls until it is ready
     this._initPromise = Promise.resolve()
     this._isInitialized = true
-    this.disableCompression = !isGzipSupported() && (options?.disable_compression ?? false);
+    this.disableCompression = !isGzipSupported() || (options?.disableCompression ?? false)
   }
 
   protected logMsgIfDebug(fn: () => void): void {
@@ -843,7 +843,7 @@ export abstract class PostHogCoreStateless {
 
     const payload = JSON.stringify(data)
 
-    const useGzip = this.captureMode === 'json' && !this.disableCompression;
+    const useGzip = this.captureMode === 'json' && !this.disableCompression
     const url =
       this.captureMode === 'form'
         ? `${this.host}/e/?ip=1&_=${currentTimestamp()}&v=${this.getLibraryVersion()}`
@@ -860,7 +860,11 @@ export abstract class PostHogCoreStateless {
           }
         : {
             method: 'POST',
-            headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json', ...(useGzip ? { 'Content-Encoding': 'gzip' } : {}) },
+            headers: {
+              ...this.getCustomHeaders(),
+              'Content-Type': 'application/json',
+              ...(useGzip ? { 'Content-Encoding': 'gzip' } : {}),
+            },
             body: useGzip ? await gzipCompress(payload) : payload,
           }
 
@@ -1444,8 +1448,8 @@ export abstract class PostHogCore extends PostHogCoreStateless {
               this.reloadFeatureFlags()
             }
 
-            if (!response.supportedCompression.includes(Compression.GZipJS)) {
-              this.disableCompression = true;
+            if (!response.supportedCompression?.includes(Compression.GZipJS)) {
+              this.disableCompression = true
             }
 
             remoteConfig = response

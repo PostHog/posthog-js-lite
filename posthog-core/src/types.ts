@@ -53,7 +53,7 @@ export type PostHogCoreOptions = {
   /** Whether to post events to PostHog in JSON or compressed format. Defaults to 'json' */
   captureMode?: 'json' | 'form'
   /** Whether to disable GZIP compression */
-  disable_compression?: boolean;
+  disableCompression?: boolean
   disableGeoip?: boolean
   /** Special flag to indicate ingested data is for a historical migration. */
   historicalMigration?: boolean
@@ -145,7 +145,7 @@ export type PostHogRemoteConfig = {
   /**
    * Supported compression algorithms
    */
-  supportedCompression: Compression[]
+  supportedCompression?: Compression[]
 
   /**
    * Whether surveys are enabled

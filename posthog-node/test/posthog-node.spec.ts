@@ -35,6 +35,7 @@ describe('PostHog Node.js', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       fetchRetryCount: 0,
+      disableCompression: true,
     })
 
     mockedFetch.mockResolvedValue({
@@ -273,6 +274,7 @@ describe('PostHog Node.js', () => {
       const client = new PostHog('TEST_API_KEY', {
         host: 'http://example.com',
         disableGeoip: false,
+        disableCompression: true,
       })
       client.capture({ distinctId: '123', event: 'test-event', properties: { foo: 'bar' }, groups: { org: 123 } })
 
@@ -376,6 +378,7 @@ describe('PostHog Node.js', () => {
         host: 'http://example.com',
         fetchRetryCount: 0,
         flushAt: 1,
+        disableCompression: true,
       })
       ph.debug(true)
 
@@ -415,6 +418,7 @@ describe('PostHog Node.js', () => {
         host: 'http://example.com',
         fetchRetryCount: 0,
         flushAt: 4,
+        disableCompression: true,
       })
       ph.debug(true)
 
@@ -602,6 +606,7 @@ describe('PostHog Node.js', () => {
       posthog = new PostHog('TEST_API_KEY', {
         host: 'http://example.com',
         fetchRetryCount: 0,
+        disableCompression: true,
       })
     })
 
@@ -633,6 +638,7 @@ describe('PostHog Node.js', () => {
         host: 'http://example.com',
         flushAt: 1,
         fetchRetryCount: 0,
+        disableCompression: true,
       })
 
       posthog.capture({
@@ -681,6 +687,7 @@ describe('PostHog Node.js', () => {
         fetchRetryCount: 0,
         personalApiKey: 'TEST_PERSONAL_API_KEY',
         featureFlagsPollingInterval: 98,
+        disableCompression: true,
       })
 
       expect(posthog.options.featureFlagsPollingInterval).toEqual(MINIMUM_POLLING_INTERVAL)
@@ -691,6 +698,7 @@ describe('PostHog Node.js', () => {
         host: 'http://example.com',
         fetchRetryCount: 0,
         personalApiKey: 'TEST_PERSONAL_API_KEY',
+        disableCompression: true,
       })
 
       expect(posthog.options.featureFlagsPollingInterval).toEqual(THIRTY_SECONDS)
@@ -703,6 +711,7 @@ describe('PostHog Node.js', () => {
           fetchRetryCount: 0,
           personalApiKey: 'phc_abc123',
           featureFlagsPollingInterval: 100,
+          disableCompression: true,
         })
       }).toThrow(Error)
     })
@@ -717,6 +726,7 @@ describe('PostHog Node.js', () => {
         flushAt: 1,
         fetchRetryCount: 0,
         personalApiKey: 'TEST_PERSONAL_API_KEY',
+        disableCompression: true,
       })
 
       jest.runOnlyPendingTimers()
@@ -775,6 +785,7 @@ describe('PostHog Node.js', () => {
         flushAt: 1,
         fetchRetryCount: 0,
         personalApiKey: 'TEST_PERSONAL_API_KEY',
+        disableCompression: true,
       })
 
       posthog.capture({
@@ -824,6 +835,7 @@ describe('PostHog Node.js', () => {
         host: 'http://example.com',
         flushAt: 1,
         fetchRetryCount: 0,
+        disableCompression: true,
       })
 
       posthog.capture({
@@ -886,6 +898,7 @@ describe('PostHog Node.js', () => {
         maxCacheSize: 10,
         fetchRetryCount: 0,
         flushAt: 1,
+        disableCompression: true,
       })
 
       expect(Object.keys(posthog.distinctIdHasSentFlagCalls).length).toEqual(0)
@@ -949,6 +962,7 @@ describe('PostHog Node.js', () => {
         personalApiKey: 'TEST_PERSONAL_API_KEY',
         maxCacheSize: 10,
         fetchRetryCount: 0,
+        disableCompression: true,
       })
 
       jest.runOnlyPendingTimers()
@@ -1102,6 +1116,7 @@ describe('PostHog Node.js', () => {
         flushAt: 1,
         fetchRetryCount: 0,
         personalApiKey: 'TEST_PERSONAL_API_KEY',
+        disableCompression: true,
       })
 
       mockedFetch.mockClear()
