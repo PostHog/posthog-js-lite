@@ -1,3 +1,3 @@
-import { StackParser } from 'posthog-node/src/extensions/error-tracking/types'
+import { StackParser } from './types'
 
 export const defaultStackParser: StackParser = () => []

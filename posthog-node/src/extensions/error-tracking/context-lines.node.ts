@@ -95,10 +95,6 @@ export async function addSourceContext(frames: StackFrame[]): Promise<StackFrame
  */
 function getContextLinesFromFile(path: string, ranges: ReadlineRange[], output: Record<number, string>): Promise<void> {
   return new Promise((resolve) => {
-    // KLUDGE: edge runtimes do not support node:fs or node:readline
-    // until we have separate packages for each environment this will skip
-    // trying to access the filesystem when not accessible
-
     // It is important *not* to have any async code between createInterface and the 'line' event listener
     // as it will cause the 'line' event to
     // be emitted before the listener is attached.
