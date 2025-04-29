@@ -23,7 +23,7 @@
  */
 
 import { SeverityLevel } from './error-tracking/types'
-import { type PostHogBackendClient } from '../posthog-node'
+import { type PostHogBackendClient } from '../client'
 
 // NOTE - we can't import from @sentry/types because it changes frequently and causes clashes
 // We only use a small subset of the types, so we can just define the integration overall and use any for the rest

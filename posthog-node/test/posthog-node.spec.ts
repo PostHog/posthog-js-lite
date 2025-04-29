@@ -1,5 +1,4 @@
 import fetch from '../src/fetch'
-import { MINIMUM_POLLING_INTERVAL, THIRTY_SECONDS } from '../src/constants'
 import { PostHog } from '../index'
 import { anyDecideCall, anyLocalEvalCall, apiImplementation } from './test-utils'
 import { waitForPromises, wait } from '../../posthog-core/test/test-utils/test-utils'
@@ -686,7 +685,7 @@ describe('PostHog Node.js', () => {
         featureFlagsPollingInterval: 98,
       })
 
-      expect(posthog.options.featureFlagsPollingInterval).toEqual(MINIMUM_POLLING_INTERVAL)
+      expect(posthog.options.featureFlagsPollingInterval).toEqual(100)
     })
 
     it('should use default featureFlagsPollingInterval of 30000ms if none provided', async () => {
@@ -696,7 +695,7 @@ describe('PostHog Node.js', () => {
         personalApiKey: 'TEST_PERSONAL_API_KEY',
       })
 
-      expect(posthog.options.featureFlagsPollingInterval).toEqual(THIRTY_SECONDS)
+      expect(posthog.options.featureFlagsPollingInterval).toEqual(30000)
     })
 
     it('should throw an error when creating SDK if a project key is passed in as personalApiKey', async () => {

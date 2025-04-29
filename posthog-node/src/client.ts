@@ -16,7 +16,6 @@ import { FeatureFlagsPoller } from './feature-flags'
 import fetch from './fetch'
 import ErrorTracking from './error-tracking'
 import { getFeatureFlagValue } from 'posthog-core/src/featureFlagUtils'
-import { MINIMUM_POLLING_INTERVAL, THIRTY_SECONDS } from './constants'
 import { PostHogMemoryStorage } from './storage-memory'
 
 export type PostHogOptions = PostHogCoreOptions & {
@@ -31,6 +30,10 @@ export type PostHogOptions = PostHogCoreOptions & {
   fetch?: (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
 }
 
+// Standard local evaluation rate limit is 600 per minute (10 per second),
+// so the fastest a poller should ever be set is 100ms.
+const MINIMUM_POLLING_INTERVAL = 100
+const THIRTY_SECONDS = 30 * 1000
 const MAX_CACHE_SIZE = 50 * 1000
 
 // The actual exported Nodejs API.

@@ -1,7 +1,7 @@
 import type * as http from 'node:http'
 import { uuidv7 } from 'posthog-core/src/vendor/uuidv7'
 import ErrorTracking from '../error-tracking'
-import { PostHogBackendClient } from '../posthog-node'
+import { PostHogBackendClient } from '../client'
 
 type ExpressMiddleware = (req: http.IncomingMessage, res: http.ServerResponse, next: () => void) => void
 

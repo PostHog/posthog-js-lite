@@ -1,6 +1,6 @@
 import { EventHint, StackFrameModifierFn, StackParser } from './extensions/error-tracking/types'
 import { addUncaughtExceptionListener, addUnhandledRejectionListener } from './extensions/error-tracking/autocapture'
-import { PostHogBackendClient, PostHogOptions } from './posthog-node'
+import { PostHogBackendClient, PostHogOptions } from './client'
 import { uuidv7 } from 'posthog-core/src/vendor/uuidv7'
 import { propertiesFromUnknownInput } from './extensions/error-tracking/error-conversion'
 import { EventMessage } from './types'
