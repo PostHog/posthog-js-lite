@@ -18,6 +18,7 @@ import {
   FeatureFlagDetail,
   Survey,
   SurveyResponse,
+  Compression,
 } from './types'
 import {
   createDecideResponseFromFlagsAndPayloads,
@@ -94,6 +95,7 @@ export abstract class PostHogCoreStateless {
   private disableGeoip: boolean
   private historicalMigration: boolean
   protected disabled
+  protected disableCompression: boolean
 
   private defaultOptIn: boolean
   private pendingPromises: Record<string, Promise<any>> = {}
@@ -145,6 +147,7 @@ export abstract class PostHogCoreStateless {
     // Init promise allows the derived class to block calls until it is ready
     this._initPromise = Promise.resolve()
     this._isInitialized = true
+    this.disableCompression = !isGzipSupported() && (options?.disable_compression ?? false);
   }
 
   protected logMsgIfDebug(fn: () => void): void {
@@ -840,11 +843,11 @@ export abstract class PostHogCoreStateless {
 
     const payload = JSON.stringify(data)
 
-    const canGzip = this.captureMode === 'json' && isGzipSupported();
+    const useGzip = this.captureMode === 'json' && !this.disableCompression;
     const url =
       this.captureMode === 'form'
         ? `${this.host}/e/?ip=1&_=${currentTimestamp()}&v=${this.getLibraryVersion()}`
-        : `${this.host}/batch/${canGzip ? '?compression=gzip-js' : ''}`
+        : `${this.host}/batch/${useGzip ? '?compression=gzip-js' : ''}`
 
     const fetchOptions: PostHogFetchOptions =
       this.captureMode === 'form'
@@ -857,8 +860,8 @@ export abstract class PostHogCoreStateless {
           }
         : {
             method: 'POST',
-            headers: { ...this.getCustomHeaders(), 'Content-Type': canGzip ? 'text/plain' : 'application/json' },
-            body: canGzip ? await gzipCompress(payload) : payload,
+            headers: { ...this.getCustomHeaders(), 'Content-Type': useGzip ? 'text/plain' : 'application/json' },
+            body: useGzip ? await gzipCompress(payload) : payload,
           }
 
     try {
@@ -1439,6 +1442,10 @@ export abstract class PostHogCore extends PostHogCoreStateless {
               this.logMsgIfDebug(() => console.warn('Remote config has no feature flags, will not load feature flags.'))
             } else if (this.preloadFeatureFlags !== false) {
               this.reloadFeatureFlags()
+            }
+
+            if (!response.supportedCompression.includes(Compression.GZipJS)) {
+              this.disableCompression = true;
             }
 
             remoteConfig = response
