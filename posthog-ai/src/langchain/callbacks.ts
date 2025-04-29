@@ -443,14 +443,6 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
         eventProperties['$ai_reasoning_tokens'] = additionalTokenData.reasoningTokens
       }
 
-      // Add additional token data to properties
-      if (additionalTokenData.cacheReadInputTokens) {
-        eventProperties['$ai_cache_read_tokens'] = additionalTokenData.cacheReadInputTokens
-      }
-      if (additionalTokenData.reasoningTokens) {
-        eventProperties['$ai_reasoning_tokens'] = additionalTokenData.reasoningTokens
-      }
-
       // Handle generations/completions
       let completions
       if (output.generations && Array.isArray(output.generations)) {
@@ -593,8 +585,6 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
   private parseUsage(response: LLMResult): [number, number, Record<string, any>] {
     let llmUsage: [number, number, Record<string, any>] = [0, 0, {}]
     const llmUsageKeys = ['token_usage', 'usage', 'tokenUsage']
-
-    console.log('response1', response)
 
     if (response.llmOutput != null) {
       const key = llmUsageKeys.find((k) => response.llmOutput?.[k] != null)
