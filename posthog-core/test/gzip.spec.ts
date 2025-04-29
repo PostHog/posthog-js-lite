@@ -1,12 +1,12 @@
 import { isGzipSupported, gzipCompress } from '../src/gzip'
-import { gzip } from 'node:zlib';
-import { randomBytes } from 'node:crypto';
-import { promisify } from 'node:util';
+import { gzip } from 'node:zlib'
+import { randomBytes } from 'node:crypto'
+import { promisify } from 'node:util'
 
 const RANDOM_TEST_INPUT = JSON.stringify({
   abc: randomBytes(16),
   def: randomBytes(64),
-});
+})
 const API_TEST_INPUT = JSON.stringify({
   api_key: 'TEST_API_KEY',
   batch: [
@@ -31,29 +31,29 @@ const API_TEST_INPUT = JSON.stringify({
 describe('gzip', () => {
   describe('isGzipSupported', () => {
     it('should return true if CompressStream exists', () => {
-      expect(globalThis.CompressionStream).toBeDefined();
-      expect(isGzipSupported()).toBe(true);
+      expect(globalThis.CompressionStream).toBeDefined()
+      expect(isGzipSupported()).toBe(true)
     })
     it('should return false if CompressStream not available', () => {
-      const CompressionStream = globalThis.CompressionStream;
-      delete (globalThis as any).CompressionStream;
-      expect(isGzipSupported()).toBe(false);
-      (globalThis as any).CompressionStream = CompressionStream;
+      const CompressionStream = globalThis.CompressionStream
+      delete (globalThis as any).CompressionStream
+      expect(isGzipSupported()).toBe(false)
+      ;(globalThis as any).CompressionStream = CompressionStream
     })
   })
   describe('gzipCompress', () => {
     it('compressed random data should match node', async () => {
-      const webCompress = Buffer.from(await (await gzipCompress(RANDOM_TEST_INPUT)).arrayBuffer());
-      const nodeCompress = await promisify(gzip)(RANDOM_TEST_INPUT);
-      expect(webCompress).not.toBeFalsy();
-      expect(webCompress).toEqual(nodeCompress);
+      const webCompress = Buffer.from(await (await gzipCompress(RANDOM_TEST_INPUT)).arrayBuffer())
+      const nodeCompress = await promisify(gzip)(RANDOM_TEST_INPUT)
+      expect(webCompress).not.toBeFalsy()
+      expect(webCompress).toEqual(nodeCompress)
     })
 
     it('compressed mock request should match node', async () => {
-      const webCompress = Buffer.from(await (await gzipCompress(API_TEST_INPUT)).arrayBuffer());
-      const nodeCompress = await promisify(gzip)(API_TEST_INPUT);
-      expect(webCompress).not.toBeFalsy();
-      expect(webCompress).toEqual(nodeCompress);
+      const webCompress = Buffer.from(await (await gzipCompress(API_TEST_INPUT)).arrayBuffer())
+      const nodeCompress = await promisify(gzip)(API_TEST_INPUT)
+      expect(webCompress).not.toBeFalsy()
+      expect(webCompress).toEqual(nodeCompress)
     })
   })
 })

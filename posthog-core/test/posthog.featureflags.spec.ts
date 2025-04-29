@@ -529,7 +529,7 @@ describe('PostHog Feature Flags v4', () => {
         posthog.group('my-group', 'is-great')
         await waitForPromises()
         expect(mocks.fetch).toHaveBeenCalledTimes(2)
-        expect(JSON.parse(mocks.fetch.mock.calls[1][1].body as string || '')).toMatchObject({
+        expect(JSON.parse((mocks.fetch.mock.calls[1][1].body as string) || '')).toMatchObject({
           groups: { 'my-group': 'is-great' },
         })
       })
