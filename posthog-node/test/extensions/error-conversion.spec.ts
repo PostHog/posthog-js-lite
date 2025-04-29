@@ -1,11 +1,11 @@
 import { propertiesFromUnknownInput } from '../../src/extensions/error-tracking/error-conversion'
-import { defaultStackParser } from '../../src/extensions/error-tracking/stack-trace'
 import { ErrorProperties } from '../../src/extensions/error-tracking/types'
+import { defaultStackParser } from '../../src/extensions/error-tracking/stack-parser.node'
 
 describe('error conversion', () => {
   async function getExceptionList(error: unknown): Promise<ErrorProperties['$exception_list']> {
     const syntheticException = new Error('PostHog syntheticException')
-    const exceptionProperties = await propertiesFromUnknownInput(defaultStackParser, error, {
+    const exceptionProperties = await propertiesFromUnknownInput(defaultStackParser, [], error, {
       syntheticException,
     })
     return exceptionProperties.$exception_list
