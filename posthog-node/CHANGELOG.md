@@ -1,5 +1,11 @@
 # Next
 
+# 5.0.0-alpha.1 - 2025-04-29
+
+## Breaking changes
+
+1. feat: migrate to native fetch, Node 18+ required
+
 ## Added
 
 1. rotate session id if expired after 24 hours
