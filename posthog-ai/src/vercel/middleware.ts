@@ -2,7 +2,7 @@ import { experimental_wrapLanguageModel as wrapLanguageModel } from 'ai'
 import type { LanguageModelV1, LanguageModelV1Middleware, LanguageModelV1Prompt, LanguageModelV1StreamPart } from 'ai'
 import { v4 as uuidv4 } from 'uuid'
 import { PostHog } from 'posthog-node'
-import { CostOverride, sendEventToPosthog } from '../utils'
+import { CostOverride, sendEventToPosthog, truncate } from '../utils'
 
 interface ClientOptions {
   posthogDistinctId?: string
@@ -49,14 +49,23 @@ const mapVercelParams = (params: any): Record<string, any> => {
 }
 
 const mapVercelPrompt = (prompt: LanguageModelV1Prompt): PostHogInput[] => {
-  return prompt.map((p) => {
+  // normalize single inputs into an array of messages
+  let promptsArray: any[]
+  if (typeof prompt === 'string') {
+    promptsArray = [{ role: 'user', content: prompt }]
+  } else if (!Array.isArray(prompt)) {
+    promptsArray = [prompt]
+  } else {
+    promptsArray = prompt
+  }
+  return promptsArray.map((p) => {
     let content = {}
     if (Array.isArray(p.content)) {
-      content = p.content.map((c) => {
+      content = p.content.map((c: any) => {
         if (c.type === 'text') {
           return {
             type: 'text',
-            content: c.text,
+            content: truncate(c.text),
           }
         } else if (c.type === 'image') {
           return {
@@ -102,7 +111,7 @@ const mapVercelPrompt = (prompt: LanguageModelV1Prompt): PostHogInput[] => {
     } else {
       content = {
         type: 'text',
-        text: p.content,
+        text: truncate(p.content),
       }
     }
     return {
@@ -113,25 +122,41 @@ const mapVercelPrompt = (prompt: LanguageModelV1Prompt): PostHogInput[] => {
 }
 
 const mapVercelOutput = (result: any): PostHogInput[] => {
+  // normalize string results to object
+  const normalizedResult = typeof result === 'string' ? { text: result } : result
   const output = {
-    ...(result.text ? { text: result.text } : {}),
-    ...(result.object ? { object: result.object } : {}),
-    ...(result.reasoning ? { reasoning: result.reasoning } : {}),
-    ...(result.response ? { response: result.response } : {}),
-    ...(result.finishReason ? { finishReason: result.finishReason } : {}),
-    ...(result.usage ? { usage: result.usage } : {}),
-    ...(result.warnings ? { warnings: result.warnings } : {}),
-    ...(result.providerMetadata ? { toolCalls: result.providerMetadata } : {}),
+    ...(normalizedResult.text ? { text: normalizedResult.text } : {}),
+    ...(normalizedResult.object ? { object: normalizedResult.object } : {}),
+    ...(normalizedResult.reasoning ? { reasoning: normalizedResult.reasoning } : {}),
+    ...(normalizedResult.response ? { response: normalizedResult.response } : {}),
+    ...(normalizedResult.finishReason ? { finishReason: normalizedResult.finishReason } : {}),
+    ...(normalizedResult.usage ? { usage: normalizedResult.usage } : {}),
+    ...(normalizedResult.warnings ? { warnings: normalizedResult.warnings } : {}),
+    ...(normalizedResult.providerMetadata ? { toolCalls: normalizedResult.providerMetadata } : {}),
+    ...(normalizedResult.files
+      ? {
+          files: normalizedResult.files.map((file: any) => ({
+            name: file.name,
+            size: file.size,
+            type: file.type,
+          })),
+        }
+      : {}),
   }
-  // if text and no object or reasoning, return text
   if (output.text && !output.object && !output.reasoning) {
-    return [{ content: output.text, role: 'assistant' }]
+    return [{ content: truncate(output.text as string), role: 'assistant' }]
   }
-  return [{ content: JSON.stringify(output), role: 'assistant' }]
+  // otherwise stringify and truncate
+  try {
+    const jsonOutput = JSON.stringify(output)
+    return [{ content: truncate(jsonOutput), role: 'assistant' }]
+  } catch (error) {
+    console.error('Error stringifying output')
+    return []
+  }
 }
 
 const extractProvider = (model: LanguageModelV1): string => {
-  // vercel provider is in the format of provider.endpoint
   const provider = model.provider.toLowerCase()
   const providerName = provider.split('.')[0]
   return providerName
@@ -212,7 +237,7 @@ export const createInstrumentationMiddleware = (
             outputTokens: 0,
           },
           isError: true,
-          error: JSON.stringify(error),
+          error: truncate(JSON.stringify(error)),
         })
         throw error
       }
@@ -305,7 +330,7 @@ export const createInstrumentationMiddleware = (
             outputTokens: 0,
           },
           isError: true,
-          error: JSON.stringify(error),
+          error: truncate(JSON.stringify(error)),
         })
         throw error
       }
