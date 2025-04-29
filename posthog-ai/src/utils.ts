@@ -243,25 +243,7 @@ export const sendEventToPosthog = ({
     client.capture({
       distinctId: distinctId ?? traceId,
       event: '$ai_generation',
-      properties: {
-        $ai_provider: params.posthogProviderOverride ?? provider,
-        $ai_model: params.posthogModelOverride ?? model,
-        $ai_model_parameters: getModelParams(params),
-        $ai_input: withPrivacyMode(client, params.posthogPrivacyMode ?? false, safeInput),
-        $ai_output_choices: withPrivacyMode(client, params.posthogPrivacyMode ?? false, safeOutput),
-        $ai_http_status: httpStatus,
-        $ai_input_tokens: usage.inputTokens ?? 0,
-        $ai_output_tokens: usage.outputTokens ?? 0,
-        ...additionalTokenValues,
-        $ai_latency: latency,
-        $ai_trace_id: traceId,
-        $ai_base_url: baseURL,
-        ...params.posthogProperties,
-        ...(distinctId ? {} : { $process_person_profile: false }),
-        ...(tools ? { $ai_tools: tools } : {}),
-        ...errorData,
-        ...costOverrideData,
-      },
+      properties,
       groups: params.posthogGroups,
     })
   }
