@@ -7,7 +7,7 @@ type ChatCompletionCreateParamsBase = OpenAIOrignal.Chat.Completions.ChatComplet
 type MessageCreateParams = AnthropicOriginal.Messages.MessageCreateParams
 
 // limit large outputs by truncating to 200kb (approx 200k bytes)
-const MAX_OUTPUT_SIZE = 200000
+export const MAX_OUTPUT_SIZE = 200000
 const STRING_FORMAT = 'utf8'
 
 export interface MonitoringParams {
@@ -19,6 +19,7 @@ export interface MonitoringParams {
   posthogModelOverride?: string
   posthogProviderOverride?: string
   posthogCostOverride?: CostOverride
+  fullDebug?: boolean
 }
 
 export interface CostOverride {
@@ -148,6 +149,7 @@ export type SendEventToPosthogParams = {
   isError?: boolean
   error?: string
   tools?: any
+  fullDebug?: boolean
 }
 
 function sanitizeValues(obj: any): any {
@@ -181,6 +183,7 @@ export const sendEventToPosthog = ({
   isError = false,
   error,
   tools,
+  fullDebug = false,
 }: SendEventToPosthogParams): void => {
   if (client.capture) {
     // sanitize input and output for UTF-8 validity
@@ -212,28 +215,35 @@ export const sendEventToPosthog = ({
       ...(usage.cacheCreationInputTokens ? { $ai_cache_creation_input_tokens: usage.cacheCreationInputTokens } : {}),
     }
 
+    const properties = {
+      $ai_provider: params.posthogProviderOverride ?? provider,
+      $ai_model: params.posthogModelOverride ?? model,
+      $ai_model_parameters: getModelParams(params),
+      $ai_input: withPrivacyMode(client, params.posthogPrivacyMode ?? false, safeInput),
+      $ai_output_choices: withPrivacyMode(client, params.posthogPrivacyMode ?? false, safeOutput),
+      $ai_http_status: httpStatus,
+      $ai_input_tokens: usage.inputTokens ?? 0,
+      $ai_output_tokens: usage.outputTokens ?? 0,
+      ...additionalTokenValues,
+      $ai_latency: latency,
+      $ai_trace_id: traceId,
+      $ai_base_url: baseURL,
+      ...params.posthogProperties,
+      ...(distinctId ? {} : { $process_person_profile: false }),
+      ...(tools ? { $ai_tools: tools } : {}),
+      ...errorData,
+      ...costOverrideData,
+    }
+
+    if (fullDebug) {
+      // @ts-ignore
+      console.log('Sending event to PostHog', properties)
+    }
+
     client.capture({
       distinctId: distinctId ?? traceId,
       event: '$ai_generation',
-      properties: {
-        $ai_provider: params.posthogProviderOverride ?? provider,
-        $ai_model: params.posthogModelOverride ?? model,
-        $ai_model_parameters: getModelParams(params),
-        $ai_input: withPrivacyMode(client, params.posthogPrivacyMode ?? false, safeInput),
-        $ai_output_choices: withPrivacyMode(client, params.posthogPrivacyMode ?? false, safeOutput),
-        $ai_http_status: httpStatus,
-        $ai_input_tokens: usage.inputTokens ?? 0,
-        $ai_output_tokens: usage.outputTokens ?? 0,
-        ...additionalTokenValues,
-        $ai_latency: latency,
-        $ai_trace_id: traceId,
-        $ai_base_url: baseURL,
-        ...params.posthogProperties,
-        ...(distinctId ? {} : { $process_person_profile: false }),
-        ...(tools ? { $ai_tools: tools } : {}),
-        ...errorData,
-        ...costOverrideData,
-      },
+      properties,
       groups: params.posthogGroups,
     })
   }

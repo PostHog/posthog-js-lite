@@ -1,3 +1,7 @@
+# 4.2.0
+
+- Add fullDebug mode and limit full size of event input
+
 # 4.1.0
 
 - add truncation to vercel ai sdk inputs and outputs

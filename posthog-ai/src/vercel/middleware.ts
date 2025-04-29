@@ -2,7 +2,8 @@ import { experimental_wrapLanguageModel as wrapLanguageModel } from 'ai'
 import type { LanguageModelV1, LanguageModelV1Middleware, LanguageModelV1Prompt, LanguageModelV1StreamPart } from 'ai'
 import { v4 as uuidv4 } from 'uuid'
 import { PostHog } from 'posthog-node'
-import { CostOverride, sendEventToPosthog, truncate } from '../utils'
+import { CostOverride, sendEventToPosthog, truncate, MAX_OUTPUT_SIZE } from '../utils'
+import { Buffer } from 'buffer'
 
 interface ClientOptions {
   posthogDistinctId?: string
@@ -13,6 +14,7 @@ interface ClientOptions {
   posthogModelOverride?: string
   posthogProviderOverride?: string
   posthogCostOverride?: CostOverride
+  fullDebug?: boolean
 }
 
 interface CreateInstrumentationMiddlewareOptions {
@@ -24,6 +26,7 @@ interface CreateInstrumentationMiddlewareOptions {
   posthogModelOverride?: string
   posthogProviderOverride?: string
   posthogCostOverride?: CostOverride
+  fullDebug?: boolean
 }
 
 interface PostHogInput {
@@ -58,7 +61,9 @@ const mapVercelPrompt = (prompt: LanguageModelV1Prompt): PostHogInput[] => {
   } else {
     promptsArray = prompt
   }
-  return promptsArray.map((p) => {
+
+  // Map and truncate individual content
+  const inputs: PostHogInput[] = promptsArray.map((p) => {
     let content = {}
     if (Array.isArray(p.content)) {
       content = p.content.map((c: any) => {
@@ -119,6 +124,21 @@ const mapVercelPrompt = (prompt: LanguageModelV1Prompt): PostHogInput[] => {
       content,
     }
   })
+  try {
+    // Trim the inputs array until its JSON size fits within MAX_OUTPUT_SIZE
+    let serialized = JSON.stringify(inputs)
+    while (Buffer.byteLength(serialized, 'utf8') > MAX_OUTPUT_SIZE && inputs.length > 0) {
+      // Remove oldest message
+      inputs.shift()
+      // add blank message to beginning of array
+      inputs.unshift({ role: 'assistant', content: '[removed message due to size limit]' })
+      serialized = JSON.stringify(inputs)
+    }
+  } catch (error) {
+    console.error('Error stringifying inputs')
+    return [{ role: 'posthog', content: 'An error occurred while processing your request. Please try again.' }]
+  }
+  return inputs
 }
 
 const mapVercelOutput = (result: any): PostHogInput[] => {
@@ -215,6 +235,7 @@ export const createInstrumentationMiddleware = (
             outputTokens: result.usage.completionTokens,
             ...additionalTokenValues,
           },
+          fullDebug: options.fullDebug,
         })
 
         return result
@@ -238,6 +259,7 @@ export const createInstrumentationMiddleware = (
           },
           isError: true,
           error: truncate(JSON.stringify(error)),
+          fullDebug: options.fullDebug,
         })
         throw error
       }
@@ -304,6 +326,7 @@ export const createInstrumentationMiddleware = (
               params: mergedParams as any,
               httpStatus: 200,
               usage,
+              fullDebug: options.fullDebug,
             })
           },
         })
@@ -331,6 +354,7 @@ export const createInstrumentationMiddleware = (
           },
           isError: true,
           error: truncate(JSON.stringify(error)),
+          fullDebug: options.fullDebug,
         })
         throw error
       }
