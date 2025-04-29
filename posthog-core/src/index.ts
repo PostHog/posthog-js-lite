@@ -41,6 +41,7 @@ import {
   safeSetTimeout,
 } from './utils'
 import { LZString } from './lz-string'
+import { isGzipSupported, gzipCompress } from './gzip'
 import { SimpleEventEmitter } from './eventemitter'
 import { uuidv7 } from './vendor/uuidv7'
 
@@ -839,10 +840,11 @@ export abstract class PostHogCoreStateless {
 
     const payload = JSON.stringify(data)
 
+    const canGzip = this.captureMode === 'json' && isGzipSupported();
     const url =
       this.captureMode === 'form'
         ? `${this.host}/e/?ip=1&_=${currentTimestamp()}&v=${this.getLibraryVersion()}`
-        : `${this.host}/batch/`
+        : `${this.host}/batch/${canGzip ? '?compression=gzip-js' : ''}`
 
     const fetchOptions: PostHogFetchOptions =
       this.captureMode === 'form'
@@ -855,8 +857,8 @@ export abstract class PostHogCoreStateless {
           }
         : {
             method: 'POST',
-            headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },
-            body: payload,
+            headers: { ...this.getCustomHeaders(), 'Content-Type': canGzip ? 'text/plain' : 'application/json' },
+            body: canGzip ? await gzipCompress(payload) : payload,
           }
 
     try {
