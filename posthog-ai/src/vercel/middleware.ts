@@ -127,15 +127,21 @@ const mapVercelPrompt = (prompt: LanguageModelV1Prompt): PostHogInput[] => {
   try {
     // Trim the inputs array until its JSON size fits within MAX_OUTPUT_SIZE
     let serialized = JSON.stringify(inputs)
+    let removedCount = 0
     while (Buffer.byteLength(serialized, 'utf8') > MAX_OUTPUT_SIZE && inputs.length > 0) {
-      // Remove oldest message
       inputs.shift()
-      // add blank message to beginning of array
-      inputs.unshift({ role: 'assistant', content: '[removed message due to size limit]' })
+      removedCount++
       serialized = JSON.stringify(inputs)
     }
+    if (removedCount > 0) {
+      // Add one placeholder to indicate how many were removed
+      inputs.unshift({
+        role: 'assistant',
+        content: `[${removedCount} message${removedCount === 1 ? '' : 's'} removed due to size limit]`,
+      })
+    }
   } catch (error) {
-    console.error('Error stringifying inputs')
+    console.error('Error stringifying inputs', error)
     return [{ role: 'posthog', content: 'An error occurred while processing your request. Please try again.' }]
   }
   return inputs
