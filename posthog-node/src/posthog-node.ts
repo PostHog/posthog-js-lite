@@ -93,10 +93,6 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
     return this.options.fetch ? this.options.fetch(url, options) : fetch(url, options)
   }
-
-  getLibraryId(): string {
-    return 'posthog-node'
-  }
   getLibraryVersion(): string {
     return version
   }
