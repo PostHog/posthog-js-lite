@@ -8,6 +8,8 @@
 
 1. chore: migrate to bundle using rollup
 
+Do not use this version, please use [3.15.1](https://github.com/PostHog/posthog-js-lite/releases/tag/posthog-react-native-v3.15.1) instead.
+
 # 3.14.0 – 2025-04-17
 
 1. chore: roll out new feature flag evaluation backend to majority of customers
