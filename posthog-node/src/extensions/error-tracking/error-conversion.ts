@@ -2,11 +2,19 @@
 // Licensed under the MIT License
 
 import { isError, isErrorEvent, isEvent, isPlainObject } from './type-checking'
-import { ErrorProperties, EventHint, Exception, Mechanism, StackFrame, StackParser } from './types'
-import { addSourceContext } from './context-lines'
+import {
+  ErrorProperties,
+  EventHint,
+  Exception,
+  Mechanism,
+  StackFrame,
+  StackFrameModifierFn,
+  StackParser,
+} from './types'
 
 export async function propertiesFromUnknownInput(
   stackParser: StackParser,
+  frameModifiers: StackFrameModifierFn[],
   input: unknown,
   hint?: EventHint
 ): Promise<ErrorProperties> {
@@ -19,7 +27,7 @@ export async function propertiesFromUnknownInput(
   const errorList = getErrorList(mechanism, input, hint)
   const exceptionList = await Promise.all(
     errorList.map(async (error) => {
-      const exception = await exceptionFromError(stackParser, error)
+      const exception = await exceptionFromError(stackParser, frameModifiers, error)
       exception.value = exception.value || ''
       exception.type = exception.type || 'Error'
       exception.mechanism = mechanism
@@ -240,13 +248,22 @@ function serializeEventTarget(target: unknown): string {
 /**
  * Extracts stack frames from the error and builds an Exception
  */
-async function exceptionFromError(stackParser: StackParser, error: Error): Promise<Exception> {
+async function exceptionFromError(
+  stackParser: StackParser,
+  frameModifiers: StackFrameModifierFn[],
+  error: Error
+): Promise<Exception> {
   const exception: Exception = {
     type: error.name || error.constructor.name,
     value: error.message,
   }
 
-  const frames = await addSourceContext(parseStackFrames(stackParser, error))
+  let frames = parseStackFrames(stackParser, error)
+
+  for (const modifier of frameModifiers) {
+    frames = await modifier(frames)
+  }
+
   if (frames.length) {
     exception.stacktrace = { frames, type: 'raw' }
   }

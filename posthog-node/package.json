@@ -35,5 +35,27 @@
     "stats",
     "analysis",
     "funnels"
-  ]
+  ],
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "edge": {
+        "import": "./lib/edge/index.esm.js",
+        "require": "./lib/edge/index.cjs.js",
+        "default": "./lib/edge/index.js"
+      },
+      "edge-light": {
+        "import": "./lib/edge/index.esm.js",
+        "require": "./lib/edge/index.cjs.js",
+        "default": "./lib/edge/index.js"
+      },
+      "workerd": {
+        "import": "./lib/edge/index.esm.js",
+        "require": "./lib/edge/index.cjs.js",
+        "default": "./lib/edge/index.js"
+      },
+      "import": "./lib/index.esm.js",
+      "require": "./lib/index.cjs.js"
+    }
+  }
 }

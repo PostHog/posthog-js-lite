@@ -2,8 +2,9 @@ import { FeatureFlagCondition, FlagProperty, PostHogFeatureFlag, PropertyGroup }
 import { FeatureFlagValue, JsonType, PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src'
 import { safeSetTimeout } from 'posthog-core/src/utils'
 import fetch from './fetch'
-import { SIXTY_SECONDS } from './posthog-node'
 import { hashSHA1 } from 'posthog-node/src/crypto'
+
+const SIXTY_SECONDS = 60 * 1000
 
 // eslint-disable-next-line
 const LONG_SCALE = 0xfffffffffffffff

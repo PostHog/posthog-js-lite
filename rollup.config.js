@@ -63,12 +63,60 @@ const configs = ['posthog-node', 'posthog-web', 'posthog-ai'].reduce((acc, x) =>
     {
       input: `./${x}/lib/${x}/index.d.ts`,
       output: [{ file: `./${x}/lib/index.d.ts`, format: 'es' }],
-      plugins: [
-        dts(),
-      ],
+      plugins: [dts()],
     },
   ]
 }, [])
+
+// Add runtime builds for posthog-node
+const nodePkg = require('./posthog-node/package.json')
+const nodeExternal = [...globalExternal]
+  .concat(Object.keys(nodePkg.dependencies || {}))
+  .concat(Object.keys(nodePkg.peerDependencies || {}))
+  .concat(Object.keys(nodePkg.devDependencies || {}))
+
+const runtimes = ['edge']
+
+runtimes.forEach((runtime) => {
+  configs.push({
+    input: `./posthog-node/index.${runtime}.ts`,
+    output: [
+      {
+        file: `./posthog-node/lib/${runtime}/index.cjs.js`,
+        sourcemap: true,
+        exports: 'named',
+        format: 'cjs',
+      },
+      {
+        file: `./posthog-node/lib/${runtime}/index.esm.js`,
+        sourcemap: true,
+        format: 'es',
+      },
+    ],
+    external: nodeExternal,
+    plugins: [
+      resolve({ extensions }),
+      commonjs(),
+      json(),
+      // Compile TypeScript/JavaScript files
+      typescript({
+        include: [`*.(t|j)s+(|x)`, `**/*.(t|j)s+(|x)`],
+        tsconfig: `./posthog-node/tsconfig.json`,
+        sourceMap: true,
+      }),
+      babel({
+        extensions,
+        babelHelpers: 'bundled',
+        include: ['posthog-node/src/**/*.{js,jsx,ts,tsx}'],
+        presets: [
+          ['@babel/preset-env', { targets: { node: 'current' } }],
+          '@babel/preset-typescript',
+          '@babel/preset-react',
+        ],
+      }),
+    ],
+  })
+})
 
 // Add submodule builds for posthog-ai
 const aiPkg = require('./posthog-ai/package.json')
@@ -116,9 +164,7 @@ providers.forEach((provider) => {
   configs.push({
     input: `./posthog-ai/src/${provider}/index.ts`,
     output: [{ file: `./posthog-ai/lib/${provider}/index.d.ts`, format: 'es' }],
-    plugins: [
-      dts({ tsconfig: './posthog-ai/tsconfig.json' })
-    ],
+    plugins: [dts({ tsconfig: './posthog-ai/tsconfig.json' })],
   })
 })
 

@@ -46,6 +46,8 @@ export type StackParser = (stack: string, skipFirstLines?: number) => StackFrame
 export type StackLineParserFn = (line: string) => StackFrame | undefined
 export type StackLineParser = [number, StackLineParserFn]
 
+export type StackFrameModifierFn = (frames: StackFrame[]) => Promise<StackFrame[]>
+
 export interface StackFrame {
   platform: string
   filename?: string

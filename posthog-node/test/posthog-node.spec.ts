@@ -1,5 +1,6 @@
-import { MINIMUM_POLLING_INTERVAL, PostHog as PostHog, THIRTY_SECONDS } from '../src/posthog-node'
 import fetch from '../src/fetch'
+import { MINIMUM_POLLING_INTERVAL, THIRTY_SECONDS } from '../src/constants'
+import { PostHog } from '../index.node'
 import { anyDecideCall, anyLocalEvalCall, apiImplementation } from './test-utils'
 import { waitForPromises, wait } from '../../posthog-core/test/test-utils/test-utils'
 import { randomUUID } from 'crypto'
