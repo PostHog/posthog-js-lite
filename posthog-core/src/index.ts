@@ -50,7 +50,19 @@ class PostHogFetchHttpError extends Error {
   name = 'PostHogFetchHttpError'
 
   constructor(public response: PostHogFetchResponse) {
-    super('HTTP error while fetching PostHog: ' + response.status)
+    super('HTTP error while fetching PostHog: status=' + response.status)
+  }
+
+  get status(): number {
+    return this.response.status
+  }
+
+  get text(): Promise<string> {
+    return this.response.text()
+  }
+
+  get json(): Promise<any> {
+    return this.response.json()
   }
 }
 
@@ -63,6 +75,20 @@ class PostHogFetchNetworkError extends Error {
     // @ts-ignore
     super('Network error while fetching PostHog', error instanceof Error ? { cause: error } : {})
   }
+}
+
+export async function logFlushError(err: any): Promise<void> {
+  if (err instanceof PostHogFetchHttpError) {
+    let text = ''
+    try {
+      text = await err.text
+    } catch {}
+
+    console.error('Error while flushing PostHog', err, text)
+  } else {
+    console.error('Error while flushing PostHog', err)
+  }
+  return Promise.resolve()
 }
 
 function isPostHogFetchError(err: any): boolean {
@@ -783,7 +809,11 @@ export abstract class PostHogCoreStateless {
    * Avoids unnecessary promise errors
    */
   private flushBackground(): void {
-    void this.flush().catch(() => {})
+    void this.flush().catch((err) => {
+      this.logMsgIfDebug(() => {
+        logFlushError(err)
+      })
+    })
   }
 
   async flush(): Promise<any[]> {
@@ -947,7 +977,10 @@ export abstract class PostHogCoreStateless {
         if (!isPostHogFetchError(e)) {
           throw e
         }
-        this.logMsgIfDebug(() => console.error('Error while shutting down PostHog', e))
+
+        this.logMsgIfDebug(() => {
+          logFlushError(e)
+        })
       }
     }
 

@@ -10,6 +10,7 @@ import {
   PostHogFetchResponse,
   PostHogPersistedProperty,
   SurveyResponse,
+  logFlushError,
 } from '../../posthog-core/src'
 import { getLegacyValues } from './legacy'
 import { PostHogRNStorage, PostHogRNSyncMemoryStorage } from './storage'
@@ -91,7 +92,9 @@ export class PostHog extends PostHogCore {
         : options?.customAppProperties || getAppProperties()
 
     AppState.addEventListener('change', () => {
-      void this.flush()
+      void this.flush().catch((err) => {
+        this.logMsgIfDebug(() => logFlushError(err))
+      })
     })
 
     let storagePromise: Promise<void> | undefined
