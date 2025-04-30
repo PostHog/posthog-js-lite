@@ -1,7 +1,7 @@
 import { PostHog } from 'posthog-node/src/entrypoints/index.node'
 import PostHogOpenAI from '../src/openai'
 
-jest.mock('posthog-node', () => {
+jest.mock('posthog-node/src/entrypoints/index.node', () => {
   return {
     PostHog: jest.fn().mockImplementation(() => {
       return {

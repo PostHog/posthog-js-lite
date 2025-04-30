@@ -1,4 +1,4 @@
-import { Lazy } from '../src/lazy'
+import { Lazy } from '../src/extensions/feature-flags/lazy'
 
 describe('Lazy', () => {
   it('should only call the factory once', async (): Promise<void> => {

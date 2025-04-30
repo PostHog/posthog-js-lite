@@ -1,5 +1,5 @@
-import * as crypto from '../src/crypto'
-import * as cryptoHelpers from '../src/crypto-helpers'
+import * as crypto from '../src/extensions/feature-flags/crypto'
+import * as cryptoHelpers from '../src/extensions/feature-flags/crypto-helpers'
 
 describe('crypto', () => {
   describe('hashSHA1', () => {
