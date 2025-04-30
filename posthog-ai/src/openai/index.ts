@@ -1,5 +1,5 @@
 import OpenAIOrignal, { ClientOptions } from 'openai'
-import { PostHog } from 'posthog-node'
+import { PostHog } from 'posthog-node/src/entrypoints/index.node'
 import { v4 as uuidv4 } from 'uuid'
 import { formatResponseOpenAI, MonitoringParams, sendEventToPosthog } from '../utils'
 
