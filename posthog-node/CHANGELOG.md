@@ -1,6 +1,7 @@
-# 4.14.1 - 2025-04-30
+# 4.15.0 - 2025-04-30
 
-1. chore: better error logging when flushing events
+1. chore: add immediate-mode
+2. chore: better error logging when flushing events
 
 # 4.14.0 - 2025-04-24
 
