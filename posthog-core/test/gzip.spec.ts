@@ -1,6 +1,6 @@
 import { isGzipSupported, gzipCompress } from '../src/gzip'
 import { gzip } from 'node:zlib'
-import { randomBytes } from 'node:crypto'
+import { randomBytes, randomUUID } from 'node:crypto'
 import { promisify } from 'node:util'
 
 const RANDOM_TEST_INPUT = JSON.stringify({
@@ -21,7 +21,7 @@ const API_TEST_INPUT = JSON.stringify({
         $session_id: 'session.id',
       },
       timestamp: new Date().toISOString(),
-      uuid: crypto.randomUUID(),
+      uuid: randomUUID(),
       type: 'capture',
     },
   ],
