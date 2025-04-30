@@ -2,7 +2,6 @@ import { version } from '../package.json'
 
 import {
   JsonType,
-  PostHogCoreOptions,
   PostHogCoreStateless,
   PostHogDecideResponse,
   PostHogFetchOptions,
@@ -10,25 +9,13 @@ import {
   PostHogFlagsAndPayloadsResponse,
   PostHogPersistedProperty,
 } from 'posthog-core/src'
-import { EventMessage, GroupIdentifyMessage, IdentifyMessage, PostHogNodeV1 } from './types'
+import { EventMessage, GroupIdentifyMessage, IdentifyMessage, PostHogNodeV1, PostHogOptions } from './types'
 import { FeatureFlagDetail, FeatureFlagValue } from 'posthog-core/src/types'
-import { FeatureFlagsPoller } from './feature-flags'
+import { FeatureFlagsPoller } from './extensions/feature-flags/feature-flags'
 import fetch from './fetch'
-import ErrorTracking from './error-tracking'
+import ErrorTracking from './extensions/error-tracking'
 import { getFeatureFlagValue } from 'posthog-core/src/featureFlagUtils'
 import { PostHogMemoryStorage } from './storage-memory'
-
-export type PostHogOptions = PostHogCoreOptions & {
-  persistence?: 'memory'
-  personalApiKey?: string
-  privacyMode?: boolean
-  enableExceptionAutocapture?: boolean
-  // The interval in milliseconds between polls for refreshing feature flag definitions. Defaults to 30 seconds.
-  featureFlagsPollingInterval?: number
-  // Maximum size of cache that deduplicates $feature_flag_called calls per user.
-  maxCacheSize?: number
-  fetch?: (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
-}
 
 // Standard local evaluation rate limit is 600 per minute (10 per second),
 // so the fastest a poller should ever be set is 100ms.

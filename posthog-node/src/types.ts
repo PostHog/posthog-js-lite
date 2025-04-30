@@ -1,4 +1,10 @@
-import { FeatureFlagValue, JsonType } from '../../posthog-core/src'
+import type {
+  PostHogCoreOptions,
+  FeatureFlagValue,
+  JsonType,
+  PostHogFetchOptions,
+  PostHogFetchResponse,
+} from 'posthog-core/src'
 
 export interface IdentifyMessage {
   distinctId: string
@@ -39,6 +45,18 @@ export type FeatureFlagCondition = {
   properties: FlagProperty[]
   rollout_percentage?: number
   variant?: string
+}
+
+export type PostHogOptions = PostHogCoreOptions & {
+  persistence?: 'memory'
+  personalApiKey?: string
+  privacyMode?: boolean
+  enableExceptionAutocapture?: boolean
+  // The interval in milliseconds between polls for refreshing feature flag definitions. Defaults to 30 seconds.
+  featureFlagsPollingInterval?: number
+  // Maximum size of cache that deduplicates $feature_flag_called calls per user.
+  maxCacheSize?: number
+  fetch?: (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
 }
 
 export type PostHogFeatureFlag = {
