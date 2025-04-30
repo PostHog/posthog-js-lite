@@ -1,6 +1,10 @@
-import { PostHogOptions } from '../src/client'
-import { PostHog } from '../runtimes/index.node'
-import { matchProperty, InconclusiveMatchError, relativeDateParseForFeatureFlagMatching } from '../src/feature-flags'
+import { PostHogOptions } from '../src/types'
+import { PostHog } from '../src/entrypoints/index.node'
+import {
+  matchProperty,
+  InconclusiveMatchError,
+  relativeDateParseForFeatureFlagMatching,
+} from '../src/extensions/feature-flags/feature-flags'
 import fetch from '../src/fetch'
 import { anyDecideCall, anyLocalEvalCall, apiImplementation } from './test-utils'
 import { waitForPromises } from 'posthog-core/test/test-utils/test-utils'

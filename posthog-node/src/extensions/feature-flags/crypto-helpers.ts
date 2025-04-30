@@ -1,5 +1,5 @@
 /// <reference lib="dom" />
-import { Lazy } from 'posthog-node/src/extensions/feature-flags/lazy'
+import { Lazy } from './lazy'
 
 const nodeCrypto = new Lazy(async () => {
   try {

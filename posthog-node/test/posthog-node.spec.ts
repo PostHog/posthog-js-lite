@@ -1,5 +1,5 @@
 import fetch from '../src/fetch'
-import { PostHog } from '../runtimes/index.node'
+import { PostHog } from '../src/entrypoints/index.node'
 import { anyDecideCall, anyLocalEvalCall, apiImplementation } from './test-utils'
 import { waitForPromises, wait } from '../../posthog-core/test/test-utils/test-utils'
 import { randomUUID } from 'crypto'

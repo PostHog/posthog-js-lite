@@ -70,18 +70,16 @@ const configs = ['posthog-web', 'posthog-ai'].reduce((acc, x) => {
   ]
 }, [])
 
-// Add runtime builds for posthog-node
+// posthog-node //
+
 const nodePkg = require('./posthog-node/package.json')
 const nodeExternal = [...globalExternal]
   .concat(Object.keys(nodePkg.dependencies || {}))
   .concat(Object.keys(nodePkg.peerDependencies || {}))
   .concat(Object.keys(nodePkg.devDependencies || {}))
 
-const runtimes = ['node', 'edge']
-
-runtimes.forEach((runtime) => {
-  configs.push(
-    {
+  [('node', 'edge')].forEach((runtime) => {
+    configs.push({
       input: `./posthog-node/src/entrypoints/index.${runtime}.ts`,
       output: [
         {
@@ -98,22 +96,17 @@ runtimes.forEach((runtime) => {
       ],
       external: nodeExternal,
       plugins: plugins('posthog-node'),
-    }
-    // {
-    //   // We only build types from node as all types should be the same
-    //   input: `./posthog-node/lib/${runtime}/index.d.ts`,
-    //   output: [{ file: `./posthog-node/lib/index.d.ts`, format: 'es' }],
-    //   plugins: [dts({ tsconfig: './posthog-node/tsconfig.json' })],
-    // }
-  )
-})
+    })
+  })
 
+// We only build types from node as all types should be the same
 configs.push({
-  // We only build types from node as all types should be the same
   input: `./posthog-node/src/entrypoints/index.node.ts`,
   output: [{ file: `./posthog-node/lib/index.d.ts`, format: 'es' }],
   plugins: [dts({ tsconfig: './posthog-node/tsconfig.json' })],
 })
+
+// posthog-ai //
 
 // Add submodule builds for posthog-ai
 const aiPkg = require('./posthog-ai/package.json')
