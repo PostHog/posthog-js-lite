@@ -92,6 +92,7 @@ export abstract class PostHogCoreStateless {
   private removeDebugCallback?: () => void
   private disableGeoip: boolean
   private historicalMigration: boolean
+  private immediate: boolean
   protected disabled
 
   private defaultOptIn: boolean
@@ -144,6 +145,7 @@ export abstract class PostHogCoreStateless {
     // Init promise allows the derived class to block calls until it is ready
     this._initPromise = Promise.resolve()
     this._isInitialized = true
+    this.immediate = options?.immediate ?? false
   }
 
   protected logMsgIfDebug(fn: () => void): void {
@@ -720,33 +722,18 @@ export abstract class PostHogCoreStateless {
    *** QUEUEING AND FLUSHING
    ***/
   protected enqueue(type: string, _message: any, options?: PostHogCaptureOptions): void {
+    if (this.immediate) {
+      this.sendImmediate(type, _message, options)
+      return
+    }
+
     this.wrap(() => {
       if (this.optedOut) {
         this._events.emit(type, `Library is disabled. Not sending event. To re-enable, call posthog.optIn()`)
         return
       }
 
-      const message = {
-        ..._message,
-        type: type,
-        library: this.getLibraryId(),
-        library_version: this.getLibraryVersion(),
-        timestamp: options?.timestamp ? options?.timestamp : currentISOTime(),
-        uuid: options?.uuid ? options.uuid : uuidv7(),
-      }
-
-      const addGeoipDisableProperty = options?.disableGeoip ?? this.disableGeoip
-      if (addGeoipDisableProperty) {
-        if (!message.properties) {
-          message.properties = {}
-        }
-        message['properties']['$geoip_disable'] = true
-      }
-
-      if (message.distinctId) {
-        message.distinct_id = message.distinctId
-        delete message.distinctId
-      }
+      const message = this.prepareMessage(type, _message, options)
 
       const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
 
@@ -769,6 +756,87 @@ export abstract class PostHogCoreStateless {
         this._flushTimer = safeSetTimeout(() => this.flushBackground(), this.flushInterval)
       }
     })
+  }
+
+  protected async sendImmediate(type: string, _message: any, options?: PostHogCaptureOptions): Promise<void> {
+    if (this.disabled) {
+      this.logMsgIfDebug(() => console.warn('[PostHog] The client is disabled'))
+      return
+    }
+
+    if (!this._isInitialized) {
+      await this._initPromise
+    }
+
+    if (this.optedOut) {
+      this._events.emit(type, `Library is disabled. Not sending event. To re-enable, call posthog.optIn()`)
+      return
+    }
+
+    const data: Record<string, any> = {
+      api_key: this.apiKey,
+      batch: [this.prepareMessage(type, _message, options)],
+      sent_at: currentISOTime(),
+    }
+
+    if (this.historicalMigration) {
+      data.historical_migration = true
+    }
+
+    const payload = JSON.stringify(data)
+
+    const url =
+      this.captureMode === 'form'
+        ? `${this.host}/e/?ip=1&_=${currentTimestamp()}&v=${this.getLibraryVersion()}`
+        : `${this.host}/batch/`
+
+    const fetchOptions: PostHogFetchOptions =
+      this.captureMode === 'form'
+        ? {
+            method: 'POST',
+            mode: 'no-cors',
+            credentials: 'omit',
+            headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `data=${encodeURIComponent(LZString.compressToBase64(payload))}&compression=lz64`,
+          }
+        : {
+            method: 'POST',
+            headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },
+            body: payload,
+          }
+
+    try {
+      await this.fetchWithRetry(url, fetchOptions)
+    } catch (err) {
+      this._events.emit('error', err)
+      throw err
+    }
+  }
+
+  private prepareMessage(type: string, _message: any, options?: PostHogCaptureOptions): any {
+    const message = {
+      ..._message,
+      type: type,
+      library: this.getLibraryId(),
+      library_version: this.getLibraryVersion(),
+      timestamp: options?.timestamp ? options?.timestamp : currentISOTime(),
+      uuid: options?.uuid ? options.uuid : uuidv7(),
+    }
+
+    const addGeoipDisableProperty = options?.disableGeoip ?? this.disableGeoip
+    if (addGeoipDisableProperty) {
+      if (!message.properties) {
+        message.properties = {}
+      }
+      message['properties']['$geoip_disable'] = true
+    }
+
+    if (message.distinctId) {
+      message.distinct_id = message.distinctId
+      delete message.distinctId
+    }
+
+    return message
   }
 
   private clearFlushTimer(): void {
