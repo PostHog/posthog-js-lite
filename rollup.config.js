@@ -78,26 +78,28 @@ const nodeExternal = [...globalExternal]
   .concat(Object.keys(nodePkg.peerDependencies || {}))
   .concat(Object.keys(nodePkg.devDependencies || {}))
 
-  [('node', 'edge')].forEach((runtime) => {
-    configs.push({
-      input: `./posthog-node/src/entrypoints/index.${runtime}.ts`,
-      output: [
-        {
-          file: `./posthog-node/lib/${runtime}/index.cjs.js`,
-          sourcemap: true,
-          exports: 'named',
-          format: 'cjs',
-        },
-        {
-          file: `./posthog-node/lib/${runtime}/index.esm.js`,
-          sourcemap: true,
-          format: 'es',
-        },
-      ],
-      external: nodeExternal,
-      plugins: plugins('posthog-node'),
-    })
+const runtimes = ['node', 'edge']
+
+runtimes.forEach((runtime) => {
+  configs.push({
+    input: `./posthog-node/src/entrypoints/index.${runtime}.ts`,
+    output: [
+      {
+        file: `./posthog-node/lib/${runtime}/index.cjs.js`,
+        sourcemap: true,
+        exports: 'named',
+        format: 'cjs',
+      },
+      {
+        file: `./posthog-node/lib/${runtime}/index.esm.js`,
+        sourcemap: true,
+        format: 'es',
+      },
+    ],
+    external: nodeExternal,
+    plugins: plugins('posthog-node'),
   })
+})
 
 // We only build types from node as all types should be the same
 configs.push({
