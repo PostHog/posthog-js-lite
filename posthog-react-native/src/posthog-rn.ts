@@ -92,8 +92,8 @@ export class PostHog extends PostHogCore {
         : options?.customAppProperties || getAppProperties()
 
     AppState.addEventListener('change', () => {
-      void this.flush().catch((err) => {
-        this.logMsgIfDebug(() => logFlushError(err))
+      void this.flush().catch(async (err) => {
+        await logFlushError(err)
       })
     })
 

@@ -39,6 +39,7 @@ import {
   retriable,
   RetriableOptions,
   safeSetTimeout,
+  STRING_FORMAT,
 } from './utils'
 import { LZString } from './lz-string'
 import { SimpleEventEmitter } from './eventemitter'
@@ -49,8 +50,8 @@ export * as utils from './utils'
 class PostHogFetchHttpError extends Error {
   name = 'PostHogFetchHttpError'
 
-  constructor(public response: PostHogFetchResponse) {
-    super('HTTP error while fetching PostHog: status=' + response.status)
+  constructor(public response: PostHogFetchResponse, public reqByteLength: number) {
+    super('HTTP error while fetching PostHog: status=' + response.status + ', reqByteLength=' + reqByteLength)
   }
 
   get status(): number {
@@ -809,10 +810,8 @@ export abstract class PostHogCoreStateless {
    * Avoids unnecessary promise errors
    */
   private flushBackground(): void {
-    void this.flush().catch((err) => {
-      this.logMsgIfDebug(() => {
-        logFlushError(err)
-      })
+    void this.flush().catch(async (err) => {
+      await logFlushError(err)
     })
   }
 
@@ -920,6 +919,9 @@ export abstract class PostHogCoreStateless {
       return ctrl.signal
     }
 
+    const body = options.body ? options.body : ''
+    const reqByteLength = Buffer.byteLength(body, STRING_FORMAT)
+
     return await retriable(
       async () => {
         let res: PostHogFetchResponse | null = null
@@ -937,7 +939,7 @@ export abstract class PostHogCoreStateless {
         // https://developer.mozilla.org/en-US/docs/Web/API/Request/mode#no-cors
         const isNoCors = options.mode === 'no-cors'
         if (!isNoCors && (res.status < 200 || res.status >= 400)) {
-          throw new PostHogFetchHttpError(res)
+          throw new PostHogFetchHttpError(res, reqByteLength)
         }
         return res
       },
@@ -978,9 +980,7 @@ export abstract class PostHogCoreStateless {
           throw e
         }
 
-        this.logMsgIfDebug(() => {
-          logFlushError(e)
-        })
+        await logFlushError(e)
       }
     }
 
