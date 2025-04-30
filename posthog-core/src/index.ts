@@ -85,7 +85,7 @@ export async function logFlushError(err: any): Promise<void> {
       text = await err.text
     } catch {}
 
-    console.error('Error while flushing PostHog', err, text)
+    console.error(`Error while flushing PostHog: message=${err.message}, response body=${text}`, err)
   } else {
     console.error('Error while flushing PostHog', err)
   }
