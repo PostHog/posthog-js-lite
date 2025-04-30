@@ -971,7 +971,7 @@ export abstract class PostHogCoreStateless {
    */
   async shutdown(shutdownTimeoutMs: number = 30000): Promise<void> {
     if (this.shutdownPromise) {
-      this.logMsgIfDebug(() => console.error('shutdown() called while already shutting down. Did you mean flush()?'))
+      this.logMsgIfDebug(() => console.error('shutdown() called while already shutting down. shutdown() is meant to be called once before process exit - use flush() for per-request cleanup'))
     } else {
       this.shutdownPromise = this._shutdown(shutdownTimeoutMs).finally(() => {
         this.shutdownPromise = null
