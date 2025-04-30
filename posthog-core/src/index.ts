@@ -39,6 +39,7 @@ import {
   retriable,
   RetriableOptions,
   safeSetTimeout,
+  STRING_FORMAT,
 } from './utils'
 import { LZString } from './lz-string'
 import { SimpleEventEmitter } from './eventemitter'
@@ -49,8 +50,20 @@ export * as utils from './utils'
 class PostHogFetchHttpError extends Error {
   name = 'PostHogFetchHttpError'
 
-  constructor(public response: PostHogFetchResponse) {
-    super('HTTP error while fetching PostHog: ' + response.status)
+  constructor(public response: PostHogFetchResponse, public reqByteLength: number) {
+    super('HTTP error while fetching PostHog: status=' + response.status + ', reqByteLength=' + reqByteLength)
+  }
+
+  get status(): number {
+    return this.response.status
+  }
+
+  get text(): Promise<string> {
+    return this.response.text()
+  }
+
+  get json(): Promise<any> {
+    return this.response.json()
   }
 }
 
@@ -63,6 +76,20 @@ class PostHogFetchNetworkError extends Error {
     // @ts-ignore
     super('Network error while fetching PostHog', error instanceof Error ? { cause: error } : {})
   }
+}
+
+export async function logFlushError(err: any): Promise<void> {
+  if (err instanceof PostHogFetchHttpError) {
+    let text = ''
+    try {
+      text = await err.text
+    } catch {}
+
+    console.error(`Error while flushing PostHog: message=${err.message}, response body=${text}`, err)
+  } else {
+    console.error('Error while flushing PostHog', err)
+  }
+  return Promise.resolve()
 }
 
 function isPostHogFetchError(err: any): boolean {
@@ -260,6 +287,22 @@ export abstract class PostHogCoreStateless {
     })
   }
 
+  protected async identifyStatelessImmediate(
+    distinctId: string,
+    properties?: PostHogEventProperties,
+    options?: PostHogCaptureOptions
+  ): Promise<void> {
+    const payload = {
+      ...this.buildPayload({
+        distinct_id: distinctId,
+        event: '$identify',
+        properties,
+      }),
+    }
+
+    await this.sendImmediate('identify', payload, options)
+  }
+
   protected captureStateless(
     distinctId: string,
     event: string,
@@ -270,6 +313,16 @@ export abstract class PostHogCoreStateless {
       const payload = this.buildPayload({ distinct_id: distinctId, event, properties })
       this.enqueue('capture', payload, options)
     })
+  }
+
+  protected async captureStatelessImmediate(
+    distinctId: string,
+    event: string,
+    properties?: { [key: string]: any },
+    options?: PostHogCaptureOptions
+  ): Promise<void> {
+    const payload = this.buildPayload({ distinct_id: distinctId, event, properties })
+    await this.sendImmediate('capture', payload, options)
   }
 
   protected aliasStateless(
@@ -291,6 +344,25 @@ export abstract class PostHogCoreStateless {
 
       this.enqueue('alias', payload, options)
     })
+  }
+
+  protected async aliasStatelessImmediate(
+    alias: string,
+    distinctId: string,
+    properties?: { [key: string]: any },
+    options?: PostHogCaptureOptions
+  ): Promise<void> {
+    const payload = this.buildPayload({
+      event: '$create_alias',
+      distinct_id: distinctId,
+      properties: {
+        ...(properties || {}),
+        distinct_id: distinctId,
+        alias,
+      },
+    })
+
+    await this.sendImmediate('alias', payload, options)
   }
 
   /***
@@ -726,27 +798,7 @@ export abstract class PostHogCoreStateless {
         return
       }
 
-      const message = {
-        ..._message,
-        type: type,
-        library: this.getLibraryId(),
-        library_version: this.getLibraryVersion(),
-        timestamp: options?.timestamp ? options?.timestamp : currentISOTime(),
-        uuid: options?.uuid ? options.uuid : uuidv7(),
-      }
-
-      const addGeoipDisableProperty = options?.disableGeoip ?? this.disableGeoip
-      if (addGeoipDisableProperty) {
-        if (!message.properties) {
-          message.properties = {}
-        }
-        message['properties']['$geoip_disable'] = true
-      }
-
-      if (message.distinctId) {
-        message.distinct_id = message.distinctId
-        delete message.distinctId
-      }
+      const message = this.prepareMessage(type, _message, options)
 
       const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
 
@@ -771,6 +823,87 @@ export abstract class PostHogCoreStateless {
     })
   }
 
+  protected async sendImmediate(type: string, _message: any, options?: PostHogCaptureOptions): Promise<void> {
+    if (this.disabled) {
+      this.logMsgIfDebug(() => console.warn('[PostHog] The client is disabled'))
+      return
+    }
+
+    if (!this._isInitialized) {
+      await this._initPromise
+    }
+
+    if (this.optedOut) {
+      this._events.emit(type, `Library is disabled. Not sending event. To re-enable, call posthog.optIn()`)
+      return
+    }
+
+    const data: Record<string, any> = {
+      api_key: this.apiKey,
+      batch: [this.prepareMessage(type, _message, options)],
+      sent_at: currentISOTime(),
+    }
+
+    if (this.historicalMigration) {
+      data.historical_migration = true
+    }
+
+    const payload = JSON.stringify(data)
+
+    const url =
+      this.captureMode === 'form'
+        ? `${this.host}/e/?ip=1&_=${currentTimestamp()}&v=${this.getLibraryVersion()}`
+        : `${this.host}/batch/`
+
+    const fetchOptions: PostHogFetchOptions =
+      this.captureMode === 'form'
+        ? {
+            method: 'POST',
+            mode: 'no-cors',
+            credentials: 'omit',
+            headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `data=${encodeURIComponent(LZString.compressToBase64(payload))}&compression=lz64`,
+          }
+        : {
+            method: 'POST',
+            headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },
+            body: payload,
+          }
+
+    try {
+      await this.fetchWithRetry(url, fetchOptions)
+    } catch (err) {
+      this._events.emit('error', err)
+      throw err
+    }
+  }
+
+  private prepareMessage(type: string, _message: any, options?: PostHogCaptureOptions): any {
+    const message = {
+      ..._message,
+      type: type,
+      library: this.getLibraryId(),
+      library_version: this.getLibraryVersion(),
+      timestamp: options?.timestamp ? options?.timestamp : currentISOTime(),
+      uuid: options?.uuid ? options.uuid : uuidv7(),
+    }
+
+    const addGeoipDisableProperty = options?.disableGeoip ?? this.disableGeoip
+    if (addGeoipDisableProperty) {
+      if (!message.properties) {
+        message.properties = {}
+      }
+      message['properties']['$geoip_disable'] = true
+    }
+
+    if (message.distinctId) {
+      message.distinct_id = message.distinctId
+      delete message.distinctId
+    }
+
+    return message
+  }
+
   private clearFlushTimer(): void {
     if (this._flushTimer) {
       clearTimeout(this._flushTimer)
@@ -783,7 +916,9 @@ export abstract class PostHogCoreStateless {
    * Avoids unnecessary promise errors
    */
   private flushBackground(): void {
-    void this.flush().catch(() => {})
+    void this.flush().catch(async (err) => {
+      await logFlushError(err)
+    })
   }
 
   async flush(): Promise<any[]> {
@@ -890,6 +1025,9 @@ export abstract class PostHogCoreStateless {
       return ctrl.signal
     }
 
+    const body = options.body ? options.body : ''
+    const reqByteLength = Buffer.byteLength(body, STRING_FORMAT)
+
     return await retriable(
       async () => {
         let res: PostHogFetchResponse | null = null
@@ -907,7 +1045,7 @@ export abstract class PostHogCoreStateless {
         // https://developer.mozilla.org/en-US/docs/Web/API/Request/mode#no-cors
         const isNoCors = options.mode === 'no-cors'
         if (!isNoCors && (res.status < 200 || res.status >= 400)) {
-          throw new PostHogFetchHttpError(res)
+          throw new PostHogFetchHttpError(res, reqByteLength)
         }
         return res
       },
@@ -947,7 +1085,8 @@ export abstract class PostHogCoreStateless {
         if (!isPostHogFetchError(e)) {
           throw e
         }
-        this.logMsgIfDebug(() => console.error('Error while shutting down PostHog', e))
+
+        await logFlushError(e)
       }
     }
 

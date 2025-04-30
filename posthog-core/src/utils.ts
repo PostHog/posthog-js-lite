@@ -85,6 +85,8 @@ export const NEW_FLAGS_EXCLUDED_HASHES = new Set([
   '75cc0998',
 ])
 
+export const STRING_FORMAT = 'utf8'
+
 export function assert(truthyValue: any, message: string): void {
   if (!truthyValue || typeof truthyValue !== 'string' || isEmpty(truthyValue)) {
     throw new Error(message)
