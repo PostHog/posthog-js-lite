@@ -1,5 +1,3 @@
-import { PostHogCoreStateless } from 'posthog-core/src'
-
 /**
  * Older browsers and some runtimes don't support this yet
  */
@@ -10,7 +8,7 @@ export function isGzipSupported(): boolean {
 /**
  * Gzip a string using Compression Streams API if it's available
  */
-export async function gzipCompress(input: string, posthog: PostHogCoreStateless): Promise<Blob | null> {
+export async function gzipCompress(input: string, isDebug = true): Promise<Blob | null> {
   if (!isGzipSupported()) return null
   try {
     // Turn the string into a stream using a Blob, and then compress it
@@ -23,7 +21,7 @@ export async function gzipCompress(input: string, posthog: PostHogCoreStateless)
     // Using a Response to easily extract the readablestream value. Decoding into a string for fetch
     return await new Response(compressedStream).blob()
   } catch (error) {
-    if (posthog.isDebug) console.error('Failed to gzip compress data', error)
+    if (isDebug) console.error('Failed to gzip compress data', error)
     return null
   }
 }

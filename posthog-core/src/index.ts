@@ -849,7 +849,7 @@ export abstract class PostHogCoreStateless {
         : `${this.host}/batch/`
 
     const gzippedPayload =
-      this.captureMode === 'json' && !this.disableCompression ? await gzipCompress(payload, this) : null
+      this.captureMode === 'json' && !this.disableCompression ? await gzipCompress(payload, this.isDebug) : null
     const fetchOptions: PostHogFetchOptions =
       this.captureMode === 'form'
         ? {
