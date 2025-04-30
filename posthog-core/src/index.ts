@@ -965,7 +965,8 @@ export abstract class PostHogCoreStateless {
   }
 
   /**
-   *  Call shutdown() once before the node process exits, so ensure that e.g. all events have been sent first
+   *  Call shutdown() once before the node process exits, so ensure that all events have been sent and all promises
+   *  have resolved. Do not use this function if you intend to keep using this PostHog instance after calling it.
    * @param shutdownTimeoutMs
    */
   async shutdown(shutdownTimeoutMs: number = 30000): Promise<void> {
