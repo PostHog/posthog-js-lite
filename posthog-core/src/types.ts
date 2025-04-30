@@ -55,8 +55,6 @@ export type PostHogCoreOptions = {
   disableGeoip?: boolean
   /** Special flag to indicate ingested data is for a historical migration. */
   historicalMigration?: boolean
-  /** Send all events immediately, rather than relying on queueing or flushing. */
-  immediate?: boolean
 }
 
 export enum PostHogPersistedProperty {

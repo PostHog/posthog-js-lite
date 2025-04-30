@@ -92,7 +92,6 @@ export abstract class PostHogCoreStateless {
   private removeDebugCallback?: () => void
   private disableGeoip: boolean
   private historicalMigration: boolean
-  private immediate: boolean
   protected disabled
 
   private defaultOptIn: boolean
@@ -145,7 +144,6 @@ export abstract class PostHogCoreStateless {
     // Init promise allows the derived class to block calls until it is ready
     this._initPromise = Promise.resolve()
     this._isInitialized = true
-    this.immediate = options?.immediate ?? false
   }
 
   protected logMsgIfDebug(fn: () => void): void {
@@ -262,6 +260,22 @@ export abstract class PostHogCoreStateless {
     })
   }
 
+  protected async identifyStatelessImmediate(
+    distinctId: string,
+    properties?: PostHogEventProperties,
+    options?: PostHogCaptureOptions
+  ): Promise<void> {
+    const payload = {
+      ...this.buildPayload({
+        distinct_id: distinctId,
+        event: '$identify',
+        properties,
+      }),
+    }
+
+    await this.sendImmediate('identify', payload, options)
+  }
+
   protected captureStateless(
     distinctId: string,
     event: string,
@@ -272,6 +286,16 @@ export abstract class PostHogCoreStateless {
       const payload = this.buildPayload({ distinct_id: distinctId, event, properties })
       this.enqueue('capture', payload, options)
     })
+  }
+
+  protected async captureStatelessImmediate(
+    distinctId: string,
+    event: string,
+    properties?: { [key: string]: any },
+    options?: PostHogCaptureOptions
+  ): Promise<void> {
+    const payload = this.buildPayload({ distinct_id: distinctId, event, properties })
+    await this.sendImmediate('capture', payload, options)
   }
 
   protected aliasStateless(
@@ -293,6 +317,25 @@ export abstract class PostHogCoreStateless {
 
       this.enqueue('alias', payload, options)
     })
+  }
+
+  protected async aliasStatelessImmediate(
+    alias: string,
+    distinctId: string,
+    properties?: { [key: string]: any },
+    options?: PostHogCaptureOptions
+  ): Promise<void> {
+    const payload = this.buildPayload({
+      event: '$create_alias',
+      distinct_id: distinctId,
+      properties: {
+        ...(properties || {}),
+        distinct_id: distinctId,
+        alias,
+      },
+    })
+
+    await this.sendImmediate('alias', payload, options)
   }
 
   /***
@@ -722,11 +765,6 @@ export abstract class PostHogCoreStateless {
    *** QUEUEING AND FLUSHING
    ***/
   protected enqueue(type: string, _message: any, options?: PostHogCaptureOptions): void {
-    if (this.immediate) {
-      this.sendImmediate(type, _message, options)
-      return
-    }
-
     this.wrap(() => {
       if (this.optedOut) {
         this._events.emit(type, `Library is disabled. Not sending event. To re-enable, call posthog.optIn()`)
