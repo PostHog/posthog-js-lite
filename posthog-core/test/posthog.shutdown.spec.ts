@@ -49,7 +49,6 @@ describe('PostHog Core', () => {
     it('return the same promise if called multiple times in parallel', async () => {
       mocks.fetch.mockImplementation(async () => {
         await new Promise((resolve) => setTimeout(resolve, 1000))
-        console.log('FETCH RETURNED')
         return {
           status: 200,
           text: () => Promise.resolve('ok'),
