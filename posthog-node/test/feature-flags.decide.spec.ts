@@ -1,5 +1,5 @@
-import { PostHog } from '../index'
-import { PostHogOptions } from '../src/posthog-node'
+import { PostHog } from '../runtimes/index.node'
+import { PostHogOptions } from '../src/client'
 import fetch from '../src/fetch'
 import { apiImplementation, apiImplementationV4 } from './test-utils'
 import { waitForPromises } from 'posthog-core/test/test-utils/test-utils'

@@ -6,6 +6,7 @@ import typescript from 'rollup-plugin-typescript2'
 import dts from 'rollup-plugin-dts'
 
 import pkg from './package.json'
+import alias from '@rollup/plugin-alias'
 
 const extensions = ['.js', '.jsx', '.ts', '.tsx']
 
@@ -79,7 +80,7 @@ const runtimes = ['edge']
 
 runtimes.forEach((runtime) => {
   configs.push({
-    input: `./posthog-node/index.${runtime}.ts`,
+    input: `./posthog-node/index.ts`,
     output: [
       {
         file: `./posthog-node/lib/${runtime}/index.cjs.js`,
@@ -95,6 +96,14 @@ runtimes.forEach((runtime) => {
     ],
     external: nodeExternal,
     plugins: [
+      alias({
+        entries: [
+          {
+            find: 'posthog-node/runtimes/index.node',
+            replacement: `./runtimes/index.${runtime}`,
+          },
+        ],
+      }),
       resolve({ extensions }),
       commonjs(),
       json(),
