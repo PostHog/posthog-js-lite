@@ -1,7 +1,7 @@
 # 4.3.0
 
 - Remove fullDebug mode
-- Add posthogCaptureImmediate to await an promise for each capture (for serverless enviroments)
+- Add posthogCaptureImmediate to await a promise for each capture (for serverless environments)
 
 # 4.2.1
 
