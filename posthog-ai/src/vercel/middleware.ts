@@ -128,7 +128,9 @@ const mapVercelPrompt = (prompt: LanguageModelV1Prompt): PostHogInput[] => {
     // Trim the inputs array until its JSON size fits within MAX_OUTPUT_SIZE
     let serialized = JSON.stringify(inputs)
     let removedCount = 0
-    for (let i = 0; i < inputs.length && Buffer.byteLength(serialized, 'utf8') > MAX_OUTPUT_SIZE; i++) {
+    // We need to keep track of the initial size of the inputs array because we're going to be mutating it
+    let initialSize = inputs.length
+    for (let i = 0; i < initialSize && Buffer.byteLength(serialized, 'utf8') > MAX_OUTPUT_SIZE; i++) {
       inputs.shift()
       removedCount++
       serialized = JSON.stringify(inputs)
