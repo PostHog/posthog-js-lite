@@ -46,7 +46,7 @@ describe('PostHog Core', () => {
       expect(mocks.fetch).toHaveBeenCalledTimes(1)
     })
 
-    it('return the same promise if called multiple times', async () => {
+    it('return the same promise if called multiple times in parallel', async () => {
       mocks.fetch.mockImplementation(async () => {
         await new Promise((resolve) => setTimeout(resolve, 1000))
         console.log('FETCH RETURNED')
@@ -64,6 +64,26 @@ describe('PostHog Core', () => {
       expect(p1).toEqual(p2)
       await Promise.allSettled([p1, p2])
       expect(mocks.fetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('can handle being called multiple times in series (discouraged but some users will do this)', async () => {
+      mocks.fetch.mockImplementation(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10))
+        console.log('FETCH RETURNED')
+        return {
+          status: 200,
+          text: () => Promise.resolve('ok'),
+          json: () => Promise.resolve({ status: 'ok' }),
+        }
+      })
+
+      posthog.capture('test-event')
+      await posthog.shutdown()
+
+      posthog.capture('test-event')
+      await posthog.shutdown()
+
+      expect(mocks.fetch).toHaveBeenCalledTimes(2)
     })
   })
 })
