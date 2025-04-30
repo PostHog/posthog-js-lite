@@ -243,6 +243,7 @@ export const sendEventToPosthog = async ({
   }
 
   if (captureImmediate) {
+    // await capture promise to send single event in serverless environments
     await client.captureImmediate(event)
   } else {
     client.capture(event)
