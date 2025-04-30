@@ -39,6 +39,7 @@ import {
   retriable,
   RetriableOptions,
   safeSetTimeout,
+  STRING_FORMAT,
 } from './utils'
 import { LZString } from './lz-string'
 import { SimpleEventEmitter } from './eventemitter'
@@ -49,8 +50,20 @@ export * as utils from './utils'
 class PostHogFetchHttpError extends Error {
   name = 'PostHogFetchHttpError'
 
-  constructor(public response: PostHogFetchResponse) {
-    super('HTTP error while fetching PostHog: ' + response.status)
+  constructor(public response: PostHogFetchResponse, public reqByteLength: number) {
+    super('HTTP error while fetching PostHog: status=' + response.status + ', reqByteLength=' + reqByteLength)
+  }
+
+  get status(): number {
+    return this.response.status
+  }
+
+  get text(): Promise<string> {
+    return this.response.text()
+  }
+
+  get json(): Promise<any> {
+    return this.response.json()
   }
 }
 
@@ -63,6 +76,20 @@ class PostHogFetchNetworkError extends Error {
     // @ts-ignore
     super('Network error while fetching PostHog', error instanceof Error ? { cause: error } : {})
   }
+}
+
+export async function logFlushError(err: any): Promise<void> {
+  if (err instanceof PostHogFetchHttpError) {
+    let text = ''
+    try {
+      text = await err.text
+    } catch {}
+
+    console.error(`Error while flushing PostHog: message=${err.message}, response body=${text}`, err)
+  } else {
+    console.error('Error while flushing PostHog', err)
+  }
+  return Promise.resolve()
 }
 
 function isPostHogFetchError(err: any): boolean {
@@ -889,7 +916,9 @@ export abstract class PostHogCoreStateless {
    * Avoids unnecessary promise errors
    */
   private flushBackground(): void {
-    void this.flush().catch(() => {})
+    void this.flush().catch(async (err) => {
+      await logFlushError(err)
+    })
   }
 
   async flush(): Promise<any[]> {
@@ -996,6 +1025,9 @@ export abstract class PostHogCoreStateless {
       return ctrl.signal
     }
 
+    const body = options.body ? options.body : ''
+    const reqByteLength = Buffer.byteLength(body, STRING_FORMAT)
+
     return await retriable(
       async () => {
         let res: PostHogFetchResponse | null = null
@@ -1013,7 +1045,7 @@ export abstract class PostHogCoreStateless {
         // https://developer.mozilla.org/en-US/docs/Web/API/Request/mode#no-cors
         const isNoCors = options.mode === 'no-cors'
         if (!isNoCors && (res.status < 200 || res.status >= 400)) {
-          throw new PostHogFetchHttpError(res)
+          throw new PostHogFetchHttpError(res, reqByteLength)
         }
         return res
       },
@@ -1053,7 +1085,8 @@ export abstract class PostHogCoreStateless {
         if (!isPostHogFetchError(e)) {
           throw e
         }
-        this.logMsgIfDebug(() => console.error('Error while shutting down PostHog', e))
+
+        await logFlushError(e)
       }
     }
 
