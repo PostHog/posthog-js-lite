@@ -1,13 +1,11 @@
 // import { PostHog } from '../'
 import { PostHog as PostHog } from '../../src/posthog-node'
 import { PostHogSentryIntegration } from '../../src/extensions/sentry-integration'
-jest.mock('../../src/fetch')
-import fetch from '../../src/fetch'
 import { waitForPromises } from 'posthog-core/test/test-utils/test-utils'
 
 jest.mock('../../package.json', () => ({ version: '1.2.3' }))
 
-const mockedFetch = jest.mocked(fetch, true)
+const mockedFetch = jest.spyOn(globalThis, 'fetch').mockImplementation()
 
 const getLastBatchEvents = (): any[] | undefined => {
   expect(mockedFetch).toHaveBeenCalledWith('http://example.com/batch/', expect.objectContaining({ method: 'POST' }))

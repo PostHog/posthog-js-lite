@@ -1,3 +1,9 @@
+# 5.0.0-alpha.1 - 2025-04-29
+
+## Breaking changes
+
+1. feat: migrate to native fetch, Node 18+ required
+
 # 4.14.0 - 2025-04-24
 
 1. feat: Add super properties as a concept to the Node SDK
