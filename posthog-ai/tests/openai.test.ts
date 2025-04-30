@@ -261,4 +261,21 @@ describe('PostHogOpenAI - Jest test suite', () => {
     expect(properties['$ai_reasoning_tokens']).toBe(15)
     expect(properties['$ai_cache_read_input_tokens']).toBe(5)
   })
+
+  // New test: ensure captureImmediate is used when flag is set
+  conditionalTest('captureImmediate flag', async () => {
+    // Mock the immediate capture function
+    (mockPostHogClient as any).captureImmediate = jest.fn().mockResolvedValue(undefined)
+
+    await client.chat.completions.create({
+      model: 'gpt-4',
+      messages: [{ role: 'user', content: 'Hello' }],
+      posthogDistinctId: 'test-id',
+      posthogCaptureImmediate: true,
+    })
+
+    // captureImmediate should be called once, and capture should not be called
+    expect((mockPostHogClient as any).captureImmediate).toHaveBeenCalledTimes(1)
+    expect(mockPostHogClient.capture).toHaveBeenCalledTimes(0)
+  })
 })

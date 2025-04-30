@@ -14,7 +14,7 @@ interface ClientOptions {
   posthogModelOverride?: string
   posthogProviderOverride?: string
   posthogCostOverride?: CostOverride
-  fullDebug?: boolean
+  posthogCaptureImmediate?: boolean
 }
 
 interface CreateInstrumentationMiddlewareOptions {
@@ -26,7 +26,7 @@ interface CreateInstrumentationMiddlewareOptions {
   posthogModelOverride?: string
   posthogProviderOverride?: string
   posthogCostOverride?: CostOverride
-  fullDebug?: boolean
+  posthogCaptureImmediate?: boolean
 }
 
 interface PostHogInput {
@@ -128,7 +128,7 @@ const mapVercelPrompt = (prompt: LanguageModelV1Prompt): PostHogInput[] => {
     // Trim the inputs array until its JSON size fits within MAX_OUTPUT_SIZE
     let serialized = JSON.stringify(inputs)
     let removedCount = 0
-    while (Buffer.byteLength(serialized, 'utf8') > MAX_OUTPUT_SIZE && inputs.length > 0) {
+    for (let i = 0; i < inputs.length && Buffer.byteLength(serialized, 'utf8') > MAX_OUTPUT_SIZE; i++) {
       inputs.shift()
       removedCount++
       serialized = JSON.stringify(inputs)
@@ -136,7 +136,7 @@ const mapVercelPrompt = (prompt: LanguageModelV1Prompt): PostHogInput[] => {
     if (removedCount > 0) {
       // Add one placeholder to indicate how many were removed
       inputs.unshift({
-        role: 'assistant',
+        role: 'posthog',
         content: `[${removedCount} message${removedCount === 1 ? '' : 's'} removed due to size limit]`,
       })
     }
@@ -224,7 +224,7 @@ export const createInstrumentationMiddleware = (
               }
             : {}),
         }
-        sendEventToPosthog({
+        await sendEventToPosthog({
           client: phClient,
           distinctId: options.posthogDistinctId,
           traceId: options.posthogTraceId,
@@ -241,13 +241,13 @@ export const createInstrumentationMiddleware = (
             outputTokens: result.usage.completionTokens,
             ...additionalTokenValues,
           },
-          fullDebug: options.fullDebug,
+          captureImmediate: options.posthogCaptureImmediate,
         })
 
         return result
       } catch (error: any) {
         const modelId = model.modelId
-        sendEventToPosthog({
+        await sendEventToPosthog({
           client: phClient,
           distinctId: options.posthogDistinctId,
           traceId: options.posthogTraceId,
@@ -265,7 +265,7 @@ export const createInstrumentationMiddleware = (
           },
           isError: true,
           error: truncate(JSON.stringify(error)),
-          fullDebug: options.fullDebug,
+          captureImmediate: options.posthogCaptureImmediate,
         })
         throw error
       }
@@ -317,9 +317,9 @@ export const createInstrumentationMiddleware = (
             controller.enqueue(chunk)
           },
 
-          flush() {
+          flush: async () => {
             const latency = (Date.now() - startTime) / 1000
-            sendEventToPosthog({
+            await sendEventToPosthog({
               client: phClient,
               distinctId: options.posthogDistinctId,
               traceId: options.posthogTraceId,
@@ -332,7 +332,7 @@ export const createInstrumentationMiddleware = (
               params: mergedParams as any,
               httpStatus: 200,
               usage,
-              fullDebug: options.fullDebug,
+              captureImmediate: options.posthogCaptureImmediate,
             })
           },
         })
@@ -342,7 +342,7 @@ export const createInstrumentationMiddleware = (
           ...rest,
         }
       } catch (error: any) {
-        sendEventToPosthog({
+        await sendEventToPosthog({
           client: phClient,
           distinctId: options.posthogDistinctId,
           traceId: options.posthogTraceId,
@@ -360,7 +360,7 @@ export const createInstrumentationMiddleware = (
           },
           isError: true,
           error: truncate(JSON.stringify(error)),
-          fullDebug: options.fullDebug,
+          captureImmediate: options.posthogCaptureImmediate,
         })
         throw error
       }
