@@ -85,6 +85,7 @@ export abstract class PostHogCoreStateless {
   private maxQueueSize: number
   private flushInterval: number
   private flushPromise: Promise<any> | null = null
+  private shutdownPromise: Promise<void> | null = null
   private requestTimeout: number
   private featureFlagsRequestTimeoutMs: number
   private remoteConfigRequestTimeoutMs: number
@@ -915,7 +916,7 @@ export abstract class PostHogCoreStateless {
     )
   }
 
-  async shutdown(shutdownTimeoutMs: number = 30000): Promise<void> {
+  async _shutdown(shutdownTimeoutMs: number = 30000): Promise<void> {
     // A little tricky - we want to have a max shutdown time and enforce it, even if that means we have some
     // dangling promises. We'll keep track of the timeout and resolve/reject based on that.
 
@@ -961,6 +962,21 @@ export abstract class PostHogCoreStateless {
       }),
       doShutdown(),
     ])
+  }
+
+  /**
+   *  Call shutdown() once before the node process exits, so ensure that e.g. all events have been sent first
+   * @param shutdownTimeoutMs
+   */
+  async shutdown(shutdownTimeoutMs: number = 30000): Promise<void> {
+    if (this.shutdownPromise) {
+      this.logMsgIfDebug(() => console.error('shutdown() called while already shutting down. Did you mean flush()?'))
+    } else {
+      this.shutdownPromise = this._shutdown(shutdownTimeoutMs).finally(() => {
+        this.shutdownPromise = null
+      })
+    }
+    return this.shutdownPromise
   }
 }
 
