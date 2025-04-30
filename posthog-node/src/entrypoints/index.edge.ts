@@ -1,11 +1,11 @@
 export * from '../exports'
 
-import { defaultStackParser } from '../extensions/error-tracking/stack-parser.edge'
 import ErrorTracking from '../extensions/error-tracking'
 
 import { PostHogBackendClient } from '../client'
+import { createStackParser } from '../extensions/error-tracking/stack-parser'
 
-ErrorTracking.stackParser = defaultStackParser
+ErrorTracking.stackParser = createStackParser()
 ErrorTracking.frameModifiers = []
 
 export class PostHog extends PostHogBackendClient {
