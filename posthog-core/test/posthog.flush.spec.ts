@@ -159,6 +159,22 @@ describe('PostHog Core', () => {
       expect(mocks.fetch).toHaveBeenCalledTimes(6) // 2 failures with size 4 then 2, then 4 successes with size 1
     })
 
+    it('should treat a 413 at batchSize 1 as a regular error', async () => {
+      ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 10 })
+
+      mocks.fetch.mockImplementation(async () => {
+        return Promise.resolve({
+          status: 413,
+          text: () => Promise.resolve('Content Too Large'),
+          json: () => Promise.resolve({ status: 'Content Too Large' }),
+        })
+      })
+
+      posthog.capture('test-event-1')
+      await expect(posthog.flush()).rejects.toHaveProperty('name', 'PostHogFetchHttpError')
+      expect(mocks.fetch).toHaveBeenCalledTimes(1)
+    })
+
     it('should stop at first error', async () => {
       useRealTimers()
       ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 10, fetchRetryDelay: 1 })

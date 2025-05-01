@@ -1030,7 +1030,7 @@ export abstract class PostHogCoreStateless {
       try {
         await this.fetchWithRetry(url, fetchOptions, retryOptions)
       } catch (err) {
-        if (isPostHogFetchContentTooLargeError(err)) {
+        if (isPostHogFetchContentTooLargeError(err) && batchMessages.length > 1) {
           // if we get a 413 error, we want to reduce the batch size and try again
           this.maxBatchSize = Math.max(1, Math.floor(batchMessages.length / 2))
           this.logMsgIfDebug(() =>
