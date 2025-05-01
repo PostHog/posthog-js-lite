@@ -923,12 +923,26 @@ export abstract class PostHogCoreStateless {
   }
 
   async flush(): Promise<any[]> {
-    if (!this.flushPromise) {
-      this.flushPromise = this._flush().finally(() => {
-        this.flushPromise = null
+    let nextFlushPromise: Promise<any>
+    if (this.flushPromise) {
+      // wait for the current flush operation to finish (regardless of success or failure), then try to flush again
+      nextFlushPromise = Promise.allSettled([this.flushPromise]).then(async () => {
+        await this._flush()
       })
-      this.addPendingPromise(this.flushPromise)
+    } else {
+      // if there's no flush operation in progress, just flush
+      nextFlushPromise = this._flush()
     }
+
+    this.flushPromise = nextFlushPromise
+    void this.addPendingPromise(nextFlushPromise)
+    nextFlushPromise.finally(() => {
+      // if there are no others waiting to flush, clear the promise
+      if (this.flushPromise === nextFlushPromise) {
+        this.flushPromise = null
+      }
+    })
+
     return this.flushPromise
   }
 
