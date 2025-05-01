@@ -381,33 +381,29 @@ describe('PostHog Node.js', () => {
       })
       ph.debug(true)
 
-      // using debug mode to check console.log output
-      // which tells us when the flush is complete
+      ph.capture({ event: 'test-event-1', distinctId: '123' })
 
-      ph.capture({ event: 'test-event', distinctId: '123' })
-      await wait(100)
-      expect(logSpy).toHaveBeenCalledTimes(1)
+      // start flushing, but don't wait for promise to resolve before resuming events
+      void ph.flush()
 
-      ph.capture({ event: 'test-event', distinctId: '123' })
-      ph.capture({ event: 'test-event', distinctId: '123' })
-      await wait(100)
-      expect(logSpy).toHaveBeenCalledTimes(3)
-      await wait(400) // The flush will resolve in this time
-      ph.capture({ event: 'test-event', distinctId: '123' })
-      ph.capture({ event: 'test-event', distinctId: '123' })
-      await wait(100)
-      expect(logSpy).toHaveBeenCalledTimes(6) // 5 captures and 1 flush
-      expect(5).toEqual(logSpy.mock.calls.filter((call) => call[1].includes('capture')).length)
-      expect(1).toEqual(logSpy.mock.calls.filter((call) => call[1].includes('flush')).length)
+      ph.capture({ event: 'test-event-2', distinctId: '123' })
 
-      logSpy.mockClear()
-      expect(logSpy).toHaveBeenCalledTimes(0)
+      // start shutdown, but don't wait for promise to resolve before resuming events
+      const shutdownPromise = ph.shutdown()
 
-      console.warn('YOO!!')
+      ph.capture({ event: 'test-event-3', distinctId: '123' })
 
-      await ph.shutdown()
-      // 1 final flush for the events that were queued during shutdown
-      expect(1).toEqual(logSpy.mock.calls.filter((call) => call[1].includes('flush')).length)
+      // wait for shutdown to finish
+      await shutdownPromise
+
+      expect(3).toEqual(logSpy.mock.calls.filter((call) => call[1].includes('capture')).length)
+      const flushedEvents = logSpy.mock.calls.filter((call) => call[1].includes('flush')).flatMap((flush) => flush[2])
+      expect(flushedEvents).toMatchObject([
+        { event: 'test-event-1' },
+        { event: 'test-event-2' },
+        { event: 'test-event-3' },
+      ])
+
       logSpy.mockRestore()
       warnSpy.mockRestore()
     })
