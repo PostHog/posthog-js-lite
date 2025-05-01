@@ -42,7 +42,9 @@ describe('PostHog Core', () => {
       await waitForPromises()
 
       expect(mocks.fetch).toHaveBeenCalledTimes(2) // 1 for decide, 1 for groupIdentify
-      expect(parseBody(mocks.fetch.mock.calls[0])).toMatchObject({
+      const batchCall = mocks.fetch.mock.calls[1]
+      expect(batchCall[0]).toEqual('https://us.i.posthog.com/batch/')
+      expect(parseBody(batchCall)).toMatchObject({
         batch: [
           {
             event: '$groupidentify',
