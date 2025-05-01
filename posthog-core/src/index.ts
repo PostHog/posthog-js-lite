@@ -923,27 +923,24 @@ export abstract class PostHogCoreStateless {
   }
 
   async flush(): Promise<any[]> {
-    let nextFlushPromise: Promise<any>
-    if (this.flushPromise) {
-      // wait for the current flush operation to finish (regardless of success or failure), then try to flush again
-      nextFlushPromise = Promise.allSettled([this.flushPromise]).then(async () => {
-        await this._flush()
-      })
-    } else {
-      // if there's no flush operation in progress, just flush
-      nextFlushPromise = this._flush()
-    }
+    // Wait for the current flush operation to finish (regardless of success or failure), then try to flush again.
+    // Use allSettled instead of finally to be defensive around flush throwing errors immediately rather than rejecting.
+    const nextFlushPromise = Promise.allSettled([this.flushPromise]).then(() => {
+      return this._flush()
+    })
 
     this.flushPromise = nextFlushPromise
     void this.addPendingPromise(nextFlushPromise)
-    nextFlushPromise.finally(() => {
-      // if there are no others waiting to flush, clear the promise
+
+    Promise.allSettled([nextFlushPromise]).then(() => {
+      // If there are no others waiting to flush, clear the promise.
+      // We don't strictly need to do this, but it could make debugging easier
       if (this.flushPromise === nextFlushPromise) {
         this.flushPromise = null
       }
     })
 
-    return this.flushPromise
+    return nextFlushPromise
   }
 
   protected getCustomHeaders(): { [key: string]: string } {
@@ -969,63 +966,72 @@ export abstract class PostHogCoreStateless {
       return []
     }
 
-    const items = queue.slice(0, this.maxBatchSize)
-    const messages = items.map((item) => item.message)
+    const sentMessages: any[] = []
+    const originalQueueLength = queue.length
 
-    const persistQueueChange = (): void => {
-      const refreshedQueue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
-      this.setPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue, refreshedQueue.slice(items.length))
-    }
+    while (queue.length > 0 && sentMessages.length < originalQueueLength) {
+      const batchItems = queue.slice(0, this.maxBatchSize)
+      const batchMessages = batchItems.map((item) => item.message)
 
-    const data: Record<string, any> = {
-      api_key: this.apiKey,
-      batch: messages,
-      sent_at: currentISOTime(),
-    }
-
-    if (this.historicalMigration) {
-      data.historical_migration = true
-    }
-
-    const payload = JSON.stringify(data)
-
-    const url =
-      this.captureMode === 'form'
-        ? `${this.host}/e/?ip=1&_=${currentTimestamp()}&v=${this.getLibraryVersion()}`
-        : `${this.host}/batch/`
-
-    const fetchOptions: PostHogFetchOptions =
-      this.captureMode === 'form'
-        ? {
-            method: 'POST',
-            mode: 'no-cors',
-            credentials: 'omit',
-            headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `data=${encodeURIComponent(LZString.compressToBase64(payload))}&compression=lz64`,
-          }
-        : {
-            method: 'POST',
-            headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },
-            body: payload,
-          }
-
-    try {
-      await this.fetchWithRetry(url, fetchOptions)
-    } catch (err) {
-      // depending on the error type, eg a malformed JSON or broken queue, it'll always return an error
-      // and this will be an endless loop, in this case, if the error isn't a network issue, we always remove the items from the queue
-      if (!(err instanceof PostHogFetchNetworkError)) {
-        persistQueueChange()
+      const persistQueueChange = (): void => {
+        const refreshedQueue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
+        this.setPersistedProperty<PostHogQueueItem[]>(
+          PostHogPersistedProperty.Queue,
+          refreshedQueue.slice(batchItems.length)
+        )
       }
-      this._events.emit('error', err)
 
-      throw err
+      const data: Record<string, any> = {
+        api_key: this.apiKey,
+        batch: batchMessages,
+        sent_at: currentISOTime(),
+      }
+
+      if (this.historicalMigration) {
+        data.historical_migration = true
+      }
+
+      const payload = JSON.stringify(data)
+
+      const url =
+        this.captureMode === 'form'
+          ? `${this.host}/e/?ip=1&_=${currentTimestamp()}&v=${this.getLibraryVersion()}`
+          : `${this.host}/batch/`
+
+      const fetchOptions: PostHogFetchOptions =
+        this.captureMode === 'form'
+          ? {
+              method: 'POST',
+              mode: 'no-cors',
+              credentials: 'omit',
+              headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: `data=${encodeURIComponent(LZString.compressToBase64(payload))}&compression=lz64`,
+            }
+          : {
+              method: 'POST',
+              headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },
+              body: payload,
+            }
+
+      try {
+        await this.fetchWithRetry(url, fetchOptions)
+      } catch (err) {
+        // depending on the error type, eg a malformed JSON or broken queue, it'll always return an error
+        // and this will be an endless loop, in this case, if the error isn't a network issue, we always remove the items from the queue
+        if (!(err instanceof PostHogFetchNetworkError)) {
+          persistQueueChange()
+        }
+        this._events.emit('error', err)
+
+        throw err
+      }
+
+      persistQueueChange()
+
+      sentMessages.push(...batchMessages)
     }
-
-    persistQueueChange()
-    this._events.emit('flush', messages)
-
-    return messages
+    this._events.emit('flush', sentMessages)
+    return sentMessages
   }
 
   private async fetchWithRetry(

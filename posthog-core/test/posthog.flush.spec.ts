@@ -1,5 +1,5 @@
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
-import { waitForPromises } from './test-utils/test-utils'
+import { delay, waitForPromises } from './test-utils/test-utils'
 
 describe('PostHog Core', () => {
   let posthog: PostHogCoreTestClient
@@ -66,6 +66,59 @@ describe('PostHog Core', () => {
       posthog.capture('test-event-4')
       await waitForPromises()
       expect(mocks.fetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not get stuck in a loop when new events are added while flushing', async () => {
+      jest.useRealTimers()
+      mocks.fetch.mockImplementation(async () => {
+        posthog.capture('another-event')
+        await delay(10)
+        return Promise.resolve({
+          status: 200,
+          text: () => Promise.resolve('ok'),
+          json: () => Promise.resolve({ status: 'ok' }),
+        })
+      })
+
+      posthog.capture('test-event-1')
+      await posthog.flush()
+      expect(mocks.fetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not get stuck in a loop when new events are added while flushing with flushAt 1 and can shutdown', async () => {
+      let shouldAddNewEvents = true
+      jest.useRealTimers()
+      ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1 })
+      mocks.fetch.mockImplementation(async () => {
+        if (shouldAddNewEvents) {
+          posthog.capture('another-event')
+        }
+        await delay(10)
+        return Promise.resolve({
+          status: 200,
+          text: () => Promise.resolve('ok'),
+          json: () => Promise.resolve({ status: 'ok' }),
+        })
+      })
+
+      posthog.capture('test-event-1')
+      await posthog.flush()
+      expect(mocks.fetch).toHaveBeenCalledTimes(2)
+
+      // end the program
+      shouldAddNewEvents = false
+      await posthog.shutdown()
+    })
+
+    it('should flush all events even if larger than batch size', async () => {
+      ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 4 })
+      posthog['maxBatchSize'] = 2 // this is a bit contrived as normally maxBatchSize can't be smaller than flushAt
+      posthog.capture('test-event-1')
+      posthog.capture('test-event-2')
+      posthog.capture('test-event-3')
+      posthog.capture('test-event-4')
+      await waitForPromises()
+      expect(mocks.fetch).toHaveBeenCalledTimes(2)
     })
   })
 })
