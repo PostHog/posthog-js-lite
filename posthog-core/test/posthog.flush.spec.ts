@@ -1,7 +1,6 @@
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
 import { delay, waitForPromises } from './test-utils/test-utils'
 import { PostHogPersistedProperty } from '../src'
-import useRealTimers = jest.useRealTimers
 
 describe('PostHog Core', () => {
   let posthog: PostHogCoreTestClient
@@ -176,7 +175,7 @@ describe('PostHog Core', () => {
     })
 
     it('should stop at first error', async () => {
-      useRealTimers()
+      jest.useRealTimers()
       ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 10, fetchRetryDelay: 1 })
       posthog['maxBatchSize'] = 1 // a bit contrived because usually maxBatchSize >= flushAt
       const successfulMessages: any[] = []
