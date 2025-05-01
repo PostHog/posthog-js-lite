@@ -1,4 +1,5 @@
 import { PostHogV4DecideResponse } from 'posthog-core/src/types'
+import util from 'util'
 
 type ErrorResponse = {
   status: number
@@ -104,3 +105,7 @@ export const anyLocalEvalCall = [
   expect.any(Object),
 ]
 export const anyDecideCall = ['http://example.com/flags/?v=2', expect.any(Object)]
+
+export const isPending = (promise: Promise<any>): boolean => {
+  return util.inspect(promise).includes('pending')
+}

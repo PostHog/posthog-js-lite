@@ -1,6 +1,6 @@
 import { MINIMUM_POLLING_INTERVAL, PostHog as PostHog, THIRTY_SECONDS } from '../src/posthog-node'
 import fetch from '../src/fetch'
-import { anyDecideCall, anyLocalEvalCall, apiImplementation } from './test-utils'
+import { anyDecideCall, anyLocalEvalCall, apiImplementation, isPending } from './test-utils'
 import { waitForPromises, wait } from '../../posthog-core/test/test-utils/test-utils'
 import { randomUUID } from 'crypto'
 jest.mock('../src/fetch')
@@ -384,7 +384,8 @@ describe('PostHog Node.js', () => {
       ph.capture({ event: 'test-event-1', distinctId: '123' })
 
       // start flushing, but don't wait for promise to resolve before resuming events
-      void ph.flush()
+      const flushPromise = ph.flush()
+      expect(isPending(flushPromise)).toEqual(true)
 
       ph.capture({ event: 'test-event-2', distinctId: '123' })
 
@@ -395,6 +396,7 @@ describe('PostHog Node.js', () => {
 
       // wait for shutdown to finish
       await shutdownPromise
+      expect(isPending(flushPromise)).toEqual(false)
 
       expect(3).toEqual(logSpy.mock.calls.filter((call) => call[1].includes('capture')).length)
       const flushedEvents = logSpy.mock.calls.filter((call) => call[1].includes('flush')).flatMap((flush) => flush[2])
