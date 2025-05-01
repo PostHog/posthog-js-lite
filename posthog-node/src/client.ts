@@ -617,9 +617,9 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
     await this.featureFlagsPoller?.loadFeatureFlags(true)
   }
 
-  async shutdown(shutdownTimeoutMs?: number): Promise<void> {
+  async _shutdown(shutdownTimeoutMs?: number): Promise<void> {
     this.featureFlagsPoller?.stopPoller()
-    return super.shutdown(shutdownTimeoutMs)
+    return super._shutdown(shutdownTimeoutMs)
   }
 
   private addLocalPersonAndGroupProperties(
