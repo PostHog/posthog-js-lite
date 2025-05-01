@@ -92,8 +92,12 @@ export async function logFlushError(err: any): Promise<void> {
   return Promise.resolve()
 }
 
-function isPostHogFetchError(err: any): boolean {
+function isPostHogFetchError(err: unknown): err is PostHogFetchHttpError | PostHogFetchNetworkError {
   return typeof err === 'object' && (err instanceof PostHogFetchHttpError || err instanceof PostHogFetchNetworkError)
+}
+
+function isPostHogFetchContentTooLargeError(err: unknown): err is PostHogFetchHttpError & { status: 413 } {
+  return typeof err === 'object' && err instanceof PostHogFetchHttpError && err.status === 413
 }
 
 enum QuotaLimitedFeature {
@@ -960,7 +964,7 @@ export abstract class PostHogCoreStateless {
     this.clearFlushTimer()
     await this._initPromise
 
-    const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
+    let queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
 
     if (!queue.length) {
       return []
@@ -975,10 +979,9 @@ export abstract class PostHogCoreStateless {
 
       const persistQueueChange = (): void => {
         const refreshedQueue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
-        this.setPersistedProperty<PostHogQueueItem[]>(
-          PostHogPersistedProperty.Queue,
-          refreshedQueue.slice(batchItems.length)
-        )
+        const newQueue = refreshedQueue.slice(batchItems.length)
+        this.setPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue, newQueue)
+        queue = newQueue
       }
 
       const data: Record<string, any> = {
@@ -1013,9 +1016,32 @@ export abstract class PostHogCoreStateless {
               body: payload,
             }
 
+      const retryOptions: Partial<RetriableOptions> = {
+        retryCheck: (err) => {
+          // don't automatically retry on 413 errors, we want to reduce the batch size first
+          if (isPostHogFetchContentTooLargeError(err)) {
+            return false
+          }
+          // otherwise, retry on network errors
+          return isPostHogFetchError(err)
+        },
+      }
+
       try {
-        await this.fetchWithRetry(url, fetchOptions)
+        await this.fetchWithRetry(url, fetchOptions, retryOptions)
       } catch (err) {
+        if (isPostHogFetchContentTooLargeError(err)) {
+          // if we get a 413 error, we want to reduce the batch size and try again
+          this.maxBatchSize = Math.max(1, Math.floor(batchMessages.length / 2))
+          this.logMsgIfDebug(() =>
+            console.warn(
+              `Received 413 when sending batch of size ${batchMessages.length}, reducing batch size to ${this.maxBatchSize}`
+            )
+          )
+          // do not persist the queue change, we want to retry the same batch
+          continue
+        }
+
         // depending on the error type, eg a malformed JSON or broken queue, it'll always return an error
         // and this will be an endless loop, in this case, if the error isn't a network issue, we always remove the items from the queue
         if (!(err instanceof PostHogFetchNetworkError)) {

@@ -1,5 +1,7 @@
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
 import { delay, waitForPromises } from './test-utils/test-utils'
+import { PostHogPersistedProperty } from '../src'
+import useRealTimers = jest.useRealTimers
 
 describe('PostHog Core', () => {
   let posthog: PostHogCoreTestClient
@@ -21,7 +23,7 @@ describe('PostHog Core', () => {
       await expect(posthog.flush()).resolves.toEqual([])
     })
 
-    it('flush messsages once called', async () => {
+    it('flush messages once called', async () => {
       posthog.capture('test-event-1')
       posthog.capture('test-event-2')
       posthog.capture('test-event-3')
@@ -34,19 +36,33 @@ describe('PostHog Core', () => {
       expect(mocks.fetch).toHaveBeenCalled()
     })
 
-    it('responds with an error after retries', async () => {
-      posthog.capture('test-event-1')
+    it.each([400, 500])('responds with an error after retries with %s error', async (status) => {
       mocks.fetch.mockImplementation(() => {
         return Promise.resolve({
-          status: 400,
+          status: status,
           text: async () => 'err',
           json: async () => ({ status: 'err' }),
         })
       })
+      posthog.capture('test-event-1')
 
       const time = Date.now()
       jest.useRealTimers()
       await expect(posthog.flush()).rejects.toHaveProperty('name', 'PostHogFetchHttpError')
+      expect(mocks.fetch).toHaveBeenCalledTimes(4)
+      expect(Date.now() - time).toBeGreaterThan(300)
+      expect(Date.now() - time).toBeLessThan(500)
+    })
+
+    it('responds with an error after retries with network error ', async () => {
+      mocks.fetch.mockImplementation(() => {
+        return Promise.reject(new Error('network problems'))
+      })
+      posthog.capture('test-event-1')
+
+      const time = Date.now()
+      jest.useRealTimers()
+      await expect(posthog.flush()).rejects.toHaveProperty('name', 'PostHogFetchNetworkError')
       expect(mocks.fetch).toHaveBeenCalledTimes(4)
       expect(Date.now() - time).toBeGreaterThan(300)
       expect(Date.now() - time).toBeLessThan(500)
@@ -85,40 +101,98 @@ describe('PostHog Core', () => {
       expect(mocks.fetch).toHaveBeenCalledTimes(1)
     })
 
-    it('does not get stuck in a loop when new events are added while flushing with flushAt 1 and can shutdown', async () => {
-      let shouldAddNewEvents = true
-      jest.useRealTimers()
-      ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1 })
-      mocks.fetch.mockImplementation(async () => {
-        if (shouldAddNewEvents) {
-          posthog.capture('another-event')
-        }
-        await delay(10)
-        return Promise.resolve({
-          status: 200,
-          text: () => Promise.resolve('ok'),
-          json: () => Promise.resolve({ status: 'ok' }),
-        })
-      })
-
-      posthog.capture('test-event-1')
-      await posthog.flush()
-      expect(mocks.fetch).toHaveBeenCalledTimes(2)
-
-      // end the program
-      shouldAddNewEvents = false
-      await posthog.shutdown()
-    })
-
     it('should flush all events even if larger than batch size', async () => {
-      ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 4 })
-      posthog['maxBatchSize'] = 2 // this is a bit contrived as normally maxBatchSize can't be smaller than flushAt
+      ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 10 })
+      posthog['maxBatchSize'] = 2 // a bit contrived because usually maxBatchSize >= flushAt
       posthog.capture('test-event-1')
       posthog.capture('test-event-2')
       posthog.capture('test-event-3')
       posthog.capture('test-event-4')
-      await waitForPromises()
+      await expect(posthog.flush()).resolves.toMatchObject([
+        { event: 'test-event-1' },
+        { event: 'test-event-2' },
+        { event: 'test-event-3' },
+        { event: 'test-event-4' },
+      ])
       expect(mocks.fetch).toHaveBeenCalledTimes(2)
+    })
+
+    it('should reduce the batch size without dropping events if received 413', async () => {
+      ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 10 })
+      const successfulMessages: any[] = []
+
+      mocks.fetch.mockImplementation(async (_, options) => {
+        const batch = JSON.parse(options.body || '').batch
+
+        if (batch.length > 1) {
+          return Promise.resolve({
+            status: 413,
+            text: () => Promise.resolve('Content Too Large'),
+            json: () => Promise.resolve({ status: 'Content Too Large' }),
+          })
+        } else {
+          successfulMessages.push(...batch)
+          return Promise.resolve({
+            status: 200,
+            text: () => Promise.resolve('ok'),
+            json: () => Promise.resolve({ status: 'ok' }),
+          })
+        }
+      })
+
+      posthog.capture('test-event-1')
+      posthog.capture('test-event-2')
+      posthog.capture('test-event-3')
+      posthog.capture('test-event-4')
+      await expect(posthog.flush()).resolves.toMatchObject([
+        { event: 'test-event-1' },
+        { event: 'test-event-2' },
+        { event: 'test-event-3' },
+        { event: 'test-event-4' },
+      ])
+      expect(successfulMessages).toMatchObject([
+        { event: 'test-event-1' },
+        { event: 'test-event-2' },
+        { event: 'test-event-3' },
+        { event: 'test-event-4' },
+      ])
+      expect(mocks.fetch).toHaveBeenCalledTimes(6) // 2 failures with size 4 then 2, then 4 successes with size 1
+    })
+
+    it('should stop at first error', async () => {
+      useRealTimers()
+      ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 10, fetchRetryDelay: 1 })
+      posthog['maxBatchSize'] = 1 // a bit contrived because usually maxBatchSize >= flushAt
+      const successfulMessages: any[] = []
+
+      mocks.fetch.mockImplementation(async (_, options) => {
+        const batch = JSON.parse(options.body || '').batch
+
+        if (batch.some((msg: any) => msg.event.includes('cursed'))) {
+          return Promise.resolve({
+            status: 500,
+            text: () => Promise.resolve('Cursed'),
+            json: () => Promise.resolve({ status: 'Cursed' }),
+          })
+        } else {
+          successfulMessages.push(...batch)
+          return Promise.resolve({
+            status: 200,
+            text: () => Promise.resolve('ok'),
+            json: () => Promise.resolve({ status: 'ok' }),
+          })
+        }
+      })
+
+      posthog.capture('test-event-1')
+      posthog.capture('cursed-event-2')
+      posthog.capture('test-event-3')
+
+      await expect(posthog.flush()).rejects.toHaveProperty('name', 'PostHogFetchHttpError')
+      expect(successfulMessages).toMatchObject([{ event: 'test-event-1' }])
+      expect(mocks.storage.getItem(PostHogPersistedProperty.Queue)).toMatchObject([
+        { message: { event: 'test-event-3' } },
+      ])
     })
   })
 })

@@ -107,7 +107,7 @@ export function removeTrailingSlash(url: string): string {
 export interface RetriableOptions {
   retryCount: number
   retryDelay: number
-  retryCheck: (err: any) => boolean
+  retryCheck: (err: unknown) => boolean
 }
 
 export async function retriable<T>(fn: () => Promise<T>, props: RetriableOptions): Promise<T> {
