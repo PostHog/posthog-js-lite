@@ -6,6 +6,7 @@ jest.mock('posthog-node', () => {
     PostHog: jest.fn().mockImplementation(() => {
       return {
         capture: jest.fn(),
+        captureImmediate: jest.fn(),
         privacyMode: false,
       }
     }),
@@ -260,5 +261,19 @@ describe('PostHogOpenAI - Jest test suite', () => {
     // Check the new token properties
     expect(properties['$ai_reasoning_tokens']).toBe(15)
     expect(properties['$ai_cache_read_input_tokens']).toBe(5)
+  })
+
+  // New test: ensure captureImmediate is used when flag is set
+  conditionalTest('captureImmediate flag', async () => {
+    await client.chat.completions.create({
+      model: 'gpt-4',
+      messages: [{ role: 'user', content: 'Hello' }],
+      posthogDistinctId: 'test-id',
+      posthogCaptureImmediate: true,
+    })
+
+    // captureImmediate should be called once, and capture should not be called
+    expect(mockPostHogClient.captureImmediate).toHaveBeenCalledTimes(1)
+    expect(mockPostHogClient.capture).toHaveBeenCalledTimes(0)
   })
 })

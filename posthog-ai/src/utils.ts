@@ -19,7 +19,7 @@ export interface MonitoringParams {
   posthogModelOverride?: string
   posthogProviderOverride?: string
   posthogCostOverride?: CostOverride
-  fullDebug?: boolean
+  posthogCaptureImmediate?: boolean
 }
 
 export interface CostOverride {
@@ -149,7 +149,7 @@ export type SendEventToPosthogParams = {
   isError?: boolean
   error?: string
   tools?: any
-  fullDebug?: boolean
+  captureImmediate?: boolean
 }
 
 function sanitizeValues(obj: any): any {
@@ -167,7 +167,7 @@ function sanitizeValues(obj: any): any {
   return jsonSafe
 }
 
-export const sendEventToPosthog = ({
+export const sendEventToPosthog = async ({
   client,
   distinctId,
   traceId,
@@ -183,82 +183,69 @@ export const sendEventToPosthog = ({
   isError = false,
   error,
   tools,
-  fullDebug = false,
-}: SendEventToPosthogParams): void => {
-  if (client.capture) {
-    // sanitize input and output for UTF-8 validity
-    const safeInput = sanitizeValues(input)
-    const safeOutput = sanitizeValues(output)
-    const safeError = sanitizeValues(error)
+  captureImmediate = false,
+}: SendEventToPosthogParams): Promise<void> => {
+  if (!client.capture) return Promise.resolve()
+  // sanitize input and output for UTF-8 validity
+  const safeInput = sanitizeValues(input)
+  const safeOutput = sanitizeValues(output)
+  const safeError = sanitizeValues(error)
 
-    let errorData = {}
-    if (isError) {
-      errorData = {
-        $ai_is_error: true,
-        $ai_error: safeError,
-      }
+  let errorData = {}
+  if (isError) {
+    errorData = {
+      $ai_is_error: true,
+      $ai_error: safeError,
     }
-    let costOverrideData = {}
-    if (params.posthogCostOverride) {
-      const inputCostUSD = (params.posthogCostOverride.inputCost ?? 0) * (usage.inputTokens ?? 0)
-      const outputCostUSD = (params.posthogCostOverride.outputCost ?? 0) * (usage.outputTokens ?? 0)
-      costOverrideData = {
-        $ai_input_cost_usd: inputCostUSD,
-        $ai_output_cost_usd: outputCostUSD,
-        $ai_total_cost_usd: inputCostUSD + outputCostUSD,
-      }
+  }
+  let costOverrideData = {}
+  if (params.posthogCostOverride) {
+    const inputCostUSD = (params.posthogCostOverride.inputCost ?? 0) * (usage.inputTokens ?? 0)
+    const outputCostUSD = (params.posthogCostOverride.outputCost ?? 0) * (usage.outputTokens ?? 0)
+    costOverrideData = {
+      $ai_input_cost_usd: inputCostUSD,
+      $ai_output_cost_usd: outputCostUSD,
+      $ai_total_cost_usd: inputCostUSD + outputCostUSD,
     }
+  }
 
-    const additionalTokenValues = {
-      ...(usage.reasoningTokens ? { $ai_reasoning_tokens: usage.reasoningTokens } : {}),
-      ...(usage.cacheReadInputTokens ? { $ai_cache_read_input_tokens: usage.cacheReadInputTokens } : {}),
-      ...(usage.cacheCreationInputTokens ? { $ai_cache_creation_input_tokens: usage.cacheCreationInputTokens } : {}),
-    }
+  const additionalTokenValues = {
+    ...(usage.reasoningTokens ? { $ai_reasoning_tokens: usage.reasoningTokens } : {}),
+    ...(usage.cacheReadInputTokens ? { $ai_cache_read_input_tokens: usage.cacheReadInputTokens } : {}),
+    ...(usage.cacheCreationInputTokens ? { $ai_cache_creation_input_tokens: usage.cacheCreationInputTokens } : {}),
+  }
 
-    const properties = {
-      $ai_provider: params.posthogProviderOverride ?? provider,
-      $ai_model: params.posthogModelOverride ?? model,
-      $ai_model_parameters: getModelParams(params),
-      $ai_input: withPrivacyMode(client, params.posthogPrivacyMode ?? false, safeInput),
-      $ai_output_choices: withPrivacyMode(client, params.posthogPrivacyMode ?? false, safeOutput),
-      $ai_http_status: httpStatus,
-      $ai_input_tokens: usage.inputTokens ?? 0,
-      $ai_output_tokens: usage.outputTokens ?? 0,
-      ...additionalTokenValues,
-      $ai_latency: latency,
-      $ai_trace_id: traceId,
-      $ai_base_url: baseURL,
-      ...params.posthogProperties,
-      ...(distinctId ? {} : { $process_person_profile: false }),
-      ...(tools ? { $ai_tools: tools } : {}),
-      ...errorData,
-      ...costOverrideData,
-    }
+  const properties = {
+    $ai_provider: params.posthogProviderOverride ?? provider,
+    $ai_model: params.posthogModelOverride ?? model,
+    $ai_model_parameters: getModelParams(params),
+    $ai_input: withPrivacyMode(client, params.posthogPrivacyMode ?? false, safeInput),
+    $ai_output_choices: withPrivacyMode(client, params.posthogPrivacyMode ?? false, safeOutput),
+    $ai_http_status: httpStatus,
+    $ai_input_tokens: usage.inputTokens ?? 0,
+    $ai_output_tokens: usage.outputTokens ?? 0,
+    ...additionalTokenValues,
+    $ai_latency: latency,
+    $ai_trace_id: traceId,
+    $ai_base_url: baseURL,
+    ...params.posthogProperties,
+    ...(distinctId ? {} : { $process_person_profile: false }),
+    ...(tools ? { $ai_tools: tools } : {}),
+    ...errorData,
+    ...costOverrideData,
+  }
 
-    if (fullDebug) {
-      // @ts-ignore
-      console.log('Sending event to PostHog', JSON.stringify(properties))
-      try {
-        // @ts-ignore
-        console.log(
-          'Size of properties (kb)',
-          Math.round((Buffer.byteLength(JSON.stringify(properties), STRING_FORMAT) / 1024) * 10000) / 10000
-        )
-        // @ts-ignore
-        console.log(
-          'Size of properties (mb)',
-          Math.round((Buffer.byteLength(JSON.stringify(properties), STRING_FORMAT) / 1024 / 1024) * 10000) / 10000
-        )
-      } catch (error) {
-        console.error('Error printing size of properties', error)
-      }
-    }
+  const event = {
+    distinctId: distinctId ?? traceId,
+    event: '$ai_generation',
+    properties,
+    groups: params.posthogGroups,
+  }
 
-    client.capture({
-      distinctId: distinctId ?? traceId,
-      event: '$ai_generation',
-      properties,
-      groups: params.posthogGroups,
-    })
+  if (captureImmediate) {
+    // await capture promise to send single event in serverless environments
+    await client.captureImmediate(event)
+  } else {
+    client.capture(event)
   }
 }

@@ -1,3 +1,8 @@
+# 4.3.0
+
+- Remove fullDebug mode
+- Add posthogCaptureImmediate to await a promise for each capture (for serverless environments)
+
 # 4.2.1
 
 - Add fullDebug mode and limit full size of event input
