@@ -185,7 +185,9 @@ export const sendEventToPosthog = async ({
   tools,
   captureImmediate = false,
 }: SendEventToPosthogParams): Promise<void> => {
-  if (!client.capture) return Promise.resolve()
+  if (!client.capture) {
+    return Promise.resolve()
+  }
   // sanitize input and output for UTF-8 validity
   const safeInput = sanitizeValues(input)
   const safeOutput = sanitizeValues(output)
