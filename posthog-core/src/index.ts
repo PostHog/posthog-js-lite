@@ -83,7 +83,7 @@ export async function logFlushError(err: any): Promise<void> {
     let text = ''
     try {
       text = await err.text
-    } catch {}
+    } catch { }
 
     console.error(`Error while flushing PostHog: message=${err.message}, response body=${text}`, err)
   } else {
@@ -256,7 +256,7 @@ export abstract class PostHogCoreStateless {
     const promiseUUID = uuidv7()
     this.pendingPromises[promiseUUID] = promise
     promise
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => {
         delete this.pendingPromises[promiseUUID]
       })
@@ -513,9 +513,9 @@ export abstract class PostHogCoreStateless {
     disableGeoip?: boolean
   ): Promise<
     | {
-        response: FeatureFlagDetail | undefined
-        requestId: string | undefined
-      }
+      response: FeatureFlagDetail | undefined
+      requestId: string | undefined
+    }
     | undefined
   > {
     await this._initPromise
@@ -859,17 +859,17 @@ export abstract class PostHogCoreStateless {
     const fetchOptions: PostHogFetchOptions =
       this.captureMode === 'form'
         ? {
-            method: 'POST',
-            mode: 'no-cors',
-            credentials: 'omit',
-            headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `data=${encodeURIComponent(LZString.compressToBase64(payload))}&compression=lz64`,
-          }
+          method: 'POST',
+          mode: 'no-cors',
+          credentials: 'omit',
+          headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `data=${encodeURIComponent(LZString.compressToBase64(payload))}&compression=lz64`,
+        }
         : {
-            method: 'POST',
-            headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },
-            body: payload,
-          }
+          method: 'POST',
+          headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },
+          body: payload,
+        }
 
     try {
       await this.fetchWithRetry(url, fetchOptions)
@@ -912,6 +912,28 @@ export abstract class PostHogCoreStateless {
     }
   }
 
+  async flush(): Promise<PostHogQueueItem['message'][]> {
+    this.clearFlushTimer()
+    await this._initPromise
+
+    const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
+    if (!queue.length) {
+      return []
+    }
+
+    // Clear the queue, we'll process all items in the queue
+    this.setPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue, [])
+
+    // Iterate over the queue and flush it in batches of maxBatchSize
+    const messages: PostHogQueueItem['message'][] = []
+    for (let i = 0; i < queue.length; i += this.maxBatchSize) {
+      const items = queue.slice(i, i + this.maxBatchSize)
+      messages.push(...(await this._flush(items)))
+    }
+
+    return messages
+  }
+
   /**
    * Helper for flushing the queue in the background
    * Avoids unnecessary promise errors
@@ -922,46 +944,8 @@ export abstract class PostHogCoreStateless {
     })
   }
 
-  async flush(): Promise<any[]> {
-    if (!this.flushPromise) {
-      this.flushPromise = this._flush().finally(() => {
-        this.flushPromise = null
-      })
-      this.addPendingPromise(this.flushPromise)
-    }
-    return this.flushPromise
-  }
-
-  protected getCustomHeaders(): { [key: string]: string } {
-    // Don't set the user agent if we're not on a browser. The latest spec allows
-    // the User-Agent header (see https://fetch.spec.whatwg.org/#terminology-headers
-    // and https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/setRequestHeader),
-    // but browsers such as Chrome and Safari have not caught up.
-    const customUserAgent = this.getCustomUserAgent()
-    const headers: { [key: string]: string } = {}
-    if (customUserAgent && customUserAgent !== '') {
-      headers['User-Agent'] = customUserAgent
-    }
-    return headers
-  }
-
-  private async _flush(): Promise<any[]> {
-    this.clearFlushTimer()
-    await this._initPromise
-
-    const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
-
-    if (!queue.length) {
-      return []
-    }
-
-    const items = queue.slice(0, this.maxBatchSize)
-    const messages = items.map((item) => item.message)
-
-    const persistQueueChange = (): void => {
-      const refreshedQueue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
-      this.setPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue, refreshedQueue.slice(items.length))
-    }
+  private async _flush(items: PostHogQueueItem[]): Promise<PostHogQueueItem['message'][]> {
+    const messages: PostHogQueueItem['message'][] = items.map((item) => item.message)
 
     const data: Record<string, any> = {
       api_key: this.apiKey,
@@ -983,35 +967,40 @@ export abstract class PostHogCoreStateless {
     const fetchOptions: PostHogFetchOptions =
       this.captureMode === 'form'
         ? {
-            method: 'POST',
-            mode: 'no-cors',
-            credentials: 'omit',
-            headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `data=${encodeURIComponent(LZString.compressToBase64(payload))}&compression=lz64`,
-          }
+          method: 'POST',
+          mode: 'no-cors',
+          credentials: 'omit',
+          headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `data=${encodeURIComponent(LZString.compressToBase64(payload))}&compression=lz64`,
+        }
         : {
-            method: 'POST',
-            headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },
-            body: payload,
-          }
+          method: 'POST',
+          headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },
+          body: payload,
+        }
 
     try {
       await this.fetchWithRetry(url, fetchOptions)
     } catch (err) {
-      // depending on the error type, eg a malformed JSON or broken queue, it'll always return an error
-      // and this will be an endless loop, in this case, if the error isn't a network issue, we always remove the items from the queue
-      if (!(err instanceof PostHogFetchNetworkError)) {
-        persistQueueChange()
-      }
       this._events.emit('error', err)
-
       throw err
     }
 
-    persistQueueChange()
     this._events.emit('flush', messages)
-
     return messages
+  }
+
+  protected getCustomHeaders(): { [key: string]: string } {
+    // Don't set the user agent if we're not on a browser. The latest spec allows
+    // the User-Agent header (see https://fetch.spec.whatwg.org/#terminology-headers
+    // and https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/setRequestHeader),
+    // but browsers such as Chrome and Safari have not caught up.
+    const customUserAgent = this.getCustomUserAgent()
+    const headers: { [key: string]: string } = {}
+    if (customUserAgent && customUserAgent !== '') {
+      headers['User-Agent'] = customUserAgent
+    }
+    return headers
   }
 
   private async fetchWithRetry(
@@ -1020,7 +1009,7 @@ export abstract class PostHogCoreStateless {
     retryOptions?: Partial<RetriableOptions>,
     requestTimeout?: number
   ): Promise<PostHogFetchResponse> {
-    ;(AbortSignal as any).timeout ??= function timeout(ms: number) {
+    ; (AbortSignal as any).timeout ??= function timeout(ms: number) {
       const ctrl = new AbortController()
       setTimeout(() => ctrl.abort(), ms)
       return ctrl.signal
@@ -1054,33 +1043,37 @@ export abstract class PostHogCoreStateless {
     )
   }
 
+  // A little tricky - we want to have a max shutdown time and enforce it, even if that means we have some
+  // dangling promises. We'll keep track of the timeout and resolve/reject based on that.
   async _shutdown(shutdownTimeoutMs: number = 30000): Promise<void> {
-    // A little tricky - we want to have a max shutdown time and enforce it, even if that means we have some
-    // dangling promises. We'll keep track of the timeout and resolve/reject based on that.
-
+    // Guarantee we've initialized properly
     await this._initPromise
-    let hasTimedOut = false
+
+    // Guarantee we're not flushing events in the background anymore
     this.clearFlushTimer()
 
+    // We'll keep track of whether we've timed out, and if so, we'll break out of the loop
+    let hasTimedOut = false
     const doShutdown = async (): Promise<void> => {
       try {
         await Promise.all(Object.values(this.pendingPromises))
 
         while (true) {
-          const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
+          // Break out of the loop if we've timed out
+          if (hasTimedOut) {
+            break
+          }
 
+          // Check whether there are any events left to send
+          const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
           if (queue.length === 0) {
             break
           }
 
-          // flush again to make sure we send all events, some of which might've been added
+          // Keep flushing until we've sent all events, some of which might've been added
           // while we were waiting for the pending promises to resolve
           // For example, see sendFeatureFlags in posthog-node/src/posthog-node.ts::capture
           await this.flush()
-
-          if (hasTimedOut) {
-            break
-          }
         }
       } catch (e) {
         if (!isPostHogFetchError(e)) {
