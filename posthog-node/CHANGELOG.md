@@ -1,3 +1,7 @@
+# 4.16.0 - 2025-05-01
+
+1. fix: specific exports for edge environments
+
 # 4.15.0 - 2025-04-30
 
 1. chore: add immediate-mode
