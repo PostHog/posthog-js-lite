@@ -19,7 +19,9 @@ describe('PostHog Core', () => {
       posthog.identify('id-1', { foo: 'bar' })
       await waitForPromises()
       expect(mocks.fetch).toHaveBeenCalledTimes(2)
-      expect(parseBody(mocks.fetch.mock.calls[0])).toEqual({
+      const batchCall = mocks.fetch.mock.calls[1]
+      expect(batchCall[0]).toEqual('https://us.i.posthog.com/batch/')
+      expect(parseBody(batchCall)).toMatchObject({
         api_key: 'TEST_API_KEY',
         batch: [
           {
@@ -56,7 +58,9 @@ describe('PostHog Core', () => {
       })
       await waitForPromises()
       expect(mocks.fetch).toHaveBeenCalledTimes(2)
-      expect(parseBody(mocks.fetch.mock.calls[0])).toEqual({
+      const batchCall = mocks.fetch.mock.calls[1]
+      expect(batchCall[0]).toEqual('https://us.i.posthog.com/batch/')
+      expect(parseBody(batchCall)).toMatchObject({
         api_key: 'TEST_API_KEY',
         batch: [
           {
@@ -94,7 +98,9 @@ describe('PostHog Core', () => {
       })
       await waitForPromises()
       expect(mocks.fetch).toHaveBeenCalledTimes(2)
-      expect(parseBody(mocks.fetch.mock.calls[0])).toEqual({
+      const batchCall = mocks.fetch.mock.calls[1]
+      expect(batchCall[0]).toEqual('https://us.i.posthog.com/batch/')
+      expect(parseBody(batchCall)).toMatchObject({
         api_key: 'TEST_API_KEY',
         batch: [
           {
@@ -128,7 +134,9 @@ describe('PostHog Core', () => {
       await waitForPromises()
 
       expect(mocks.fetch).toHaveBeenCalledTimes(2)
-      expect(parseBody(mocks.fetch.mock.calls[0])).toMatchObject({
+      const batchCall = mocks.fetch.mock.calls[1]
+      expect(batchCall[0]).toEqual('https://us.i.posthog.com/batch/')
+      expect(parseBody(batchCall)).toMatchObject({
         batch: [
           {
             distinct_id: posthog.getDistinctId(),
@@ -157,7 +165,9 @@ describe('PostHog Core', () => {
       // One call exists for the queueing, one for persisting distinct id
       expect(mocks.storage.setItem).toHaveBeenCalledWith('distinct_id', 'id-1')
       expect(mocks.fetch).toHaveBeenCalledTimes(2)
-      expect(parseBody(mocks.fetch.mock.calls[0])).toMatchObject({
+      const batchCall = mocks.fetch.mock.calls[1]
+      expect(batchCall[0]).toEqual('https://us.i.posthog.com/batch/')
+      expect(parseBody(batchCall)).toMatchObject({
         batch: [
           {
             distinct_id: 'id-1',
