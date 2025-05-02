@@ -1,6 +1,8 @@
 import { PostHog } from 'posthog-node'
 import PostHogOpenAI from '../src/openai'
 
+const openaiModule: any = require('openai')
+
 let mockOpenAiChatResponse: any = {}
 let mockOpenAiEmbeddingResponse: any = {}
 
@@ -22,7 +24,7 @@ jest.mock('openai', () => {
   // instance field (which would overwrite the subclass implementation).
   class MockCompletions {
     constructor() {}
-    create(..._args: any[]): any {
+    create(..._: any[]): any {
       /* will be stubbed in beforeEach */
       return undefined
     }
@@ -124,7 +126,6 @@ describe('PostHogOpenAI - Jest test suite', () => {
       },
     }
 
-    const openaiModule: any = require('openai')
     const ChatMock: any = openaiModule.Chat
     ;(ChatMock.Completions as any).prototype.create = jest.fn().mockResolvedValue(mockOpenAiChatResponse)
   })
