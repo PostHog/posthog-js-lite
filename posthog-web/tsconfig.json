@@ -2,7 +2,6 @@
   "extends": "../tsconfig.json",
   "compilerOptions": {
     "incremental": false,
-    "declaration": false,
     "lib": ["DOM", "ES2020", "ES2022.Error"]
   }
 }
