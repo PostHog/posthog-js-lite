@@ -31,24 +31,24 @@ jest.mock('openai', () => {
   // Mock Chat class
   class MockChat {
     constructor() {}
-    static Completions = MockCompletions;
+    static Completions = MockCompletions
   }
 
   // Mock OpenAI class
   class MockOpenAI {
-    chat: any;
-    embeddings: any;
+    chat: any
+    embeddings: any
     constructor() {
       this.chat = {
         completions: {
           create: jest.fn(),
         },
-      };
+      }
       this.embeddings = {
         create: jest.fn(),
-      };
+      }
     }
-    static Chat = MockChat;
+    static Chat = MockChat
   }
 
   return {
@@ -56,7 +56,7 @@ jest.mock('openai', () => {
     default: MockOpenAI,
     OpenAI: MockOpenAI,
     Chat: MockChat,
-  };
+  }
 })
 
 describe('PostHogOpenAI - Jest test suite', () => {
@@ -167,9 +167,9 @@ describe('PostHogOpenAI - Jest test suite', () => {
     // we'll demonstrate how you *would* do it if WrappedEmbeddings is used.
     // Let's override the internal embeddings to return our mock.
     const mockEmbeddingsCreate = jest.fn().mockResolvedValue(mockOpenAiEmbeddingResponse)
-      ; (client as any).embeddings = {
-        create: mockEmbeddingsCreate,
-      }
+    ;(client as any).embeddings = {
+      create: mockEmbeddingsCreate,
+    }
 
     const response = await (client as any).embeddings.create({
       model: 'text-embedding-3-small',
@@ -225,7 +225,7 @@ describe('PostHogOpenAI - Jest test suite', () => {
 
   conditionalTest('privacy mode global', async () => {
     // override mock to appear globally in privacy mode
-    ; (mockPostHogClient as any).privacy_mode = true
+    ;(mockPostHogClient as any).privacy_mode = true
 
     await client.chat.completions.create({
       model: 'gpt-4',
