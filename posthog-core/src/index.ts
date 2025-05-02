@@ -47,7 +47,6 @@ import { uuidv7 } from './vendor/uuidv7'
 
 export { safeSetTimeout } from './utils'
 export { getFetch } from './utils'
-export { patch } from './patch'
 export { getFeatureFlagValue } from './featureFlagUtils'
 export * as utils from './utils'
 

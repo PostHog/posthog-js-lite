@@ -163,11 +163,6 @@ export function getFetch(): FetchLike | undefined {
   return typeof fetch !== 'undefined' ? fetch : typeof globalThis.fetch !== 'undefined' ? globalThis.fetch : undefined
 }
 
-// copied from: https://github.com/PostHog/posthog-js/blob/main/react/src/utils/type-utils.ts#L4
-export const isFunction = function (f: any): f is (...args: any[]) => any {
-  return typeof f === 'function'
-}
-
 // FNV-1a hash function
 // https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
 // I know, I know, I'm rolling my own hash function, but I didn't want to take on
