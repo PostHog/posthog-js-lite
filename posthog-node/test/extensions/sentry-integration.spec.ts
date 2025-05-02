@@ -1,5 +1,4 @@
-// import { PostHog } from '../'
-import { PostHog as PostHog } from '../../src/posthog-node'
+import { PostHog } from '../../src/entrypoints/index.node'
 import { PostHogSentryIntegration } from '../../src/extensions/sentry-integration'
 jest.mock('../../src/fetch')
 import fetch from '../../src/fetch'

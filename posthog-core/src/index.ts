@@ -45,6 +45,9 @@ import { LZString } from './lz-string'
 import { SimpleEventEmitter } from './eventemitter'
 import { uuidv7 } from './vendor/uuidv7'
 
+export { safeSetTimeout } from './utils'
+export { getFetch } from './utils'
+export { getFeatureFlagValue } from './featureFlagUtils'
 export * as utils from './utils'
 
 class PostHogFetchHttpError extends Error {

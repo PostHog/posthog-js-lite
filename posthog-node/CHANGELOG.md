@@ -1,3 +1,7 @@
+# 4.17.0 - 2025-05-02
+
+1. fix: specific exports for edge environments
+
 # 4.16.0 - 2025-05-01
 
 1. chore: improve flush event

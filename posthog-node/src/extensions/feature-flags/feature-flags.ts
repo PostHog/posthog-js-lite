@@ -1,9 +1,10 @@
-import { FeatureFlagCondition, FlagProperty, PostHogFeatureFlag, PropertyGroup } from './types'
-import { FeatureFlagValue, JsonType, PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src'
-import { safeSetTimeout } from 'posthog-core/src/utils'
-import fetch from './fetch'
-import { SIXTY_SECONDS } from './posthog-node'
-import { hashSHA1 } from 'posthog-node/src/crypto'
+import { FeatureFlagCondition, FlagProperty, PostHogFeatureFlag, PropertyGroup } from '../../types'
+import type { FeatureFlagValue, JsonType, PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core'
+import { safeSetTimeout } from 'posthog-core'
+import fetch from '../../fetch'
+import { hashSHA1 } from './crypto'
+
+const SIXTY_SECONDS = 60 * 1000
 
 // eslint-disable-next-line
 const LONG_SCALE = 0xfffffffffffffff

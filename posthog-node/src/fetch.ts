@@ -7,8 +7,8 @@
  * See https://github.com/PostHog/posthog-js-lite/issues/127 for more info
  */
 
-import { FetchLike, PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src'
-import { getFetch } from 'posthog-core/src/utils'
+import { FetchLike, PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core'
+import { getFetch } from 'posthog-core'
 
 let _fetch: FetchLike | undefined = getFetch()
 

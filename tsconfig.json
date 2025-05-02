@@ -4,7 +4,7 @@
     "moduleResolution": "node",
     "isolatedModules": true,
     "esModuleInterop": true,
-    "declaration": true,
+    "declaration": false,
     "removeComments": false,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,

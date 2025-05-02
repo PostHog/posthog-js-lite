@@ -9,74 +9,117 @@ import pkg from './package.json'
 
 const extensions = ['.js', '.jsx', '.ts', '.tsx']
 
-let globalExternal = Object.keys(pkg.dependencies || {}).concat(Object.keys(pkg.peerDependencies || {}))
+const plugins = (x) => [
+  // Allows node_modules resolution
+  resolve({ extensions }),
+  // Allow bundling cjs modules. Rollup doesn`t understand cjs
+  commonjs(),
+  json(),
+  // Compile TypeScript/JavaScript files
+  typescript({
+    include: [`*.(t|j)s+(|x)`, `**/*.(t|j)s+(|x)`],
+    tsconfig: `./${x}/tsconfig.json`,
+    sourceMap: true,
+  }),
+  babel({
+    extensions,
+    babelHelpers: 'bundled',
+    include: [`${x}/src/**/*`],
+    presets: [
+      ['@babel/preset-env', { targets: { node: 'current' } }],
+      '@babel/preset-typescript',
+      '@babel/preset-react',
+    ],
+  }),
+]
 
-const configs = ['posthog-node', 'posthog-web', 'posthog-ai'].reduce((acc, x) => {
-  const localPkg = require(`./${x}/package.json`)
+let globalExternal = []
+  .concat(Object.keys(pkg.dependencies || {}))
+  .concat(Object.keys(pkg.peerDependencies || {}))
+  .concat(Object.keys(pkg.devDependencies || {}))
+
+function external(localPackagePath) {
+  const localPkg = require(localPackagePath)
   let external = [...globalExternal]
     .concat(Object.keys(localPkg.dependencies || {}))
     .concat(Object.keys(localPkg.peerDependencies || {}))
     .concat(Object.keys(localPkg.devDependencies || {}))
+  return external
+}
 
-  return [
-    ...acc,
-    {
-      input: `./${x}/index.ts`,
-      output: [
-        {
-          file: `./${x}/` + localPkg.main,
-          sourcemap: true,
-          exports: 'named',
-          format: `cjs`,
-        },
-        {
-          file: `./${x}/` + localPkg.module,
-          sourcemap: true,
-          format: `es`,
-        },
-      ],
-      external,
-      plugins: [
-        // Allows node_modules resolution
-        resolve({ extensions }),
-        // Allow bundling cjs modules. Rollup doesn`t understand cjs
-        commonjs(),
-        json(),
-        // Compile TypeScript/JavaScript files
-        typescript({
-          include: [`*.(t|j)s+(|x)`, `**/*.(t|j)s+(|x)`],
-          tsconfig: `./${x}/tsconfig.json`,
-          sourceMap: true,
-        }),
-        babel({
-          extensions,
-          babelHelpers: 'bundled',
-          include: [`${x}/src/**/*`],
-          presets: [
-            ['@babel/preset-env', { targets: { node: 'current' } }],
-            '@babel/preset-typescript',
-            '@babel/preset-react',
-          ],
-        }),
-      ],
-    },
-    {
-      input: `./${x}/lib/${x}/index.d.ts`,
-      output: [{ file: `./${x}/lib/index.d.ts`, format: 'es' }],
-      plugins: [
-        dts(),
-      ],
-    },
-  ]
-}, [])
+const configs = []
+
+// posthog-node //
+
+const runtimes = ['node', 'edge']
+
+runtimes.forEach((runtime) => {
+  configs.push({
+    input: `./posthog-node/src/entrypoints/index.${runtime}.ts`,
+    output: [
+      {
+        file: `./posthog-node/lib/${runtime}/index.cjs.js`,
+        sourcemap: true,
+        exports: 'named',
+        format: 'cjs',
+      },
+      {
+        file: `./posthog-node/lib/${runtime}/index.esm.js`,
+        sourcemap: true,
+        format: 'es',
+      },
+    ],
+    external: external(`./posthog-node/package.json`),
+    plugins: plugins('posthog-node'),
+  })
+})
+
+// We only build types from node as all types should be the same
+configs.push({
+  input: `./posthog-node/src/entrypoints/index.node.ts`,
+  output: [{ file: `./posthog-node/lib/index.d.ts`, format: 'es' }],
+  external: external('./posthog-node/package.json'),
+  plugins: [resolve({ extensions }), dts({ tsconfig: './posthog-node/tsconfig.json' })],
+})
+
+// posthog-ai //
+// posthog-web //
+
+const packages = ['posthog-web', 'posthog-ai']
+
+packages.forEach((x) => {
+  const localPkg = require(`./${x}/package.json`)
+
+  configs.push({
+    input: `./${x}/index.ts`,
+    output: [
+      {
+        file: `./${x}/` + localPkg.main,
+        sourcemap: true,
+        exports: 'named',
+        format: `cjs`,
+      },
+      {
+        file: `./${x}/` + localPkg.module,
+        sourcemap: true,
+        format: `es`,
+      },
+    ],
+    external: external(`./${x}/package.json`),
+    plugins: plugins(x),
+  })
+
+  configs.push({
+    input: `./${x}/index.ts`,
+    output: [{ file: `./${x}/lib/index.d.ts`, format: 'es' }],
+    external: external(`./${x}/package.json`),
+    plugins: [resolve({ extensions }), dts({ tsconfig: `./${x}/tsconfig.json` })],
+  })
+})
+
+// posthog-ai //
 
 // Add submodule builds for posthog-ai
-const aiPkg = require('./posthog-ai/package.json')
-const aiExternal = [...globalExternal]
-  .concat(Object.keys(aiPkg.dependencies || {}))
-  .concat(Object.keys(aiPkg.peerDependencies || {}))
-  .concat(Object.keys(aiPkg.devDependencies || {}))
-
 const providers = ['anthropic', 'openai', 'vercel', 'langchain']
 
 providers.forEach((provider) => {
@@ -95,7 +138,7 @@ providers.forEach((provider) => {
         format: 'es',
       },
     ],
-    external: aiExternal,
+    external: external('./posthog-ai/package.json'),
     plugins: [
       resolve({ extensions }),
       commonjs(),
@@ -116,9 +159,8 @@ providers.forEach((provider) => {
   configs.push({
     input: `./posthog-ai/src/${provider}/index.ts`,
     output: [{ file: `./posthog-ai/lib/${provider}/index.d.ts`, format: 'es' }],
-    plugins: [
-      dts({ tsconfig: './posthog-ai/tsconfig.json' })
-    ],
+    external: external('./posthog-ai/package.json'),
+    plugins: [resolve({ extensions }), dts({ tsconfig: './posthog-ai/tsconfig.json' })],
   })
 })
 

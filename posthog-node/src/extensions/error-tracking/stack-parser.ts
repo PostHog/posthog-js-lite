@@ -1,10 +1,7 @@
 // Portions of this file are derived from getsentry/sentry-javascript by Software, Inc. dba Sentry
 // Licensed under the MIT License
 
-import { posix, sep, dirname } from 'path'
-import { StackFrame, StackLineParser, StackLineParserFn, StackParser } from './types'
-
-type GetModuleFn = (filename: string | undefined) => string | undefined
+import { GetModuleFn, StackFrame, StackLineParser, StackLineParserFn, StackParser } from './types'
 
 // This was originally forked from https://github.com/csnover/TraceKit, and was largely
 // re-written as part of raven - js.
@@ -37,7 +34,7 @@ const STACKTRACE_FRAME_LIMIT = 50
 const UNKNOWN_FUNCTION = '?'
 
 /** Node Stack line parser */
-export function node(getModule?: GetModuleFn): StackLineParserFn {
+function node(getModule?: GetModuleFn): StackLineParserFn {
   const FILENAME_MATCH = /^\s*[-]{4,}$/
   const FULL_MATCH = /at (?:async )?(?:(.+?)\s+\()?(?:(.+):(\d+):(\d+)?|([^)]+))\)?/
 
@@ -123,7 +120,7 @@ export function node(getModule?: GetModuleFn): StackLineParserFn {
 /**
  * Does this filename look like it's part of the app code?
  */
-export function filenameIsInApp(filename: string, isNative: boolean = false): boolean {
+function filenameIsInApp(filename: string, isNative: boolean = false): boolean {
   const isInternal =
     isNative ||
     (filename &&
@@ -147,66 +144,12 @@ function _parseIntOrUndefined(input: string | undefined): number | undefined {
   return parseInt(input || '', 10) || undefined
 }
 
-export function nodeStackLineParser(getModule?: GetModuleFn): StackLineParser {
+function nodeStackLineParser(getModule?: GetModuleFn): StackLineParser {
   return [90, node(getModule)]
 }
 
-export const defaultStackParser: StackParser = createStackParser(nodeStackLineParser(createGetModuleFromFilename()))
-
-/** Creates a function that gets the module name from a filename */
-export function createGetModuleFromFilename(
-  basePath: string = process.argv[1] ? dirname(process.argv[1]) : process.cwd(),
-  isWindows: boolean = sep === '\\'
-): (filename: string | undefined) => string | undefined {
-  const normalizedBase = isWindows ? normalizeWindowsPath(basePath) : basePath
-
-  return (filename: string | undefined) => {
-    if (!filename) {
-      return
-    }
-
-    const normalizedFilename = isWindows ? normalizeWindowsPath(filename) : filename
-
-    // eslint-disable-next-line prefer-const
-    let { dir, base: file, ext } = posix.parse(normalizedFilename)
-
-    if (ext === '.js' || ext === '.mjs' || ext === '.cjs') {
-      file = file.slice(0, ext.length * -1)
-    }
-
-    // The file name might be URI-encoded which we want to decode to
-    // the original file name.
-    const decodedFile = decodeURIComponent(file)
-
-    if (!dir) {
-      // No dirname whatsoever
-      dir = '.'
-    }
-
-    const n = dir.lastIndexOf('/node_modules')
-    if (n > -1) {
-      return `${dir.slice(n + 14).replace(/\//g, '.')}:${decodedFile}`
-    }
-
-    // Let's see if it's a part of the main module
-    // To be a part of main module, it has to share the same base
-    if (dir.startsWith(normalizedBase)) {
-      const moduleName = dir.slice(normalizedBase.length + 1).replace(/\//g, '.')
-      return moduleName ? `${moduleName}:${decodedFile}` : decodedFile
-    }
-
-    return decodedFile
-  }
-}
-
-/** normalizes Windows paths */
-function normalizeWindowsPath(path: string): string {
-  return path
-    .replace(/^[A-Z]:/, '') // remove Windows-style prefix
-    .replace(/\\/g, '/') // replace all `\` instances with `/`
-}
-
-export function createStackParser(...parsers: StackLineParser[]): StackParser {
+export function createStackParser(getModule?: GetModuleFn): StackParser {
+  const parsers = [nodeStackLineParser(getModule)]
   const sortedParsers = parsers.sort((a, b) => a[0] - b[0]).map((p) => p[1])
 
   return (stack: string, skipFirstLines: number = 0): StackFrame[] => {
@@ -248,7 +191,7 @@ export function createStackParser(...parsers: StackLineParser[]): StackParser {
   }
 }
 
-export function reverseAndStripFrames(stack: ReadonlyArray<StackFrame>): StackFrame[] {
+function reverseAndStripFrames(stack: ReadonlyArray<StackFrame>): StackFrame[] {
   if (!stack.length) {
     return []
   }

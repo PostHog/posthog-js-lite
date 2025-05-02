@@ -2,43 +2,29 @@ import { version } from '../package.json'
 
 import {
   JsonType,
-  PostHogCoreOptions,
   PostHogCoreStateless,
   PostHogDecideResponse,
   PostHogFetchOptions,
   PostHogFetchResponse,
   PostHogFlagsAndPayloadsResponse,
   PostHogPersistedProperty,
-} from '../../posthog-core/src'
-import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
-import { EventMessage, GroupIdentifyMessage, IdentifyMessage, PostHogNodeV1 } from './types'
-import { FeatureFlagDetail, FeatureFlagValue } from '../../posthog-core/src/types'
-import { FeatureFlagsPoller } from './feature-flags'
+} from 'posthog-core'
+import { EventMessage, GroupIdentifyMessage, IdentifyMessage, PostHogNodeV1, PostHogOptions } from './types'
+import { FeatureFlagDetail, FeatureFlagValue } from 'posthog-core'
+import { FeatureFlagsPoller } from './extensions/feature-flags/feature-flags'
 import fetch from './fetch'
-import ErrorTracking from './error-tracking'
-import { getFeatureFlagValue } from 'posthog-core/src/featureFlagUtils'
-
-export type PostHogOptions = PostHogCoreOptions & {
-  persistence?: 'memory'
-  personalApiKey?: string
-  privacyMode?: boolean
-  enableExceptionAutocapture?: boolean
-  // The interval in milliseconds between polls for refreshing feature flag definitions. Defaults to 30 seconds.
-  featureFlagsPollingInterval?: number
-  // Maximum size of cache that deduplicates $feature_flag_called calls per user.
-  maxCacheSize?: number
-  fetch?: (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
-}
+import ErrorTracking from './extensions/error-tracking'
+import { getFeatureFlagValue } from 'posthog-core'
+import { PostHogMemoryStorage } from './storage-memory'
 
 // Standard local evaluation rate limit is 600 per minute (10 per second),
 // so the fastest a poller should ever be set is 100ms.
-export const MINIMUM_POLLING_INTERVAL = 100
-export const THIRTY_SECONDS = 30 * 1000
-export const SIXTY_SECONDS = 60 * 1000
+const MINIMUM_POLLING_INTERVAL = 100
+const THIRTY_SECONDS = 30 * 1000
 const MAX_CACHE_SIZE = 50 * 1000
 
 // The actual exported Nodejs API.
-export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
+export abstract class PostHogBackendClient extends PostHogCoreStateless implements PostHogNodeV1 {
   private _memoryStorage = new PostHogMemoryStorage()
 
   private featureFlagsPoller?: FeatureFlagsPoller
@@ -96,10 +82,6 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
 
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
     return this.options.fetch ? this.options.fetch(url, options) : fetch(url, options)
-  }
-
-  getLibraryId(): string {
-    return 'posthog-node'
   }
   getLibraryVersion(): string {
     return version
