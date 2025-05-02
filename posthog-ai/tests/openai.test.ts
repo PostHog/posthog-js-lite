@@ -1,6 +1,7 @@
 import { PostHog } from 'posthog-node'
 import PostHogOpenAI from '../src/openai'
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const openaiModule: any = require('openai')
 
 let mockOpenAiChatResponse: any = {}
@@ -24,7 +25,8 @@ jest.mock('openai', () => {
   // instance field (which would overwrite the subclass implementation).
   class MockCompletions {
     constructor() {}
-    create(..._: any[]): any {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    create(..._args: any[]): any {
       /* will be stubbed in beforeEach */
       return undefined
     }
