@@ -1,5 +1,9 @@
 import { PostHog } from 'posthog-node'
 import PostHogOpenAI from '../src/openai'
+import openaiModule from 'openai'
+
+let mockOpenAiChatResponse: any = {}
+let mockOpenAiEmbeddingResponse: any = {}
 
 jest.mock('posthog-node', () => {
   return {
@@ -13,8 +17,49 @@ jest.mock('posthog-node', () => {
   }
 })
 
-let mockOpenAiChatResponse: any = {}
-let mockOpenAiEmbeddingResponse: any = {}
+jest.mock('openai', () => {
+  // Mock Completions class – `create` is declared on the prototype so that
+  // subclasses can safely `super.create(...)` without it being shadowed by an
+  // instance field (which would overwrite the subclass implementation).
+  class MockCompletions {
+    constructor() {}
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    create(..._args: any[]): any {
+      /* will be stubbed in beforeEach */
+      return undefined
+    }
+  }
+
+  // Mock Chat class
+  class MockChat {
+    constructor() {}
+    static Completions = MockCompletions
+  }
+
+  // Mock OpenAI class
+  class MockOpenAI {
+    chat: any
+    embeddings: any
+    constructor() {
+      this.chat = {
+        completions: {
+          create: jest.fn(),
+        },
+      }
+      this.embeddings = {
+        create: jest.fn(),
+      }
+    }
+    static Chat = MockChat
+  }
+
+  return {
+    __esModule: true,
+    default: MockOpenAI,
+    OpenAI: MockOpenAI,
+    Chat: MockChat,
+  }
+})
 
 describe('PostHogOpenAI - Jest test suite', () => {
   let mockPostHogClient: PostHog
@@ -80,6 +125,9 @@ describe('PostHogOpenAI - Jest test suite', () => {
         total_tokens: 10,
       },
     }
+
+    const ChatMock: any = openaiModule.Chat
+    ;(ChatMock.Completions as any).prototype.create = jest.fn().mockResolvedValue(mockOpenAiChatResponse)
   })
 
   // Wrap each test with conditional skip
