@@ -1,5 +1,5 @@
 import AnthropicOriginal from '@anthropic-ai/sdk'
-import { PostHog } from 'posthog-node/src/entrypoints/index.node'
+import { PostHog } from 'posthog-node'
 import { v4 as uuidv4 } from 'uuid'
 import { formatResponseAnthropic, mergeSystemPrompt, MonitoringParams, sendEventToPosthog } from '../utils'
 

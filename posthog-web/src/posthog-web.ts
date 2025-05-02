@@ -1,15 +1,10 @@
-import {
-  PostHogCore,
-  PostHogFetchOptions,
-  PostHogFetchResponse,
-  PostHogPersistedProperty,
-} from '../../posthog-core/src'
+import { PostHogCore, PostHogFetchOptions, PostHogFetchResponse, PostHogPersistedProperty } from 'posthog-core'
 import { getContext } from './context'
 import { PostHogStorage, getStorage } from './storage'
 import { version } from '../package.json'
 import { PostHogOptions } from './types'
-import { getFetch } from 'posthog-core/src/utils'
-import { patch } from '../../posthog-core/src/patch'
+import { getFetch } from 'posthog-core'
+import { patch } from 'posthog-core/src/patch'
 
 export class PostHog extends PostHogCore {
   private _storage: PostHogStorage

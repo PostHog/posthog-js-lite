@@ -33,14 +33,22 @@ const plugins = (x) => [
   }),
 ]
 
-let globalExternal = Object.keys(pkg.dependencies || {}).concat(Object.keys(pkg.peerDependencies || {}))
+let globalExternal = []
+  .concat(Object.keys(pkg.dependencies || {}))
+  .concat(Object.keys(pkg.peerDependencies || {}))
+  .concat(Object.keys(pkg.devDependencies || {}))
 
-const configs = ['posthog-web', 'posthog-ai'].reduce((acc, x) => {
-  const localPkg = require(`./${x}/package.json`)
+function external(localPackagePath) {
+  const localPkg = require(localPackagePath)
   let external = [...globalExternal]
     .concat(Object.keys(localPkg.dependencies || {}))
     .concat(Object.keys(localPkg.peerDependencies || {}))
     .concat(Object.keys(localPkg.devDependencies || {}))
+  return external
+}
+
+const configs = ['posthog-web', 'posthog-ai'].reduce((acc, x) => {
+  const localPkg = require(`./${x}/package.json`)
 
   return [
     ...acc,
@@ -59,24 +67,17 @@ const configs = ['posthog-web', 'posthog-ai'].reduce((acc, x) => {
           format: `es`,
         },
       ],
-      external,
+      external: external(`./${x}/package.json`),
       plugins: plugins(x),
     },
     {
-      input: `./${x}/lib/${x}/index.d.ts`,
+      input: `./${x}/index.ts`,
       output: [{ file: `./${x}/lib/index.d.ts`, format: 'es' }],
-      plugins: [dts()],
+      external: external(`./${x}/package.json`),
+      plugins: [resolve({ extensions }), dts({ tsconfig: `./${x}/tsconfig.json` })],
     },
   ]
 }, [])
-
-// posthog-node //
-
-const nodePkg = require('./posthog-node/package.json')
-const nodeExternal = [...globalExternal]
-  .concat(Object.keys(nodePkg.dependencies || {}))
-  .concat(Object.keys(nodePkg.peerDependencies || {}))
-  .concat(Object.keys(nodePkg.devDependencies || {}))
 
 const runtimes = ['node', 'edge']
 
@@ -96,7 +97,7 @@ runtimes.forEach((runtime) => {
         format: 'es',
       },
     ],
-    external: nodeExternal,
+    external: external(`./posthog-node/package.json`),
     plugins: plugins('posthog-node'),
   })
 })
@@ -105,18 +106,13 @@ runtimes.forEach((runtime) => {
 configs.push({
   input: `./posthog-node/src/entrypoints/index.node.ts`,
   output: [{ file: `./posthog-node/lib/index.d.ts`, format: 'es' }],
-  plugins: [dts({ tsconfig: './posthog-node/tsconfig.json' })],
+  external: external('./posthog-ai/package.json'),
+  plugins: [resolve({ extensions }), dts({ tsconfig: './posthog-node/tsconfig.json' })],
 })
 
 // posthog-ai //
 
 // Add submodule builds for posthog-ai
-const aiPkg = require('./posthog-ai/package.json')
-const aiExternal = [...globalExternal]
-  .concat(Object.keys(aiPkg.dependencies || {}))
-  .concat(Object.keys(aiPkg.peerDependencies || {}))
-  .concat(Object.keys(aiPkg.devDependencies || {}))
-
 const providers = ['anthropic', 'openai', 'vercel', 'langchain']
 
 providers.forEach((provider) => {
@@ -135,7 +131,7 @@ providers.forEach((provider) => {
         format: 'es',
       },
     ],
-    external: aiExternal,
+    external: external('./posthog-ai/package.json'),
     plugins: [
       resolve({ extensions }),
       commonjs(),
@@ -156,7 +152,8 @@ providers.forEach((provider) => {
   configs.push({
     input: `./posthog-ai/src/${provider}/index.ts`,
     output: [{ file: `./posthog-ai/lib/${provider}/index.d.ts`, format: 'es' }],
-    plugins: [dts({ tsconfig: './posthog-ai/tsconfig.json' })],
+    external: external('./posthog-ai/package.json'),
+    plugins: [resolve({ extensions }), dts({ tsconfig: './posthog-ai/tsconfig.json' })],
   })
 })
 

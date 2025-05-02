@@ -1,4 +1,4 @@
-import { PostHog } from 'posthog-node/src/entrypoints/index.node'
+import { PostHog } from 'posthog-node'
 import { Buffer } from 'buffer'
 import OpenAIOrignal from 'openai'
 import AnthropicOriginal from '@anthropic-ai/sdk'
@@ -236,15 +236,12 @@ export const sendEventToPosthog = ({
     }
 
     if (fullDebug) {
-      // @ts-ignore
       console.log('Sending event to PostHog', JSON.stringify(properties))
       try {
-        // @ts-ignore
         console.log(
           'Size of properties (kb)',
           Math.round((Buffer.byteLength(JSON.stringify(properties), STRING_FORMAT) / 1024) * 10000) / 10000
         )
-        // @ts-ignore
         console.log(
           'Size of properties (mb)',
           Math.round((Buffer.byteLength(JSON.stringify(properties), STRING_FORMAT) / 1024 / 1024) * 10000) / 10000
