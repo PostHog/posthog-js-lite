@@ -1,3 +1,7 @@
+# 4.17.1 - 2025-05-02
+
+1. fix: fix imports for old node.js version
+
 # 4.17.0 - 2025-05-02
 
 1. fix: specific exports for edge environments
