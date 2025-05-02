@@ -1,8 +1,6 @@
 import { PostHog } from 'posthog-node'
 import PostHogOpenAI from '../src/openai'
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const openaiModule: any = require('openai')
+import openaiModule from 'openai'
 
 let mockOpenAiChatResponse: any = {}
 let mockOpenAiEmbeddingResponse: any = {}
