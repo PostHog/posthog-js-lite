@@ -1,6 +1,9 @@
 import { PostHog } from 'posthog-node'
 import PostHogOpenAI from '../src/openai'
 
+let mockOpenAiChatResponse: any = {}
+let mockOpenAiEmbeddingResponse: any = {}
+
 jest.mock('posthog-node', () => {
   return {
     PostHog: jest.fn().mockImplementation(() => {
@@ -13,8 +16,48 @@ jest.mock('posthog-node', () => {
   }
 })
 
-let mockOpenAiChatResponse: any = {}
-let mockOpenAiEmbeddingResponse: any = {}
+jest.mock('openai', () => {
+  // Mock Completions class – `create` is declared on the prototype so that
+  // subclasses can safely `super.create(...)` without it being shadowed by an
+  // instance field (which would overwrite the subclass implementation).
+  class MockCompletions {
+    constructor() {}
+    create(..._args: any[]): any {
+      /* will be stubbed in beforeEach */
+      return undefined
+    }
+  }
+
+  // Mock Chat class
+  class MockChat {
+    constructor() {}
+    static Completions = MockCompletions;
+  }
+
+  // Mock OpenAI class
+  class MockOpenAI {
+    chat: any;
+    embeddings: any;
+    constructor() {
+      this.chat = {
+        completions: {
+          create: jest.fn(),
+        },
+      };
+      this.embeddings = {
+        create: jest.fn(),
+      };
+    }
+    static Chat = MockChat;
+  }
+
+  return {
+    __esModule: true,
+    default: MockOpenAI,
+    OpenAI: MockOpenAI,
+    Chat: MockChat,
+  };
+})
 
 describe('PostHogOpenAI - Jest test suite', () => {
   let mockPostHogClient: PostHog
@@ -80,6 +123,10 @@ describe('PostHogOpenAI - Jest test suite', () => {
         total_tokens: 10,
       },
     }
+
+    const openaiModule: any = require('openai')
+    const ChatMock: any = openaiModule.Chat
+    ;(ChatMock.Completions as any).prototype.create = jest.fn().mockResolvedValue(mockOpenAiChatResponse)
   })
 
   // Wrap each test with conditional skip
@@ -120,9 +167,9 @@ describe('PostHogOpenAI - Jest test suite', () => {
     // we'll demonstrate how you *would* do it if WrappedEmbeddings is used.
     // Let's override the internal embeddings to return our mock.
     const mockEmbeddingsCreate = jest.fn().mockResolvedValue(mockOpenAiEmbeddingResponse)
-    ;(client as any).embeddings = {
-      create: mockEmbeddingsCreate,
-    }
+      ; (client as any).embeddings = {
+        create: mockEmbeddingsCreate,
+      }
 
     const response = await (client as any).embeddings.create({
       model: 'text-embedding-3-small',
@@ -178,7 +225,7 @@ describe('PostHogOpenAI - Jest test suite', () => {
 
   conditionalTest('privacy mode global', async () => {
     // override mock to appear globally in privacy mode
-    ;(mockPostHogClient as any).privacy_mode = true
+    ; (mockPostHogClient as any).privacy_mode = true
 
     await client.chat.completions.create({
       model: 'gpt-4',
