@@ -106,7 +106,7 @@ runtimes.forEach((runtime) => {
 configs.push({
   input: `./posthog-node/src/entrypoints/index.node.ts`,
   output: [{ file: `./posthog-node/lib/index.d.ts`, format: 'es' }],
-  external: external('./posthog-ai/package.json'),
+  external: external('./posthog-node/package.json'),
   plugins: [resolve({ extensions }), dts({ tsconfig: './posthog-node/tsconfig.json' })],
 })
 
