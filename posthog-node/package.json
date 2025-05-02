@@ -19,8 +19,8 @@
     "email": "hey@posthog.com",
     "url": "https://posthog.com"
   },
-  "main": "lib/node/index.cjs.js",
-  "module": "lib/node/index.esm.js",
+  "main": "lib/node/index.cjs",
+  "module": "lib/node/index.mjs",
   "types": "lib/index.d.ts",
   "dependencies": {
     "axios": "^1.8.2"
@@ -40,27 +40,27 @@
     ".": {
       "types": "./lib/index.d.ts",
       "edge": {
-        "import": "./lib/edge/index.esm.js",
-        "require": "./lib/edge/index.cjs.js",
-        "default": "./lib/edge/index.js"
+        "import": "./lib/edge/index.mjs",
+        "require": "./lib/edge/index.cjs",
+        "default": "./lib/edge/index.mjs"
       },
       "node": {
-        "import": "./lib/node/index.esm.js",
-        "require": "./lib/node/index.cjs.js",
-        "default": "./lib/node/index.js"
+        "import": "./lib/node/index.mjs",
+        "require": "./lib/node/index.cjs",
+        "default": "./lib/node/index.mjs"
       },
       "edge-light": {
-        "import": "./lib/edge/index.esm.js",
-        "require": "./lib/edge/index.cjs.js",
-        "default": "./lib/edge/index.js"
+        "import": "./lib/edge/index.mjs",
+        "require": "./lib/edge/index.cjs",
+        "default": "./lib/edge/index.mjs"
       },
       "workerd": {
-        "import": "./lib/edge/index.esm.js",
-        "require": "./lib/edge/index.cjs.js",
-        "default": "./lib/edge/index.js"
+        "import": "./lib/edge/index.mjs",
+        "require": "./lib/edge/index.cjs",
+        "default": "./lib/edge/index.mjs"
       },
-      "import": "./lib/node/index.esm.js",
-      "require": "./lib/node/index.cjs.js"
+      "import": "./lib/node/index.mjs",
+      "require": "./lib/node/index.cjs"
     }
   }
 }
