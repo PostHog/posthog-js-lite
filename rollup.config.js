@@ -58,13 +58,13 @@ runtimes.forEach((runtime) => {
     input: `./posthog-node/src/entrypoints/index.${runtime}.ts`,
     output: [
       {
-        file: `./posthog-node/lib/${runtime}/index.cjs.js`,
+        file: `./posthog-node/lib/${runtime}/index.cjs`,
         sourcemap: true,
         exports: 'named',
         format: 'cjs',
       },
       {
-        file: `./posthog-node/lib/${runtime}/index.esm.js`,
+        file: `./posthog-node/lib/${runtime}/index.mjs`,
         sourcemap: true,
         format: 'es',
       },
