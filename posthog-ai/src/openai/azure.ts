@@ -76,6 +76,7 @@ export class WrappedCompletions extends AzureOpenAI.Chat.Completions {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       posthogPrivacyMode = false,
       posthogGroups,
+      posthogCaptureImmediate,
       ...openAIParams
     } = body
 
@@ -116,7 +117,7 @@ export class WrappedCompletions extends AzureOpenAI.Chat.Completions {
                 }
               }
               const latency = (Date.now() - startTime) / 1000
-              sendEventToPosthog({
+              await sendEventToPosthog({
                 client: this.phClient,
                 distinctId: posthogDistinctId ?? traceId,
                 traceId,
@@ -129,10 +130,11 @@ export class WrappedCompletions extends AzureOpenAI.Chat.Completions {
                 params: body,
                 httpStatus: 200,
                 usage,
+                captureImmediate: posthogCaptureImmediate,
               })
             } catch (error: any) {
               // error handling
-              sendEventToPosthog({
+              await sendEventToPosthog({
                 client: this.phClient,
                 distinctId: posthogDistinctId ?? traceId,
                 traceId,
@@ -150,6 +152,7 @@ export class WrappedCompletions extends AzureOpenAI.Chat.Completions {
                 },
                 isError: true,
                 error: JSON.stringify(error),
+                captureImmediate: posthogCaptureImmediate,
               })
             }
           })()
@@ -161,14 +164,14 @@ export class WrappedCompletions extends AzureOpenAI.Chat.Completions {
       }) as APIPromise<Stream<ChatCompletionChunk>>
     } else {
       const wrappedPromise = parentPromise.then(
-        (result) => {
+        async (result) => {
           if ('choices' in result) {
             const latency = (Date.now() - startTime) / 1000
             let model = openAIParams.model
             if (result.model != model) {
               model = result.model
             }
-            sendEventToPosthog({
+            await sendEventToPosthog({
               client: this.phClient,
               distinctId: posthogDistinctId ?? traceId,
               traceId,
@@ -186,12 +189,13 @@ export class WrappedCompletions extends AzureOpenAI.Chat.Completions {
                 reasoningTokens: result.usage?.completion_tokens_details?.reasoning_tokens ?? 0,
                 cacheReadInputTokens: result.usage?.prompt_tokens_details?.cached_tokens ?? 0,
               },
+              captureImmediate: posthogCaptureImmediate,
             })
           }
           return result
         },
-        (error: any) => {
-          sendEventToPosthog({
+        async (error: any) => {
+          await sendEventToPosthog({
             client: this.phClient,
             distinctId: posthogDistinctId ?? traceId,
             traceId,
@@ -209,6 +213,7 @@ export class WrappedCompletions extends AzureOpenAI.Chat.Completions {
             },
             isError: true,
             error: JSON.stringify(error),
+            captureImmediate: posthogCaptureImmediate,
           })
           throw error
         }

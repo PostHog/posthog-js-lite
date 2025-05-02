@@ -59,6 +59,7 @@ export class WrappedMessages extends AnthropicOriginal.Messages {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       posthogPrivacyMode = false,
       posthogGroups,
+      posthogCaptureImmediate,
       ...anthropicParams
     } = body
 
@@ -102,7 +103,7 @@ export class WrappedMessages extends AnthropicOriginal.Messages {
                 }
               }
               const latency = (Date.now() - startTime) / 1000
-              sendEventToPosthog({
+              await sendEventToPosthog({
                 client: this.phClient,
                 distinctId: posthogDistinctId ?? traceId,
                 traceId,
@@ -115,10 +116,11 @@ export class WrappedMessages extends AnthropicOriginal.Messages {
                 params: body,
                 httpStatus: 200,
                 usage,
+                captureImmediate: posthogCaptureImmediate,
               })
             } catch (error: any) {
               // error handling
-              sendEventToPosthog({
+              await sendEventToPosthog({
                 client: this.phClient,
                 distinctId: posthogDistinctId ?? traceId,
                 traceId,
@@ -136,6 +138,7 @@ export class WrappedMessages extends AnthropicOriginal.Messages {
                 },
                 isError: true,
                 error: JSON.stringify(error),
+                captureImmediate: posthogCaptureImmediate,
               })
             }
           })()
@@ -147,10 +150,10 @@ export class WrappedMessages extends AnthropicOriginal.Messages {
       }) as APIPromise<Stream<RawMessageStreamEvent>>
     } else {
       const wrappedPromise = parentPromise.then(
-        (result) => {
+        async (result) => {
           if ('content' in result) {
             const latency = (Date.now() - startTime) / 1000
-            sendEventToPosthog({
+            await sendEventToPosthog({
               client: this.phClient,
               distinctId: posthogDistinctId ?? traceId,
               traceId,
@@ -168,12 +171,13 @@ export class WrappedMessages extends AnthropicOriginal.Messages {
                 cacheCreationInputTokens: result.usage.cache_creation_input_tokens ?? 0,
                 cacheReadInputTokens: result.usage.cache_read_input_tokens ?? 0,
               },
+              captureImmediate: posthogCaptureImmediate,
             })
           }
           return result
         },
-        (error: any) => {
-          sendEventToPosthog({
+        async (error: any) => {
+          await sendEventToPosthog({
             client: this.phClient,
             distinctId: posthogDistinctId ?? traceId,
             traceId,
@@ -191,6 +195,7 @@ export class WrappedMessages extends AnthropicOriginal.Messages {
             },
             isError: true,
             error: JSON.stringify(error),
+            captureImmediate: posthogCaptureImmediate,
           })
           throw error
         }

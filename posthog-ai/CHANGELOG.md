@@ -1,3 +1,9 @@
+# 4.3.1
+
+- Remove fullDebug mode
+- Add posthogCaptureImmediate to await a promise for each capture (for serverless environments)
+- Fix openai test
+
 # 4.2.1
 
 - Add fullDebug mode and limit full size of event input

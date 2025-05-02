@@ -1,19 +1,65 @@
 import { PostHog } from 'posthog-node'
 import PostHogOpenAI from '../src/openai'
+import openaiModule from 'openai'
+
+let mockOpenAiChatResponse: any = {}
+let mockOpenAiEmbeddingResponse: any = {}
 
 jest.mock('posthog-node', () => {
   return {
     PostHog: jest.fn().mockImplementation(() => {
       return {
         capture: jest.fn(),
+        captureImmediate: jest.fn(),
         privacyMode: false,
       }
     }),
   }
 })
 
-let mockOpenAiChatResponse: any = {}
-let mockOpenAiEmbeddingResponse: any = {}
+jest.mock('openai', () => {
+  // Mock Completions class – `create` is declared on the prototype so that
+  // subclasses can safely `super.create(...)` without it being shadowed by an
+  // instance field (which would overwrite the subclass implementation).
+  class MockCompletions {
+    constructor() {}
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    create(..._args: any[]): any {
+      /* will be stubbed in beforeEach */
+      return undefined
+    }
+  }
+
+  // Mock Chat class
+  class MockChat {
+    constructor() {}
+    static Completions = MockCompletions
+  }
+
+  // Mock OpenAI class
+  class MockOpenAI {
+    chat: any
+    embeddings: any
+    constructor() {
+      this.chat = {
+        completions: {
+          create: jest.fn(),
+        },
+      }
+      this.embeddings = {
+        create: jest.fn(),
+      }
+    }
+    static Chat = MockChat
+  }
+
+  return {
+    __esModule: true,
+    default: MockOpenAI,
+    OpenAI: MockOpenAI,
+    Chat: MockChat,
+  }
+})
 
 describe('PostHogOpenAI - Jest test suite', () => {
   let mockPostHogClient: PostHog
@@ -79,6 +125,9 @@ describe('PostHogOpenAI - Jest test suite', () => {
         total_tokens: 10,
       },
     }
+
+    const ChatMock: any = openaiModule.Chat
+    ;(ChatMock.Completions as any).prototype.create = jest.fn().mockResolvedValue(mockOpenAiChatResponse)
   })
 
   // Wrap each test with conditional skip
@@ -260,5 +309,19 @@ describe('PostHogOpenAI - Jest test suite', () => {
     // Check the new token properties
     expect(properties['$ai_reasoning_tokens']).toBe(15)
     expect(properties['$ai_cache_read_input_tokens']).toBe(5)
+  })
+
+  // New test: ensure captureImmediate is used when flag is set
+  conditionalTest('captureImmediate flag', async () => {
+    await client.chat.completions.create({
+      model: 'gpt-4',
+      messages: [{ role: 'user', content: 'Hello' }],
+      posthogDistinctId: 'test-id',
+      posthogCaptureImmediate: true,
+    })
+
+    // captureImmediate should be called once, and capture should not be called
+    expect(mockPostHogClient.captureImmediate).toHaveBeenCalledTimes(1)
+    expect(mockPostHogClient.capture).toHaveBeenCalledTimes(0)
   })
 })

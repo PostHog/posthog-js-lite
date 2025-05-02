@@ -16,8 +16,16 @@
     "strict": true,
     "baseUrl": "./", // this must be specified if "paths" is specified.
     "rootDir": "./",
-    "lib": ["ES2020", "ES2022.Error"],
+    "lib": [
+      "ES2020",
+      "ES2022.Error"
+    ],
     "jsx": "react"
   },
-  "exclude": ["**/dist/**", "node_modules", "dist", "**/*.spec.*"]
+  "exclude": [
+    "**/dist/**",
+    "node_modules",
+    "dist",
+    "**/*.spec.*"
+  ]
 }
