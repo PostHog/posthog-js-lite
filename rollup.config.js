@@ -47,37 +47,9 @@ function external(localPackagePath) {
   return external
 }
 
-const configs = ['posthog-web', 'posthog-ai'].reduce((acc, x) => {
-  const localPkg = require(`./${x}/package.json`)
+const configs = []
 
-  return [
-    ...acc,
-    {
-      input: `./${x}/index.ts`,
-      output: [
-        {
-          file: `./${x}/` + localPkg.main,
-          sourcemap: true,
-          exports: 'named',
-          format: `cjs`,
-        },
-        {
-          file: `./${x}/` + localPkg.module,
-          sourcemap: true,
-          format: `es`,
-        },
-      ],
-      external: external(`./${x}/package.json`),
-      plugins: plugins(x),
-    },
-    {
-      input: `./${x}/index.ts`,
-      output: [{ file: `./${x}/lib/index.d.ts`, format: 'es' }],
-      external: external(`./${x}/package.json`),
-      plugins: [resolve({ extensions }), dts({ tsconfig: `./${x}/tsconfig.json` })],
-    },
-  ]
-}, [])
+// posthog-node //
 
 const runtimes = ['node', 'edge']
 
@@ -108,6 +80,41 @@ configs.push({
   output: [{ file: `./posthog-node/lib/index.d.ts`, format: 'es' }],
   external: external('./posthog-node/package.json'),
   plugins: [resolve({ extensions }), dts({ tsconfig: './posthog-node/tsconfig.json' })],
+})
+
+// posthog-ai //
+// posthog-web //
+
+const packages = ['posthog-web', 'posthog-ai']
+
+packages.forEach((x) => {
+  const localPkg = require(`./${x}/package.json`)
+
+  configs.push({
+    input: `./${x}/index.ts`,
+    output: [
+      {
+        file: `./${x}/` + localPkg.main,
+        sourcemap: true,
+        exports: 'named',
+        format: `cjs`,
+      },
+      {
+        file: `./${x}/` + localPkg.module,
+        sourcemap: true,
+        format: `es`,
+      },
+    ],
+    external: external(`./${x}/package.json`),
+    plugins: plugins(x),
+  })
+
+  configs.push({
+    input: `./${x}/index.ts`,
+    output: [{ file: `./${x}/lib/index.d.ts`, format: 'es' }],
+    external: external(`./${x}/package.json`),
+    plugins: [resolve({ extensions }), dts({ tsconfig: `./${x}/tsconfig.json` })],
+  })
 })
 
 // posthog-ai //
