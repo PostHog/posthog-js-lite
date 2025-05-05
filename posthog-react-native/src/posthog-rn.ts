@@ -11,6 +11,7 @@ import {
   PostHogPersistedProperty,
   SurveyResponse,
   logFlushError,
+  maybeAdd,
 } from '../../posthog-core/src'
 import { getLegacyValues } from './legacy'
 import { PostHogRNStorage, PostHogRNSyncMemoryStorage } from './storage'
@@ -459,7 +460,7 @@ export class PostHog extends PostHogCore {
 
     // version and build are deprecated, but we keep them for compatibility
     // use $app_version and $app_build instead
-    const properties: PostHogEventProperties = { version: appVersion ?? null, build: appBuild ?? null }
+    const properties: PostHogEventProperties = { ...maybeAdd('version', appVersion), ...maybeAdd('build', appBuild) }
 
     if (!isMemoryPersistence) {
       const prevAppBuild = this.getPersistedProperty(PostHogPersistedProperty.InstalledAppBuild) as string | undefined
@@ -483,8 +484,8 @@ export class PostHog extends PostHogCore {
         } else if (prevAppBuild !== appBuild) {
           // app updated
           this.capture('Application Updated', {
-            previous_version: prevAppVersion ?? null,
-            previous_build: prevAppBuild ?? null,
+            ...maybeAdd('previous_version', prevAppVersion),
+            ...maybeAdd('previous_build', prevAppBuild),
             ...properties,
           })
         }
@@ -501,7 +502,7 @@ export class PostHog extends PostHogCore {
 
     this.capture('Application Opened', {
       ...properties,
-      url: initialUrl ?? null,
+      ...maybeAdd('url', initialUrl),
     })
 
     AppState.addEventListener('change', (state) => {

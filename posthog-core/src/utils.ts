@@ -1,4 +1,4 @@
-import { FetchLike } from './types'
+import { FetchLike, JsonType } from './types'
 
 // Rollout constants
 export const NEW_FLAGS_ROLLOUT_PERCENTAGE = 1
@@ -190,3 +190,6 @@ export function isTokenInRollout(token: string, percentage: number = 0, excluded
 
   return hashFloat < percentage
 }
+
+export const maybeAdd = (key: string, value: JsonType | undefined): Record<string, JsonType> =>
+  value !== undefined ? { [key]: value } : {}

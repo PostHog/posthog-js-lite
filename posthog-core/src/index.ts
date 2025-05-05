@@ -34,6 +34,7 @@ import {
   currentTimestamp,
   isError,
   isTokenInRollout,
+  maybeAdd,
   NEW_FLAGS_EXCLUDED_HASHES,
   NEW_FLAGS_ROLLOUT_PERCENTAGE,
   removeTrailingSlash,
@@ -1286,7 +1287,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       }
     }
     return {
-      $active_feature_flags: featureFlags ? Object.keys(featureFlags) : [],
+      ...maybeAdd('$active_feature_flags', featureFlags ? Object.keys(featureFlags) : undefined),
       ...featureVariantProperties,
       ...super.getCommonEventProperties(),
     }
@@ -1387,8 +1388,8 @@ export abstract class PostHogCore extends PostHogCoreStateless {
 
       const allProperties = this.enrichProperties({
         $anon_distinct_id: this.getAnonymousId(),
-        $set: userProps ?? {},
-        $set_once: userPropsOnce ?? {},
+        ...maybeAdd('$set', userProps),
+        ...maybeAdd('$set_once', userPropsOnce),
       })
 
       if (distinctId !== previousDistinctId) {
@@ -1833,14 +1834,14 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       this.capture('$feature_flag_called', {
         $feature_flag: key,
         $feature_flag_response: response,
-        $feature_flag_id: featureFlag?.metadata?.id ?? null,
-        $feature_flag_version: featureFlag?.metadata?.version ?? null,
-        $feature_flag_reason: featureFlag?.reason?.description ?? featureFlag?.reason?.code ?? null,
-        $feature_flag_bootstrapped_response: bootstrappedResponse ?? null,
-        $feature_flag_bootstrapped_payload: bootstrappedPayload ?? null,
+        ...maybeAdd('$feature_flag_id', featureFlag?.metadata?.id),
+        ...maybeAdd('$feature_flag_version', featureFlag?.metadata?.version),
+        ...maybeAdd('$feature_flag_reason', featureFlag?.reason?.description ?? featureFlag?.reason?.code),
+        ...maybeAdd('$feature_flag_bootstrapped_response', bootstrappedResponse),
+        ...maybeAdd('$feature_flag_bootstrapped_payload', bootstrappedPayload),
         // If we haven't yet received a response from the /decide endpoint, we must have used the bootstrapped value
         $used_bootstrap_value: !this.getPersistedProperty(PostHogPersistedProperty.DecideEndpointWasHit),
-        $feature_flag_request_id: details.requestId ?? null,
+        ...maybeAdd('$feature_flag_request_id', details.requestId),
       })
     }
 
