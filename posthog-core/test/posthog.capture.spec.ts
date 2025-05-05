@@ -34,6 +34,7 @@ describe('PostHog Core', () => {
             library: 'posthog-core-tests',
             library_version: '2.0.0-alpha',
             properties: {
+              $active_feature_flags: expect.any(Array),
               $lib: 'posthog-core-tests',
               $lib_version: '2.0.0-alpha',
               $session_id: expect.any(String),

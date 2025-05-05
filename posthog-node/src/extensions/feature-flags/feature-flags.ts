@@ -470,7 +470,7 @@ class FeatureFlagsPoller {
 
         case 200: {
           // Process successful response
-          const responseJson = ((await res.json()) as { [key: string]: JsonType }) ?? {}
+          const responseJson = ((await res.json()) as { [key: string]: any }) ?? {}
           if (!('flags' in responseJson)) {
             this.onError?.(new Error(`Invalid response when getting feature flags: ${JSON.stringify(responseJson)}`))
             return

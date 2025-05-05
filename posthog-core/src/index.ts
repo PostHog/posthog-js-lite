@@ -66,7 +66,7 @@ class PostHogFetchHttpError extends Error {
     return this.response.text()
   }
 
-  get json(): Promise<JsonType> {
+  get json(): Promise<any> {
     return this.response.json()
   }
 }

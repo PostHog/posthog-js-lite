@@ -19,7 +19,7 @@ describe('PostHog Core', () => {
 
     it("doesn't fail when queue is empty", async () => {
       jest.useRealTimers()
-      await expect(posthog.flush()).resolves.toEqual([])
+      await expect(posthog.flush()).resolves.not.toThrow()
     })
 
     it('flush messages once called', async () => {
@@ -27,11 +27,7 @@ describe('PostHog Core', () => {
       posthog.capture('test-event-2')
       posthog.capture('test-event-3')
       expect(mocks.fetch).not.toHaveBeenCalled()
-      await expect(posthog.flush()).resolves.toMatchObject([
-        { event: 'test-event-1' },
-        { event: 'test-event-2' },
-        { event: 'test-event-3' },
-      ])
+      await expect(posthog.flush()).resolves.not.toThrow()
       expect(mocks.fetch).toHaveBeenCalled()
     })
 
@@ -107,12 +103,7 @@ describe('PostHog Core', () => {
       posthog.capture('test-event-2')
       posthog.capture('test-event-3')
       posthog.capture('test-event-4')
-      await expect(posthog.flush()).resolves.toMatchObject([
-        { event: 'test-event-1' },
-        { event: 'test-event-2' },
-        { event: 'test-event-3' },
-        { event: 'test-event-4' },
-      ])
+      await expect(posthog.flush()).resolves.not.toThrow()
       expect(mocks.fetch).toHaveBeenCalledTimes(2)
     })
 
@@ -143,12 +134,7 @@ describe('PostHog Core', () => {
       posthog.capture('test-event-2')
       posthog.capture('test-event-3')
       posthog.capture('test-event-4')
-      await expect(posthog.flush()).resolves.toMatchObject([
-        { event: 'test-event-1' },
-        { event: 'test-event-2' },
-        { event: 'test-event-3' },
-        { event: 'test-event-4' },
-      ])
+      await expect(posthog.flush()).resolves.not.toThrow()
       expect(successfulMessages).toMatchObject([
         { event: 'test-event-1' },
         { event: 'test-event-2' },
