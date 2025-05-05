@@ -34,7 +34,6 @@ import {
   currentTimestamp,
   isError,
   isTokenInRollout,
-  maybeAdd,
   NEW_FLAGS_EXCLUDED_HASHES,
   NEW_FLAGS_ROLLOUT_PERCENTAGE,
   removeTrailingSlash,
@@ -82,6 +81,9 @@ class PostHogFetchNetworkError extends Error {
     super('Network error while fetching PostHog', error instanceof Error ? { cause: error } : {})
   }
 }
+
+export const maybeAdd = (key: string, value: JsonType | undefined): Record<string, JsonType> =>
+  value !== undefined ? { [key]: value } : {}
 
 export async function logFlushError(err: any): Promise<void> {
   if (err instanceof PostHogFetchHttpError) {
