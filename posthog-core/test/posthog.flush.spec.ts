@@ -30,11 +30,11 @@ describe('PostHog Core', () => {
         const batch = JSON.parse(options.body || '').batch
 
         successfulMessages.push(...batch)
-          return Promise.resolve({
-            status: 200,
-            text: () => Promise.resolve('ok'),
-            json: () => Promise.resolve({ status: 'ok' }),
-          })
+        return Promise.resolve({
+          status: 200,
+          text: () => Promise.resolve('ok'),
+          json: () => Promise.resolve({ status: 'ok' }),
+        })
       })
 
       posthog.capture('test-event-1')
@@ -124,11 +124,11 @@ describe('PostHog Core', () => {
         const batch = JSON.parse(options.body || '').batch
 
         successfulMessages.push(...batch)
-          return Promise.resolve({
-            status: 200,
-            text: () => Promise.resolve('ok'),
-            json: () => Promise.resolve({ status: 'ok' }),
-          })
+        return Promise.resolve({
+          status: 200,
+          text: () => Promise.resolve('ok'),
+          json: () => Promise.resolve({ status: 'ok' }),
+        })
       })
 
       posthog['maxBatchSize'] = 2 // a bit contrived because usually maxBatchSize >= flushAt
