@@ -195,7 +195,7 @@ export class PostHog extends PostHogCore {
     return `${this.getLibraryId()}/${this.getLibraryVersion()}`
   }
 
-  getCommonEventProperties(): any {
+  getCommonEventProperties(): PostHogEventProperties {
     return {
       ...super.getCommonEventProperties(),
       ...this._appProperties,
@@ -205,7 +205,7 @@ export class PostHog extends PostHogCore {
   }
 
   // Custom methods
-  async screen(name: string, properties?: { [key: string]: any }, options?: PostHogCaptureOptions): Promise<void> {
+  async screen(name: string, properties?: PostHogEventProperties, options?: PostHogCaptureOptions): Promise<void> {
     await this._initPromise
     // Screen name is good to know for all other subsequent events
     this.registerForSession({
@@ -459,11 +459,13 @@ export class PostHog extends PostHogCore {
 
     // version and build are deprecated, but we keep them for compatibility
     // use $app_version and $app_build instead
-    const properties: PostHogEventProperties = { version: appVersion, build: appBuild }
+    const properties: PostHogEventProperties = { version: appVersion ?? null, build: appBuild ?? null }
 
     if (!isMemoryPersistence) {
-      const prevAppBuild = this.getPersistedProperty(PostHogPersistedProperty.InstalledAppBuild)
-      const prevAppVersion = this.getPersistedProperty(PostHogPersistedProperty.InstalledAppVersion)
+      const prevAppBuild = this.getPersistedProperty(PostHogPersistedProperty.InstalledAppBuild) as string | undefined
+      const prevAppVersion = this.getPersistedProperty(PostHogPersistedProperty.InstalledAppVersion) as
+        | string
+        | undefined
 
       if (!appBuild || !appVersion) {
         this.logMsgIfDebug(() =>
@@ -481,8 +483,8 @@ export class PostHog extends PostHogCore {
         } else if (prevAppBuild !== appBuild) {
           // app updated
           this.capture('Application Updated', {
-            previous_version: prevAppVersion,
-            previous_build: prevAppBuild,
+            previous_version: prevAppVersion ?? null,
+            previous_build: prevAppBuild ?? null,
             ...properties,
           })
         }
@@ -499,7 +501,7 @@ export class PostHog extends PostHogCore {
 
     this.capture('Application Opened', {
       ...properties,
-      url: initialUrl,
+      url: initialUrl ?? null,
     })
 
     AppState.addEventListener('change', (state) => {

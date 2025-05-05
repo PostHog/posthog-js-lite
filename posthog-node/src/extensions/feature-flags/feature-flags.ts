@@ -470,19 +470,19 @@ class FeatureFlagsPoller {
 
         case 200: {
           // Process successful response
-          const responseJson = await res.json()
+          const responseJson = ((await res.json()) as { [key: string]: JsonType }) ?? {}
           if (!('flags' in responseJson)) {
             this.onError?.(new Error(`Invalid response when getting feature flags: ${JSON.stringify(responseJson)}`))
             return
           }
 
-          this.featureFlags = responseJson.flags || []
+          this.featureFlags = (responseJson.flags as PostHogFeatureFlag[]) ?? []
           this.featureFlagsByKey = this.featureFlags.reduce(
             (acc, curr) => ((acc[curr.key] = curr), acc),
             <Record<string, PostHogFeatureFlag>>{}
           )
-          this.groupTypeMapping = responseJson.group_type_mapping || {}
-          this.cohorts = responseJson.cohorts || {}
+          this.groupTypeMapping = (responseJson.group_type_mapping as Record<string, string>) || {}
+          this.cohorts = (responseJson.cohorts as Record<string, PropertyGroup>) || {}
           this.loadedSuccessfullyOnce = true
           this.shouldBeginExponentialBackoff = false
           this.backOffCount = 0

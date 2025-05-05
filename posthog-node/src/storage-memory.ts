@@ -1,13 +1,13 @@
-import { PostHogPersistedProperty } from 'posthog-core'
+import { JsonType, PostHogPersistedProperty } from 'posthog-core'
 
 export class PostHogMemoryStorage {
-  private _memoryStorage: { [key: string]: any | undefined } = {}
+  private _memoryStorage: { [key: string]: JsonType | undefined } = {}
 
-  getProperty(key: PostHogPersistedProperty): any | undefined {
+  getProperty(key: PostHogPersistedProperty): JsonType | undefined {
     return this._memoryStorage[key]
   }
 
-  setProperty(key: PostHogPersistedProperty, value: any | null): void {
+  setProperty(key: PostHogPersistedProperty, value: JsonType | null): void {
     this._memoryStorage[key] = value !== null ? value : undefined
   }
 }

@@ -20,8 +20,8 @@ export const sendSurveyShownEvent = (survey: Survey, posthog: PostHog): void => 
   posthog.capture('survey shown', {
     $survey_name: survey.name,
     $survey_id: survey.id,
-    $survey_iteration: survey.current_iteration,
-    $survey_iteration_start_date: survey.current_iteration_start_date,
+    $survey_iteration: survey.current_iteration ?? null,
+    $survey_iteration_start_date: survey.current_iteration_start_date ?? null,
   })
 }
 
@@ -33,8 +33,8 @@ export const sendSurveyEvent = (
   posthog.capture('survey sent', {
     $survey_name: survey.name,
     $survey_id: survey.id,
-    $survey_iteration: survey.current_iteration,
-    $survey_iteration_start_date: survey.current_iteration_start_date,
+    $survey_iteration: survey.current_iteration ?? null,
+    $survey_iteration_start_date: survey.current_iteration_start_date ?? null,
     $survey_questions: survey.questions.map((question: SurveyQuestion) => question.question),
     ...responses,
     $set: {
@@ -47,8 +47,8 @@ export const dismissedSurveyEvent = (survey: Survey, posthog: PostHog): void => 
   posthog.capture('survey dismissed', {
     $survey_name: survey.name,
     $survey_id: survey.id,
-    $survey_iteration: survey.current_iteration,
-    $survey_iteration_start_date: survey.current_iteration_start_date,
+    $survey_iteration: survey.current_iteration ?? null,
+    $survey_iteration_start_date: survey.current_iteration_start_date ?? null,
     $set: {
       [getSurveyInteractionProperty(survey, 'dismissed')]: true,
     },

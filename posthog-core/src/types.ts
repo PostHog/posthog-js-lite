@@ -105,7 +105,7 @@ export type PostHogCaptureOptions = {
 export type PostHogFetchResponse = {
   status: number
   text: () => Promise<string>
-  json: () => Promise<any>
+  json: () => Promise<JsonType>
 }
 
 export type PostHogQueueItem = {
@@ -114,7 +114,11 @@ export type PostHogQueueItem = {
 }
 
 export type PostHogEventProperties = {
-  [key: string]: any
+  [key: string]: JsonType
+}
+
+export type PostHogGroupProperties = {
+  [type: string]: string | number
 }
 
 export type PostHogAutocaptureElement = {
@@ -124,9 +128,8 @@ export type PostHogAutocaptureElement = {
   nth_child?: number
   nth_of_type?: number
   order?: number
-} & {
-  [key: string]: any
-} // Any key prefixed with `attr__` can be added
+} & PostHogEventProperties
+// Any key prefixed with `attr__` can be added
 
 export type PostHogRemoteConfig = {
   sessionRecording?:
@@ -231,7 +234,7 @@ export type PostHogFlagsAndPayloadsResponse = Partial<
   Pick<PostHogDecideResponse, 'featureFlags' | 'featureFlagPayloads'>
 >
 
-export type JsonType = string | number | boolean | null | { [key: string]: JsonType } | Array<JsonType>
+export type JsonType = string | number | boolean | null | { [key: string]: JsonType } | Array<JsonType> | JsonType[]
 
 export type FetchLike = (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
 
