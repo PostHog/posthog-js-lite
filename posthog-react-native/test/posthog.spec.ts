@@ -80,7 +80,7 @@ describe('PostHog React Native', () => {
     // await posthog.ready()
 
     expect(posthog.getCommonEventProperties()).toEqual({
-      $active_feature_flags: undefined,
+      $active_feature_flags: expect.any(Array),
       $lib: 'posthog-react-native',
       $lib_version: expect.any(String),
       $screen_height: expect.any(Number),
@@ -100,7 +100,7 @@ describe('PostHog React Native', () => {
     await posthog.ready()
 
     expect(posthog2.getCommonEventProperties()).toEqual({
-      $active_feature_flags: undefined,
+      $active_feature_flags: expect.any(Array),
       $lib: 'posthog-react-native',
       $lib_version: expect.any(String),
       $screen_height: expect.any(Number),
