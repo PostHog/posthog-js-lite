@@ -9,9 +9,6 @@ export function isGzipSupported(): boolean {
  * Gzip a string using Compression Streams API if it's available
  */
 export async function gzipCompress(input: string, isDebug = true): Promise<Blob | null> {
-  if (!isGzipSupported()) {
-    return null
-  }
   try {
     // Turn the string into a stream using a Blob, and then compress it
     const dataStream = new Blob([input], {
