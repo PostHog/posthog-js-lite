@@ -43,14 +43,20 @@ describe('gzip', () => {
   })
   describe('gzipCompress', () => {
     it('compressed random data should match node', async () => {
-      const webCompress = Buffer.from(await (await gzipCompress(RANDOM_TEST_INPUT))!.arrayBuffer())
+      const compressed = await gzipCompress(RANDOM_TEST_INPUT)
+      expect(compressed).not.toBe(null)
+      if (!compressed) return
+      const webCompress = Buffer.from(await compressed.arrayBuffer())
       const nodeCompress = await promisify(gzip)(RANDOM_TEST_INPUT)
       expect(webCompress).not.toBeFalsy()
       expect(webCompress).toEqual(nodeCompress)
     })
 
     it('compressed mock request should match node', async () => {
-      const webCompress = Buffer.from(await (await gzipCompress(API_TEST_INPUT))!.arrayBuffer())
+      const compressed = await gzipCompress(API_TEST_INPUT)
+      expect(compressed).not.toBe(null)
+      if (!compressed) return
+      const webCompress = Buffer.from(await compressed.arrayBuffer())
       const nodeCompress = await promisify(gzip)(API_TEST_INPUT)
       expect(webCompress).not.toBeFalsy()
       expect(webCompress).toEqual(nodeCompress)
