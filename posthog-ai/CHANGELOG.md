@@ -1,3 +1,7 @@
+# 4.3.2
+
+- Fix exported file extensions to work with older Node versions
+
 # 4.3.1
 
 - Remove fullDebug mode
