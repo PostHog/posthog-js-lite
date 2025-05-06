@@ -1,8 +1,8 @@
 {
   "name": "posthog-js-lite",
-  "version": "3.5.0",
-  "main": "lib/index.cjs.js",
-  "module": "lib/index.esm.js",
+  "version": "3.5.1",
+  "main": "lib/index.cjs",
+  "module": "lib/index.mjs",
   "types": "lib/index.d.ts",
   "repository": {
     "type": "git",

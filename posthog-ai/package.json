@@ -1,14 +1,14 @@
 {
   "name": "@posthog/ai",
-  "version": "4.3.1",
+  "version": "4.3.2",
   "description": "PostHog Node.js AI integrations",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/PostHog/posthog-js-lite.git",
     "directory": "posthog-ai"
   },
-  "main": "lib/index.cjs.js",
-  "module": "lib/index.esm.js",
+  "main": "lib/index.cjs",
+  "module": "lib/index.mjs",
   "types": "lib/index.d.ts",
   "license": "MIT",
   "devDependencies": {
@@ -40,28 +40,28 @@
   },
   "exports": {
     ".": {
-      "require": "./lib/index.cjs.js",
-      "import": "./lib/index.esm.js",
+      "require": "./lib/index.cjs",
+      "import": "./lib/index.mjs",
       "types": "./lib/index.d.ts"
     },
     "./anthropic": {
-      "require": "./lib/anthropic/index.cjs.js",
-      "import": "./lib/anthropic/index.esm.js",
+      "require": "./lib/anthropic/index.cjs",
+      "import": "./lib/anthropic/index.mjs",
       "types": "./lib/anthropic/index.d.ts"
     },
     "./openai": {
-      "require": "./lib/openai/index.cjs.js",
-      "import": "./lib/openai/index.esm.js",
+      "require": "./lib/openai/index.cjs",
+      "import": "./lib/openai/index.mjs",
       "types": "./lib/openai/index.d.ts"
     },
     "./vercel": {
-      "require": "./lib/vercel/index.cjs.js",
-      "import": "./lib/vercel/index.esm.js",
+      "require": "./lib/vercel/index.cjs",
+      "import": "./lib/vercel/index.mjs",
       "types": "./lib/vercel/index.d.ts"
     },
     "./langchain": {
-      "require": "./lib/langchain/index.cjs.js",
-      "import": "./lib/langchain/index.esm.js",
+      "require": "./lib/langchain/index.cjs",
+      "import": "./lib/langchain/index.mjs",
       "types": "./lib/langchain/index.d.ts"
     }
   },
