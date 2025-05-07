@@ -127,13 +127,13 @@ providers.forEach((provider) => {
     input: `./posthog-ai/src/${provider}/index.ts`,
     output: [
       {
-        file: `./posthog-ai/lib/${provider}/index.cjs.js`,
+        file: `./posthog-ai/lib/${provider}/index.cjs`,
         sourcemap: true,
         exports: 'named',
         format: 'cjs',
       },
       {
-        file: `./posthog-ai/lib/${provider}/index.esm.js`,
+        file: `./posthog-ai/lib/${provider}/index.mjs`,
         sourcemap: true,
         format: 'es',
       },
