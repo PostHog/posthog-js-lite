@@ -1,3 +1,7 @@
+# 4.4.0
+
+- Make `posthog-node` a peer dependency to avoid bundling implementation code
+
 # 4.3.2
 
 - Fix exported file extensions to work with older Node versions

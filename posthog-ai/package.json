@@ -1,6 +1,6 @@
 {
   "name": "@posthog/ai",
-  "version": "4.3.2",
+  "version": "4.4.0",
   "description": "PostHog Node.js AI integrations",
   "repository": {
     "type": "git",
@@ -33,6 +33,9 @@
     "openai": "^4.0.0",
     "uuid": "^11.0.5",
     "zod": "^3.24.1"
+  },
+  "peerDependencies": {
+    "posthog-node": "^4.17.1"
   },
   "scripts": {
     "test": "jest",

@@ -83,7 +83,7 @@ export type PostHogFeatureFlag = {
   experiment_set: number[]
 }
 
-export type PostHogNodeV1 = {
+export interface IPostHog {
   /**
    * @description Capture allows you to capture anything a user does within your system,
    * which you can later use in PostHog to find patterns in usage,
