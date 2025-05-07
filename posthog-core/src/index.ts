@@ -18,6 +18,7 @@ import {
   FeatureFlagDetail,
   Survey,
   SurveyResponse,
+  Compression,
 } from './types'
 import {
   createDecideResponseFromFlagsAndPayloads,
@@ -41,6 +42,7 @@ import {
   safeSetTimeout,
 } from './utils'
 import { LZString } from './lz-string'
+import { isGzipSupported, gzipCompress } from './gzip'
 import { SimpleEventEmitter } from './eventemitter'
 import { uuidv7 } from './vendor/uuidv7'
 
@@ -93,6 +95,7 @@ export abstract class PostHogCoreStateless {
   private disableGeoip: boolean
   private historicalMigration: boolean
   protected disabled
+  protected disableCompression: boolean
 
   private defaultOptIn: boolean
   private pendingPromises: Record<string, Promise<any>> = {}
@@ -144,6 +147,7 @@ export abstract class PostHogCoreStateless {
     // Init promise allows the derived class to block calls until it is ready
     this._initPromise = Promise.resolve()
     this._isInitialized = true
+    this.disableCompression = !isGzipSupported() || (options?.disableCompression ?? false)
   }
 
   protected logMsgIfDebug(fn: () => void): void {
@@ -844,6 +848,8 @@ export abstract class PostHogCoreStateless {
         ? `${this.host}/e/?ip=1&_=${currentTimestamp()}&v=${this.getLibraryVersion()}`
         : `${this.host}/batch/`
 
+    const gzippedPayload =
+      this.captureMode === 'json' && !this.disableCompression ? await gzipCompress(payload, this.isDebug) : null
     const fetchOptions: PostHogFetchOptions =
       this.captureMode === 'form'
         ? {
@@ -855,8 +861,12 @@ export abstract class PostHogCoreStateless {
           }
         : {
             method: 'POST',
-            headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },
-            body: payload,
+            headers: {
+              ...this.getCustomHeaders(),
+              'Content-Type': 'application/json',
+              ...(gzippedPayload !== null && { 'Content-Encoding': 'gzip' }),
+            },
+            body: gzippedPayload || payload,
           }
 
     try {
@@ -1437,6 +1447,10 @@ export abstract class PostHogCore extends PostHogCoreStateless {
               this.logMsgIfDebug(() => console.warn('Remote config has no feature flags, will not load feature flags.'))
             } else if (this.preloadFeatureFlags !== false) {
               this.reloadFeatureFlags()
+            }
+
+            if (!response.supportedCompression?.includes(Compression.GZipJS)) {
+              this.disableCompression = true
             }
 
             remoteConfig = response
