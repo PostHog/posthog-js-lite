@@ -1,3 +1,7 @@
+# Next
+
+1. chore: improve event prop types
+
 # 4.17.1 - 2025-05-02
 
 1. fix: fix imports for old node.js version
