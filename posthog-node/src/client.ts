@@ -9,7 +9,7 @@ import {
   PostHogFlagsAndPayloadsResponse,
   PostHogPersistedProperty,
 } from 'posthog-core'
-import { EventMessage, GroupIdentifyMessage, IdentifyMessage, PostHogBackend, PostHogOptions } from './types'
+import { EventMessage, GroupIdentifyMessage, IdentifyMessage, IPostHog, PostHogOptions } from './types'
 import { FeatureFlagDetail, FeatureFlagValue } from 'posthog-core'
 import { FeatureFlagsPoller } from './extensions/feature-flags/feature-flags'
 import fetch from './fetch'
@@ -24,7 +24,7 @@ const THIRTY_SECONDS = 30 * 1000
 const MAX_CACHE_SIZE = 50 * 1000
 
 // The actual exported Nodejs API.
-export abstract class PostHogBackendClient extends PostHogCoreStateless implements PostHogBackend {
+export abstract class PostHogBackendClient extends PostHogCoreStateless implements IPostHog {
   private _memoryStorage = new PostHogMemoryStorage()
 
   private featureFlagsPoller?: FeatureFlagsPoller
