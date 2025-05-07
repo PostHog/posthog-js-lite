@@ -18,6 +18,7 @@ import {
   FeatureFlagDetail,
   Survey,
   SurveyResponse,
+  PostHogGroupProperties,
 } from './types'
 import {
   createDecideResponseFromFlagsAndPayloads,
@@ -80,6 +81,9 @@ class PostHogFetchNetworkError extends Error {
     super('Network error while fetching PostHog', error instanceof Error ? { cause: error } : {})
   }
 }
+
+export const maybeAdd = (key: string, value: JsonType | undefined): Record<string, JsonType> =>
+  value !== undefined ? { [key]: value } : {}
 
 export async function logFlushError(err: any): Promise<void> {
   if (err instanceof PostHogFetchHttpError) {
@@ -201,7 +205,7 @@ export abstract class PostHogCoreStateless {
     this._initPromise.then(() => fn())
   }
 
-  protected getCommonEventProperties(): any {
+  protected getCommonEventProperties(): PostHogEventProperties {
     return {
       $lib: this.getLibraryId(),
       $lib_version: this.getLibraryVersion(),
@@ -248,7 +252,11 @@ export abstract class PostHogCoreStateless {
     return this.disabled
   }
 
-  private buildPayload(payload: { distinct_id: string; event: string; properties?: PostHogEventProperties }): any {
+  private buildPayload(payload: {
+    distinct_id: string
+    event: string
+    properties?: PostHogEventProperties
+  }): PostHogEventProperties {
     return {
       distinct_id: payload.distinct_id,
       event: payload.event,
@@ -314,7 +322,7 @@ export abstract class PostHogCoreStateless {
   protected captureStateless(
     distinctId: string,
     event: string,
-    properties?: { [key: string]: any },
+    properties?: PostHogEventProperties,
     options?: PostHogCaptureOptions
   ): void {
     this.wrap(() => {
@@ -326,7 +334,7 @@ export abstract class PostHogCoreStateless {
   protected async captureStatelessImmediate(
     distinctId: string,
     event: string,
-    properties?: { [key: string]: any },
+    properties?: PostHogEventProperties,
     options?: PostHogCaptureOptions
   ): Promise<void> {
     const payload = this.buildPayload({ distinct_id: distinctId, event, properties })
@@ -336,7 +344,7 @@ export abstract class PostHogCoreStateless {
   protected aliasStateless(
     alias: string,
     distinctId: string,
-    properties?: { [key: string]: any },
+    properties?: PostHogEventProperties,
     options?: PostHogCaptureOptions
   ): void {
     this.wrap(() => {
@@ -357,7 +365,7 @@ export abstract class PostHogCoreStateless {
   protected async aliasStatelessImmediate(
     alias: string,
     distinctId: string,
-    properties?: { [key: string]: any },
+    properties?: PostHogEventProperties,
     options?: PostHogCaptureOptions
   ): Promise<void> {
     const payload = this.buildPayload({
@@ -779,7 +787,7 @@ export abstract class PostHogCoreStateless {
     this._props = val
   }
 
-  async register(properties: { [key: string]: any }): Promise<void> {
+  async register(properties: PostHogEventProperties): Promise<void> {
     this.wrap(() => {
       this.props = {
         ...this.props,
@@ -886,7 +894,7 @@ export abstract class PostHogCoreStateless {
     }
   }
 
-  private prepareMessage(type: string, _message: any, options?: PostHogCaptureOptions): any {
+  private prepareMessage(type: string, _message: any, options?: PostHogCaptureOptions): PostHogEventProperties {
     const message = {
       ..._message,
       type: type,
@@ -929,7 +937,7 @@ export abstract class PostHogCoreStateless {
     })
   }
 
-  async flush(): Promise<any[]> {
+  async flush(): Promise<void> {
     // Wait for the current flush operation to finish (regardless of success or failure), then try to flush again.
     // Use allSettled instead of finally to be defensive around flush throwing errors immediately rather than rejecting.
     const nextFlushPromise = Promise.allSettled([this.flushPromise]).then(() => {
@@ -963,14 +971,14 @@ export abstract class PostHogCoreStateless {
     return headers
   }
 
-  private async _flush(): Promise<any[]> {
+  private async _flush(): Promise<void> {
     this.clearFlushTimer()
     await this._initPromise
 
     let queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
 
     if (!queue.length) {
-      return []
+      return
     }
 
     const sentMessages: any[] = []
@@ -1060,7 +1068,6 @@ export abstract class PostHogCoreStateless {
       sentMessages.push(...batchMessages)
     }
     this._events.emit('flush', sentMessages)
-    return sentMessages
   }
 
   private async fetchWithRetry(
@@ -1278,7 +1285,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     })
   }
 
-  protected getCommonEventProperties(): any {
+  protected getCommonEventProperties(): PostHogEventProperties {
     const featureFlags = this.getFeatureFlags()
 
     const featureVariantProperties: Record<string, FeatureFlagValue> = {}
@@ -1288,13 +1295,13 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       }
     }
     return {
-      $active_feature_flags: featureFlags ? Object.keys(featureFlags) : undefined,
+      ...maybeAdd('$active_feature_flags', featureFlags ? Object.keys(featureFlags) : undefined),
       ...featureVariantProperties,
       ...super.getCommonEventProperties(),
     }
   }
 
-  private enrichProperties(properties?: PostHogEventProperties): any {
+  private enrichProperties(properties?: PostHogEventProperties): PostHogEventProperties {
     return {
       ...this.props, // Persisted properties first
       ...this.sessionProps, // Followed by session properties
@@ -1357,7 +1364,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     return this.getPersistedProperty<string>(PostHogPersistedProperty.DistinctId) || this.getAnonymousId()
   }
 
-  registerForSession(properties: { [key: string]: any }): void {
+  registerForSession(properties: PostHogEventProperties): void {
     this.sessionProps = {
       ...this.sessionProps,
       ...properties,
@@ -1377,7 +1384,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       distinctId = distinctId || previousDistinctId
 
       if (properties?.$groups) {
-        this.groups(properties.$groups)
+        this.groups(properties.$groups as PostHogGroupProperties)
       }
 
       // promote $set and $set_once to top level
@@ -1389,8 +1396,8 @@ export abstract class PostHogCore extends PostHogCoreStateless {
 
       const allProperties = this.enrichProperties({
         $anon_distinct_id: this.getAnonymousId(),
-        $set: userProps,
-        $set_once: userPropsOnce,
+        ...maybeAdd('$set', userProps),
+        ...maybeAdd('$set_once', userPropsOnce),
       })
 
       if (distinctId !== previousDistinctId) {
@@ -1404,12 +1411,12 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     })
   }
 
-  capture(event: string, properties?: { [key: string]: any }, options?: PostHogCaptureOptions): void {
+  capture(event: string, properties?: PostHogEventProperties, options?: PostHogCaptureOptions): void {
     this.wrap(() => {
       const distinctId = this.getDistinctId()
 
       if (properties?.$groups) {
-        this.groups(properties.$groups)
+        this.groups(properties.$groups as PostHogGroupProperties)
       }
 
       const allProperties = this.enrichProperties(properties)
@@ -1453,19 +1460,19 @@ export abstract class PostHogCore extends PostHogCoreStateless {
    *** GROUPS
    ***/
 
-  groups(groups: { [type: string]: string | number }): void {
+  groups(groups: PostHogGroupProperties): void {
     this.wrap(() => {
       // Get persisted groups
       const existingGroups = this.props.$groups || {}
 
       this.register({
         $groups: {
-          ...existingGroups,
+          ...(existingGroups as PostHogGroupProperties),
           ...groups,
         },
       })
 
-      if (Object.keys(groups).find((type) => existingGroups[type] !== groups[type])) {
+      if (Object.keys(groups).find((type) => existingGroups[type as keyof typeof existingGroups] !== groups[type])) {
         this.reloadFeatureFlags()
       }
     })
@@ -1681,7 +1688,13 @@ export abstract class PostHogCore extends PostHogCoreStateless {
           $anon_distinct_id: sendAnonDistinctId ? this.getAnonymousId() : undefined,
         }
 
-        const res = await super.getDecide(distinctId, groups, personProperties, groupProperties, extraProperties)
+        const res = await super.getDecide(
+          distinctId,
+          groups as PostHogGroupProperties,
+          personProperties,
+          groupProperties,
+          extraProperties
+        )
         // Add check for quota limitation on feature flags
         if (res?.quotaLimited?.includes(QuotaLimitedFeature.FeatureFlags)) {
           // Unset all feature flags by setting to null
@@ -1829,14 +1842,14 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       this.capture('$feature_flag_called', {
         $feature_flag: key,
         $feature_flag_response: response,
-        $feature_flag_id: featureFlag?.metadata?.id,
-        $feature_flag_version: featureFlag?.metadata?.version,
-        $feature_flag_reason: featureFlag?.reason?.description ?? featureFlag?.reason?.code,
-        $feature_flag_bootstrapped_response: bootstrappedResponse,
-        $feature_flag_bootstrapped_payload: bootstrappedPayload,
+        ...maybeAdd('$feature_flag_id', featureFlag?.metadata?.id),
+        ...maybeAdd('$feature_flag_version', featureFlag?.metadata?.version),
+        ...maybeAdd('$feature_flag_reason', featureFlag?.reason?.description ?? featureFlag?.reason?.code),
+        ...maybeAdd('$feature_flag_bootstrapped_response', bootstrappedResponse),
+        ...maybeAdd('$feature_flag_bootstrapped_payload', bootstrappedPayload),
         // If we haven't yet received a response from the /decide endpoint, we must have used the bootstrapped value
         $used_bootstrap_value: !this.getPersistedProperty(PostHogPersistedProperty.DecideEndpointWasHit),
-        $feature_flag_request_id: details.requestId,
+        ...maybeAdd('$feature_flag_request_id', details.requestId),
       })
     }
 
@@ -1978,7 +1991,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   /***
    *** ERROR TRACKING
    ***/
-  captureException(error: unknown, additionalProperties?: { [key: string]: any }): void {
+  captureException(error: unknown, additionalProperties?: PostHogEventProperties): void {
     const properties: { [key: string]: any } = {
       $exception_level: 'error',
       $exception_list: [

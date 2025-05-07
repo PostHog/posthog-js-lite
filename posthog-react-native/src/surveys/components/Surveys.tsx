@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react'
 import { ScrollView, StyleProp, ViewStyle } from 'react-native'
 
 import { getDisplayOrderQuestions, SurveyAppearanceTheme } from '../surveys-utils'
-import { Survey, SurveyAppearance, SurveyQuestion } from '../../../../posthog-core/src'
+import { Survey, SurveyAppearance, SurveyQuestion, maybeAdd } from '../../../../posthog-core/src'
 import { LinkQuestion, MultipleChoiceQuestion, OpenTextQuestion, RatingQuestion } from './QuestionTypes'
 import { PostHog } from '../../posthog-rn'
 import { usePostHog } from '../../hooks/usePostHog'
@@ -20,8 +20,8 @@ export const sendSurveyShownEvent = (survey: Survey, posthog: PostHog): void => 
   posthog.capture('survey shown', {
     $survey_name: survey.name,
     $survey_id: survey.id,
-    $survey_iteration: survey.current_iteration,
-    $survey_iteration_start_date: survey.current_iteration_start_date,
+    ...maybeAdd('$survey_iteration', survey.current_iteration),
+    ...maybeAdd('$survey_iteration_start_date', survey.current_iteration_start_date),
   })
 }
 
@@ -33,8 +33,8 @@ export const sendSurveyEvent = (
   posthog.capture('survey sent', {
     $survey_name: survey.name,
     $survey_id: survey.id,
-    $survey_iteration: survey.current_iteration,
-    $survey_iteration_start_date: survey.current_iteration_start_date,
+    ...maybeAdd('$survey_iteration', survey.current_iteration),
+    ...maybeAdd('$survey_iteration_start_date', survey.current_iteration_start_date),
     $survey_questions: survey.questions.map((question: SurveyQuestion) => question.question),
     ...responses,
     $set: {
@@ -47,8 +47,8 @@ export const dismissedSurveyEvent = (survey: Survey, posthog: PostHog): void => 
   posthog.capture('survey dismissed', {
     $survey_name: survey.name,
     $survey_id: survey.id,
-    $survey_iteration: survey.current_iteration,
-    $survey_iteration_start_date: survey.current_iteration_start_date,
+    ...maybeAdd('$survey_iteration', survey.current_iteration),
+    ...maybeAdd('$survey_iteration_start_date', survey.current_iteration_start_date),
     $set: {
       [getSurveyInteractionProperty(survey, 'dismissed')]: true,
     },

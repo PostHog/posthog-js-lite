@@ -1,7 +1,12 @@
 import { version } from '../package.json'
 
 import { PostHogCore, getFetch } from 'posthog-core'
-import type { PostHogFetchOptions, PostHogFetchResponse, PostHogPersistedProperty } from 'posthog-core'
+import type {
+  PostHogEventProperties,
+  PostHogFetchOptions,
+  PostHogFetchResponse,
+  PostHogPersistedProperty,
+} from 'posthog-core'
 
 import { getContext } from './context'
 import { PostHogStorage, getStorage } from './storage'
@@ -82,7 +87,7 @@ export class PostHog extends PostHogCore {
     return
   }
 
-  getCommonEventProperties(): any {
+  getCommonEventProperties(): PostHogEventProperties {
     return {
       ...super.getCommonEventProperties(),
       ...getContext(this.getWindow()),

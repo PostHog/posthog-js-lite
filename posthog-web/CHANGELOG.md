@@ -1,5 +1,7 @@
 # Next
 
+1. chore: improve event prop types
+
 # 3.5.1 – 2025-05-06
 
 ## Fixed
