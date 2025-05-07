@@ -1,4 +1,4 @@
-import { PostHog } from 'posthog-node/types'
+import { PostHog } from 'posthog-node'
 import { withPrivacyMode, getModelParams } from '../utils'
 import { BaseCallbackHandler } from '@langchain/core/callbacks/base'
 import type { Serialized } from '@langchain/core/load/serializable'
