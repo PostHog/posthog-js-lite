@@ -1083,7 +1083,13 @@ export abstract class PostHogCoreStateless {
     }
 
     const body = options.body ? options.body : ''
-    const reqByteLength = Buffer.byteLength(body, STRING_FORMAT)
+    let reqByteLength = -1
+    try {
+      reqByteLength = Buffer.byteLength(body, STRING_FORMAT)
+    } catch {
+      const encoded = new TextEncoder().encode(body)
+      reqByteLength = encoded.length
+    }
 
     return await retriable(
       async () => {
