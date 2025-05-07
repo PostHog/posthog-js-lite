@@ -1,7 +1,7 @@
 import { experimental_wrapLanguageModel as wrapLanguageModel } from 'ai'
 import type { LanguageModelV1, LanguageModelV1Middleware, LanguageModelV1Prompt, LanguageModelV1StreamPart } from 'ai'
 import { v4 as uuidv4 } from 'uuid'
-import { PostHog } from 'posthog-node'
+import { PostHog } from 'posthog-node/types'
 import { CostOverride, sendEventToPosthog, truncate, MAX_OUTPUT_SIZE } from '../utils'
 import { Buffer } from 'buffer'
 
@@ -129,7 +129,7 @@ const mapVercelPrompt = (prompt: LanguageModelV1Prompt): PostHogInput[] => {
     let serialized = JSON.stringify(inputs)
     let removedCount = 0
     // We need to keep track of the initial size of the inputs array because we're going to be mutating it
-    let initialSize = inputs.length
+    const initialSize = inputs.length
     for (let i = 0; i < initialSize && Buffer.byteLength(serialized, 'utf8') > MAX_OUTPUT_SIZE; i++) {
       inputs.shift()
       removedCount++

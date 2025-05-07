@@ -61,6 +61,7 @@
       },
       "import": "./lib/node/index.mjs",
       "require": "./lib/node/index.cjs"
-    }
+    },
+    "./types": "./lib/index.d.ts"
   }
 }

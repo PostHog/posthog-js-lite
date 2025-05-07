@@ -1,7 +1,7 @@
 import OpenAIOrignal, { AzureOpenAI } from 'openai'
-import { PostHog } from 'posthog-node'
+import { PostHog } from 'posthog-node/types'
 import { v4 as uuidv4 } from 'uuid'
-import { formatResponseOpenAI, MonitoringParams, sendEventToPosthog } from '../utils'
+import { formatResponseOpenAI, MonitoringParams, sendEventToPosthog } from '../utils.ts'
 
 type ChatCompletion = OpenAIOrignal.ChatCompletion
 type ChatCompletionChunk = OpenAIOrignal.ChatCompletionChunk

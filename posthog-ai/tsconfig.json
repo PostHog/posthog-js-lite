@@ -4,8 +4,8 @@
     "incremental": false,
     "types": ["node", "jest"],
     "typeRoots": ["./node_modules/@types", "../node_modules/@types"],
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "skipLibCheck": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
   }
 }
