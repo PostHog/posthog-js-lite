@@ -1,8 +1,18 @@
 # Next
 
+1. chore: improve event prop types
+
+# 3.15.2 – 2025-05-07
+
+## Fixed
+
+1. survey modal closes when clicking inside the modal
+
 # 3.15.1 – 2025-04-28
 
-1. fix: revert migration to rollup
+## Fixed
+
+1. revert migration to rollup
 
 # 3.15.0 – 2025-04-23
 
