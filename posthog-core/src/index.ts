@@ -29,6 +29,7 @@ import {
   updateFlagValue,
 } from './featureFlagUtils'
 import {
+  allSettled,
   assert,
   currentISOTime,
   currentTimestamp,
@@ -940,14 +941,18 @@ export abstract class PostHogCoreStateless {
   async flush(): Promise<void> {
     // Wait for the current flush operation to finish (regardless of success or failure), then try to flush again.
     // Use allSettled instead of finally to be defensive around flush throwing errors immediately rather than rejecting.
-    const nextFlushPromise = Promise.allSettled([this.flushPromise]).then(() => {
+    // const nextFlushPromise = Promise.allSettled([this.flushPromise]).then(() => {
+    //   return this._flush()
+    // })
+    const nonNullFlushPromise = this.flushPromise ?? Promise.resolve()
+    const nextFlushPromise = allSettled([nonNullFlushPromise]).then(() => {
       return this._flush()
     })
 
     this.flushPromise = nextFlushPromise
     void this.addPendingPromise(nextFlushPromise)
 
-    Promise.allSettled([nextFlushPromise]).then(() => {
+    allSettled([nextFlushPromise]).then(() => {
       // If there are no others waiting to flush, clear the promise.
       // We don't strictly need to do this, but it could make debugging easier
       if (this.flushPromise === nextFlushPromise) {
