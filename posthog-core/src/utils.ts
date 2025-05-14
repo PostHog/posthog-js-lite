@@ -196,9 +196,9 @@ export function allSettled<T>(
 ): Promise<({ status: 'fulfilled'; value: T } | { status: 'rejected'; reason: any })[]> {
   return Promise.all(
     promises.map((p) =>
-      (p ?? Promise.resolved()).then(
-        (value) => ({ status: 'fulfilled' as const, value }),
-        (reason) => ({ status: 'rejected' as const, reason })
+      (p ?? Promise.resolve()).then(
+        (value: any) => ({ status: 'fulfilled' as const, value }),
+        (reason: any) => ({ status: 'rejected' as const, reason })
       )
     )
   )
