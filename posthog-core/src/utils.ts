@@ -192,11 +192,11 @@ export function isTokenInRollout(token: string, percentage: number = 0, excluded
 }
 
 export function allSettled<T>(
-  promises: Promise<T>[]
+  promises: (Promise<T> | null | undefined)[]
 ): Promise<({ status: 'fulfilled'; value: T } | { status: 'rejected'; reason: any })[]> {
   return Promise.all(
     promises.map((p) =>
-      p.then(
+      (p ?? Promise.resolved()).then(
         (value) => ({ status: 'fulfilled' as const, value }),
         (reason) => ({ status: 'rejected' as const, reason })
       )
