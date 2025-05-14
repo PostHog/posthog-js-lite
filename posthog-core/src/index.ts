@@ -942,8 +942,7 @@ export abstract class PostHogCoreStateless {
     // Wait for the current flush operation to finish (regardless of success or failure), then try to flush again.
     // Use allSettled instead of finally to be defensive around flush throwing errors immediately rather than rejecting.
     // Use a custom allSettled implementation to avoid issues with patching Promise on RN
-    const nonNullFlushPromise = this.flushPromise ?? Promise.resolve()
-    const nextFlushPromise = allSettled([nonNullFlushPromise]).then(() => {
+    const nextFlushPromise = allSettled([this.flushPromise]).then(() => {
       return this._flush()
     })
 
