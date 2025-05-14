@@ -1,6 +1,11 @@
 # Next
 
+# 3.15.3 – 2025-05-14
+
+## Fixed
+
 1. chore: improve event prop types
+2. use custom allSettled implementation to avoid issues with patching Promise
 
 # 3.15.2 – 2025-05-07
 
