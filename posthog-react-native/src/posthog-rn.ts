@@ -251,11 +251,11 @@ export class PostHog extends PostHogCore {
       if (OptionalReactNativeSessionReplay) {
         try {
           this._resetSessionId(OptionalReactNativeSessionReplay, sessionId)
-          this.logMsgIfDebug(() => console.info('PostHog Debug', `sessionId rotated from ${this._currentSessionId} to ${sessionId}.`))
-        } catch (e) {
           this.logMsgIfDebug(() =>
-            console.error('PostHog Debug', `Failed to rotate sessionId: ${e}.`)
+            console.info('PostHog Debug', `sessionId rotated from ${this._currentSessionId} to ${sessionId}.`)
           )
+        } catch (e) {
+          this.logMsgIfDebug(() => console.error('PostHog Debug', `Failed to rotate sessionId: ${e}.`))
         }
       }
       this._currentSessionId = sessionId
@@ -306,7 +306,7 @@ export class PostHog extends PostHogCore {
 
   public async getSurveys(): Promise<SurveyResponse['surveys']> {
     if (this._disableSurveys === true) {
-      this.logMsgIfDebug(() => console.log('PostHog Debug','Loading surveys is disabled.'))
+      this.logMsgIfDebug(() => console.log('PostHog Debug', 'Loading surveys is disabled.'))
       this.setPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys, null)
       return []
     }
@@ -372,15 +372,25 @@ export class PostHog extends PostHogCore {
     const cachedSessionReplayConfig = (sessionReplay as { [key: string]: JsonType }) ?? {}
 
     this.logMsgIfDebug(() =>
-      console.log('PostHog Debug', `Session replay feature flags from decide/flags cached config: ${JSON.stringify(cachedFeatureFlags)}`)
+      console.log(
+        'PostHog Debug',
+        `Session replay feature flags from decide/flags cached config: ${JSON.stringify(cachedFeatureFlags)}`
+      )
     )
 
     this.logMsgIfDebug(() =>
-      console.log('PostHog Debug', `Session replay session recording from decide/flags cached config: ${JSON.stringify(cachedSessionReplayConfig)}`)
+      console.log(
+        'PostHog Debug',
+        `Session replay session recording from decide/flags cached config: ${JSON.stringify(cachedSessionReplayConfig)}`
+      )
     )
 
     let recordingActive = true
-    const linkedFlag = cachedSessionReplayConfig['linkedFlag'] as string | { [key: string]: JsonType } | null | undefined
+    const linkedFlag = cachedSessionReplayConfig['linkedFlag'] as
+      | string
+      | { [key: string]: JsonType }
+      | null
+      | undefined
 
     if (typeof linkedFlag === 'string') {
       const value = cachedFeatureFlags[linkedFlag]
@@ -394,7 +404,9 @@ export class PostHog extends PostHogCore {
         recordingActive = false
       }
 
-      this.logMsgIfDebug(() => console.log('PostHog Debug', `Session replay '${linkedFlag}' linked flag value: '${value}'`))
+      this.logMsgIfDebug(() =>
+        console.log('PostHog Debug', `Session replay '${linkedFlag}' linked flag value: '${value}'`)
+      )
     } else if (linkedFlag && typeof linkedFlag === 'object') {
       const flag = linkedFlag['flag'] as string | undefined
       const variant = linkedFlag['variant'] as string | undefined
@@ -406,7 +418,10 @@ export class PostHog extends PostHogCore {
         )
       } else {
         // disable recording if the flag does not exist/quota limited
-        console.log('PostHog Debug', `Session replay '${flag}' linked flag variant: '${variant}' does not exist/quota limited.`)
+        console.log(
+          'PostHog Debug',
+          `Session replay '${flag}' linked flag variant: '${variant}' does not exist/quota limited.`
+        )
         recordingActive = false
       }
     } else {
@@ -438,7 +453,12 @@ export class PostHog extends PostHogCore {
 
         try {
           if (!(await OptionalReactNativeSessionReplay.isEnabled())) {
-            await OptionalReactNativeSessionReplay.start(sessionId, sdkOptions, sdkReplayConfig, cachedSessionReplayConfig)
+            await OptionalReactNativeSessionReplay.start(
+              sessionId,
+              sdkOptions,
+              sdkReplayConfig,
+              cachedSessionReplayConfig
+            )
             this.logMsgIfDebug(() =>
               console.info('PostHog Debug', `Session replay started with sessionId ${sessionId}.`)
             )

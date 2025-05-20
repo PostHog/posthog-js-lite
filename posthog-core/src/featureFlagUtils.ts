@@ -19,13 +19,11 @@ export const normalizeDecideResponse = (
     // Convert v4 format to v3 format
     const featureFlags = getFlagValuesFromFlags(decideResponse.flags)
     const featureFlagPayloads = getPayloadsFromFlags(decideResponse.flags)
-    const sessionRecording = decideResponse.sessionRecording
 
     return {
       ...decideResponse,
       featureFlags,
       featureFlagPayloads,
-      sessionRecording,
     }
   } else {
     // Convert v3 format to v4 format
@@ -33,7 +31,6 @@ export const normalizeDecideResponse = (
     const featureFlagPayloads = Object.fromEntries(
       Object.entries(decideResponse.featureFlagPayloads || {}).map(([k, v]) => [k, parsePayload(v)])
     )
-    const sessionRecording = decideResponse.sessionRecording
 
     const flags = Object.fromEntries(
       Object.entries(featureFlags).map(([key, value]) => [
@@ -47,7 +44,6 @@ export const normalizeDecideResponse = (
       featureFlags,
       featureFlagPayloads,
       flags,
-      sessionRecording,
     }
   }
 }

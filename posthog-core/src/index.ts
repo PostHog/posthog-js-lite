@@ -1600,7 +1600,9 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     const sessionReplay = response?.sessionRecording
     if (sessionReplay) {
       this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, sessionReplay)
-      this.logMsgIfDebug(() => console.log('PostHog Debug', `Session replay config from ${source}: `, JSON.stringify(sessionReplay)))
+      this.logMsgIfDebug(() =>
+        console.log('PostHog Debug', `Session replay config from ${source}: `, JSON.stringify(sessionReplay))
+      )
     } else if (typeof sessionReplay === 'boolean' && sessionReplay === false) {
       // if session replay is disabled, we don't need to cache it
       // we need to check for this because the response might be undefined (/flags does not return sessionRecording yet)
@@ -1627,29 +1629,32 @@ export abstract class PostHogCore extends PostHogCoreStateless {
               console.log('PostHog Debug', 'Fetched remote config: ', JSON.stringify(remoteConfigWithoutSurveys))
             )
 
-            const surveys = response.surveys
+            if (this.disableSurveys === false) {
+              const surveys = response.surveys
 
-            let hasSurveys = true
+              let hasSurveys = true
 
-            if (!Array.isArray(surveys)) {
-              // If surveys is not an array, it means there are no surveys (its a boolean instead)
-              this.logMsgIfDebug(() => console.log('PostHog Debug', 'There are no surveys.'))
-              hasSurveys = false
-            } else {
-              this.logMsgIfDebug(() =>
-                console.log('PostHog Debug', 'Surveys fetched from remote config: ', JSON.stringify(surveys))
-              )
-            }
+              if (!Array.isArray(surveys)) {
+                // If surveys is not an array, it means there are no surveys (its a boolean instead)
+                this.logMsgIfDebug(() => console.log('PostHog Debug', 'There are no surveys.'))
+                hasSurveys = false
+              } else {
+                this.logMsgIfDebug(() =>
+                  console.log('PostHog Debug', 'Surveys fetched from remote config: ', JSON.stringify(surveys))
+                )
+              }
 
-            if (this.disableSurveys === false && hasSurveys) {
-              this.setPersistedProperty<SurveyResponse['surveys']>(
-                PostHogPersistedProperty.Surveys,
-                surveys as Survey[]
-              )
+              if (hasSurveys) {
+                this.setPersistedProperty<SurveyResponse['surveys']>(
+                  PostHogPersistedProperty.Surveys,
+                  surveys as Survey[]
+                )
+              } else {
+                this.setPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys, null)
+              }
             } else {
               this.setPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys, null)
             }
-
             // we cache the surveys in its own storage key
             this.setPersistedProperty<Omit<PostHogRemoteConfig, 'surveys'>>(
               PostHogPersistedProperty.RemoteConfig,
