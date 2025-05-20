@@ -1740,7 +1740,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
           // Mark that we hit the /decide endpoint so we can capture this in the $feature_flag_called event
           this.setPersistedProperty(PostHogPersistedProperty.DecideEndpointWasHit, true)
 
-          this.cacheSessionReplay('decide', res)
+          this.cacheSessionReplay('decide/flags', res)
         }
         return res
       })
