@@ -1,5 +1,11 @@
 # Next
 
+# 3.15.4 – 2025-05-20
+
+## Fixed
+
+1. session recording respects linked flags
+
 # 3.15.3 – 2025-05-14
 
 ## Fixed
