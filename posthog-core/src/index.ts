@@ -466,6 +466,9 @@ export abstract class PostHogCoreStateless {
         ...extraPayload,
       }),
     }
+
+    this.logMsgIfDebug(() => console.log('PostHog Debug', 'Decide URL', url))
+
     // Don't retry /decide API calls
     return this.fetchWithRetry(url, fetchOptions, { retryCount: 0 }, this.featureFlagsRequestTimeoutMs)
       .then((response) => response.json() as Promise<PostHogV3DecideResponse | PostHogV4DecideResponse>)
@@ -733,7 +736,7 @@ export abstract class PostHogCoreStateless {
     await this._initPromise
 
     if (this.disableSurveys === true) {
-      this.logMsgIfDebug(() => console.log('Loading surveys is disabled.'))
+      this.logMsgIfDebug(() => console.log('PostHog Debug', 'Loading surveys is disabled.'))
       return []
     }
 
@@ -1593,13 +1596,17 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     return this._decideAsync(sendAnonDistinctId)
   }
 
-  private cacheSessionReplay(response?: PostHogRemoteConfig): void {
+  private cacheSessionReplay(source: string, response?: PostHogRemoteConfig): void {
     const sessionReplay = response?.sessionRecording
     if (sessionReplay) {
       this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, sessionReplay)
-      this.logMsgIfDebug(() => console.log('PostHog Debug', 'Session replay config: ', JSON.stringify(sessionReplay)))
-    } else {
-      this.logMsgIfDebug(() => console.info('PostHog Debug', 'Session replay config disabled.'))
+      this.logMsgIfDebug(() =>
+        console.log('PostHog Debug', `Session replay config from ${source}: `, JSON.stringify(sessionReplay))
+      )
+    } else if (typeof sessionReplay === 'boolean' && sessionReplay === false) {
+      // if session replay is disabled, we don't need to cache it
+      // we need to check for this because the response might be undefined (/flags does not return sessionRecording yet)
+      this.logMsgIfDebug(() => console.info('PostHog Debug', `Session replay config from ${source} disabled.`))
       this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, null)
     }
   }
@@ -1622,36 +1629,39 @@ export abstract class PostHogCore extends PostHogCoreStateless {
               console.log('PostHog Debug', 'Fetched remote config: ', JSON.stringify(remoteConfigWithoutSurveys))
             )
 
-            const surveys = response.surveys
+            if (this.disableSurveys === false) {
+              const surveys = response.surveys
 
-            let hasSurveys = true
+              let hasSurveys = true
 
-            if (!Array.isArray(surveys)) {
-              // If surveys is not an array, it means there are no surveys (its a boolean instead)
-              this.logMsgIfDebug(() => console.log('PostHog Debug', 'There are no surveys.'))
-              hasSurveys = false
-            } else {
-              this.logMsgIfDebug(() =>
-                console.log('PostHog Debug', 'Surveys fetched from remote config: ', JSON.stringify(surveys))
-              )
-            }
+              if (!Array.isArray(surveys)) {
+                // If surveys is not an array, it means there are no surveys (its a boolean instead)
+                this.logMsgIfDebug(() => console.log('PostHog Debug', 'There are no surveys.'))
+                hasSurveys = false
+              } else {
+                this.logMsgIfDebug(() =>
+                  console.log('PostHog Debug', 'Surveys fetched from remote config: ', JSON.stringify(surveys))
+                )
+              }
 
-            if (this.disableSurveys === false && hasSurveys) {
-              this.setPersistedProperty<SurveyResponse['surveys']>(
-                PostHogPersistedProperty.Surveys,
-                surveys as Survey[]
-              )
+              if (hasSurveys) {
+                this.setPersistedProperty<SurveyResponse['surveys']>(
+                  PostHogPersistedProperty.Surveys,
+                  surveys as Survey[]
+                )
+              } else {
+                this.setPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys, null)
+              }
             } else {
               this.setPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys, null)
             }
-
             // we cache the surveys in its own storage key
             this.setPersistedProperty<Omit<PostHogRemoteConfig, 'surveys'>>(
               PostHogPersistedProperty.RemoteConfig,
               remoteConfigWithoutSurveys
             )
 
-            this.cacheSessionReplay(response)
+            this.cacheSessionReplay('remote config', response)
 
             // we only dont load flags if the remote config has no feature flags
             if (response.hasFeatureFlags === false) {
@@ -1697,6 +1707,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
           groupProperties,
           extraProperties
         )
+
         // Add check for quota limitation on feature flags
         if (res?.quotaLimited?.includes(QuotaLimitedFeature.FeatureFlags)) {
           // Unset all feature flags by setting to null
@@ -1729,7 +1740,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
           // Mark that we hit the /decide endpoint so we can capture this in the $feature_flag_called event
           this.setPersistedProperty(PostHogPersistedProperty.DecideEndpointWasHit, true)
 
-          this.cacheSessionReplay(res)
+          this.cacheSessionReplay('decide/flags', res)
         }
         return res
       })
@@ -1773,7 +1784,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     ) as PostHogFeatureFlagDetails
   }
 
-  private getKnownFeatureFlags(): PostHogDecideResponse['featureFlags'] | undefined {
+  protected getKnownFeatureFlags(): PostHogDecideResponse['featureFlags'] | undefined {
     const featureFlagDetails = this.getKnownFeatureFlagDetails()
     if (!featureFlagDetails) {
       return undefined
@@ -1948,7 +1959,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       .catch((e) => {
         cb?.(e, undefined)
         if (!cb) {
-          this.logMsgIfDebug(() => console.log('[PostHog] Error reloading feature flags', e))
+          this.logMsgIfDebug(() => console.log('PostHog Debug', 'Error reloading feature flags', e))
         }
       })
   }
