@@ -418,9 +418,11 @@ export class PostHog extends PostHogCore {
         )
       } else {
         // disable recording if the flag does not exist/quota limited
-        console.log(
-          'PostHog Debug',
-          `Session replay '${flag}' linked flag variant: '${variant}' does not exist/quota limited.`
+        this.logMsgIfDebug(() =>
+          console.log(
+            'PostHog Debug',
+            `Session replay '${flag}' linked flag variant: '${variant}' does not exist/quota limited.`
+          )
         )
         recordingActive = false
       }
