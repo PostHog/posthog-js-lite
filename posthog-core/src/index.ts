@@ -894,7 +894,6 @@ export abstract class PostHogCoreStateless {
       await this.fetchWithRetry(url, fetchOptions)
     } catch (err) {
       this._events.emit('error', err)
-      throw err
     }
   }
 
