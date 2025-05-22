@@ -941,6 +941,28 @@ export abstract class PostHogCoreStateless {
     })
   }
 
+  /**
+   * Flushes the queue
+   *
+   * This function will return a promise that will resolve when the flush is complete,
+   * or reject if there was an error (for example if the server or network is down).
+   *
+   * If there is already a flush in progress, this function will wait for that flush to complete.
+   *
+   * It's recommended to do error handling in the callback of the promise.
+   *
+   * @example
+   * posthog.flush().then(() => {
+   *   console.log('Flush complete')
+   * }).catch((err) => {
+   *   console.error('Flush failed', err)
+   * })
+   *
+   *
+   * @throws PostHogFetchHttpError
+   * @throws PostHogFetchNetworkError
+   * @throws Error
+   */
   async flush(): Promise<void> {
     // Wait for the current flush operation to finish (regardless of success or failure), then try to flush again.
     // Use allSettled instead of finally to be defensive around flush throwing errors immediately rather than rejecting.
