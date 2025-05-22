@@ -1,6 +1,9 @@
 # Next
 
+# 4.17.2 - 2025-05-22
+
 1. chore: improve event prop types
+2. fix: no throw in sendImmedate
 
 # 4.17.1 - 2025-05-02
 
