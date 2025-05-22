@@ -959,7 +959,9 @@ export abstract class PostHogCoreStateless {
    * })
    *
    *
-   * @throws PostHogFetchHttpError | PostHogFetchHttpError | Error
+   * @throws PostHogFetchHttpError
+   * @throws PostHogFetchNetworkError
+   * @throws Error
    */
   async flush(): Promise<void> {
     // Wait for the current flush operation to finish (regardless of success or failure), then try to flush again.
