@@ -9,10 +9,10 @@ export const posthog = new PostHog('phc_QFbR1y41s5sxnNTZoyKG2NJo2RlsCIWkUfdpawgb
   flushAt: 1,
   enableSessionReplay: true,
   // if using WebView, you have to disable masking for text inputs and images
-  sessionReplayConfig: {
-    maskAllTextInputs: false,
-    maskAllImages: false,
-  },
+  // sessionReplayConfig: {
+  //   maskAllTextInputs: false,
+  //   maskAllImages: false,
+  // },
 })
 posthog.debug(true)
 
@@ -22,8 +22,8 @@ export const SharedPostHogProvider = (props: any) => {
       client={posthog}
       autocapture={{
         captureLifecycleEvents: true,
-        captureScreens: false,
-        captureTouches: false,
+        captureScreens: true,
+        captureTouches: true,
         customLabelProp: 'ph-my-label',
       }}
       debug={true}
