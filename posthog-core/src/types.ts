@@ -71,6 +71,7 @@ export enum PostHogPersistedProperty {
   Queue = 'queue',
   OptedOut = 'opted_out',
   SessionId = 'session_id',
+  SessionStartTimestamp = 'session_start_timestamp',
   SessionLastTimestamp = 'session_timestamp',
   PersonProperties = 'person_properties',
   GroupProperties = 'group_properties',

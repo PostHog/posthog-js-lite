@@ -1,5 +1,9 @@
 # Next
 
+## Added
+
+1. rotate session id if expired after 24 hours
+
 # 4.17.2 - 2025-05-22
 
 1. chore: improve event prop types

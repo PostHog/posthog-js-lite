@@ -1220,6 +1220,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   // internal
   protected _decideResponsePromise?: Promise<PostHogDecideResponse | undefined> // TODO: come back to this, fix typing
   protected _sessionExpirationTimeSeconds: number
+  private _sessionMaxLengthSeconds: number = 24 * 60 * 60 // 24 hours
   protected sessionProps: PostHogEventProperties = {}
 
   constructor(apiKey: string, options?: PostHogCoreOptions) {
@@ -1346,12 +1347,20 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     }
 
     let sessionId = this.getPersistedProperty<string>(PostHogPersistedProperty.SessionId)
-    const sessionTimestamp = this.getPersistedProperty<number>(PostHogPersistedProperty.SessionLastTimestamp) || 0
-    if (!sessionId || Date.now() - sessionTimestamp > this._sessionExpirationTimeSeconds * 1000) {
+    const sessionLastTimestamp = this.getPersistedProperty<number>(PostHogPersistedProperty.SessionLastTimestamp) || 0
+    const sessionStartTimestamp = this.getPersistedProperty<number>(PostHogPersistedProperty.SessionStartTimestamp)
+    const now = Date.now()
+    const sessionDif = now - sessionLastTimestamp
+    if (
+      !sessionId ||
+      sessionDif > this._sessionExpirationTimeSeconds * 1000 ||
+      (sessionStartTimestamp && now - sessionStartTimestamp > this._sessionMaxLengthSeconds * 1000)
+    ) {
       sessionId = uuidv7()
       this.setPersistedProperty(PostHogPersistedProperty.SessionId, sessionId)
+      this.setPersistedProperty(PostHogPersistedProperty.SessionStartTimestamp, now)
     }
-    this.setPersistedProperty(PostHogPersistedProperty.SessionLastTimestamp, Date.now())
+    this.setPersistedProperty(PostHogPersistedProperty.SessionLastTimestamp, now)
 
     return sessionId
   }
@@ -1360,6 +1369,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     this.wrap(() => {
       this.setPersistedProperty(PostHogPersistedProperty.SessionId, null)
       this.setPersistedProperty(PostHogPersistedProperty.SessionLastTimestamp, null)
+      this.setPersistedProperty(PostHogPersistedProperty.SessionStartTimestamp, null)
     })
   }
 
