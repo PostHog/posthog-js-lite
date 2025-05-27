@@ -1,5 +1,9 @@
 # Next
 
+## Fixed
+
+1. rotate session id if expired after 24 hours
+
 # 3.15.4 – 2025-05-20
 
 ## Fixed

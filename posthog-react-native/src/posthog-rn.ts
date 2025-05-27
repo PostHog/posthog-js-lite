@@ -129,6 +129,7 @@ export class PostHog extends PostHogCore {
       if (!enablePersistSessionIdAcrossRestart) {
         this.setPersistedProperty(PostHogPersistedProperty.SessionId, null)
         this.setPersistedProperty(PostHogPersistedProperty.SessionLastTimestamp, null)
+        this.setPersistedProperty(PostHogPersistedProperty.SessionStartTimestamp, null)
       }
 
       this.setupBootstrap(options)
