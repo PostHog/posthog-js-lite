@@ -67,5 +67,5 @@ export interface StackFrame {
   instruction_addr?: string
   addr_mode?: string
   vars?: { [key: string]: JsonType }
-  debug_id?: string
+  chunk_id?: string
 }
