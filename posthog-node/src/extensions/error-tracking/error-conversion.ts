@@ -1,6 +1,7 @@
 // Portions of this file are derived from getsentry/sentry-javascript by Software, Inc. dba Sentry
 // Licensed under the MIT License
 
+import { getFilenameToChunkIdMap } from './chunk-ids'
 import { isError, isErrorEvent, isEvent, isPlainObject } from './type-checking'
 import {
   ErrorProperties,
@@ -275,5 +276,16 @@ async function exceptionFromError(
  * Extracts stack frames from the error.stack string
  */
 function parseStackFrames(stackParser: StackParser, error: Error): StackFrame[] {
-  return stackParser(error.stack || '', 1)
+  return applyChunkIds(stackParser(error.stack || '', 1), stackParser)
+}
+
+export function applyChunkIds(frames: StackFrame[], parser: StackParser): StackFrame[] {
+  const filenameChunkIdMap = getFilenameToChunkIdMap(parser)
+  frames.forEach((frame) => {
+    if (frame.filename) {
+      frame.chunk_id = filenameChunkIdMap[frame.filename]
+    }
+  })
+
+  return frames
 }
