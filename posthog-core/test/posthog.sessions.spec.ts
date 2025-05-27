@@ -23,7 +23,9 @@ describe('PostHog Core', () => {
 
     it('should re-use existing sessionId', () => {
       posthog.setPersistedProperty(PostHogPersistedProperty.SessionId, 'test-session-id')
-      posthog.setPersistedProperty(PostHogPersistedProperty.SessionLastTimestamp, Date.now())
+      const now = Date.now()
+      posthog.setPersistedProperty(PostHogPersistedProperty.SessionLastTimestamp, now)
+      posthog.setPersistedProperty(PostHogPersistedProperty.SessionStartTimestamp, now)
       posthog.capture('test')
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.SessionId)).toEqual('test-session-id')
     })
