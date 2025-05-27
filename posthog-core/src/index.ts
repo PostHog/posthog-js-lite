@@ -1348,13 +1348,14 @@ export abstract class PostHogCore extends PostHogCoreStateless {
 
     let sessionId = this.getPersistedProperty<string>(PostHogPersistedProperty.SessionId)
     const sessionLastTimestamp = this.getPersistedProperty<number>(PostHogPersistedProperty.SessionLastTimestamp) || 0
-    const sessionStartTimestamp = this.getPersistedProperty<number>(PostHogPersistedProperty.SessionStartTimestamp)
+    const sessionStartTimestamp = this.getPersistedProperty<number>(PostHogPersistedProperty.SessionStartTimestamp) || 0
     const now = Date.now()
-    const sessionDif = now - sessionLastTimestamp
+    const sessionLastDif = now - sessionLastTimestamp
+    const sessionStartDif = now - sessionStartTimestamp
     if (
       !sessionId ||
-      sessionDif > this._sessionExpirationTimeSeconds * 1000 ||
-      (sessionStartTimestamp && now - sessionStartTimestamp > this._sessionMaxLengthSeconds * 1000)
+      sessionLastDif > this._sessionExpirationTimeSeconds * 1000 ||
+      sessionStartDif > this._sessionMaxLengthSeconds * 1000
     ) {
       sessionId = uuidv7()
       this.setPersistedProperty(PostHogPersistedProperty.SessionId, sessionId)
