@@ -22,11 +22,13 @@
     "ai",
     "openai",
     "anthropic",
+    "gemini",
     "llm",
     "observability"
   ],
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.3",
+    "@google/genai": "^1.1.0",
     "@langchain/core": "^0.3.37",
     "ai": "^4.1.0",
     "langchain": "^0.3.15",
@@ -51,6 +53,11 @@
       "require": "./lib/anthropic/index.cjs",
       "import": "./lib/anthropic/index.mjs",
       "types": "./lib/anthropic/index.d.ts"
+    },
+    "./gemini": {
+      "require": "./lib/gemini/index.cjs",
+      "import": "./lib/gemini/index.mjs",
+      "types": "./lib/gemini/index.d.ts"
     },
     "./openai": {
       "require": "./lib/openai/index.cjs",
