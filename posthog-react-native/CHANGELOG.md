@@ -1,5 +1,13 @@
 # Next
 
+# 3.16.1 – 2025-05-28
+
+## Fixed
+
+1. rotate session id if expired when the app is back from background
+
+# 3.16.0 – 2025-05-27
+
 ## Fixed
 
 1. rotate session id if expired after 24 hours
