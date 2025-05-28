@@ -93,10 +93,20 @@ export class PostHog extends PostHogCore {
         ? options.customAppProperties(getAppProperties())
         : options?.customAppProperties || getAppProperties()
 
-    AppState.addEventListener('change', () => {
+    AppState.addEventListener('change', (state) => {
+      // ignore unknown state (usually initial state, the app might not be ready yet)
+      if (state === 'unknown') {
+        return
+      }
+
       void this.flush().catch(async (err) => {
         await logFlushError(err)
       })
+
+      if (state === 'active') {
+        // rotate session id if needed (expired either 30 minutes inactive or max duration 24 hours)
+        this.getSessionId()
+      }
     })
 
     let storagePromise: Promise<void> | undefined
