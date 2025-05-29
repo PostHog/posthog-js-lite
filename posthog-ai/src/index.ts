@@ -8,6 +8,6 @@ import { LangChainCallbackHandler } from './langchain/callbacks'
 export { PostHogOpenAI as OpenAI }
 export { PostHogAzureOpenAI as AzureOpenAI }
 export { PostHogAnthropic as Anthropic }
-export { PostHogGemini as Gemini }
+export { PostHogGemini as GoogleGenAI }
 export { wrapVercelLanguageModel as withTracing }
 export { LangChainCallbackHandler }

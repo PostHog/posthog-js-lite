@@ -1,3 +1,7 @@
+# 4.5.0
+
+- support for @google/genai
+
 # 4.4.0
 
 - Make `posthog-node` a peer dependency to avoid bundling implementation code
