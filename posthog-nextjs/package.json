@@ -10,11 +10,27 @@
     "test": "jest",
     "prepublishOnly": "cd .. && yarn build"
   },
-  "author": "",
-  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PostHog/posthog-js-lite.git",
+    "directory": "posthog-nextjs"
+  },
+  "author": {
+    "name": "PostHog",
+    "email": "hey@posthog.com",
+    "url": "https://posthog.com"
+  },
+  "engines": {
+    "node": ">=15.0.0"
+  },
+  "license": "MIT",
   "dependencies": {
     "@posthog/cli": "^0.0.7"
   },
+  "keywords": [
+    "posthog",
+    "nextjs"
+  ],
   "devDependencies": {
     "@types/node": "^22.15.23"
   },
