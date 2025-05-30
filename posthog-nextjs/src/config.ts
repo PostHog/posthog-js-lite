@@ -41,7 +41,6 @@ export function withPostHogConfig(userNextConfig: UserProvidedConfig, posthogCon
       ...userConfig,
       productionBrowserSourceMaps: posthogNextConfigComplete.sourcemaps.enabled,
       webpack: (config: any, options: any) => {
-        console.log(phase, options.buildId, options.dev, options.isServer, options.nextRuntime)
         const webpackConfig = defaultWebpackConfig(config, options)
         if (webpackConfig && options.isServer && posthogNextConfigComplete.sourcemaps.enabled) {
           webpackConfig.devtool = 'source-map'
