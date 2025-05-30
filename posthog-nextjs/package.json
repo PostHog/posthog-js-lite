@@ -19,7 +19,7 @@
     "url": "https://posthog.com"
   },
   "engines": {
-    "node": ">=15.0.0"
+    "node": ">=18.0.0"
   },
   "license": "MIT",
   "dependencies": {

@@ -172,6 +172,7 @@ configs.push(
       {
         file: './posthog-nextjs/lib/index.js',
         format: 'esm',
+        sourcemap: true,
       },
     ],
     external: external('./posthog-nextjs/package.json'),
