@@ -25,6 +25,7 @@
 - [ ] posthog-node
 - [ ] posthog-ai
 - [ ] posthog-react-native
+- [ ] posthog-nextjs
 
 ### Changelog notes
 
