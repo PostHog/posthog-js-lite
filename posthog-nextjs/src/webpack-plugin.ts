@@ -1,9 +1,6 @@
 import { PostHogNextConfigComplete } from './config'
 import { rimraf } from 'rimraf'
-import util from 'util'
-import { exec } from 'child_process'
-
-const execPromise = util.promisify(exec)
+import { spawn } from 'child_process'
 
 type NextRuntime = 'edge' | 'nodejs' | undefined
 
@@ -27,12 +24,17 @@ export class SourcemapWebpackPlugin {
 
     const onDone = async (_: any, callback: any): Promise<void> => {
       callback = callback || (() => {})
-      await this.runInject()
-      await this.runUpload()
-      if (this.posthogOptions.sourcemaps.deleteAfterUpload) {
-        await this.runDelete()
+      try {
+        await this.runInject()
+        await this.runUpload()
+        if (this.posthogOptions.sourcemaps.deleteAfterUpload) {
+          await this.runDelete()
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : error
+        return console.error('Error running PostHog sourcemap plugin:', errorMessage)
       }
-      callback()
+      return callback()
     }
 
     if (compiler.hooks) {
@@ -43,28 +45,54 @@ export class SourcemapWebpackPlugin {
   }
 
   async runInject(): Promise<void> {
-    await execPromise(`npx posthog-cli sourcemap inject --directory ${this.directory}`)
+    const cliOptions = []
+    cliOptions.push('sourcemap', 'inject', '--directory', this.directory)
+    await callPosthogCli(cliOptions, process.env, this.posthogOptions.verbose)
   }
 
   async runUpload(): Promise<void> {
-    const sourcemapOptions = ['--directory', this.directory]
-    if (this.posthogOptions.sourcemaps.project) {
-      sourcemapOptions.push('--project', this.posthogOptions.sourcemaps.project)
-    }
     const cliOptions = []
     if (this.posthogOptions.host) {
       cliOptions.push('--host', this.posthogOptions.host)
     }
+    cliOptions.push('sourcemap', 'upload')
+    cliOptions.push('--directory', this.directory)
+    if (this.posthogOptions.sourcemaps.project) {
+      cliOptions.push('--project', this.posthogOptions.sourcemaps.project)
+    }
+    if (this.posthogOptions.sourcemaps.version) {
+      cliOptions.push('--version', this.posthogOptions.sourcemaps.version)
+    }
     // Add env variables
     const envVars = {
-      NODE_ENV: process.env.NODE_ENV,
+      ...process.env,
       POSTHOG_CLI_TOKEN: this.posthogOptions.authToken,
       POSTHOG_CLI_ENV_ID: this.posthogOptions.envId,
     }
-    await execPromise(`npx posthog-cli ${cliOptions} sourcemap upload ${sourcemapOptions}`, { env: envVars })
+    await callPosthogCli(cliOptions, envVars, this.posthogOptions.verbose)
   }
 
   async runDelete(): Promise<void> {
     await rimraf(`${this.directory}/**/*.map`, { glob: true })
   }
+}
+
+async function callPosthogCli(args: string[], env: NodeJS.ProcessEnv, verbose: boolean): Promise<void> {
+  const child = spawn('npx', ['@posthog/cli', ...args], {
+    stdio: verbose ? 'inherit' : 'ignore',
+    env: env,
+  })
+
+  await new Promise<void>((resolve, reject) => {
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve()
+      } else {
+        reject(new Error(`Command failed with code ${code}`))
+      }
+    })
+    child.on('error', (error) => {
+      reject(error)
+    })
+  })
 }

@@ -5,12 +5,11 @@ type NextFuncConfig = (phase: string, { defaultConfig }: { defaultConfig: NextCo
 type NextAsyncConfig = (phase: string, { defaultConfig }: { defaultConfig: NextConfig }) => Promise<NextConfig>
 type UserProvidedConfig = NextConfig | NextFuncConfig | NextAsyncConfig
 
-export type LogLevel = 'silent' | 'info' | 'debug' | 'warning' | 'error'
 export type PostHogNextConfig = {
   authToken: string
   envId: string
   host?: string
-  logLevel?: LogLevel
+  verbose?: boolean
   sourcemaps?: {
     enabled?: boolean
     project?: string
@@ -23,7 +22,7 @@ export type PostHogNextConfigComplete = {
   authToken: string
   envId: string
   host: string
-  logLevel: LogLevel
+  verbose: boolean
   sourcemaps: {
     enabled: boolean
     project?: string
@@ -77,12 +76,12 @@ function resolveUserConfig(
 }
 
 function resolvePostHogConfig(posthogProvidedConfig: PostHogNextConfig): PostHogNextConfigComplete {
-  const { authToken, envId, host, logLevel, sourcemaps = {} } = posthogProvidedConfig
+  const { authToken, envId, host, verbose, sourcemaps = {} } = posthogProvidedConfig
   return {
     authToken,
     envId,
     host: host ?? 'https://us.posthog.com',
-    logLevel: logLevel ?? 'error',
+    verbose: verbose ?? true,
     sourcemaps: {
       enabled: sourcemaps.enabled ?? process.env.NODE_ENV == 'production',
       project: sourcemaps.project,
