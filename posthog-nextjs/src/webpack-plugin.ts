@@ -1,6 +1,9 @@
 import { PostHogNextConfigComplete } from './config'
-import { execa, ExecaMethod } from 'execa'
 import { rimraf } from 'rimraf'
+import util from 'util'
+import { exec } from 'child_process'
+
+const execPromise = util.promisify(exec)
 
 type NextRuntime = 'edge' | 'nodejs' | undefined
 
@@ -39,19 +42,8 @@ export class SourcemapWebpackPlugin {
     }
   }
 
-  private runner(): ExecaMethod<any> {
-    return execa({
-      preferLocal: true,
-      extendEnv: false,
-      env: {
-        POSTHOG_CLI_TOKEN: this.posthogOptions.authToken,
-        POSTHOG_CLI_ENV_ID: this.posthogOptions.envId,
-      },
-    })
-  }
-
   async runInject(): Promise<void> {
-    await this.runner()`posthog-cli sourcemap inject --directory ${this.directory}`
+    await execPromise(`npx posthog-cli sourcemap inject --directory ${this.directory}`)
   }
 
   async runUpload(): Promise<void> {
@@ -63,7 +55,13 @@ export class SourcemapWebpackPlugin {
     if (this.posthogOptions.host) {
       cliOptions.push('--host', this.posthogOptions.host)
     }
-    await this.runner()`posthog-cli ${cliOptions} sourcemap upload ${sourcemapOptions}`
+    // Add env variables
+    const envVars = {
+      NODE_ENV: process.env.NODE_ENV,
+      POSTHOG_CLI_TOKEN: this.posthogOptions.authToken,
+      POSTHOG_CLI_ENV_ID: this.posthogOptions.envId,
+    }
+    await execPromise(`npx posthog-cli ${cliOptions} sourcemap upload ${sourcemapOptions}`, { env: envVars })
   }
 
   async runDelete(): Promise<void> {

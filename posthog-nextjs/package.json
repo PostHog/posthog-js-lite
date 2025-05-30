@@ -6,8 +6,6 @@
   "types": "./lib/index.d.ts",
   "type": "module",
   "scripts": {
-    "build": "tsc",
-    "test": "jest",
     "prepublishOnly": "cd .. && yarn build"
   },
   "repository": {
@@ -25,7 +23,6 @@
   },
   "license": "MIT",
   "dependencies": {
-    "execa": "^9.6.0",
     "rimraf": "5.0.9"
   },
   "keywords": [
