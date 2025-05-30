@@ -164,4 +164,26 @@ providers.forEach((provider) => {
   })
 })
 
+// posthog nextjs
+configs.push(
+  {
+    input: './posthog-nextjs/src/index.ts',
+    output: [
+      {
+        file: './posthog-nextjs/lib/index.js',
+        format: 'esm',
+        sourcemap: true,
+      },
+    ],
+    external: external('./posthog-nextjs/package.json'),
+    plugins: plugins('posthog-nextjs'),
+  },
+  {
+    input: `./posthog-nextjs/src/index.ts`,
+    output: [{ file: `./posthog-nextjs/lib/index.d.ts`, format: 'es' }],
+    external: external('./posthog-nextjs/package.json'),
+    plugins: [resolve({ extensions }), dts({ tsconfig: './posthog-nextjs/tsconfig.json' })],
+  }
+)
+
 export default configs
