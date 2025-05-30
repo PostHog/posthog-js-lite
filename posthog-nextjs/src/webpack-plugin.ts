@@ -1,26 +1,34 @@
 import { PostHogNextConfigComplete } from './config'
-import { exec } from 'child_process'
+import { execa, ExecaMethod } from 'execa'
+import { rimraf } from 'rimraf'
+
+type NextRuntime = 'edge' | 'nodejs' | undefined
 
 export class SourcemapWebpackPlugin {
-  constructor(private posthogOptions: PostHogNextConfigComplete, private isServer: boolean) {}
+  directory: string
+
+  constructor(
+    private posthogOptions: PostHogNextConfigComplete,
+    private isServer: boolean,
+    private nextRuntime: NextRuntime
+  ) {
+    this.directory = this.isServer ? `./.next/server` : `./.next/static/chunks`
+  }
 
   apply(compiler: any): void {
-    const directory = this.isServer ? `./.next/server` : `./.next/static/chunks`
-    async function onDone(_: any, callback: any): Promise<void> {
+    if (this.nextRuntime === 'edge') {
+      // TODO: edge and nodejs runtime output files in the same location
+      // to support edge runtime we need a way to pass a list of files to the cli
+      return
+    }
+
+    const onDone = async (_: any, callback: any): Promise<void> => {
       callback = callback || (() => {})
-      await new Promise<void>((resolve, reject) => {
-        exec(`posthog-cli sourcemap inject --directory ${directory}`, (error, stdout, stderr) => {
-          if (error) {
-            reject(error)
-            return
-          }
-          if (stderr) {
-            console.error('Error:', stderr)
-          }
-          console.log('Output:', stdout)
-          resolve()
-        })
-      })
+      await this.runInject()
+      await this.runUpload()
+      if (this.posthogOptions.sourcemaps.deleteAfterUpload) {
+        await this.runDelete()
+      }
       callback()
     }
 
@@ -29,5 +37,36 @@ export class SourcemapWebpackPlugin {
     } else {
       compiler.plugin('done', onDone)
     }
+  }
+
+  private runner(): ExecaMethod<any> {
+    return execa({
+      preferLocal: true,
+      extendEnv: false,
+      env: {
+        POSTHOG_CLI_TOKEN: this.posthogOptions.authToken,
+        POSTHOG_CLI_ENV_ID: this.posthogOptions.envId,
+      },
+    })
+  }
+
+  async runInject(): Promise<void> {
+    await this.runner()`posthog-cli sourcemap inject --directory ${this.directory}`
+  }
+
+  async runUpload(): Promise<void> {
+    const sourcemapOptions = ['--directory', this.directory]
+    if (this.posthogOptions.sourcemaps.project) {
+      sourcemapOptions.push('--project', this.posthogOptions.sourcemaps.project)
+    }
+    const cliOptions = []
+    if (this.posthogOptions.host) {
+      cliOptions.push('--host', this.posthogOptions.host)
+    }
+    await this.runner()`posthog-cli ${cliOptions} sourcemap upload ${sourcemapOptions}`
+  }
+
+  async runDelete(): Promise<void> {
+    await rimraf(`${this.directory}/**/*.map`, { glob: true })
   }
 }

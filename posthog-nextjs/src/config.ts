@@ -7,7 +7,8 @@ type UserProvidedConfig = NextConfig | NextFuncConfig | NextAsyncConfig
 
 export type LogLevel = 'silent' | 'info' | 'debug' | 'warning' | 'error'
 export type PostHogNextConfig = {
-  apiKey: string
+  authToken: string
+  envId: string
   host?: string
   logLevel?: LogLevel
   sourcemaps?: {
@@ -19,7 +20,8 @@ export type PostHogNextConfig = {
 }
 
 export type PostHogNextConfigComplete = {
-  apiKey: string
+  authToken: string
+  envId: string
   host: string
   logLevel: LogLevel
   sourcemaps: {
@@ -46,7 +48,9 @@ export function withPostHogConfig(userNextConfig: UserProvidedConfig, posthogCon
         }
         if (posthogNextConfigComplete.sourcemaps.enabled) {
           webpackConfig.plugins = webpackConfig.plugins || []
-          webpackConfig.plugins.push(new SourcemapWebpackPlugin(posthogNextConfigComplete, options.isServer))
+          webpackConfig.plugins.push(
+            new SourcemapWebpackPlugin(posthogNextConfigComplete, options.isServer, options.nextRuntime)
+          )
         }
         return webpackConfig
       },
@@ -74,13 +78,16 @@ function resolveUserConfig(
 }
 
 function resolvePostHogConfig(posthogProvidedConfig: PostHogNextConfig): PostHogNextConfigComplete {
-  const { apiKey, host, logLevel, sourcemaps = {} } = posthogProvidedConfig
+  const { authToken, envId, host, logLevel, sourcemaps = {} } = posthogProvidedConfig
   return {
-    apiKey,
+    authToken,
+    envId,
     host: host ?? 'https://us.posthog.com',
     logLevel: logLevel ?? 'error',
     sourcemaps: {
       enabled: sourcemaps.enabled ?? process.env.NODE_ENV == 'production',
+      project: sourcemaps.project,
+      version: sourcemaps.version,
       deleteAfterUpload: sourcemaps.deleteAfterUpload ?? true,
     },
   }
