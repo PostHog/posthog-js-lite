@@ -33,7 +33,8 @@
     "nextjs"
   ],
   "devDependencies": {
-    "@types/node": "^22.15.23"
+    "@types/node": "^22.15.23",
+    "next": "^12.1.0"
   },
   "peerDependencies": {
     "next": ">12.1.0"
