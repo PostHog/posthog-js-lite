@@ -1,0 +1,24 @@
+{
+  "name": "@posthog/nextjs",
+  "version": "0.0.1",
+  "description": "NextJS SDK for Posthog 🦔",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "prepublishOnly": "cd .. && yarn build"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@posthog/cli": "^0.0.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.23"
+  },
+  "peerDependencies": {
+    "next": ">12.1.0"
+  }
+}
