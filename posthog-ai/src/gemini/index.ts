@@ -1,7 +1,7 @@
 import { GoogleGenAI } from '@google/genai'
 import { PostHog } from 'posthog-node'
 import { v4 as uuidv4 } from 'uuid'
-import { MonitoringParams, sendEventToPosthog, withPrivacyMode } from '../utils'
+import { MonitoringParams, sendEventToPosthog } from '../utils'
 
 // Types from @google/genai
 type GenerateContentRequest = {
@@ -60,7 +60,6 @@ export class WrappedModels {
       posthogDistinctId,
       posthogTraceId,
       posthogProperties,
-      posthogPrivacyMode = false,
       posthogGroups,
       posthogCaptureImmediate,
       ...geminiParams
@@ -126,7 +125,6 @@ export class WrappedModels {
       posthogDistinctId,
       posthogTraceId,
       posthogProperties,
-      posthogPrivacyMode = false,
       posthogGroups,
       posthogCaptureImmediate,
       ...geminiParams
