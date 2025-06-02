@@ -31,7 +31,7 @@ interface MonitoringGeminiConfig {
   posthog: PostHog
 }
 
-export class PostHogGemini {
+export class PostHogGoogleGenAI {
   private readonly phClient: PostHog
   private readonly client: GoogleGenAI
   public models: WrappedModels
@@ -254,5 +254,5 @@ export class WrappedModels {
   }
 }
 
-export default PostHogGemini
-export { PostHogGemini as Gemini } 
+export default PostHogGoogleGenAI
+export { PostHogGoogleGenAI as Gemini } 

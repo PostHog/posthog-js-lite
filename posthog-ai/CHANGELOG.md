@@ -1,5 +1,7 @@
-# 4.5.0
+# 5.0.0
 
+- Major bump for breaking change:
+- Require node engine >20
 - support for @google/genai
 
 # 4.4.0
