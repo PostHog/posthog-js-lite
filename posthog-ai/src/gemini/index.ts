@@ -53,9 +53,7 @@ export class WrappedModels {
     this.phClient = phClient
   }
 
-  public async generateContent(
-    params: GenerateContentRequest & MonitoringParams
-  ): Promise<GenerateContentResponse> {
+  public async generateContent(params: GenerateContentRequest & MonitoringParams): Promise<GenerateContentResponse> {
     const {
       posthogDistinctId,
       posthogTraceId,
@@ -200,7 +198,7 @@ export class WrappedModels {
     if (typeof contents === 'string') {
       return [{ role: 'user', content: contents }]
     }
-    
+
     if (Array.isArray(contents)) {
       return contents.map((item) => {
         if (typeof item === 'string') {
@@ -253,4 +251,4 @@ export class WrappedModels {
 }
 
 export default PostHogGoogleGenAI
-export { PostHogGoogleGenAI as Gemini } 
+export { PostHogGoogleGenAI as Gemini }

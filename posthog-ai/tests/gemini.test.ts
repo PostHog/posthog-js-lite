@@ -127,7 +127,7 @@ describe('PostHogGemini - Jest test suite', () => {
 
     // Mock the generateContent method
     ;(client as any).client.models.generateContent = jest.fn().mockResolvedValue(mockGeminiResponse)
-    
+
     // Mock the generateContentStream method
     ;(client as any).client.models.generateContentStream = jest.fn().mockImplementation(async function* () {
       for (const chunk of mockGeminiStreamResponse) {
@@ -185,7 +185,7 @@ describe('PostHogGemini - Jest test suite', () => {
     expect(accumulatedText).toBe('Hello from Gemini!')
     // We expect 1 capture call after streaming completes
     expect(mockPostHogClient.capture).toHaveBeenCalledTimes(1)
-    
+
     const [captureArgs] = (mockPostHogClient.capture as jest.Mock).mock.calls
     const { distinctId, event, properties } = captureArgs[0]
 
@@ -310,4 +310,4 @@ describe('PostHogGemini - Jest test suite', () => {
     expect(vertexClient).toBeInstanceOf(PostHogGemini)
     expect(vertexClient.models).toBeDefined()
   })
-}) 
+})

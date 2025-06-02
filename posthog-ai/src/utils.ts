@@ -101,7 +101,7 @@ export const formatResponseOpenAI = (response: any): Array<{ role: string; conte
 
 export const formatResponseGemini = (response: any): Array<{ role: string; content: string }> => {
   const output: Array<{ role: string; content: string }> = []
-  
+
   if (response.text) {
     output.push({
       role: 'assistant',
@@ -126,7 +126,7 @@ export const formatResponseGemini = (response: any): Array<{ role: string; conte
       }
     }
   }
-  
+
   return output
 }
 
