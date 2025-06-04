@@ -4,6 +4,10 @@
 
 1. feat: migrate to native fetch, Node 18+ required
 
+## Removed
+
+1. remove `is_simple_flag` from `PostHogFeatureFlag` type
+
 # 4.14.0 - 2025-04-24
 
 1. feat: Add super properties as a concept to the Node SDK
