@@ -5,7 +5,7 @@ Please see the main [PostHog docs](https://www.posthog.com/docs).
 ## Usage
 
 ```typescript
-// vercel.config.ts
+// next.config.ts
 import { withPostHogConfig } from "@posthog/nextjs";
 
 const nextConfig = {
