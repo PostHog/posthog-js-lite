@@ -1,12 +1,12 @@
+## Removed
+
+1. remove `is_simple_flag` from `PostHogFeatureFlag` type
+
 # 5.0.0-alpha.1 - 2025-04-29
 
 ## Breaking changes
 
 1. feat: migrate to native fetch, Node 18+ required
-
-## Removed
-
-1. remove `is_simple_flag` from `PostHogFeatureFlag` type
 
 # 4.14.0 - 2025-04-24
 
