@@ -1,3 +1,4 @@
+/*eslint-env node */
 import babel from '@rollup/plugin-babel'
 import commonjs from '@rollup/plugin-commonjs'
 import resolve from '@rollup/plugin-node-resolve'
@@ -170,8 +171,13 @@ configs.push(
     input: './posthog-nextjs/src/index.ts',
     output: [
       {
-        file: './posthog-nextjs/lib/index.js',
-        format: 'esm',
+        file: './posthog-nextjs/lib/index.mjs',
+        format: 'es',
+        sourcemap: true,
+      },
+      {
+        file: './posthog-nextjs/lib/index.cjs',
+        format: 'cjs',
         sourcemap: true,
       },
     ],
