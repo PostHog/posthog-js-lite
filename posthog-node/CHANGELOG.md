@@ -1,3 +1,5 @@
+# Next (5.0.0 WIP)
+
 ## Removed
 
 1. remove `is_simple_flag` from `PostHogFeatureFlag` type

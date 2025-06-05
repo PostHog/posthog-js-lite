@@ -1,4 +1,8 @@
-# Next
+# Next (4.0.0 WIP)
+
+## Removed
+
+1. remove `captureMode` in favor or `json` capture mode only
 
 # 3.5.0 – 2025-04-17
 
