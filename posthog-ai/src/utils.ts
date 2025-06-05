@@ -236,15 +236,15 @@ export const sendEventToPosthog = ({
     }
 
     if (fullDebug) {
-      // @ts-ignore
+      // @ts-expect-error
       console.log('Sending event to PostHog', JSON.stringify(properties))
       try {
-        // @ts-ignore
+        // @ts-expect-error
         console.log(
           'Size of properties (kb)',
           Math.round((Buffer.byteLength(JSON.stringify(properties), STRING_FORMAT) / 1024) * 10000) / 10000
         )
-        // @ts-ignore
+        // @ts-expect-error
         console.log(
           'Size of properties (mb)',
           Math.round((Buffer.byteLength(JSON.stringify(properties), STRING_FORMAT) / 1024 / 1024) * 10000) / 10000

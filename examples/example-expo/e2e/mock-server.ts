@@ -1,6 +1,5 @@
 import express, { Request, Response } from 'express'
 import bodyParser from 'body-parser'
-import { LZString } from 'posthog-core'
 const PORT = process.env.PORT || 8000
 
 export interface MockRequest {
@@ -20,7 +19,7 @@ export const createMockServer = (): [any, jest.Mock<MockRequest, any>] => {
   const handleRequest = (req: Request, res: Response) => {
     let body
     try {
-      body = req.body.compression === 'lz64' ? JSON.parse(LZString.decompressFromBase64(req.body.data) || '') : req.body
+      body = req.body
     } catch (e) {
       console.error(e)
       body = 'error'

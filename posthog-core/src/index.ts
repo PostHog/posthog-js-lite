@@ -31,7 +31,6 @@ import {
 import {
   assert,
   currentISOTime,
-  currentTimestamp,
   isError,
   isTokenInRollout,
   NEW_FLAGS_EXCLUDED_HASHES,
@@ -41,7 +40,6 @@ import {
   RetriableOptions,
   safeSetTimeout,
 } from './utils'
-import { LZString } from './lz-string'
 import { isGzipSupported, gzipCompress } from './gzip'
 import { SimpleEventEmitter } from './eventemitter'
 import { uuidv7 } from './vendor/uuidv7'
@@ -1814,4 +1812,3 @@ export abstract class PostHogCore extends PostHogCoreStateless {
 }
 
 export * from './types'
-export { LZString }
