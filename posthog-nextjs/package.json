@@ -2,9 +2,9 @@
   "name": "@posthog/nextjs",
   "version": "0.0.1",
   "description": "NextJS SDK for Posthog 🦔",
-  "main": "./lib/index.js",
+  "main": "./lib/index.cjs",
+  "module": "./lib/index.mjs",
   "types": "./lib/index.d.ts",
-  "type": "module",
   "scripts": {
     "prepublishOnly": "cd .. && yarn build"
   },
