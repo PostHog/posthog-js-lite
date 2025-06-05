@@ -8,7 +8,7 @@ export const posthog = new PostHog('phc_QFbR1y41s5sxnNTZoyKG2NJo2RlsCIWkUfdpawgb
   host: 'https://us.i.posthog.com',
   flushAt: 1,
   enableSessionReplay: true,
-  captureLifecycleEvents: true,
+  captureAppLifecycleEvents: true,
   // if using WebView, you have to disable masking for text inputs and images
   // sessionReplayConfig: {
   //   maskAllTextInputs: false,
