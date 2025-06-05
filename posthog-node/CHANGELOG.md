@@ -1,6 +1,7 @@
 ## Removed
 
 1. remove `is_simple_flag` from `PostHogFeatureFlag` type
+2. Remove deprecated `personProperties` and `groupProperties`
 
 # 5.0.0-alpha.1 - 2025-04-29
 

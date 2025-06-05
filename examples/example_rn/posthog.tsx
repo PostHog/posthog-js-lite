@@ -7,6 +7,7 @@ export const posthog = new PostHog(
     // host: 'https://us.i.posthog.com',
     // persistence: 'memory',
     enableSessionReplay: true,
+    captureLifecycleEvents: true,
   },
 );
 
@@ -15,7 +16,6 @@ export const SharedPostHogProvider = (props: any) => {
     <PostHogProvider
       client={posthog}
       autocapture={{
-        captureLifecycleEvents: true,
         captureScreens: true,
         captureTouches: true,
       }}
