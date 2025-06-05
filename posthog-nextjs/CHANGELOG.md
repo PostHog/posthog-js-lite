@@ -1,6 +1,6 @@
-## Next
+# Next
 
-### Added
+## Added
 - generate nextjs configuration for sourcemap generation
 - inject chunk ids into emitted assets
 - automatically upload sourcemaps to PostHog
