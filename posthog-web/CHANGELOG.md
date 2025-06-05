@@ -1,5 +1,7 @@
 # Next
 
+# 3.6.0 – 2025-06-05
+
 ## Added
 
 1. chore: improve event prop types
