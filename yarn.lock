@@ -2255,10 +2255,10 @@
   resolved "https://registry.yarnpkg.com/@pkgjs/parseargs/-/parseargs-0.11.0.tgz#a77ea742fab25775145434eb1d2328cf5013ac33"
   integrity sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==
 
-"@posthog/cli@^0.0.7":
-  version "0.0.7"
-  resolved "https://registry.yarnpkg.com/@posthog/cli/-/cli-0.0.7.tgz#62e6ed143ca99cb5d9e52846bb60b101d453b07d"
-  integrity sha512-1lHcFs6+RNVZ2CnKeLBhTZfDA6UolOwKNsqgSphwoCXucbw43Hn9lFbg4P1B8j+d9Z2VrDf4gYGQa5kR9XLU6w==
+"@posthog/cli@^0.1.0":
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/@posthog/cli/-/cli-0.1.0.tgz#eb704e29d9f9ea64a1bb7d029dbffc10621829a2"
+  integrity sha512-aP0EHXpdYFfvVMyewOe7aE3urS9q0nn5KQHnKFO2FexDxOkbG+wjLC4Q7e38BRQF0cR6cLUEFI+WRZnJWS2iXw==
   dependencies:
     axios "^1.7.9"
     axios-proxy-builder "^0.1.2"
@@ -4766,6 +4766,13 @@ easy-table@1.1.0:
   integrity sha512-oq33hWOSSnl2Hoh00tZWaIPi1ievrD9aFG82/IgjlycAnW9hHx5PkJiXpxPsgEE+H7BsbVQXFVFST8TEXS6/pA==
   optionalDependencies:
     wcwidth ">=1.0.1"
+
+ecdsa-sig-formatter@1.0.11, ecdsa-sig-formatter@^1.0.11:
+  version "1.0.11"
+  resolved "https://registry.yarnpkg.com/ecdsa-sig-formatter/-/ecdsa-sig-formatter-1.0.11.tgz#ae0f0fa2d85045ef14a817daa3ce9acd0489e5bf"
+  integrity sha512-nagl3RYrbNv6kQkeJIpt6NJZy8twLB/2vtz6yN9Z4vRKHN4/QZJIEbqohALSgwKdnksuY3k5Addp5lg8sVoVcQ==
+  dependencies:
+    safe-buffer "^5.0.1"
 
 ee-first@1.1.1:
   version "1.1.1"
