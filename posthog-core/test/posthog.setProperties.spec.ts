@@ -13,7 +13,7 @@ describe('PostHog Core', () => {
   })
 
   describe('setGroupPropertiesForFlags', () => {
-    it('should store setGroupPropertiesForFlags as peristed with group_properties key', () => {
+    it('should store setGroupPropertiesForFlags as persisted with group_properties key', () => {
       const props = { organisation: { name: 'bar' }, project: { name: 'baz' } }
       posthog.setGroupPropertiesForFlags(props)
 
@@ -56,7 +56,7 @@ describe('PostHog Core', () => {
   })
 
   describe('setPersonPropertiesForFlags', () => {
-    it('should store setPersonPropertiesForFlags as peristed with person_properties key', () => {
+    it('should store setPersonPropertiesForFlags as persisted with person_properties key', () => {
       const props = { organisation: 'bar', project: 'baz' }
       posthog.setPersonPropertiesForFlags(props)
 
