@@ -6,7 +6,8 @@
 2. Remove deprecated `personProperties` and `groupProperties` in favor of `setPersonPropertiesForFlags` and `setGroupPropertiesForFlags`
 3. Rename `captureNativeAppLifecycleEvents` option to `captureAppLifecycleEvents`
     1. `captureAppLifecycleEvents` from `autocapture` is removed and replaced by `captureAppLifecycleEvents` from options
-4. Removed `version` and `build` from Lifecycle events in favor of `$app_version` and `$app_build`
+4. Remove `version` and `build` from Lifecycle events in favor of `$app_version` and `$app_build`
+5. Remove maskPhotoLibraryImages from the SDK config
 
 # 3.15.1 – 2025-04-28
 
