@@ -451,7 +451,6 @@ export class PostHog extends PostHogCore {
 
     const isMemoryPersistence = this._persistence === 'memory'
 
-    // $app_version and $app_build are already added in the common event properties
     const properties: PostHogEventProperties = {}
 
     if (!isMemoryPersistence) {
@@ -472,6 +471,7 @@ export class PostHog extends PostHogCore {
           // new app install
           this.capture('Application Installed', properties)
         } else if (prevAppBuild !== appBuild) {
+          // $app_version and $app_build are already added in the common event properties
           // app updated
           this.capture('Application Updated', {
             previous_version: prevAppVersion,
