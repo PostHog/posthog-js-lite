@@ -21,14 +21,6 @@ export type PostHogAutocaptureOptions = {
   captureScreens?: boolean
   navigation?: PostHogAutocaptureNavigationTrackerOptions
   navigationRef?: PostHogNavigationRef
-
-  /** Captures app lifecycle events such as Application Installed, Application Updated, Application Opened, Application Became Active and Application Backgrounded.
-   * By default is true.
-   * If you're already using the 'captureNativeAppLifecycleEvents' client option, you don't need to set this.
-   * If 'captureNativeAppLifecycleEvents' is set, the 'captureNativeAppLifecycleEvents' value has priority over this option.
-   * Application Installed and Application Updated events are not supported with persistence set to 'memory'.
-   */
-  captureLifecycleEvents?: boolean
 }
 
 export interface PostHogCustomAppProperties {

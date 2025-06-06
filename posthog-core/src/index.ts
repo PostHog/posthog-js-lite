@@ -1301,11 +1301,6 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     })
   }
 
-  /** @deprecated - Renamed to setPersonPropertiesForFlags */
-  personProperties(properties: { [type: string]: string }): void {
-    return this.setPersonPropertiesForFlags(properties)
-  }
-
   setGroupPropertiesForFlags(properties: { [type: string]: Record<string, string> }): void {
     this.wrap(() => {
       // Get persisted group properties
@@ -1333,13 +1328,6 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   resetGroupPropertiesForFlags(): void {
     this.wrap(() => {
       this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.GroupProperties, null)
-    })
-  }
-
-  /** @deprecated - Renamed to setGroupPropertiesForFlags */
-  groupProperties(properties: { [type: string]: Record<string, string> }): void {
-    this.wrap(() => {
-      this.setGroupPropertiesForFlags(properties)
     })
   }
 

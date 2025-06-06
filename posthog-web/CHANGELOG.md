@@ -2,7 +2,8 @@
 
 ## Removed
 
-1. remove `captureMode` in favor or `json` capture mode only
+1. Remove `captureMode` in favor or `json` capture mode only
+2. Remove deprecated `personProperties` and `groupProperties` in favor of `setPersonPropertiesForFlags` and `setGroupPropertiesForFlags`
 
 # 3.5.0 – 2025-04-17
 

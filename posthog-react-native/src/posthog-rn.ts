@@ -41,11 +41,9 @@ export type PostHogOptions = PostHogCoreOptions & {
 
   /** Captures app lifecycle events such as Application Installed, Application Updated, Application Opened, Application Became Active and Application Backgrounded.
    * By default is false.
-   * If you're already using the 'captureLifecycleEvents' options with 'withReactNativeNavigation' or 'PostHogProvider, you don't need to set this.
-   * If this is set, this value has priority over the 'captureLifecycleEvents' option.
    * Application Installed and Application Updated events are not supported with persistence set to 'memory'.
    */
-  captureNativeAppLifecycleEvents?: boolean
+  captureAppLifecycleEvents?: boolean
 
   /**
    * Enable Recording of Session Replays for Android and iOS
@@ -142,9 +140,8 @@ export class PostHog extends PostHogCore {
         }
       }
 
-      // this value could have been inferred from the autocapture options (captureLifecycleEvents)
-      if (options?.captureNativeAppLifecycleEvents) {
-        void this.captureNativeAppLifecycleEvents()
+      if (options?.captureAppLifecycleEvents) {
+        void this.captureAppLifecycleEvents()
       }
 
       void this.persistAppVersion()
@@ -448,15 +445,13 @@ export class PostHog extends PostHogCore {
     }
   }
 
-  private async captureNativeAppLifecycleEvents(): Promise<void> {
+  private async captureAppLifecycleEvents(): Promise<void> {
     const appBuild = this._appProperties.$app_build
     const appVersion = this._appProperties.$app_version
 
     const isMemoryPersistence = this._persistence === 'memory'
 
-    // version and build are deprecated, but we keep them for compatibility
-    // use $app_version and $app_build instead
-    const properties: PostHogEventProperties = { version: appVersion, build: appBuild }
+    const properties: PostHogEventProperties = {}
 
     if (!isMemoryPersistence) {
       const prevAppBuild = this.getPersistedProperty(PostHogPersistedProperty.InstalledAppBuild)
@@ -476,6 +471,7 @@ export class PostHog extends PostHogCore {
           // new app install
           this.capture('Application Installed', properties)
         } else if (prevAppBuild !== appBuild) {
+          // $app_version and $app_build are already added in the common event properties
           // app updated
           this.capture('Application Updated', {
             previous_version: prevAppVersion,

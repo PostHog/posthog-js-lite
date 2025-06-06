@@ -6,7 +6,7 @@ import PostHog from 'posthog-react-native'
 export const posthog = new PostHog('phc_pQ70jJhZKHRvDIL5ruOErnPy6xiAiWCqlL4ayELj4X8', {
   host: 'https://us.i.posthog.com',
   flushAt: 1,
-  captureNativeAppLifecycleEvents: false,
+  captureAppLifecycleEvents: false,
   sendFeatureFlagEvent: false,
   preloadFeatureFlags: false,
   // persistence: 'memory',
