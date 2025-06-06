@@ -1,5 +1,7 @@
 # Next
 
+1. Remove deprecated `personProperties` and `groupProperties`
+
 # 3.5.0 – 2025-04-17
 
 ## Added
