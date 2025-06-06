@@ -11,7 +11,7 @@
     "prepublishOnly": "cd .. && yarn build"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20"
   },
   "license": "MIT",
   "author": {
@@ -23,7 +23,7 @@
   "module": "lib/node/index.mjs",
   "types": "lib/index.d.ts",
   "devDependencies": {
-    "@types/node": "^22.0.0",
+    "@types/node": "^20.0.0",
     "commander": "^9.3.0",
     "mitata": "^1.0.21"
   },

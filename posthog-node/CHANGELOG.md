@@ -8,7 +8,7 @@
 
 ## Breaking changes
 
-1. Migrate to native fetch, Node 18+ required
+1. feat: migrate to native fetch, Node 20+ required
 
 # 5.0.0-alpha.1 - 2025-04-29
 
