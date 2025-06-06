@@ -1097,10 +1097,18 @@ export abstract class PostHogCoreStateless {
     const body = options.body ? options.body : ''
     let reqByteLength = -1
     try {
-      reqByteLength = Buffer.byteLength(body, STRING_FORMAT)
+      if (body instanceof Blob) {
+        reqByteLength = body.size
+      } else {
+        reqByteLength = Buffer.byteLength(body, STRING_FORMAT)
+      }
     } catch {
-      const encoded = new TextEncoder().encode(body)
-      reqByteLength = encoded.length
+      if (body instanceof Blob) {
+        reqByteLength = body.size
+      } else {
+        const encoded = new TextEncoder().encode(body)
+        reqByteLength = encoded.length
+      }
     }
 
     return await retriable(
