@@ -83,5 +83,5 @@ export const createTestClient = (
 
   setupMocks?.(mocks)
 
-  return [new PostHogCoreTestClient(mocks, apiKey, options), mocks]
+  return [new PostHogCoreTestClient(mocks, apiKey, { disableCompression: true, ...options }), mocks]
 }

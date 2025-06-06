@@ -5,14 +5,12 @@ import {
   InconclusiveMatchError,
   relativeDateParseForFeatureFlagMatching,
 } from '../src/extensions/feature-flags/feature-flags'
-import fetch from '../src/fetch'
 import { anyDecideCall, anyLocalEvalCall, apiImplementation } from './test-utils'
 import { waitForPromises } from 'posthog-core/test/test-utils/test-utils'
-jest.mock('../src/fetch')
 
 jest.spyOn(console, 'debug').mockImplementation()
 
-const mockedFetch = jest.mocked(fetch, true)
+const mockedFetch = jest.spyOn(globalThis, 'fetch').mockImplementation()
 
 const posthogImmediateResolveOptions: PostHogOptions = {
   fetchRetryCount: 0,

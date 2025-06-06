@@ -1,6 +1,6 @@
 import express from 'express'
 import { PostHog, sentryIntegration, PostHogSentryIntegration, setupExpressErrorHandler } from 'posthog-node'
-import undici from 'undici'
+// import undici from 'undici'
 
 import * as Sentry from '@sentry/node'
 
@@ -16,11 +16,11 @@ const posthog = new PostHog(PH_API_KEY, {
   host: PH_HOST,
   flushAt: 10,
   personalApiKey: PH_PERSONAL_API_KEY,
-  // By default PostHog uses axios for fetch but you can specify your own implementation if preferred
-  fetch(url, options) {
-    console.log(url, options)
-    return undici.fetch(url, options)
-  },
+  // By default PostHog uses node fetch but you can specify your own implementation if preferred
+  // fetch(url, options) {
+  //   console.log(url, options)
+  //   return undici.fetch(url, options)
+  // },
 })
 
 console.log('LOCAL EVALUATION READY RIGHT AFTER CREATION: ', posthog.isLocalEvaluationReady())
