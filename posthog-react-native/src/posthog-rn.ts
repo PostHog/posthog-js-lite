@@ -34,8 +34,8 @@ export type PostHogOptions = PostHogCoreOptions & {
   persistence?: 'memory' | 'file'
   /** Allows you to provide your own implementation of the common information about your App or a function to modify the default App properties generated */
   customAppProperties?:
-  | PostHogCustomAppProperties
-  | ((properties: PostHogCustomAppProperties) => PostHogCustomAppProperties)
+    | PostHogCustomAppProperties
+    | ((properties: PostHogCustomAppProperties) => PostHogCustomAppProperties)
   /** Allows you to provide a custom asynchronous storage such as async-storage, expo-file-system or a synchronous storage such as mmkv.
    * If not provided, PostHog will attempt to use the best available storage via optional peer dependencies (async-storage, expo-file-system).
    * If `persistence` is set to 'memory', this option will be ignored.
@@ -507,8 +507,8 @@ export class PostHog extends PostHogCore {
         this.logMsgIfDebug(() =>
           console.warn(
             'PostHog could not track installation/update/open, as the build and version were not set. ' +
-            'This can happen if some dependencies are not installed correctly, or if you have provided' +
-            'customAppProperties but not included $app_build or $app_version.'
+              'This can happen if some dependencies are not installed correctly, or if you have provided' +
+              'customAppProperties but not included $app_build or $app_version.'
           )
         )
       }
