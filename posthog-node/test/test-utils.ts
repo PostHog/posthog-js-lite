@@ -1,4 +1,4 @@
-import { PostHogV4DecideResponse } from 'posthog-core/src/types'
+import { PostHogV2FlagsResponse } from 'posthog-core/src/types'
 import util from 'util'
 
 type ErrorResponse = {
@@ -6,20 +6,20 @@ type ErrorResponse = {
   json: () => Promise<any>
 }
 
-export const apiImplementationV4 = (decideResponse: PostHogV4DecideResponse | ErrorResponse) => {
+export const apiImplementationV4 = (flagsResponse: PostHogV2FlagsResponse | ErrorResponse) => {
   return (url: any): Promise<any> => {
     if ((url as any).includes('/flags/?v=2')) {
-      // Check if the response is a decide response or an error response
-      return 'flags' in decideResponse
+      // Check if the response is a flags response or an error response
+      return 'flags' in flagsResponse
         ? Promise.resolve({
             status: 200,
             text: () => Promise.resolve('ok'),
-            json: () => Promise.resolve(decideResponse),
+            json: () => Promise.resolve(flagsResponse),
           })
         : Promise.resolve({
-            status: decideResponse.status,
+            status: flagsResponse.status,
             text: () => Promise.resolve('not-ok'),
-            json: decideResponse.json,
+            json: flagsResponse.json,
           })
     }
 
@@ -36,32 +36,32 @@ export const apiImplementationV4 = (decideResponse: PostHogV4DecideResponse | Er
 
 export const apiImplementation = ({
   localFlags,
-  decideFlags,
-  decideFlagPayloads,
-  decideStatus = 200,
+  flags,
+  flagsPayloads,
+  flagsStatus = 200,
   localFlagsStatus = 200,
   errorsWhileComputingFlags = false,
 }: {
   localFlags?: any
-  decideFlags?: any
-  decideFlagPayloads?: any
-  decideStatus?: number
+  flags?: any
+  flagsPayloads?: any
+  flagsStatus?: number
   localFlagsStatus?: number
   errorsWhileComputingFlags?: boolean
 }) => {
   return (url: any): Promise<any> => {
     if ((url as any).includes('/flags/')) {
       return Promise.resolve({
-        status: decideStatus,
+        status: flagsStatus,
         text: () => Promise.resolve('ok'),
         json: () => {
-          if (decideStatus !== 200) {
-            return Promise.resolve(decideFlags)
+          if (flagsStatus !== 200) {
+            return Promise.resolve(flags)
           } else {
             return Promise.resolve({
-              featureFlags: decideFlags,
-              featureFlagPayloads: Object.fromEntries(
-                Object.entries(decideFlagPayloads || {}).map(([k, v]) => [k, JSON.stringify(v)])
+              featureFlags: flags,
+              featureFlagsPayloads: Object.fromEntries(
+                Object.entries(flagsPayloads || {}).map(([k, v]) => [k, JSON.stringify(v)])
               ),
               errorsWhileComputingFlags,
             })
@@ -104,7 +104,7 @@ export const anyLocalEvalCall = [
   'http://example.com/api/feature_flag/local_evaluation?token=TEST_API_KEY&send_cohorts',
   expect.any(Object),
 ]
-export const anyDecideCall = ['http://example.com/flags/?v=2', expect.any(Object)]
+export const anyFlagsCall = ['http://example.com/flags/?v=2', expect.any(Object)]
 
 export const isPending = (promise: Promise<any>): boolean => {
   return util.inspect(promise).includes('pending')

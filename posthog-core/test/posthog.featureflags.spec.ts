@@ -1,5 +1,5 @@
-import { PostHogPersistedProperty, PostHogV4DecideResponse } from '../src'
-import { normalizeDecideResponse } from '../src/featureFlagUtils'
+import { PostHogPersistedProperty, PostHogV2FlagsResponse } from '../src'
+import { normalizeFlagsResponse } from '../src/featureFlagUtils'
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
 import { parseBody, waitForPromises } from './test-utils/test-utils'
 
@@ -10,7 +10,7 @@ describe('PostHog Feature Flags v4', () => {
   jest.useFakeTimers()
   jest.setSystemTime(new Date('2022-01-01'))
 
-  const createMockFeatureFlags = (): Partial<PostHogV4DecideResponse['flags']> => ({
+  const createMockFeatureFlags = (): Partial<PostHogV2FlagsResponse['flags']> => ({
     'feature-1': {
       key: 'feature-1',
       enabled: true,
@@ -144,8 +144,8 @@ describe('PostHog Feature Flags v4', () => {
     })
 
     it('should load persisted feature flags', () => {
-      const decideResponse = { flags: createMockFeatureFlags() } as PostHogV4DecideResponse
-      const normalizedFeatureFlags = normalizeDecideResponse(decideResponse)
+      const flagsResponse = { flags: createMockFeatureFlags() } as PostHogV2FlagsResponse
+      const normalizedFeatureFlags = normalizeFlagsResponse(flagsResponse)
       posthog.setPersistedProperty(PostHogPersistedProperty.FeatureFlagDetails, normalizedFeatureFlags)
       expect(posthog.getFeatureFlags()).toEqual(expectedFeatureFlagResponses)
     })
@@ -244,7 +244,7 @@ describe('PostHog Feature Flags v4', () => {
         })
       })
 
-      describe('when subsequent decide calls return partial results', () => {
+      describe('when subsequent flags calls return partial results', () => {
         beforeEach(() => {
           ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1 }, (_mocks) => {
             _mocks.fetch
@@ -382,7 +382,7 @@ describe('PostHog Feature Flags v4', () => {
         })
       })
 
-      describe('when subsequent decide calls return results without errors', () => {
+      describe('when subsequent flags calls return results without errors', () => {
         beforeEach(() => {
           ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1 }, (_mocks) => {
             _mocks.fetch
@@ -672,7 +672,7 @@ describe('PostHog Feature Flags v4', () => {
           flags: createMockFeatureFlags(),
           requestId: '0152a345-295f-4fba-adac-2e6ea9c91082',
         }
-        const normalizedFeatureFlags = normalizeDecideResponse(expectedFeatureFlags as PostHogV4DecideResponse)
+        const normalizedFeatureFlags = normalizeFlagsResponse(expectedFeatureFlags as PostHogV2FlagsResponse)
         expect(posthog.getPersistedProperty(PostHogPersistedProperty.FeatureFlagDetails)).toEqual(
           normalizedFeatureFlags
         )

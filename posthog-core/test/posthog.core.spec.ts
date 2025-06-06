@@ -16,7 +16,7 @@ describe('PostHog Core', () => {
       }),
   })
 
-  describe('getDecide', () => {
+  describe('getFlags', () => {
     beforeEach(() => {
       ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1 })
     })
@@ -56,7 +56,7 @@ describe('PostHog Core', () => {
         return errorAPIResponse
       })
 
-      const response = await posthog.getDecide('test-distinct-id')
+      const response = await posthog.getFlags('test-distinct-id')
       expect(response).toEqual(expectedResponse)
     })
 
@@ -98,7 +98,7 @@ describe('PostHog Core', () => {
         return errorAPIResponse
       })
 
-      const response = await posthog.getDecide('test-distinct-id')
+      const response = await posthog.getFlags('test-distinct-id')
       expect(response).toEqual(expectedResponse)
     })
 
@@ -114,7 +114,7 @@ describe('PostHog Core', () => {
         return errorAPIResponse
       })
 
-      const response = await posthog.getDecide('test-distinct-id')
+      const response = await posthog.getFlags('test-distinct-id')
       expect(response).toBeUndefined()
     })
 
@@ -127,7 +127,7 @@ describe('PostHog Core', () => {
         return errorAPIResponse
       })
 
-      const response = await posthog.getDecide('test-distinct-id')
+      const response = await posthog.getFlags('test-distinct-id')
       expect(response).toBeUndefined()
       expect(emitSpy).toHaveBeenCalledWith('error', expect.any(Error))
     })

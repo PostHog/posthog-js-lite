@@ -6,7 +6,7 @@ import {
   relativeDateParseForFeatureFlagMatching,
 } from '../src/extensions/feature-flags/feature-flags'
 import fetch from '../src/fetch'
-import { anyDecideCall, anyLocalEvalCall, apiImplementation } from './test-utils'
+import { anyFlagsCall, anyLocalEvalCall, apiImplementation } from './test-utils'
 import { waitForPromises } from 'posthog-core/test/test-utils/test-utils'
 jest.mock('../src/fetch')
 
@@ -212,11 +212,11 @@ describe('local evaluation', () => {
     ).toEqual(false)
 
     expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
-    // decide not called
-    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+    // flags not called
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyFlagsCall)
   })
 
-  it('evaluates group properties and falls back to decide when group_type_mappings not present', async () => {
+  it('evaluates group properties and falls back to flags when group_type_mappings not present', async () => {
     const flags = {
       flags: [
         {
@@ -246,7 +246,7 @@ describe('local evaluation', () => {
       //   "group_type_mapping": {"0": "company", "1": "project"}
     }
     mockedFetch.mockImplementation(
-      apiImplementation({ localFlags: flags, decideFlags: { 'group-flag': 'decide-fallback-value' } })
+      apiImplementation({ localFlags: flags, flags: { 'group-flag': 'flags-fallback-value' } })
     )
 
     posthog = new PostHog('TEST_API_KEY', {
@@ -261,7 +261,7 @@ describe('local evaluation', () => {
           company: { name: 'Project Name 1' },
         },
       })
-    ).toEqual('decide-fallback-value')
+    ).toEqual('flags-fallback-value')
   })
 
   it('evaluates flag with complex definition', async () => {
@@ -319,7 +319,7 @@ describe('local evaluation', () => {
       ],
     }
     mockedFetch.mockImplementation(
-      apiImplementation({ localFlags: flags, decideFlags: { 'complex-flag': 'decide-fallback-value' } })
+      apiImplementation({ localFlags: flags, flags: { 'complex-flag': 'flags-fallback-value' } })
     )
 
     posthog = new PostHog('TEST_API_KEY', {
@@ -333,7 +333,7 @@ describe('local evaluation', () => {
         personProperties: { region: 'USA', name: 'Aloha' },
       })
     ).toEqual(true)
-    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyFlagsCall)
 
     // # this distinctIDs hash is < rollout %
     expect(
@@ -341,14 +341,14 @@ describe('local evaluation', () => {
         personProperties: { region: 'USA', email: 'a@b.com' },
       })
     ).toEqual(true)
-    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyFlagsCall)
 
     // # will fall back on `/flags`, as all properties present for second group, but that group resolves to false
     expect(
       await posthog.getFeatureFlag('complex-flag', 'some-distinct-id_outside_rollout?', {
         personProperties: { region: 'USA', email: 'a@b.com' },
       })
-    ).toEqual('decide-fallback-value')
+    ).toEqual('flags-fallback-value')
     expect(mockedFetch).toHaveBeenCalledWith(
       'http://example.com/flags/?v=2',
       expect.objectContaining({
@@ -372,7 +372,7 @@ describe('local evaluation', () => {
     // # same as above
     expect(
       await posthog.getFeatureFlag('complex-flag', 'some-distinct-id', { personProperties: { doesnt_matter: '1' } })
-    ).toEqual('decide-fallback-value')
+    ).toEqual('flags-fallback-value')
     expect(mockedFetch).toHaveBeenCalledWith(
       'http://example.com/flags/?v=2',
       expect.objectContaining({
@@ -391,7 +391,7 @@ describe('local evaluation', () => {
 
     expect(
       await posthog.getFeatureFlag('complex-flag', 'some-distinct-id', { personProperties: { region: 'USA' } })
-    ).toEqual('decide-fallback-value')
+    ).toEqual('flags-fallback-value')
     expect(mockedFetch).toHaveBeenCalledTimes(1) // TODO: Check this
     mockedFetch.mockClear()
 
@@ -401,10 +401,10 @@ describe('local evaluation', () => {
         personProperties: { region: 'USA', email: 'a@b.com', name: 'X', doesnt_matter: '1' },
       })
     ).toEqual(false)
-    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyFlagsCall)
   })
 
-  it('falls back to decide', async () => {
+  it('falls back to flags', async () => {
     const flags = {
       flags: [
         {
@@ -447,7 +447,7 @@ describe('local evaluation', () => {
     mockedFetch.mockImplementation(
       apiImplementation({
         localFlags: flags,
-        decideFlags: { 'beta-feature': 'alakazam', 'beta-feature2': 'alakazam2' },
+        flags: { 'beta-feature': 'alakazam', 'beta-feature2': 'alakazam2' },
       })
     )
 
@@ -457,17 +457,17 @@ describe('local evaluation', () => {
       ...posthogImmediateResolveOptions,
     })
 
-    // # beta-feature fallbacks to decide because property type is unknown
+    // # beta-feature fallbacks to flags because property type is unknown
     expect(await posthog.getFeatureFlag('beta-feature', 'some-distinct-id')).toEqual('alakazam')
-    expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
+    expect(mockedFetch).toHaveBeenCalledWith(...anyFlagsCall)
     mockedFetch.mockClear()
 
-    // # beta-feature2 fallbacks to decide because region property not given with call
+    // # beta-feature2 fallbacks to flags because region property not given with call
     expect(await posthog.getFeatureFlag('beta-feature2', 'some-distinct-id')).toEqual('alakazam2')
-    expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
+    expect(mockedFetch).toHaveBeenCalledWith(...anyFlagsCall)
   })
 
-  it('dont fall back to decide when local evaluation is set', async () => {
+  it('dont fall back to flags when local evaluation is set', async () => {
     const flags = {
       flags: [
         {
@@ -510,7 +510,7 @@ describe('local evaluation', () => {
     mockedFetch.mockImplementation(
       apiImplementation({
         localFlags: flags,
-        decideFlags: { 'beta-feature': 'alakazam', 'beta-feature2': 'alakazam2' },
+        flags: { 'beta-feature': 'alakazam', 'beta-feature2': 'alakazam2' },
       })
     )
 
@@ -520,7 +520,7 @@ describe('local evaluation', () => {
       ...posthogImmediateResolveOptions,
     })
 
-    // # beta-feature should fallback to decide because property type is unknown
+    // # beta-feature should fallback to flags because property type is unknown
     // # but doesn't because only_evaluate_locally is true
     expect(await posthog.getFeatureFlag('beta-feature', 'some-distinct-id', { onlyEvaluateLocally: true })).toEqual(
       undefined
@@ -528,9 +528,9 @@ describe('local evaluation', () => {
     expect(await posthog.isFeatureEnabled('beta-feature', 'some-distinct-id', { onlyEvaluateLocally: true })).toEqual(
       undefined
     )
-    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyFlagsCall)
 
-    // # beta-feature2 should fallback to decide because region property not given with call
+    // # beta-feature2 should fallback to flags because region property not given with call
     // # but doesn't because only_evaluate_locally is true
     expect(await posthog.getFeatureFlag('beta-feature2', 'some-distinct-id', { onlyEvaluateLocally: true })).toEqual(
       undefined
@@ -538,7 +538,7 @@ describe('local evaluation', () => {
     expect(await posthog.isFeatureEnabled('beta-feature2', 'some-distinct-id', { onlyEvaluateLocally: true })).toEqual(
       undefined
     )
-    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyFlagsCall)
   })
 
   it("doesn't return undefined when flag is evaluated successfully", async () => {
@@ -560,7 +560,7 @@ describe('local evaluation', () => {
         },
       ],
     }
-    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags, decideFlags: {} }))
+    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags, flags: {} }))
 
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
@@ -571,12 +571,12 @@ describe('local evaluation', () => {
     // # beta-feature resolves to False
     expect(await posthog.getFeatureFlag('beta-feature', 'some-distinct-id')).toEqual(false)
     expect(await posthog.isFeatureEnabled('beta-feature', 'some-distinct-id')).toEqual(false)
-    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyFlagsCall)
 
-    // # beta-feature2 falls back to decide, and whatever decide returns is the value
+    // # beta-feature2 falls back to flags, and whatever flags returns is the value
     expect(await posthog.getFeatureFlag('beta-feature2', 'some-distinct-id')).toEqual(undefined)
     expect(await posthog.isFeatureEnabled('beta-feature2', 'some-distinct-id')).toEqual(undefined)
-    expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
+    expect(mockedFetch).toHaveBeenCalledWith(...anyFlagsCall)
   })
 
   it('experience continuity flags are not evaluated locally', async () => {
@@ -600,7 +600,7 @@ describe('local evaluation', () => {
       ],
     }
     mockedFetch.mockImplementation(
-      apiImplementation({ localFlags: flags, decideFlags: { 'beta-feature': 'decide-fallback-value' } })
+      apiImplementation({ localFlags: flags, flags: { 'beta-feature': 'flags-fallback-value' } })
     )
 
     posthog = new PostHog('TEST_API_KEY', {
@@ -609,9 +609,9 @@ describe('local evaluation', () => {
       ...posthogImmediateResolveOptions,
     })
 
-    // # beta-feature2 falls back to decide, which on error returns default
-    expect(await posthog.getFeatureFlag('beta-feature', 'some-distinct-id')).toEqual('decide-fallback-value')
-    expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
+    // # beta-feature2 falls back to flags, which on error returns default
+    expect(await posthog.getFeatureFlag('beta-feature', 'some-distinct-id')).toEqual('flags-fallback-value')
+    expect(mockedFetch).toHaveBeenCalledWith(...anyFlagsCall)
   })
 
   it('get all flags with fallback', async () => {
@@ -665,7 +665,7 @@ describe('local evaluation', () => {
     mockedFetch.mockImplementation(
       apiImplementation({
         localFlags: flags,
-        decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
+        flags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
       })
     )
 
@@ -681,7 +681,7 @@ describe('local evaluation', () => {
       'beta-feature2': 'variant-2',
       'disabled-feature': false,
     })
-    expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
+    expect(mockedFetch).toHaveBeenCalledWith(...anyFlagsCall)
     mockedFetch.mockClear()
   })
 
@@ -745,8 +745,8 @@ describe('local evaluation', () => {
     mockedFetch.mockImplementation(
       apiImplementation({
         localFlags: flags,
-        decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
-        decideFlagPayloads: { 'beta-feature': 100, 'beta-feature2': 300 },
+        flags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
+        flagsPayloads: { 'beta-feature': 100, 'beta-feature2': 300 },
       })
     )
 
@@ -761,7 +761,7 @@ describe('local evaluation', () => {
       'beta-feature': 100,
       'beta-feature2': 300,
     })
-    expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
+    expect(mockedFetch).toHaveBeenCalledWith(...anyFlagsCall)
     mockedFetch.mockClear()
   })
 
@@ -816,7 +816,7 @@ describe('local evaluation', () => {
     mockedFetch.mockImplementation(
       apiImplementation({
         localFlags: flags,
-        decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
+        flags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
       })
     )
 
@@ -831,7 +831,7 @@ describe('local evaluation', () => {
       'beta-feature': true,
       'disabled-feature': false,
     })
-    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyFlagsCall)
   })
 
   it('get all payloads with fallback but only_evaluate_locally set', async () => {
@@ -894,8 +894,8 @@ describe('local evaluation', () => {
     mockedFetch.mockImplementation(
       apiImplementation({
         localFlags: flags,
-        decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
-        decideFlagPayloads: { 'beta-feature': 100, 'beta-feature2': 300 },
+        flags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
+        flagsPayloads: { 'beta-feature': 100, 'beta-feature2': 300 },
       })
     )
 
@@ -910,7 +910,7 @@ describe('local evaluation', () => {
     ).toEqual({
       'beta-feature': 'some-payload',
     })
-    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyFlagsCall)
   })
 
   it('get all flags with fallback, with no local flags', async () => {
@@ -920,7 +920,7 @@ describe('local evaluation', () => {
     mockedFetch.mockImplementation(
       apiImplementation({
         localFlags: flags,
-        decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
+        flags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
       })
     )
 
@@ -934,7 +934,7 @@ describe('local evaluation', () => {
       'beta-feature': 'variant-1',
       'beta-feature2': 'variant-2',
     })
-    expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
+    expect(mockedFetch).toHaveBeenCalledWith(...anyFlagsCall)
     mockedFetch.mockClear()
   })
 
@@ -945,8 +945,8 @@ describe('local evaluation', () => {
     mockedFetch.mockImplementation(
       apiImplementation({
         localFlags: flags,
-        decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
-        decideFlagPayloads: { 'beta-feature': 100, 'beta-feature2': 300 },
+        flags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
+        flagsPayloads: { 'beta-feature': 100, 'beta-feature2': 300 },
       })
     )
 
@@ -960,7 +960,7 @@ describe('local evaluation', () => {
       'beta-feature': 100,
       'beta-feature2': 300,
     })
-    expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
+    expect(mockedFetch).toHaveBeenCalledWith(...anyFlagsCall)
     mockedFetch.mockClear()
   })
 
@@ -1001,7 +1001,7 @@ describe('local evaluation', () => {
     mockedFetch.mockImplementation(
       apiImplementation({
         localFlags: flags,
-        decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
+        flags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
       })
     )
 
@@ -1012,7 +1012,7 @@ describe('local evaluation', () => {
     })
 
     expect(await posthog.getAllFlags('distinct-id')).toEqual({ 'beta-feature': true, 'disabled-feature': false })
-    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyFlagsCall)
   })
 
   it('get all payloads with no fallback', async () => {
@@ -1058,7 +1058,7 @@ describe('local evaluation', () => {
     mockedFetch.mockImplementation(
       apiImplementation({
         localFlags: flags,
-        decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
+        flags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
       })
     )
 
@@ -1069,7 +1069,7 @@ describe('local evaluation', () => {
     })
 
     expect((await posthog.getAllFlagsAndPayloads('distinct-id')).featureFlagPayloads).toEqual({ 'beta-feature': 'new' })
-    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyFlagsCall)
   })
 
   it('computes inactive flags locally as well', async () => {
@@ -1109,7 +1109,7 @@ describe('local evaluation', () => {
     mockedFetch.mockImplementation(
       apiImplementation({
         localFlags: flags,
-        decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
+        flags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
       })
     )
 
@@ -1120,7 +1120,7 @@ describe('local evaluation', () => {
     })
 
     expect(await posthog.getAllFlags('distinct-id')).toEqual({ 'beta-feature': true, 'disabled-feature': false })
-    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyFlagsCall)
 
     //   # Now, after a poll interval, flag 1 is inactive, and flag 2 rollout is set to 100%.
     const flags2 = {
@@ -1162,7 +1162,7 @@ describe('local evaluation', () => {
     await posthog.reloadFeatureFlags()
 
     expect(await posthog.getAllFlags('distinct-id')).toEqual({ 'beta-feature': false, 'disabled-feature': true })
-    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyFlagsCall)
   })
 
   it('computes complex cohorts locally', async () => {
@@ -1214,7 +1214,7 @@ describe('local evaluation', () => {
     mockedFetch.mockImplementation(
       apiImplementation({
         localFlags: flags,
-        decideFlags: {},
+        flags: {},
       })
     )
 
@@ -1227,7 +1227,7 @@ describe('local evaluation', () => {
     expect(
       await posthog.getFeatureFlag('beta-feature', 'some-distinct-id', { personProperties: { region: 'UK' } })
     ).toEqual(false)
-    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyFlagsCall)
 
     // # even though 'other' property is not present, the cohort should still match since it's an OR condition
     expect(
@@ -1235,7 +1235,7 @@ describe('local evaluation', () => {
         personProperties: { region: 'USA', nation: 'UK' },
       })
     ).toEqual(true)
-    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyFlagsCall)
 
     // # even though 'other' property is not present, the cohort should still match since it's an OR condition
     expect(
@@ -1243,7 +1243,7 @@ describe('local evaluation', () => {
         personProperties: { region: 'USA', other: 'thing' },
       })
     ).toEqual(true)
-    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyFlagsCall)
   })
 
   it('computes complex cohorts with negation locally', async () => {
@@ -1295,7 +1295,7 @@ describe('local evaluation', () => {
     mockedFetch.mockImplementation(
       apiImplementation({
         localFlags: flags,
-        decideFlags: {},
+        flags: {},
       })
     )
 
@@ -1308,7 +1308,7 @@ describe('local evaluation', () => {
     expect(
       await posthog.getFeatureFlag('beta-feature', 'some-distinct-id', { personProperties: { region: 'UK' } })
     ).toEqual(false)
-    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyFlagsCall)
 
     // # even though 'other' property is not present, the cohort should still match since it's an OR condition
     expect(
@@ -1316,15 +1316,15 @@ describe('local evaluation', () => {
         personProperties: { region: 'USA', nation: 'UK' },
       })
     ).toEqual(true)
-    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyFlagsCall)
 
-    // # since 'other' is negated, we return False. Since 'nation' is not present, we can't tell whether the flag should be true or false, so go to decide
+    // # since 'other' is negated, we return False. Since 'nation' is not present, we can't tell whether the flag should be true or false, so go to flags
     expect(
       await posthog.getFeatureFlag('beta-feature', 'some-distinct-id', {
         personProperties: { region: 'USA', other: 'thing' },
       })
     ).toEqual(undefined)
-    expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
+    expect(mockedFetch).toHaveBeenCalledWith(...anyFlagsCall)
 
     mockedFetch.mockClear()
 
@@ -1333,7 +1333,7 @@ describe('local evaluation', () => {
         personProperties: { region: 'USA', other: 'thing2' },
       })
     ).toEqual(true)
-    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyFlagsCall)
   })
 
   it('gets feature flag with variant overrides', async () => {
@@ -1400,8 +1400,8 @@ describe('local evaluation', () => {
     expect(await posthog.getFeatureFlag('beta-feature', 'example_id')).toEqual('first-variant')
 
     expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
-    // decide not called
-    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+    // flags not called
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyFlagsCall)
   })
 
   it('gets feature flag with clashing variant overrides', async () => {
@@ -1484,8 +1484,8 @@ describe('local evaluation', () => {
     expect(await posthog.getFeatureFlag('beta-feature', 'example_id')).toEqual('first-variant')
 
     expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
-    // decide not called
-    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+    // flags not called
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyFlagsCall)
   })
 
   it('gets feature flag with invalid variant overrides', async () => {
@@ -1552,8 +1552,8 @@ describe('local evaluation', () => {
     expect(await posthog.getFeatureFlag('beta-feature', 'example_id')).toEqual('second-variant')
 
     expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
-    // decide not called
-    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+    // flags not called
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyFlagsCall)
   })
 
   it('gets feature flag with multiple variant overrides', async () => {
@@ -1625,8 +1625,8 @@ describe('local evaluation', () => {
     expect(await posthog.getFeatureFlag('beta-feature', 'another_id')).toEqual('second-variant')
 
     expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
-    // decide not called
-    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+    // flags not called
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyFlagsCall)
   })
 
   it('get feature flag payload based on boolean flag', async () => {
@@ -1683,8 +1683,8 @@ describe('local evaluation', () => {
       log: 'all',
     })
     expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
-    // decide not called
-    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+    // flags not called
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyFlagsCall)
   })
 
   it('get feature flag payload on a multivariate', async () => {
@@ -1755,8 +1755,8 @@ describe('local evaluation', () => {
     ).toEqual(2500)
 
     expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
-    // decide not called
-    expect(mockedFetch).not.toHaveBeenCalledWith(...anyDecideCall)
+    // flags not called
+    expect(mockedFetch).not.toHaveBeenCalledWith(...anyFlagsCall)
   })
 
   describe('isLocalEvaluationReady', () => {
@@ -2588,7 +2588,7 @@ describe('consistency tests', () => {
       ],
     }
 
-    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags, decideFlags: {}, decideStatus: 400 }))
+    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags, flags: {}, flagsStatus: 400 }))
 
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
@@ -3630,7 +3630,7 @@ describe('consistency tests', () => {
       ],
     }
 
-    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags, decideFlags: {}, decideStatus: 400 }))
+    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags, flags: {}, flagsStatus: 400 }))
 
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',

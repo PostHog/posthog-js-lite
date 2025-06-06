@@ -3,9 +3,9 @@ import {
   getPayloadsFromFlags,
   getFlagDetailsFromFlagsAndPayloads,
   getFeatureFlagValue,
-  normalizeDecideResponse,
+  normalizeFlagsResponse,
 } from '../src/featureFlagUtils'
-import { PostHogDecideResponse, FeatureFlagDetail } from '../src/types'
+import { PostHogFlagsResponse, FeatureFlagDetail } from '../src/types'
 
 describe('featureFlagUtils', () => {
   describe('getFeatureFlagValue', () => {
@@ -164,7 +164,7 @@ describe('featureFlagUtils', () => {
 
   describe('getFlagDetailsFromFlagsAndPayloads', () => {
     it('should convert v3 flags and payloads to flag details', () => {
-      const decideResponse: PostHogDecideResponse = {
+      const flagsResponse: PostHogFlagsResponse = {
         featureFlags: {
           'flag-1': true,
           'flag-2': 'variant-1',
@@ -178,7 +178,7 @@ describe('featureFlagUtils', () => {
         errorsWhileComputingFlags: false,
       }
 
-      const result = getFlagDetailsFromFlagsAndPayloads(decideResponse)
+      const result = getFlagDetailsFromFlagsAndPayloads(flagsResponse)
 
       expect(result).toEqual({
         'flag-1': {
@@ -221,20 +221,20 @@ describe('featureFlagUtils', () => {
     })
 
     it('should handle empty flags and payloads', () => {
-      const decideResponse: PostHogDecideResponse = {
+      const flagsResponse: PostHogFlagsResponse = {
         featureFlags: {},
         featureFlagPayloads: {},
         flags: {},
         errorsWhileComputingFlags: false,
       }
 
-      expect(getFlagDetailsFromFlagsAndPayloads(decideResponse)).toEqual({})
+      expect(getFlagDetailsFromFlagsAndPayloads(flagsResponse)).toEqual({})
     })
   })
 
-  describe('normalizeDecideResponse', () => {
+  describe('normalizeFlagsResponse', () => {
     it('should convert v4 response to v3 format', () => {
-      const v4Response: PostHogDecideResponse = {
+      const v4Response: PostHogFlagsResponse = {
         flags: {
           'flag-1': {
             key: 'flag-1',
@@ -278,7 +278,7 @@ describe('featureFlagUtils', () => {
         featureFlagPayloads: {},
       }
 
-      const result = normalizeDecideResponse(v4Response)
+      const result = normalizeFlagsResponse(v4Response)
 
       expect(result).toEqual({
         featureFlags: {
@@ -296,7 +296,7 @@ describe('featureFlagUtils', () => {
     })
 
     it('should convert v3 response to v4 format', () => {
-      const v3Response: Omit<PostHogDecideResponse, 'flags'> = {
+      const v3Response: Omit<PostHogFlagsResponse, 'flags'> = {
         featureFlags: {
           'flag-1': true,
           'flag-2': 'variant-1',
@@ -309,7 +309,7 @@ describe('featureFlagUtils', () => {
         errorsWhileComputingFlags: false,
       }
 
-      const result = normalizeDecideResponse(v3Response)
+      const result = normalizeFlagsResponse(v3Response)
 
       expect(result).toEqual({
         featureFlags: {
@@ -364,13 +364,13 @@ describe('featureFlagUtils', () => {
     })
 
     it('should handle empty flags and payloads', () => {
-      const v3Response: Omit<PostHogDecideResponse, 'flags'> = {
+      const v3Response: Omit<PostHogFlagsResponse, 'flags'> = {
         featureFlags: {},
         featureFlagPayloads: {},
         errorsWhileComputingFlags: false,
       }
 
-      const result = normalizeDecideResponse(v3Response)
+      const result = normalizeFlagsResponse(v3Response)
 
       expect(result).toEqual({
         featureFlags: {},
@@ -381,7 +381,7 @@ describe('featureFlagUtils', () => {
     })
 
     it('should preserve additional fields', () => {
-      const v3Response: Omit<PostHogDecideResponse, 'flags'> = {
+      const v3Response: Omit<PostHogFlagsResponse, 'flags'> = {
         featureFlags: {
           'flag-1': true,
         },
@@ -394,7 +394,7 @@ describe('featureFlagUtils', () => {
         requestId: 'test-request-id',
       }
 
-      const result = normalizeDecideResponse(v3Response)
+      const result = normalizeFlagsResponse(v3Response)
 
       expect(result).toEqual({
         featureFlags: {

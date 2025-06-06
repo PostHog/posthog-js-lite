@@ -1,5 +1,5 @@
-import { PostHogPersistedProperty, PostHogV3DecideResponse } from '../src'
-import { normalizeDecideResponse } from '../src/featureFlagUtils'
+import { PostHogPersistedProperty, PostHogV1FlagsResponse } from '../src'
+import { normalizeFlagsResponse } from '../src/featureFlagUtils'
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
 import { parseBody, waitForPromises } from './test-utils/test-utils'
 
@@ -184,7 +184,7 @@ describe('PostHog Feature Flags v3', () => {
         })
       })
 
-      describe('when subsequent decide calls return partial results', () => {
+      describe('when subsequent flags calls return partial results', () => {
         beforeEach(() => {
           ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1 }, (_mocks) => {
             _mocks.fetch
@@ -289,7 +289,7 @@ describe('PostHog Feature Flags v3', () => {
         })
       })
 
-      describe('when subsequent decide calls return results without errors', () => {
+      describe('when subsequent flags calls return results without errors', () => {
         beforeEach(() => {
           ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1 }, (_mocks) => {
             _mocks.fetch
@@ -507,7 +507,7 @@ describe('PostHog Feature Flags v3', () => {
           featureFlags: createMockFeatureFlags(),
           featureFlagPayloads: createMockFeatureFlagPayloads(),
         }
-        const normalizedFeatureFlags = normalizeDecideResponse(expectedFeatureFlags as PostHogV3DecideResponse)
+        const normalizedFeatureFlags = normalizeFlagsResponse(expectedFeatureFlags as PostHogV1FlagsResponse)
         expect(posthog.getPersistedProperty(PostHogPersistedProperty.FeatureFlagDetails)).toEqual(
           normalizedFeatureFlags
         )

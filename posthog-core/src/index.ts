@@ -3,7 +3,7 @@ import {
   PostHogFetchResponse,
   PostHogQueueItem,
   PostHogAutocaptureElement,
-  PostHogDecideResponse,
+  PostHogFlagsResponse,
   PostHogCoreOptions,
   PostHogEventProperties,
   PostHogPersistedProperty,
@@ -11,8 +11,8 @@ import {
   JsonType,
   PostHogRemoteConfig,
   FeatureFlagValue,
-  PostHogV4DecideResponse,
-  PostHogV3DecideResponse,
+  PostHogV2FlagsResponse,
+  PostHogV1FlagsResponse,
   PostHogFeatureFlagDetails,
   PostHogFlagsStorageFormat,
   FeatureFlagDetail,
@@ -20,11 +20,11 @@ import {
   SurveyResponse,
 } from './types'
 import {
-  createDecideResponseFromFlagsAndPayloads,
+  createFlagsResponseFromFlagsAndPayloads,
   getFeatureFlagValue,
   getFlagValuesFromFlags,
   getPayloadsFromFlags,
-  normalizeDecideResponse,
+  normalizeFlagsResponse,
   updateFlagValue,
 } from './featureFlagUtils'
 import {
@@ -32,9 +32,6 @@ import {
   currentISOTime,
   currentTimestamp,
   isError,
-  isTokenInRollout,
-  NEW_FLAGS_EXCLUDED_HASHES,
-  NEW_FLAGS_ROLLOUT_PERCENTAGE,
   removeTrailingSlash,
   retriable,
   RetriableOptions,
@@ -430,21 +427,16 @@ export abstract class PostHogCoreStateless {
    *** FEATURE FLAGS
    ***/
 
-  protected async getDecide(
+  protected async getFlags(
     distinctId: string,
     groups: Record<string, string | number> = {},
     personProperties: Record<string, string> = {},
     groupProperties: Record<string, Record<string, string>> = {},
     extraPayload: Record<string, any> = {}
-  ): Promise<PostHogDecideResponse | undefined> {
+  ): Promise<PostHogFlagsResponse | undefined> {
     await this._initPromise
 
-    // Check if the API token is in the new flags rollout
-    // This is a temporary measure to ensure that we can still use the old flags API
-    // while we migrate to the new flags API
-    const useFlags = isTokenInRollout(this.apiKey, NEW_FLAGS_ROLLOUT_PERCENTAGE, NEW_FLAGS_EXCLUDED_HASHES)
-
-    const url = useFlags ? `${this.host}/flags/?v=2` : `${this.host}/decide/?v=4`
+    const url = `${this.host}/flags/?v=2`
     const fetchOptions: PostHogFetchOptions = {
       method: 'POST',
       headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },
@@ -457,14 +449,14 @@ export abstract class PostHogCoreStateless {
         ...extraPayload,
       }),
     }
-    // Don't retry /decide API calls
+    // Don't retry /flags API calls
     return this.fetchWithRetry(url, fetchOptions, { retryCount: 0 }, this.featureFlagsRequestTimeoutMs)
-      .then((response) => response.json() as Promise<PostHogV3DecideResponse | PostHogV4DecideResponse>)
-      .then((response) => normalizeDecideResponse(response))
+      .then((response) => response.json() as Promise<PostHogV1FlagsResponse | PostHogV2FlagsResponse>)
+      .then((response) => normalizeFlagsResponse(response))
       .catch((error) => {
         this._events.emit('error', error)
         return undefined
-      }) as Promise<PostHogDecideResponse | undefined>
+      }) as Promise<PostHogFlagsResponse | undefined>
   }
 
   protected async getFeatureFlagStateless(
@@ -527,7 +519,7 @@ export abstract class PostHogCoreStateless {
   > {
     await this._initPromise
 
-    const decideResponse = await this.getFeatureFlagDetailsStateless(
+    const flagsResponse = await this.getFeatureFlagDetailsStateless(
       distinctId,
       groups,
       personProperties,
@@ -536,17 +528,17 @@ export abstract class PostHogCoreStateless {
       [key]
     )
 
-    if (decideResponse === undefined) {
+    if (flagsResponse === undefined) {
       return undefined
     }
 
-    const featureFlags = decideResponse.flags
+    const featureFlags = flagsResponse.flags
 
     const flagDetail = featureFlags[key]
 
     return {
       response: flagDetail,
-      requestId: decideResponse.requestId,
+      requestId: flagsResponse.requestId,
     }
   }
 
@@ -590,7 +582,7 @@ export abstract class PostHogCoreStateless {
     groupProperties: Record<string, Record<string, string>> = {},
     disableGeoip?: boolean,
     flagKeysToEvaluate?: string[]
-  ): Promise<PostHogDecideResponse['featureFlagPayloads'] | undefined> {
+  ): Promise<PostHogFlagsResponse['featureFlagPayloads'] | undefined> {
     await this._initPromise
 
     const payloads = (
@@ -615,9 +607,9 @@ export abstract class PostHogCoreStateless {
     disableGeoip?: boolean,
     flagKeysToEvaluate?: string[]
   ): Promise<{
-    flags: PostHogDecideResponse['featureFlags'] | undefined
-    payloads: PostHogDecideResponse['featureFlagPayloads'] | undefined
-    requestId: PostHogDecideResponse['requestId'] | undefined
+    flags: PostHogFlagsResponse['featureFlags'] | undefined
+    payloads: PostHogFlagsResponse['featureFlagPayloads'] | undefined
+    requestId: PostHogFlagsResponse['requestId'] | undefined
   }> {
     await this._initPromise
 
@@ -639,9 +631,9 @@ export abstract class PostHogCoreStateless {
     disableGeoip?: boolean,
     flagKeysToEvaluate?: string[]
   ): Promise<{
-    flags: PostHogDecideResponse['featureFlags'] | undefined
-    payloads: PostHogDecideResponse['featureFlagPayloads'] | undefined
-    requestId: PostHogDecideResponse['requestId'] | undefined
+    flags: PostHogFlagsResponse['featureFlags'] | undefined
+    payloads: PostHogFlagsResponse['featureFlagPayloads'] | undefined
+    requestId: PostHogFlagsResponse['requestId'] | undefined
   }> {
     await this._initPromise
 
@@ -686,22 +678,22 @@ export abstract class PostHogCoreStateless {
     if (flagKeysToEvaluate) {
       extraPayload['flag_keys_to_evaluate'] = flagKeysToEvaluate
     }
-    const decideResponse = await this.getDecide(distinctId, groups, personProperties, groupProperties, extraPayload)
+    const flagsResponse = await this.getFlags(distinctId, groups, personProperties, groupProperties, extraPayload)
 
-    if (decideResponse === undefined) {
+    if (flagsResponse === undefined) {
       // We probably errored out, so return undefined
       return undefined
     }
 
-    // if there's an error on the decideResponse, log a console error, but don't throw an error
-    if (decideResponse.errorsWhileComputingFlags) {
+    // if there's an error on the flagsResponse, log a console error, but don't throw an error
+    if (flagsResponse.errorsWhileComputingFlags) {
       console.error(
         '[FEATURE FLAGS] Error while computing feature flags, some flags may be missing or incorrect. Learn more at https://posthog.com/docs/feature-flags/best-practices'
       )
     }
 
     // Add check for quota limitation on feature flags
-    if (decideResponse.quotaLimited?.includes(QuotaLimitedFeature.FeatureFlags)) {
+    if (flagsResponse.quotaLimited?.includes(QuotaLimitedFeature.FeatureFlags)) {
       console.warn(
         '[FEATURE FLAGS] Feature flags quota limit exceeded - feature flags unavailable. Learn more about billing limits at https://posthog.com/docs/billing/limits-alerts'
       )
@@ -709,11 +701,11 @@ export abstract class PostHogCoreStateless {
         flags: {},
         featureFlags: {},
         featureFlagPayloads: {},
-        requestId: decideResponse?.requestId,
+        requestId: flagsResponse?.requestId,
       }
     }
 
-    return decideResponse
+    return flagsResponse
   }
 
   /***
@@ -1179,7 +1171,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   private flagCallReported: { [key: string]: boolean } = {}
 
   // internal
-  protected _decideResponsePromise?: Promise<PostHogDecideResponse | undefined> // TODO: come back to this, fix typing
+  protected _flagsResponsePromise?: Promise<PostHogFlagsResponse | undefined> // TODO: come back to this, fix typing
   protected _sessionExpirationTimeSeconds: number
   protected sessionProps: PostHogEventProperties = {}
 
@@ -1223,7 +1215,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     const bootstrapFeatureFlags = bootstrap.featureFlags
     const bootstrapFeatureFlagPayloads = bootstrap.featureFlagPayloads ?? {}
     if (bootstrapFeatureFlags && Object.keys(bootstrapFeatureFlags).length) {
-      const normalizedBootstrapFeatureFlagDetails = createDecideResponseFromFlagsAndPayloads(
+      const normalizedBootstrapFeatureFlagDetails = createFlagsResponseFromFlagsAndPayloads(
         bootstrapFeatureFlags,
         bootstrapFeatureFlagPayloads
       )
@@ -1388,7 +1380,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       })
 
       if (distinctId !== previousDistinctId) {
-        // We keep the AnonymousId to be used by decide calls and identify to link the previousId
+        // We keep the AnonymousId to be used by flags calls and identify to link the previousId
         this.setPersistedProperty(PostHogPersistedProperty.AnonymousId, previousDistinctId)
         this.setPersistedProperty(PostHogPersistedProperty.DistinctId, distinctId)
         this.reloadFeatureFlags()
@@ -1570,12 +1562,12 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   /***
    *** FEATURE FLAGS
    ***/
-  private async decideAsync(sendAnonDistinctId: boolean = true): Promise<PostHogDecideResponse | undefined> {
+  private async flagsAsync(sendAnonDistinctId: boolean = true): Promise<PostHogFlagsResponse | undefined> {
     await this._initPromise
-    if (this._decideResponsePromise) {
-      return this._decideResponsePromise
+    if (this._flagsResponsePromise) {
+      return this._flagsResponsePromise
     }
-    return this._decideAsync(sendAnonDistinctId)
+    return this._flagsAsync(sendAnonDistinctId)
   }
 
   private cacheSessionReplay(response?: PostHogRemoteConfig): void {
@@ -1660,8 +1652,8 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     return this._remoteConfigResponsePromise
   }
 
-  private async _decideAsync(sendAnonDistinctId: boolean = true): Promise<PostHogDecideResponse | undefined> {
-    this._decideResponsePromise = this._initPromise
+  private async _flagsAsync(sendAnonDistinctId: boolean = true): Promise<PostHogFlagsResponse | undefined> {
+    this._flagsResponsePromise = this._initPromise
       .then(async () => {
         const distinctId = this.getDistinctId()
         const groups = this.props.$groups || {}
@@ -1675,7 +1667,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
           $anon_distinct_id: sendAnonDistinctId ? this.getAnonymousId() : undefined,
         }
 
-        const res = await super.getDecide(distinctId, groups, personProperties, groupProperties, extraProperties)
+        const res = await super.getFlags(distinctId, groups, personProperties, groupProperties, extraProperties)
         // Add check for quota limitation on feature flags
         if (res?.quotaLimited?.includes(QuotaLimitedFeature.FeatureFlags)) {
           // Unset all feature flags by setting to null
@@ -1705,7 +1697,8 @@ export abstract class PostHogCore extends PostHogCoreStateless {
             }
           }
           this.setKnownFeatureFlagDetails(newFeatureFlagDetails)
-          // Mark that we hit the /decide endpoint so we can capture this in the $feature_flag_called event
+          // Mark that we hit the /flags endpoint so we can capture this in the $feature_flag_called event
+          // TODO dylan migrate this
           this.setPersistedProperty(PostHogPersistedProperty.DecideEndpointWasHit, true)
 
           this.cacheSessionReplay(res)
@@ -1713,17 +1706,17 @@ export abstract class PostHogCore extends PostHogCoreStateless {
         return res
       })
       .finally(() => {
-        this._decideResponsePromise = undefined
+        this._flagsResponsePromise = undefined
       })
-    return this._decideResponsePromise
+    return this._flagsResponsePromise
   }
 
   // We only store the flags and request id in the feature flag details storage key
-  private setKnownFeatureFlagDetails(decideResponse: PostHogFlagsStorageFormat | null): void {
+  private setKnownFeatureFlagDetails(flagsResponse: PostHogFlagsStorageFormat | null): void {
     this.wrap(() => {
-      this.setPersistedProperty<PostHogFlagsStorageFormat>(PostHogPersistedProperty.FeatureFlagDetails, decideResponse)
+      this.setPersistedProperty<PostHogFlagsStorageFormat>(PostHogPersistedProperty.FeatureFlagDetails, flagsResponse)
 
-      this._events.emit('featureflags', getFlagValuesFromFlags(decideResponse?.flags ?? {}))
+      this._events.emit('featureflags', getFlagValuesFromFlags(flagsResponse?.flags ?? {}))
     })
   }
 
@@ -1733,10 +1726,10 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     )
     if (!storedDetails) {
       // Rebuild from the stored feature flags and feature flag payloads
-      const featureFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
+      const featureFlags = this.getPersistedProperty<PostHogFlagsResponse['featureFlags']>(
         PostHogPersistedProperty.FeatureFlags
       )
-      const featureFlagPayloads = this.getPersistedProperty<PostHogDecideResponse['featureFlagPayloads']>(
+      const featureFlagPayloads = this.getPersistedProperty<PostHogFlagsResponse['featureFlagPayloads']>(
         PostHogPersistedProperty.FeatureFlagPayloads
       )
 
@@ -1744,15 +1737,15 @@ export abstract class PostHogCore extends PostHogCoreStateless {
         return undefined
       }
 
-      return createDecideResponseFromFlagsAndPayloads(featureFlags ?? {}, featureFlagPayloads ?? {})
+      return createFlagsResponseFromFlagsAndPayloads(featureFlags ?? {}, featureFlagPayloads ?? {})
     }
 
-    return normalizeDecideResponse(
-      storedDetails as PostHogV3DecideResponse | PostHogV4DecideResponse
+    return normalizeFlagsResponse(
+      storedDetails as PostHogV1FlagsResponse | PostHogV2FlagsResponse
     ) as PostHogFeatureFlagDetails
   }
 
-  private getKnownFeatureFlags(): PostHogDecideResponse['featureFlags'] | undefined {
+  private getKnownFeatureFlags(): PostHogFlagsResponse['featureFlags'] | undefined {
     const featureFlagDetails = this.getKnownFeatureFlagDetails()
     if (!featureFlagDetails) {
       return undefined
@@ -1760,7 +1753,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     return getFlagValuesFromFlags(featureFlagDetails.flags)
   }
 
-  private getKnownFeatureFlagPayloads(): PostHogDecideResponse['featureFlagPayloads'] | undefined {
+  private getKnownFeatureFlagPayloads(): PostHogFlagsResponse['featureFlagPayloads'] | undefined {
     const featureFlagDetails = this.getKnownFeatureFlagDetails()
     if (!featureFlagDetails) {
       return undefined
@@ -1782,7 +1775,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     this.setPersistedProperty<PostHogFeatureFlagDetails>(PostHogPersistedProperty.BootstrapFeatureFlagDetails, details)
   }
 
-  private getBootstrappedFeatureFlags(): PostHogDecideResponse['featureFlags'] | undefined {
+  private getBootstrappedFeatureFlags(): PostHogFlagsResponse['featureFlags'] | undefined {
     const details = this.getBootstrappedFeatureFlagDetails()
     if (!details) {
       return undefined
@@ -1790,7 +1783,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     return getFlagValuesFromFlags(details.flags)
   }
 
-  private getBootstrappedFeatureFlagPayloads(): PostHogDecideResponse['featureFlagPayloads'] | undefined {
+  private getBootstrappedFeatureFlagPayloads(): PostHogFlagsResponse['featureFlagPayloads'] | undefined {
     const details = this.getBootstrappedFeatureFlagDetails()
     if (!details) {
       return undefined
@@ -1829,6 +1822,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
         $feature_flag_bootstrapped_response: bootstrappedResponse,
         $feature_flag_bootstrapped_payload: bootstrappedPayload,
         // If we haven't yet received a response from the /decide endpoint, we must have used the bootstrapped value
+        // TODO DYLAN migrate this
         $used_bootstrap_value: !this.getPersistedProperty(PostHogPersistedProperty.DecideEndpointWasHit),
         $feature_flag_request_id: details.requestId,
       })
@@ -1855,11 +1849,11 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     return response
   }
 
-  getFeatureFlagPayloads(): PostHogDecideResponse['featureFlagPayloads'] | undefined {
+  getFeatureFlagPayloads(): PostHogFlagsResponse['featureFlagPayloads'] | undefined {
     return this.getFeatureFlagDetails()?.featureFlagPayloads
   }
 
-  getFeatureFlags(): PostHogDecideResponse['featureFlags'] | undefined {
+  getFeatureFlags(): PostHogFlagsResponse['featureFlags'] | undefined {
     // NOTE: We don't check for _initPromise here as the function is designed to be
     // callable before the state being loaded anyways
     return this.getFeatureFlagDetails()?.featureFlags
@@ -1869,7 +1863,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     // NOTE: We don't check for _initPromise here as the function is designed to be
     // callable before the state being loaded anyways
     let details = this.getKnownFeatureFlagDetails()
-    const overriddenFlags = this.getPersistedProperty<PostHogDecideResponse['featureFlags']>(
+    const overriddenFlags = this.getPersistedProperty<PostHogFlagsResponse['featureFlags']>(
       PostHogPersistedProperty.OverrideFeatureFlags
     )
 
@@ -1894,12 +1888,12 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       flags,
     }
 
-    return normalizeDecideResponse(result) as PostHogFeatureFlagDetails
+    return normalizeFlagsResponse(result) as PostHogFeatureFlagDetails
   }
 
   getFeatureFlagsAndPayloads(): {
-    flags: PostHogDecideResponse['featureFlags'] | undefined
-    payloads: PostHogDecideResponse['featureFlagPayloads'] | undefined
+    flags: PostHogFlagsResponse['featureFlags'] | undefined
+    payloads: PostHogFlagsResponse['featureFlagPayloads'] | undefined
   } {
     const flags = this.getFeatureFlags()
     const payloads = this.getFeatureFlagPayloads()
@@ -1919,8 +1913,8 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   }
 
   // Used when we want to trigger the reload but we don't care about the result
-  reloadFeatureFlags(cb?: (err?: Error, flags?: PostHogDecideResponse['featureFlags']) => void): void {
-    this.decideAsync()
+  reloadFeatureFlags(cb?: (err?: Error, flags?: PostHogFlagsResponse['featureFlags']) => void): void {
+    this.flagsAsync()
       .then((res) => {
         cb?.(undefined, res?.featureFlags)
       })
@@ -1938,11 +1932,11 @@ export abstract class PostHogCore extends PostHogCoreStateless {
 
   async reloadFeatureFlagsAsync(
     sendAnonDistinctId: boolean = true
-  ): Promise<PostHogDecideResponse['featureFlags'] | undefined> {
-    return (await this.decideAsync(sendAnonDistinctId))?.featureFlags
+  ): Promise<PostHogFlagsResponse['featureFlags'] | undefined> {
+    return (await this.flagsAsync(sendAnonDistinctId))?.featureFlags
   }
 
-  onFeatureFlags(cb: (flags: PostHogDecideResponse['featureFlags']) => void): () => void {
+  onFeatureFlags(cb: (flags: PostHogFlagsResponse['featureFlags']) => void): () => void {
     return this.on('featureflags', async () => {
       const flags = this.getFeatureFlags()
       if (flags) {
@@ -1960,7 +1954,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     })
   }
 
-  async overrideFeatureFlag(flags: PostHogDecideResponse['featureFlags'] | null): Promise<void> {
+  async overrideFeatureFlag(flags: PostHogFlagsResponse['featureFlags'] | null): Promise<void> {
     this.wrap(() => {
       if (flags === null) {
         return this.setPersistedProperty(PostHogPersistedProperty.OverrideFeatureFlags, null)

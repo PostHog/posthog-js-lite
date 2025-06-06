@@ -138,7 +138,7 @@ export class PostHog extends PostHogCore {
       } else {
         this.logMsgIfDebug(() => console.info('PostHog Debug', `Remote config is disabled.`))
         if (options?.preloadFeatureFlags !== false) {
-          this.logMsgIfDebug(() => console.info('PostHog Debug', `Feature flags will be preloaded from Decide API.`))
+          this.logMsgIfDebug(() => console.info('PostHog Debug', `Feature flags will be preloaded from Flags API.`))
           this.reloadFeatureFlags()
         } else {
           this.logMsgIfDebug(() => console.info('PostHog Debug', `preloadFeatureFlags is disabled.`))
@@ -363,20 +363,20 @@ export class PostHog extends PostHogCore {
       console.log('PostHog Debug', `Session replay sdk config: ${JSON.stringify(sdkReplayConfig)}`)
     )
 
-    // if Decide has not returned yet, we will start session replay with default config.
+    // if Flags API has not returned yet, we will start session replay with default config.
     const sessionReplay = this.getPersistedProperty(PostHogPersistedProperty.SessionReplay) ?? {}
     const featureFlags = this.getPersistedProperty(PostHogPersistedProperty.FeatureFlags) ?? {}
-    const decideFeatureFlags = (featureFlags as { [key: string]: JsonType }) ?? {}
+    const flagsFeatureFlags = (featureFlags as { [key: string]: JsonType }) ?? {}
 
-    const decideReplayConfig = (sessionReplay as { [key: string]: JsonType }) ?? {}
+    const flagsSessionReplayConfig = (sessionReplay as { [key: string]: JsonType }) ?? {}
     this.logMsgIfDebug(() =>
-      console.log('PostHog Debug', `Session replay decide cached config: ${JSON.stringify(decideReplayConfig)}`)
+      console.log('PostHog Debug', `Session replay flags cached config: ${JSON.stringify(flagsSessionReplayConfig)}`)
     )
 
     let recordingActive = true
-    const linkedFlag = decideReplayConfig['linkedFlag'] as string | { [key: string]: JsonType } | null | undefined
+    const linkedFlag = flagsSessionReplayConfig['linkedFlag'] as string | { [key: string]: JsonType } | null | undefined
     if (typeof linkedFlag === 'string') {
-      const value = decideFeatureFlags[linkedFlag]
+      const value = flagsFeatureFlags[linkedFlag]
       if (typeof value === 'boolean') {
         recordingActive = value
       } else if (typeof value === 'string') {
@@ -392,7 +392,7 @@ export class PostHog extends PostHogCore {
       const flag = linkedFlag['flag'] as string | undefined
       const variant = linkedFlag['variant'] as string | undefined
       if (flag && variant) {
-        const value = decideFeatureFlags[flag]
+        const value = flagsFeatureFlags[flag]
         recordingActive = value === variant
         this.logMsgIfDebug(() =>
           console.log('PostHog Debug', `Session replay ${flag} linked flag variant: ${variant} and value ${value}`)
@@ -428,7 +428,12 @@ export class PostHog extends PostHogCore {
 
         try {
           if (!(await OptionalReactNativeSessionReplay.isEnabled())) {
-            await OptionalReactNativeSessionReplay.start(sessionId, sdkOptions, sdkReplayConfig, decideReplayConfig)
+            await OptionalReactNativeSessionReplay.start(
+              sessionId,
+              sdkOptions,
+              sdkReplayConfig,
+              flagsSessionReplayConfig
+            )
             this.logMsgIfDebug(() =>
               console.info('PostHog Debug', `Session replay started with sessionId ${sessionId}.`)
             )

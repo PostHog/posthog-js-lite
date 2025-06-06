@@ -1,6 +1,6 @@
 import fetch from '../src/fetch'
 import { PostHog } from '../src/entrypoints/index.node'
-import { anyDecideCall, anyLocalEvalCall, apiImplementation, isPending } from './test-utils'
+import { anyFlagsCall, anyLocalEvalCall, apiImplementation, isPending } from './test-utils'
 import { waitForPromises, wait } from '../../posthog-core/test/test-utils/test-utils'
 import { randomUUID } from 'crypto'
 jest.mock('../src/fetch')
@@ -593,8 +593,8 @@ describe('PostHog Node.js', () => {
 
       mockedFetch.mockImplementation(
         apiImplementation({
-          decideFlags: mockFeatureFlags,
-          decideFlagPayloads: mockFeatureFlagPayloads,
+          flags: mockFeatureFlags,
+          flagsPayloads: mockFeatureFlagPayloads,
           localFlags: { flags: [multivariateFlag, basicFlag, falseFlag, arrayFlag] },
         })
       )
@@ -728,7 +728,7 @@ describe('PostHog Node.js', () => {
       })
 
       expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
-      // no decide call
+      // no flags call
       expect(mockedFetch).not.toHaveBeenCalledWith(
         'http://example.com/flags/?v=2',
         expect.objectContaining({ method: 'POST' })
@@ -767,7 +767,7 @@ describe('PostHog Node.js', () => {
       mockedFetch.mockClear()
       expect(mockedFetch).toHaveBeenCalledTimes(0)
       mockedFetch.mockImplementation(
-        apiImplementation({ decideFlags: { a: false, b: 'true' }, decideFlagPayloads: {}, localFlags: { flags: [] } })
+        apiImplementation({ flags: { a: false, b: 'true' }, flagsPayloads: {}, localFlags: { flags: [] } })
       )
 
       posthog = new PostHog('TEST_API_KEY', {
@@ -786,7 +786,7 @@ describe('PostHog Node.js', () => {
       await waitForPromises()
 
       expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
-      // no decide call
+      // no flags call
       expect(mockedFetch).not.toHaveBeenCalledWith(
         'http://example.com/flags/?v=2',
         expect.objectContaining({ method: 'POST' })
@@ -877,7 +877,7 @@ describe('PostHog Node.js', () => {
       }
 
       mockedFetch.mockImplementation(
-        apiImplementation({ localFlags: flags, decideFlags: { 'beta-feature': 'decide-fallback-value' } })
+        apiImplementation({ localFlags: flags, flags: { 'beta-feature': 'flags-fallback-value' } })
       )
 
       posthog = new PostHog('TEST_API_KEY', {
@@ -940,9 +940,7 @@ describe('PostHog Node.js', () => {
         ],
       }
 
-      mockedFetch.mockImplementation(
-        apiImplementation({ localFlags: flags, decideFlags: { 'decide-flag': 'decide-value' } })
-      )
+      mockedFetch.mockImplementation(apiImplementation({ localFlags: flags, flags: { 'flags-flag': 'flags-value' } }))
 
       posthog = new PostHog('TEST_API_KEY', {
         host: 'http://example.com',
@@ -1037,18 +1035,18 @@ describe('PostHog Node.js', () => {
       await posthog.flush()
       expect(mockedFetch).not.toHaveBeenCalledWith('http://example.com/batch/', expect.any(Object))
 
-      // # called for different flag, falls back to decide, should call capture again
+      // # called for different flag, falls back to flags, should call capture again
       expect(
-        await posthog.getFeatureFlag('decide-flag', 'some-distinct-id2345', {
+        await posthog.getFeatureFlag('flags-flag', 'some-distinct-id2345', {
           groups: { organization: 'org1' },
           personProperties: { region: 'USA', name: 'Aloha' },
         })
-      ).toEqual('decide-value')
+      ).toEqual('flags-value')
       jest.runOnlyPendingTimers()
       await waitForPromises()
       await posthog.flush()
-      // one to decide, one to batch
-      expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
+      // one to flags, one to batch
+      expect(mockedFetch).toHaveBeenCalledWith(...anyFlagsCall)
       expect(mockedFetch).toHaveBeenCalledWith('http://example.com/batch/', expect.any(Object))
 
       expect(getLastBatchEvents()?.[0]).toEqual(
@@ -1056,12 +1054,12 @@ describe('PostHog Node.js', () => {
           distinct_id: 'some-distinct-id2345',
           event: '$feature_flag_called',
           properties: expect.objectContaining({
-            $feature_flag: 'decide-flag',
-            $feature_flag_response: 'decide-value',
+            $feature_flag: 'flags-flag',
+            $feature_flag_response: 'flags-value',
             $lib: 'posthog-node',
             $lib_version: '1.2.3',
             locally_evaluated: false,
-            '$feature/decide-flag': 'decide-value',
+            '$feature/flags-flag': 'flags-value',
             $groups: { organization: 'org1' },
           }),
         })
@@ -1069,7 +1067,7 @@ describe('PostHog Node.js', () => {
       mockedFetch.mockClear()
 
       expect(
-        await posthog.isFeatureEnabled('decide-flag', 'some-distinct-id2345', {
+        await posthog.isFeatureEnabled('flags-flag', 'some-distinct-id2345', {
           groups: { organization: 'org1' },
           personProperties: { region: 'USA', name: 'Aloha' },
         })
@@ -1077,8 +1075,8 @@ describe('PostHog Node.js', () => {
       jest.runOnlyPendingTimers()
       await waitForPromises()
       await posthog.flush()
-      // call decide, but not batch
-      expect(mockedFetch).toHaveBeenCalledWith(...anyDecideCall)
+      // call flags, but not batch
+      expect(mockedFetch).toHaveBeenCalledWith(...anyFlagsCall)
       expect(mockedFetch).not.toHaveBeenCalledWith('http://example.com/batch/', expect.any(Object))
     })
 
@@ -1318,13 +1316,13 @@ describe('PostHog Node.js', () => {
       )
     })
 
-    it('should log error when decide response has errors', async () => {
+    it('should log error when flags response has errors', async () => {
       const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
 
       mockedFetch.mockImplementation(
         apiImplementation({
-          decideFlags: { 'feature-1': true },
-          decideFlagPayloads: {},
+          flags: { 'feature-1': true },
+          flagsPayloads: {},
           errorsWhileComputingFlags: true,
         })
       )
