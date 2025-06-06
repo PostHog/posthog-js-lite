@@ -1,4 +1,4 @@
-import { assert, removeTrailingSlash, currentISOTime, currentTimestamp, isTokenInRollout } from '../src/utils'
+import { assert, removeTrailingSlash, currentISOTime, currentTimestamp } from '../src/utils'
 
 describe('utils', () => {
   describe('assert', () => {
@@ -31,14 +31,6 @@ describe('utils', () => {
     it('should get the iso time', () => {
       jest.setSystemTime(new Date('2022-01-01'))
       expect(currentISOTime()).toEqual('2022-01-01T00:00:00.000Z')
-    })
-  })
-  describe('isTokenInRollout', () => {
-    it('should return true if the rollout is 100%', () => {
-      expect(isTokenInRollout('test', 1)).toEqual(true)
-    })
-    it('should return false if the rollout is 0%', () => {
-      expect(isTokenInRollout('test', 0)).toEqual(false)
     })
   })
 })

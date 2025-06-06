@@ -4,7 +4,7 @@ import {
   PostHogCoreOptions,
   PostHogFetchOptions,
   PostHogFetchResponse,
-  PostHogDecideResponse,
+  PostHogFlagsResponse,
 } from '../../src'
 
 const version = '2.0.0-alpha'
@@ -27,14 +27,14 @@ export class PostHogCoreTestClient extends PostHogCore {
   }
 
   // Expose protected methods for testing
-  public getDecide(
+  public getFlags(
     distinctId: string,
     groups: Record<string, string | number> = {},
     personProperties: Record<string, string> = {},
     groupProperties: Record<string, Record<string, string>> = {},
     extraPayload: Record<string, any> = {}
-  ): Promise<PostHogDecideResponse | undefined> {
-    return super.getDecide(distinctId, groups, personProperties, groupProperties, extraPayload)
+  ): Promise<PostHogFlagsResponse | undefined> {
+    return super.getFlags(distinctId, groups, personProperties, groupProperties, extraPayload)
   }
 
   getPersistedProperty<T>(key: string): T {

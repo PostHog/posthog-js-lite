@@ -2,34 +2,34 @@ import {
   FeatureFlagDetail,
   FeatureFlagValue,
   JsonType,
-  PostHogDecideResponse,
-  PostHogV3DecideResponse,
-  PostHogV4DecideResponse,
+  PostHogFlagsResponse,
+  PostHogV1FlagsResponse,
+  PostHogV2FlagsResponse,
   PostHogFlagsAndPayloadsResponse,
   PartialWithRequired,
   PostHogFeatureFlagsResponse,
 } from './types'
 
-export const normalizeDecideResponse = (
-  decideResponse:
-    | PartialWithRequired<PostHogV4DecideResponse, 'flags'>
-    | PartialWithRequired<PostHogV3DecideResponse, 'featureFlags' | 'featureFlagPayloads'>
+export const normalizeFlagsResponse = (
+  flagsResponse:
+    | PartialWithRequired<PostHogV2FlagsResponse, 'flags'>
+    | PartialWithRequired<PostHogV1FlagsResponse, 'featureFlags' | 'featureFlagPayloads'>
 ): PostHogFeatureFlagsResponse => {
-  if ('flags' in decideResponse) {
+  if ('flags' in flagsResponse) {
     // Convert v4 format to v3 format
-    const featureFlags = getFlagValuesFromFlags(decideResponse.flags)
-    const featureFlagPayloads = getPayloadsFromFlags(decideResponse.flags)
+    const featureFlags = getFlagValuesFromFlags(flagsResponse.flags)
+    const featureFlagPayloads = getPayloadsFromFlags(flagsResponse.flags)
 
     return {
-      ...decideResponse,
+      ...flagsResponse,
       featureFlags,
       featureFlagPayloads,
     }
   } else {
     // Convert v3 format to v4 format
-    const featureFlags = decideResponse.featureFlags ?? {}
+    const featureFlags = flagsResponse.featureFlags ?? {}
     const featureFlagPayloads = Object.fromEntries(
-      Object.entries(decideResponse.featureFlagPayloads || {}).map(([k, v]) => [k, parsePayload(v)])
+      Object.entries(flagsResponse.featureFlagPayloads || {}).map(([k, v]) => [k, parsePayload(v)])
     )
 
     const flags = Object.fromEntries(
@@ -40,7 +40,7 @@ export const normalizeDecideResponse = (
     )
 
     return {
-      ...decideResponse,
+      ...flagsResponse,
       featureFlags,
       featureFlagPayloads,
       flags,
@@ -72,9 +72,7 @@ function getFlagDetailFromFlagAndPayload(
  * @param flags - The flags
  * @returns The flag values
  */
-export const getFlagValuesFromFlags = (
-  flags: PostHogDecideResponse['flags']
-): PostHogDecideResponse['featureFlags'] => {
+export const getFlagValuesFromFlags = (flags: PostHogFlagsResponse['flags']): PostHogFlagsResponse['featureFlags'] => {
   return Object.fromEntries(
     Object.entries(flags ?? {})
       .map(([key, detail]) => [key, getFeatureFlagValue(detail)])
@@ -88,8 +86,8 @@ export const getFlagValuesFromFlags = (
  * @returns The payloads
  */
 export const getPayloadsFromFlags = (
-  flags: PostHogDecideResponse['flags']
-): PostHogDecideResponse['featureFlagPayloads'] => {
+  flags: PostHogFlagsResponse['flags']
+): PostHogFlagsResponse['featureFlagPayloads'] => {
   const safeFlags = flags ?? {}
   return Object.fromEntries(
     Object.keys(safeFlags)
@@ -106,14 +104,14 @@ export const getPayloadsFromFlags = (
 
 /**
  * Get the flag details from the legacy v3 flags and payloads. As such, it will lack the reason, id, version, and description.
- * @param decideResponse - The decide response
+ * @param flagsResponse - The flags response
  * @returns The flag details
  */
 export const getFlagDetailsFromFlagsAndPayloads = (
-  decideResponse: PostHogFeatureFlagsResponse
-): PostHogDecideResponse['flags'] => {
-  const flags = decideResponse.featureFlags ?? {}
-  const payloads = decideResponse.featureFlagPayloads ?? {}
+  flagsResponse: PostHogFeatureFlagsResponse
+): PostHogFlagsResponse['flags'] => {
+  const flags = flagsResponse.featureFlags ?? {}
+  const payloads = flagsResponse.featureFlagPayloads ?? {}
   return Object.fromEntries(
     Object.entries(flags).map(([key, value]) => [
       key,
@@ -159,9 +157,9 @@ export const parsePayload = (response: any): any => {
  * @param featureFlagPayloads - The feature flag payloads
  * @returns The normalized flag details
  */
-export const createDecideResponseFromFlagsAndPayloads = (
-  featureFlags: PostHogV3DecideResponse['featureFlags'],
-  featureFlagPayloads: PostHogV3DecideResponse['featureFlagPayloads']
+export const createFlagsResponseFromFlagsAndPayloads = (
+  featureFlags: PostHogV1FlagsResponse['featureFlags'],
+  featureFlagPayloads: PostHogV1FlagsResponse['featureFlagPayloads']
 ): PostHogFeatureFlagsResponse => {
   // If a feature flag payload key is not in the feature flags, we treat it as true feature flag.
   const allKeys = [...new Set([...Object.keys(featureFlags ?? {}), ...Object.keys(featureFlagPayloads ?? {})])]
@@ -174,7 +172,7 @@ export const createDecideResponseFromFlagsAndPayloads = (
     featureFlagPayloads: featureFlagPayloads ?? {},
   }
 
-  return normalizeDecideResponse(flagDetails as PostHogV3DecideResponse)
+  return normalizeFlagsResponse(flagDetails as PostHogV1FlagsResponse)
 }
 
 export const updateFlagValue = (flag: FeatureFlagDetail, value: FeatureFlagValue): FeatureFlagDetail => {

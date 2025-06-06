@@ -14,7 +14,7 @@ describe('PostHog Core', () => {
   })
 
   describe('identify', () => {
-    // Identify also triggers a subsequent decide call so we should expect 2 calls
+    // Identify also triggers a subsequent flags call so we should expect 2 calls
     it('should send an $identify event', async () => {
       posthog.identify('id-1', { foo: 'bar' })
       await waitForPromises()

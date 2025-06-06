@@ -41,7 +41,7 @@ describe('PostHog Core', () => {
       posthog.group('other', 'team', { foo: 'bar' })
       await waitForPromises()
 
-      expect(mocks.fetch).toHaveBeenCalledTimes(2) // 1 for decide, 1 for groupIdentify
+      expect(mocks.fetch).toHaveBeenCalledTimes(2) // 1 for flags, 1 for groupIdentify
       const batchCall = mocks.fetch.mock.calls[1]
       expect(batchCall[0]).toEqual('https://us.i.posthog.com/batch/')
       expect(parseBody(batchCall)).toMatchObject({

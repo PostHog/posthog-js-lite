@@ -175,13 +175,13 @@ class FeatureFlagsPoller {
   ): Promise<{
     response: Record<string, FeatureFlagValue>
     payloads: Record<string, JsonType>
-    fallbackToDecide: boolean
+    fallbackToFlags: boolean
   }> {
     await this.loadFeatureFlags()
 
     const response: Record<string, FeatureFlagValue> = {}
     const payloads: Record<string, JsonType> = {}
-    let fallbackToDecide = this.featureFlags.length == 0
+    let fallbackToFlags = this.featureFlags.length == 0
 
     await Promise.all(
       this.featureFlags.map(async (flag) => {
@@ -198,12 +198,12 @@ class FeatureFlagsPoller {
           } else if (e instanceof Error) {
             this.onError?.(new Error(`Error computing flag locally: ${flag.key}: ${e}`))
           }
-          fallbackToDecide = true
+          fallbackToFlags = true
         }
       })
     )
 
-    return { response, payloads, fallbackToDecide }
+    return { response, payloads, fallbackToFlags }
   }
 
   async computeFlagLocally(
