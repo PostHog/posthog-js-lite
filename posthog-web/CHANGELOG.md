@@ -1,4 +1,6 @@
-# Next
+# Next (v4.0.0)
+
+1. Remove deprecated `personProperties` and `groupProperties`
 
 # 3.6.0 – 2025-06-05
 

@@ -34,8 +34,8 @@ export type PostHogOptions = PostHogCoreOptions & {
   persistence?: 'memory' | 'file'
   /** Allows you to provide your own implementation of the common information about your App or a function to modify the default App properties generated */
   customAppProperties?:
-    | PostHogCustomAppProperties
-    | ((properties: PostHogCustomAppProperties) => PostHogCustomAppProperties)
+  | PostHogCustomAppProperties
+  | ((properties: PostHogCustomAppProperties) => PostHogCustomAppProperties)
   /** Allows you to provide a custom asynchronous storage such as async-storage, expo-file-system or a synchronous storage such as mmkv.
    * If not provided, PostHog will attempt to use the best available storage via optional peer dependencies (async-storage, expo-file-system).
    * If `persistence` is set to 'memory', this option will be ignored.
@@ -44,11 +44,9 @@ export type PostHogOptions = PostHogCoreOptions & {
 
   /** Captures app lifecycle events such as Application Installed, Application Updated, Application Opened, Application Became Active and Application Backgrounded.
    * By default is false.
-   * If you're already using the 'captureLifecycleEvents' options with 'withReactNativeNavigation' or 'PostHogProvider, you don't need to set this.
-   * If this is set, this value has priority over the 'captureLifecycleEvents' option.
    * Application Installed and Application Updated events are not supported with persistence set to 'memory'.
    */
-  captureNativeAppLifecycleEvents?: boolean
+  captureAppLifecycleEvents?: boolean
 
   /**
    * Enable Recording of Session Replays for Android and iOS
@@ -158,9 +156,8 @@ export class PostHog extends PostHogCore {
         }
       }
 
-      // this value could have been inferred from the autocapture options (captureLifecycleEvents)
-      if (options?.captureNativeAppLifecycleEvents) {
-        void this.captureNativeAppLifecycleEvents()
+      if (options?.captureAppLifecycleEvents) {
+        void this.captureAppLifecycleEvents()
       }
 
       void this.persistAppVersion()
@@ -494,15 +491,13 @@ export class PostHog extends PostHogCore {
     }
   }
 
-  private async captureNativeAppLifecycleEvents(): Promise<void> {
+  private async captureAppLifecycleEvents(): Promise<void> {
     const appBuild = this._appProperties.$app_build
     const appVersion = this._appProperties.$app_version
 
     const isMemoryPersistence = this._persistence === 'memory'
 
-    // version and build are deprecated, but we keep them for compatibility
-    // use $app_version and $app_build instead
-    const properties: PostHogEventProperties = { ...maybeAdd('version', appVersion), ...maybeAdd('build', appBuild) }
+    const properties: PostHogEventProperties = {}
 
     if (!isMemoryPersistence) {
       const prevAppBuild = this.getPersistedProperty(PostHogPersistedProperty.InstalledAppBuild) as string | undefined
@@ -514,8 +509,8 @@ export class PostHog extends PostHogCore {
         this.logMsgIfDebug(() =>
           console.warn(
             'PostHog could not track installation/update/open, as the build and version were not set. ' +
-              'This can happen if some dependencies are not installed correctly, or if you have provided' +
-              'customAppProperties but not included $app_build or $app_version.'
+            'This can happen if some dependencies are not installed correctly, or if you have provided' +
+            'customAppProperties but not included $app_build or $app_version.'
           )
         )
       }
@@ -524,6 +519,7 @@ export class PostHog extends PostHogCore {
           // new app install
           this.capture('Application Installed', properties)
         } else if (prevAppBuild !== appBuild) {
+          // $app_version and $app_build are already added in the common event properties
           // app updated
           this.capture('Application Updated', {
             ...maybeAdd('previous_version', prevAppVersion),

@@ -488,8 +488,6 @@ export enum ActionStepStringMatching {
 export type ActionStepType = {
   event?: string
   selector?: string
-  /** @deprecated Only `selector` should be used now. */
-  tag_name?: string
   text?: string
   /** @default StringMatching.Exact */
   text_matching?: ActionStepStringMatching
