@@ -1026,25 +1026,18 @@ export abstract class PostHogCoreStateless {
 
       const payload = JSON.stringify(data)
 
-      const url =
-        this.captureMode === 'form'
-          ? `${this.host}/e/?ip=1&_=${currentTimestamp()}&v=${this.getLibraryVersion()}`
-          : `${this.host}/batch/`
+      const url = `${this.host}/batch/`
 
-      const fetchOptions: PostHogFetchOptions =
-        this.captureMode === 'form'
-          ? {
-            method: 'POST',
-            mode: 'no-cors',
-            credentials: 'omit',
-            headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `data=${encodeURIComponent(LZString.compressToBase64(payload))}&compression=lz64`,
-          }
-          : {
-            method: 'POST',
-            headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },
-            body: payload,
-          }
+      const gzippedPayload = !this.disableCompression ? await gzipCompress(payload, this.isDebug) : null
+      const fetchOptions: PostHogFetchOptions = {
+        method: 'POST',
+        headers: {
+          ...this.getCustomHeaders(),
+          'Content-Type': 'application/json',
+          ...(gzippedPayload !== null && { 'Content-Encoding': 'gzip' }),
+        },
+        body: gzippedPayload || payload,
+      }
 
       const retryOptions: Partial<RetriableOptions> = {
         retryCheck: (err) => {
