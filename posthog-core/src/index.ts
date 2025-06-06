@@ -445,7 +445,7 @@ export abstract class PostHogCoreStateless {
   ): Promise<PostHogFlagsResponse | undefined> {
     await this._initPromise
 
-    const url = `${this.host}/flags/?v=2`
+    const url = `${this.host}/flags/?v=2&config=true`
     const fetchOptions: PostHogFetchOptions = {
       method: 'POST',
       headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },

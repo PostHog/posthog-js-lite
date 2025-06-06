@@ -36,14 +36,14 @@ export const apiImplementationV4 = (flagsResponse: PostHogV2FlagsResponse | Erro
 
 export const apiImplementation = ({
   localFlags,
-  flags,
+  decideFlags: flags,
   flagsPayloads,
   flagsStatus = 200,
   localFlagsStatus = 200,
   errorsWhileComputingFlags = false,
 }: {
   localFlags?: any
-  flags?: any
+  decideFlags?: any
   flagsPayloads?: any
   flagsStatus?: number
   localFlagsStatus?: number

@@ -246,7 +246,7 @@ describe('local evaluation', () => {
       //   "group_type_mapping": {"0": "company", "1": "project"}
     }
     mockedFetch.mockImplementation(
-      apiImplementation({ localFlags: flags, flags: { 'group-flag': 'flags-fallback-value' } })
+      apiImplementation({ localFlags: flags, decideFlags: { 'group-flag': 'flags-fallback-value' } })
     )
 
     posthog = new PostHog('TEST_API_KEY', {
@@ -319,7 +319,7 @@ describe('local evaluation', () => {
       ],
     }
     mockedFetch.mockImplementation(
-      apiImplementation({ localFlags: flags, flags: { 'complex-flag': 'flags-fallback-value' } })
+      apiImplementation({ localFlags: flags, decideFlags: { 'complex-flag': 'flags-fallback-value' } })
     )
 
     posthog = new PostHog('TEST_API_KEY', {
@@ -447,7 +447,7 @@ describe('local evaluation', () => {
     mockedFetch.mockImplementation(
       apiImplementation({
         localFlags: flags,
-        flags: { 'beta-feature': 'alakazam', 'beta-feature2': 'alakazam2' },
+        decideFlags: { 'beta-feature': 'alakazam', 'beta-feature2': 'alakazam2' },
       })
     )
 
@@ -510,7 +510,7 @@ describe('local evaluation', () => {
     mockedFetch.mockImplementation(
       apiImplementation({
         localFlags: flags,
-        flags: { 'beta-feature': 'alakazam', 'beta-feature2': 'alakazam2' },
+        decideFlags: { 'beta-feature': 'alakazam', 'beta-feature2': 'alakazam2' },
       })
     )
 
@@ -560,7 +560,7 @@ describe('local evaluation', () => {
         },
       ],
     }
-    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags, flags: {} }))
+    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags, decideFlags: {} }))
 
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
@@ -600,7 +600,7 @@ describe('local evaluation', () => {
       ],
     }
     mockedFetch.mockImplementation(
-      apiImplementation({ localFlags: flags, flags: { 'beta-feature': 'flags-fallback-value' } })
+      apiImplementation({ localFlags: flags, decideFlags: { 'beta-feature': 'flags-fallback-value' } })
     )
 
     posthog = new PostHog('TEST_API_KEY', {
@@ -665,7 +665,7 @@ describe('local evaluation', () => {
     mockedFetch.mockImplementation(
       apiImplementation({
         localFlags: flags,
-        flags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
+        decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
       })
     )
 
@@ -745,7 +745,7 @@ describe('local evaluation', () => {
     mockedFetch.mockImplementation(
       apiImplementation({
         localFlags: flags,
-        flags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
+        decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
         flagsPayloads: { 'beta-feature': 100, 'beta-feature2': 300 },
       })
     )
@@ -816,7 +816,7 @@ describe('local evaluation', () => {
     mockedFetch.mockImplementation(
       apiImplementation({
         localFlags: flags,
-        flags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
+        decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
       })
     )
 
@@ -894,7 +894,7 @@ describe('local evaluation', () => {
     mockedFetch.mockImplementation(
       apiImplementation({
         localFlags: flags,
-        flags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
+        decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
         flagsPayloads: { 'beta-feature': 100, 'beta-feature2': 300 },
       })
     )
@@ -920,7 +920,7 @@ describe('local evaluation', () => {
     mockedFetch.mockImplementation(
       apiImplementation({
         localFlags: flags,
-        flags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
+        decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
       })
     )
 
@@ -945,7 +945,7 @@ describe('local evaluation', () => {
     mockedFetch.mockImplementation(
       apiImplementation({
         localFlags: flags,
-        flags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
+        decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
         flagsPayloads: { 'beta-feature': 100, 'beta-feature2': 300 },
       })
     )
@@ -1001,7 +1001,7 @@ describe('local evaluation', () => {
     mockedFetch.mockImplementation(
       apiImplementation({
         localFlags: flags,
-        flags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
+        decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
       })
     )
 
@@ -1058,7 +1058,7 @@ describe('local evaluation', () => {
     mockedFetch.mockImplementation(
       apiImplementation({
         localFlags: flags,
-        flags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
+        decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
       })
     )
 
@@ -1109,7 +1109,7 @@ describe('local evaluation', () => {
     mockedFetch.mockImplementation(
       apiImplementation({
         localFlags: flags,
-        flags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
+        decideFlags: { 'beta-feature': 'variant-1', 'beta-feature2': 'variant-2' },
       })
     )
 
@@ -1214,7 +1214,7 @@ describe('local evaluation', () => {
     mockedFetch.mockImplementation(
       apiImplementation({
         localFlags: flags,
-        flags: {},
+        decideFlags: {},
       })
     )
 
@@ -1295,7 +1295,7 @@ describe('local evaluation', () => {
     mockedFetch.mockImplementation(
       apiImplementation({
         localFlags: flags,
-        flags: {},
+        decideFlags: {},
       })
     )
 
@@ -2588,7 +2588,7 @@ describe('consistency tests', () => {
       ],
     }
 
-    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags, flags: {}, flagsStatus: 400 }))
+    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags, decideFlags: {}, flagsStatus: 400 }))
 
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
@@ -3630,7 +3630,7 @@ describe('consistency tests', () => {
       ],
     }
 
-    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags, flags: {}, flagsStatus: 400 }))
+    mockedFetch.mockImplementation(apiImplementation({ localFlags: flags, decideFlags: {}, flagsStatus: 400 }))
 
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',

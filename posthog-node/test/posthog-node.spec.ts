@@ -593,7 +593,7 @@ describe('PostHog Node.js', () => {
 
       mockedFetch.mockImplementation(
         apiImplementation({
-          flags: mockFeatureFlags,
+          decideFlags: mockFeatureFlags,
           flagsPayloads: mockFeatureFlagPayloads,
           localFlags: { flags: [multivariateFlag, basicFlag, falseFlag, arrayFlag] },
         })
@@ -767,7 +767,7 @@ describe('PostHog Node.js', () => {
       mockedFetch.mockClear()
       expect(mockedFetch).toHaveBeenCalledTimes(0)
       mockedFetch.mockImplementation(
-        apiImplementation({ flags: { a: false, b: 'true' }, flagsPayloads: {}, localFlags: { flags: [] } })
+        apiImplementation({ decideFlags: { a: false, b: 'true' }, flagsPayloads: {}, localFlags: { flags: [] } })
       )
 
       posthog = new PostHog('TEST_API_KEY', {
@@ -877,7 +877,7 @@ describe('PostHog Node.js', () => {
       }
 
       mockedFetch.mockImplementation(
-        apiImplementation({ localFlags: flags, flags: { 'beta-feature': 'flags-fallback-value' } })
+        apiImplementation({ localFlags: flags, decideFlags: { 'beta-feature': 'flags-fallback-value' } })
       )
 
       posthog = new PostHog('TEST_API_KEY', {
@@ -940,7 +940,9 @@ describe('PostHog Node.js', () => {
         ],
       }
 
-      mockedFetch.mockImplementation(apiImplementation({ localFlags: flags, flags: { 'flags-flag': 'flags-value' } }))
+      mockedFetch.mockImplementation(
+        apiImplementation({ localFlags: flags, decideFlags: { 'flags-flag': 'flags-value' } })
+      )
 
       posthog = new PostHog('TEST_API_KEY', {
         host: 'http://example.com',
@@ -1321,7 +1323,7 @@ describe('PostHog Node.js', () => {
 
       mockedFetch.mockImplementation(
         apiImplementation({
-          flags: { 'feature-1': true },
+          decideFlags: { 'feature-1': true },
           flagsPayloads: {},
           errorsWhileComputingFlags: true,
         })

@@ -312,7 +312,7 @@ describe('flags v2', () => {
 describe('flags v1', () => {
   describe('getFeatureFlag v1', () => {
     it('returns undefined if the flag is not found', async () => {
-      mockedFetch.mockImplementation(apiImplementation({ flags: {} }))
+      mockedFetch.mockImplementation(apiImplementation({ decideFlags: {} }))
 
       const posthog = new PostHog('TEST_API_KEY', {
         host: 'http://example.com',
@@ -351,7 +351,7 @@ describe('flags v1', () => {
     it('returns payload', async () => {
       mockedFetch.mockImplementation(
         apiImplementation({
-          flags: {
+          decideFlags: {
             'flag-with-payload': true,
           },
           flagsPayloads: {
