@@ -1,11 +1,11 @@
-import { FeatureFlagCondition, FlagProperty, PostHogFeatureFlag, PropertyGroup } from './types'
+import { FeatureFlagCondition, FlagProperty, PostHogFeatureFlag, PropertyGroup } from '../../types'
 import { FeatureFlagValue, JsonType, PostHogFetchOptions, PostHogFetchResponse } from 'posthog-core/src'
 import { safeSetTimeout } from 'posthog-core/src/utils'
-import { SIXTY_SECONDS } from './posthog-node'
-import { hashSHA1 } from 'posthog-node/src/crypto'
+import { hashSHA1 } from './crypto'
 
 // eslint-disable-next-line
 const LONG_SCALE = 0xfffffffffffffff
+const SIXTY_SECONDS = 60 * 1000
 
 const NULL_VALUES_ALLOWED_OPERATORS = ['is_not']
 class ClientError extends Error {
