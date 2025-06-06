@@ -50,8 +50,6 @@ export type PostHogCoreOptions = {
   remoteConfigRequestTimeoutMs?: number
   /** For Session Analysis how long before we expire a session (defaults to 30 mins) */
   sessionExpirationTimeSeconds?: number
-  /** Whether to post events to PostHog in JSON or compressed format. Defaults to 'json' */
-  captureMode?: 'json' | 'form'
   /** Whether to disable GZIP compression */
   disableCompression?: boolean
   disableGeoip?: boolean

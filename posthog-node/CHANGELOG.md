@@ -1,7 +1,10 @@
+# Next (5.0.0 WIP)
+
 ## Removed
 
-1. remove `is_simple_flag` from `PostHogFeatureFlag` type
-2. Remove deprecated `personProperties` and `groupProperties`
+1. Remove `is_simple_flag` from `PostHogFeatureFlag` type
+2. Remove `captureMode` in favor or `json` capture mode only
+3. Remove deprecated `personProperties` and `groupProperties` in favor of `setPersonPropertiesForFlags` and `setGroupPropertiesForFlags`
 
 # 5.0.0-alpha.1 - 2025-04-29
 

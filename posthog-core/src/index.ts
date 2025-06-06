@@ -31,7 +31,6 @@ import {
 import {
   assert,
   currentISOTime,
-  currentTimestamp,
   isError,
   isTokenInRollout,
   NEW_FLAGS_EXCLUDED_HASHES,
@@ -41,7 +40,6 @@ import {
   RetriableOptions,
   safeSetTimeout,
 } from './utils'
-import { LZString } from './lz-string'
 import { isGzipSupported, gzipCompress } from './gzip'
 import { SimpleEventEmitter } from './eventemitter'
 import { uuidv7 } from './vendor/uuidv7'
@@ -90,7 +88,6 @@ export abstract class PostHogCoreStateless {
   private requestTimeout: number
   private featureFlagsRequestTimeoutMs: number
   private remoteConfigRequestTimeoutMs: number
-  private captureMode: 'form' | 'json'
   private removeDebugCallback?: () => void
   private disableGeoip: boolean
   private historicalMigration: boolean
@@ -127,7 +124,6 @@ export abstract class PostHogCoreStateless {
     this.maxBatchSize = Math.max(this.flushAt, options?.maxBatchSize ?? 100)
     this.maxQueueSize = Math.max(this.flushAt, options?.maxQueueSize ?? 1000)
     this.flushInterval = options?.flushInterval ?? 10000
-    this.captureMode = options?.captureMode || 'json'
     this.preloadFeatureFlags = options?.preloadFeatureFlags ?? true
     // If enable is explicitly set to false we override the optout
     this.defaultOptIn = options?.defaultOptIn ?? true
@@ -843,31 +839,18 @@ export abstract class PostHogCoreStateless {
 
     const payload = JSON.stringify(data)
 
-    const url =
-      this.captureMode === 'form'
-        ? `${this.host}/e/?ip=1&_=${currentTimestamp()}&v=${this.getLibraryVersion()}`
-        : `${this.host}/batch/`
+    const url = `${this.host}/batch/`
 
-    const gzippedPayload =
-      this.captureMode === 'json' && !this.disableCompression ? await gzipCompress(payload, this.isDebug) : null
-    const fetchOptions: PostHogFetchOptions =
-      this.captureMode === 'form'
-        ? {
-            method: 'POST',
-            mode: 'no-cors',
-            credentials: 'omit',
-            headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `data=${encodeURIComponent(LZString.compressToBase64(payload))}&compression=lz64`,
-          }
-        : {
-            method: 'POST',
-            headers: {
-              ...this.getCustomHeaders(),
-              'Content-Type': 'application/json',
-              ...(gzippedPayload !== null && { 'Content-Encoding': 'gzip' }),
-            },
-            body: gzippedPayload || payload,
-          }
+    const gzippedPayload = !this.disableCompression ? await gzipCompress(payload, this.isDebug) : null
+    const fetchOptions: PostHogFetchOptions = {
+      method: 'POST',
+      headers: {
+        ...this.getCustomHeaders(),
+        'Content-Type': 'application/json',
+        ...(gzippedPayload !== null && { 'Content-Encoding': 'gzip' }),
+      },
+      body: gzippedPayload || payload,
+    }
 
     try {
       await this.fetchWithRetry(url, fetchOptions)
@@ -1817,4 +1800,3 @@ export abstract class PostHogCore extends PostHogCoreStateless {
 }
 
 export * from './types'
-export { LZString }
