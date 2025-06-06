@@ -1,7 +1,10 @@
-// import { PostHog, PostHogOptions } from '../'
-// Uncomment below line while developing to not compile code everytime
-import { PostHog as PostHog, PostHogOptions } from '../src/posthog-node'
-import { matchProperty, InconclusiveMatchError, relativeDateParseForFeatureFlagMatching } from '../src/feature-flags'
+import { PostHogOptions } from '../src/types'
+import { PostHog } from '../src/entrypoints/index.node'
+import {
+  matchProperty,
+  InconclusiveMatchError,
+  relativeDateParseForFeatureFlagMatching,
+} from '../src/extensions/feature-flags/feature-flags'
 import { anyDecideCall, anyLocalEvalCall, apiImplementation } from './test-utils'
 import { waitForPromises } from 'posthog-core/test/test-utils/test-utils'
 

@@ -85,6 +85,8 @@ export const NEW_FLAGS_EXCLUDED_HASHES = new Set([
   '75cc0998',
 ])
 
+export const STRING_FORMAT = 'utf8'
+
 export function assert(truthyValue: any, message: string): void {
   if (!truthyValue || typeof truthyValue !== 'string' || isEmpty(truthyValue)) {
     throw new Error(message)
@@ -105,7 +107,7 @@ export function removeTrailingSlash(url: string): string {
 export interface RetriableOptions {
   retryCount: number
   retryDelay: number
-  retryCheck: (err: any) => boolean
+  retryCheck: (err: unknown) => boolean
 }
 
 export async function retriable<T>(fn: () => Promise<T>, props: RetriableOptions): Promise<T> {
@@ -161,11 +163,6 @@ export function getFetch(): FetchLike | undefined {
   return typeof fetch !== 'undefined' ? fetch : typeof globalThis.fetch !== 'undefined' ? globalThis.fetch : undefined
 }
 
-// copied from: https://github.com/PostHog/posthog-js/blob/main/react/src/utils/type-utils.ts#L4
-export const isFunction = function (f: any): f is (...args: any[]) => any {
-  return typeof f === 'function'
-}
-
 // FNV-1a hash function
 // https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
 // I know, I know, I'm rolling my own hash function, but I didn't want to take on
@@ -192,4 +189,17 @@ export function isTokenInRollout(token: string, percentage: number = 0, excluded
   const hashFloat = hashInt / 0xffffffff
 
   return hashFloat < percentage
+}
+
+export function allSettled<T>(
+  promises: (Promise<T> | null | undefined)[]
+): Promise<({ status: 'fulfilled'; value: T } | { status: 'rejected'; reason: any })[]> {
+  return Promise.all(
+    promises.map((p) =>
+      (p ?? Promise.resolve()).then(
+        (value: any) => ({ status: 'fulfilled' as const, value }),
+        (reason: any) => ({ status: 'rejected' as const, reason })
+      )
+    )
+  )
 }

@@ -2,42 +2,29 @@ import { version } from '../package.json'
 
 import {
   JsonType,
-  PostHogCoreOptions,
   PostHogCoreStateless,
   PostHogDecideResponse,
   PostHogFetchOptions,
   PostHogFetchResponse,
   PostHogFlagsAndPayloadsResponse,
   PostHogPersistedProperty,
-} from '../../posthog-core/src'
-import { PostHogMemoryStorage } from '../../posthog-core/src/storage-memory'
-import { EventMessage, GroupIdentifyMessage, IdentifyMessage, PostHogNodeV1 } from './types'
-import { FeatureFlagDetail, FeatureFlagValue } from '../../posthog-core/src/types'
-import { FeatureFlagsPoller } from './feature-flags'
-import ErrorTracking from './error-tracking'
-import { getFeatureFlagValue } from 'posthog-core/src/featureFlagUtils'
-
-export type PostHogOptions = PostHogCoreOptions & {
-  persistence?: 'memory'
-  personalApiKey?: string
-  privacyMode?: boolean
-  enableExceptionAutocapture?: boolean
-  // The interval in milliseconds between polls for refreshing feature flag definitions. Defaults to 30 seconds.
-  featureFlagsPollingInterval?: number
-  // Maximum size of cache that deduplicates $feature_flag_called calls per user.
-  maxCacheSize?: number
-  fetch?: (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
-}
+} from 'posthog-core'
+import { EventMessage, GroupIdentifyMessage, IdentifyMessage, IPostHog, PostHogOptions } from './types'
+import { FeatureFlagDetail, FeatureFlagValue } from 'posthog-core'
+import { FeatureFlagsPoller } from './extensions/feature-flags/feature-flags'
+import fetch from './fetch'
+import ErrorTracking from './extensions/error-tracking'
+import { getFeatureFlagValue } from 'posthog-core'
+import { PostHogMemoryStorage } from './storage-memory'
 
 // Standard local evaluation rate limit is 600 per minute (10 per second),
 // so the fastest a poller should ever be set is 100ms.
-export const MINIMUM_POLLING_INTERVAL = 100
-export const THIRTY_SECONDS = 30 * 1000
-export const SIXTY_SECONDS = 60 * 1000
+const MINIMUM_POLLING_INTERVAL = 100
+const THIRTY_SECONDS = 30 * 1000
 const MAX_CACHE_SIZE = 50 * 1000
 
 // The actual exported Nodejs API.
-export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
+export abstract class PostHogBackendClient extends PostHogCoreStateless implements IPostHog {
   private _memoryStorage = new PostHogMemoryStorage()
 
   private featureFlagsPoller?: FeatureFlagsPoller
@@ -95,10 +82,6 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
 
   fetch(url: string, options: PostHogFetchOptions): Promise<PostHogFetchResponse> {
     return this.options.fetch ? this.options.fetch(url, options) : fetch(url, options)
-  }
-
-  getLibraryId(): string {
-    return 'posthog-node'
   }
   getLibraryVersion(): string {
     return version
@@ -198,6 +181,84 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     this.addPendingPromise(capturePromise)
   }
 
+  async captureImmediate(props: EventMessage): Promise<void> {
+    if (typeof props === 'string') {
+      this.logMsgIfDebug(() =>
+        console.warn('Called capture() with a string as the first argument when an object was expected.')
+      )
+    }
+    const { distinctId, event, properties, groups, sendFeatureFlags, timestamp, disableGeoip, uuid }: EventMessage =
+      props
+
+    const _capture = (props: EventMessage['properties']): Promise<void> => {
+      return super.captureStatelessImmediate(distinctId, event, props, { timestamp, disableGeoip, uuid })
+    }
+
+    const _getFlags = async (
+      distinctId: EventMessage['distinctId'],
+      groups: EventMessage['groups'],
+      disableGeoip: EventMessage['disableGeoip']
+    ): Promise<PostHogDecideResponse['featureFlags'] | undefined> => {
+      return (await super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)).flags
+    }
+
+    const capturePromise = Promise.resolve()
+      .then(async () => {
+        if (sendFeatureFlags) {
+          // If we are sending feature flags, we need to make sure we have the latest flags
+          // return await super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)
+          return await _getFlags(distinctId, groups, disableGeoip)
+        }
+
+        if (event === '$feature_flag_called') {
+          // If we're capturing a $feature_flag_called event, we don't want to enrich the event with cached flags that may be out of date.
+          return {}
+        }
+
+        if ((this.featureFlagsPoller?.featureFlags?.length || 0) > 0) {
+          // Otherwise we may as well check for the flags locally and include them if they are already loaded
+          const groupsWithStringValues: Record<string, string> = {}
+          for (const [key, value] of Object.entries(groups || {})) {
+            groupsWithStringValues[key] = String(value)
+          }
+
+          return await this.getAllFlags(distinctId, {
+            groups: groupsWithStringValues,
+            disableGeoip,
+            onlyEvaluateLocally: true,
+          })
+        }
+        return {}
+      })
+      .then((flags) => {
+        // Derive the relevant flag properties to add
+        const additionalProperties: Record<string, any> = {}
+        if (flags) {
+          for (const [feature, variant] of Object.entries(flags)) {
+            additionalProperties[`$feature/${feature}`] = variant
+          }
+        }
+        const activeFlags = Object.keys(flags || {})
+          .filter((flag) => flags?.[flag] !== false)
+          .sort()
+        if (activeFlags.length > 0) {
+          additionalProperties['$active_feature_flags'] = activeFlags
+        }
+
+        return additionalProperties
+      })
+      .catch(() => {
+        // Something went wrong getting the flag info - we should capture the event anyways
+        return {}
+      })
+      .then((additionalProperties) => {
+        // No matter what - capture the event
+        _capture({ ...additionalProperties, ...properties, $groups: groups })
+      })
+
+    await capturePromise
+  }
+
   identify({ distinctId, properties, disableGeoip }: IdentifyMessage): void {
     // Catch properties passed as $set and move them to the top level
 
@@ -218,8 +279,30 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     )
   }
 
+  async identifyImmediate({ distinctId, properties, disableGeoip }: IdentifyMessage): Promise<void> {
+    // promote $set and $set_once to top level
+    const userPropsOnce = properties?.$set_once
+    delete properties?.$set_once
+
+    // if no $set is provided we assume all properties are $set
+    const userProps = properties?.$set || properties
+
+    await super.identifyStatelessImmediate(
+      distinctId,
+      {
+        $set: userProps,
+        $set_once: userPropsOnce,
+      },
+      { disableGeoip }
+    )
+  }
+
   alias(data: { distinctId: string; alias: string; disableGeoip?: boolean }): void {
     super.aliasStateless(data.alias, data.distinctId, undefined, { disableGeoip: data.disableGeoip })
+  }
+
+  async aliasImmediate(data: { distinctId: string; alias: string; disableGeoip?: boolean }): Promise<void> {
+    await super.aliasStatelessImmediate(data.alias, data.distinctId, undefined, { disableGeoip: data.disableGeoip })
   }
 
   isLocalEvaluationReady(): boolean {
@@ -534,9 +617,9 @@ export class PostHog extends PostHogCoreStateless implements PostHogNodeV1 {
     await this.featureFlagsPoller?.loadFeatureFlags(true)
   }
 
-  async shutdown(shutdownTimeoutMs?: number): Promise<void> {
+  async _shutdown(shutdownTimeoutMs?: number): Promise<void> {
     this.featureFlagsPoller?.stopPoller()
-    return super.shutdown(shutdownTimeoutMs)
+    return super._shutdown(shutdownTimeoutMs)
   }
 
   private addLocalPersonAndGroupProperties(

@@ -1,4 +1,5 @@
-import { PostHog as PostHog, PostHogOptions } from '../src/posthog-node'
+import { PostHog } from '../src/entrypoints/index.node'
+import { PostHogOptions } from '../src/types'
 import { apiImplementation, apiImplementationV4 } from './test-utils'
 import { waitForPromises } from 'posthog-core/test/test-utils/test-utils'
 import { PostHogV4DecideResponse } from 'posthog-core/src/types'

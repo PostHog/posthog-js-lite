@@ -10,4 +10,4 @@ jobs:
       - uses: actions/checkout@v4
       - uses: preactjs/compressed-size-action@v2
         with:
-          pattern: 'posthog-{web,node,react-native,ai}/lib/**/*.js'
+          pattern: 'posthog-{web,node,react-native,ai}/lib/**/*.{cjs,mjs,js}'

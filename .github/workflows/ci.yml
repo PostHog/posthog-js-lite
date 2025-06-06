@@ -15,9 +15,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - run: yarn install
+      - run: yarn build
       - run: yarn test:all
 
   lint:
@@ -27,7 +28,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - run: yarn install
       - run: yarn build
@@ -41,7 +42,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
       - run: |
           yarn
           cd examples/example-expo-latest

@@ -64,10 +64,10 @@ export const createTestClient = (
   storageCache: { [key: string]: string | JsonType } = {}
 ): [PostHogCoreTestClient, PostHogCoreTestClientMocks] => {
   const mocks = {
-    fetch: jest.fn<Promise<PostHogFetchResponse>, [string, PostHogFetchOptions]>(),
+    fetch: jest.fn(),
     storage: {
-      getItem: jest.fn<any | undefined, [string]>((key) => storageCache[key]),
-      setItem: jest.fn<void, [string, any | null]>((key, val) => {
+      getItem: jest.fn((key) => storageCache[key]),
+      setItem: jest.fn((key, val) => {
         storageCache[key] = val == null ? undefined : val
       }),
     },

@@ -1,4 +1,4 @@
-import { PostHogCoreOptions } from '../../posthog-core/src'
+import type { PostHogCoreOptions } from 'posthog-core'
 
 export type PostHogOptions = {
   autocapture?: boolean

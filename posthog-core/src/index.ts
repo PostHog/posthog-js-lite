@@ -19,6 +19,7 @@ import {
   Survey,
   SurveyResponse,
   Compression,
+  PostHogGroupProperties,
 } from './types'
 import {
   createDecideResponseFromFlagsAndPayloads,
@@ -29,6 +30,7 @@ import {
   updateFlagValue,
 } from './featureFlagUtils'
 import {
+  allSettled,
   assert,
   currentISOTime,
   isError,
@@ -39,18 +41,34 @@ import {
   retriable,
   RetriableOptions,
   safeSetTimeout,
+  STRING_FORMAT,
 } from './utils'
 import { isGzipSupported, gzipCompress } from './gzip'
 import { SimpleEventEmitter } from './eventemitter'
 import { uuidv7 } from './vendor/uuidv7'
 
+export { safeSetTimeout } from './utils'
+export { getFetch } from './utils'
+export { getFeatureFlagValue } from './featureFlagUtils'
 export * as utils from './utils'
 
 class PostHogFetchHttpError extends Error {
   name = 'PostHogFetchHttpError'
 
-  constructor(public response: PostHogFetchResponse) {
-    super('HTTP error while fetching PostHog: ' + response.status)
+  constructor(public response: PostHogFetchResponse, public reqByteLength: number) {
+    super('HTTP error while fetching PostHog: status=' + response.status + ', reqByteLength=' + reqByteLength)
+  }
+
+  get status(): number {
+    return this.response.status
+  }
+
+  get text(): Promise<string> {
+    return this.response.text()
+  }
+
+  get json(): Promise<any> {
+    return this.response.json()
   }
 }
 
@@ -65,8 +83,29 @@ class PostHogFetchNetworkError extends Error {
   }
 }
 
-function isPostHogFetchError(err: any): boolean {
+export const maybeAdd = (key: string, value: JsonType | undefined): Record<string, JsonType> =>
+  value !== undefined ? { [key]: value } : {}
+
+export async function logFlushError(err: any): Promise<void> {
+  if (err instanceof PostHogFetchHttpError) {
+    let text = ''
+    try {
+      text = await err.text
+    } catch { }
+
+    console.error(`Error while flushing PostHog: message=${err.message}, response body=${text}`, err)
+  } else {
+    console.error('Error while flushing PostHog', err)
+  }
+  return Promise.resolve()
+}
+
+function isPostHogFetchError(err: unknown): err is PostHogFetchHttpError | PostHogFetchNetworkError {
   return typeof err === 'object' && (err instanceof PostHogFetchHttpError || err instanceof PostHogFetchNetworkError)
+}
+
+function isPostHogFetchContentTooLargeError(err: unknown): err is PostHogFetchHttpError & { status: 413 } {
+  return typeof err === 'object' && err instanceof PostHogFetchHttpError && err.status === 413
 }
 
 enum QuotaLimitedFeature {
@@ -85,6 +124,7 @@ export abstract class PostHogCoreStateless {
   private maxQueueSize: number
   private flushInterval: number
   private flushPromise: Promise<any> | null = null
+  private shutdownPromise: Promise<void> | null = null
   private requestTimeout: number
   private featureFlagsRequestTimeoutMs: number
   private remoteConfigRequestTimeoutMs: number
@@ -166,7 +206,7 @@ export abstract class PostHogCoreStateless {
     this._initPromise.then(() => fn())
   }
 
-  protected getCommonEventProperties(): any {
+  protected getCommonEventProperties(): PostHogEventProperties {
     return {
       $lib: this.getLibraryId(),
       $lib_version: this.getLibraryVersion(),
@@ -213,7 +253,11 @@ export abstract class PostHogCoreStateless {
     return this.disabled
   }
 
-  private buildPayload(payload: { distinct_id: string; event: string; properties?: PostHogEventProperties }): any {
+  private buildPayload(payload: {
+    distinct_id: string
+    event: string
+    properties?: PostHogEventProperties
+  }): PostHogEventProperties {
     return {
       distinct_id: payload.distinct_id,
       event: payload.event,
@@ -228,7 +272,7 @@ export abstract class PostHogCoreStateless {
     const promiseUUID = uuidv7()
     this.pendingPromises[promiseUUID] = promise
     promise
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => {
         delete this.pendingPromises[promiseUUID]
       })
@@ -260,10 +304,26 @@ export abstract class PostHogCoreStateless {
     })
   }
 
+  protected async identifyStatelessImmediate(
+    distinctId: string,
+    properties?: PostHogEventProperties,
+    options?: PostHogCaptureOptions
+  ): Promise<void> {
+    const payload = {
+      ...this.buildPayload({
+        distinct_id: distinctId,
+        event: '$identify',
+        properties,
+      }),
+    }
+
+    await this.sendImmediate('identify', payload, options)
+  }
+
   protected captureStateless(
     distinctId: string,
     event: string,
-    properties?: { [key: string]: any },
+    properties?: PostHogEventProperties,
     options?: PostHogCaptureOptions
   ): void {
     this.wrap(() => {
@@ -272,10 +332,20 @@ export abstract class PostHogCoreStateless {
     })
   }
 
+  protected async captureStatelessImmediate(
+    distinctId: string,
+    event: string,
+    properties?: PostHogEventProperties,
+    options?: PostHogCaptureOptions
+  ): Promise<void> {
+    const payload = this.buildPayload({ distinct_id: distinctId, event, properties })
+    await this.sendImmediate('capture', payload, options)
+  }
+
   protected aliasStateless(
     alias: string,
     distinctId: string,
-    properties?: { [key: string]: any },
+    properties?: PostHogEventProperties,
     options?: PostHogCaptureOptions
   ): void {
     this.wrap(() => {
@@ -291,6 +361,25 @@ export abstract class PostHogCoreStateless {
 
       this.enqueue('alias', payload, options)
     })
+  }
+
+  protected async aliasStatelessImmediate(
+    alias: string,
+    distinctId: string,
+    properties?: PostHogEventProperties,
+    options?: PostHogCaptureOptions
+  ): Promise<void> {
+    const payload = this.buildPayload({
+      event: '$create_alias',
+      distinct_id: distinctId,
+      properties: {
+        ...(properties || {}),
+        distinct_id: distinctId,
+        alias,
+      },
+    })
+
+    await this.sendImmediate('alias', payload, options)
   }
 
   /***
@@ -377,6 +466,9 @@ export abstract class PostHogCoreStateless {
         ...extraPayload,
       }),
     }
+
+    this.logMsgIfDebug(() => console.log('PostHog Debug', 'Decide URL', url))
+
     // Don't retry /decide API calls
     return this.fetchWithRetry(url, fetchOptions, { retryCount: 0 }, this.featureFlagsRequestTimeoutMs)
       .then((response) => response.json() as Promise<PostHogV3DecideResponse | PostHogV4DecideResponse>)
@@ -440,9 +532,9 @@ export abstract class PostHogCoreStateless {
     disableGeoip?: boolean
   ): Promise<
     | {
-        response: FeatureFlagDetail | undefined
-        requestId: string | undefined
-      }
+      response: FeatureFlagDetail | undefined
+      requestId: string | undefined
+    }
     | undefined
   > {
     await this._initPromise
@@ -644,7 +736,7 @@ export abstract class PostHogCoreStateless {
     await this._initPromise
 
     if (this.disableSurveys === true) {
-      this.logMsgIfDebug(() => console.log('Loading surveys is disabled.'))
+      this.logMsgIfDebug(() => console.log('PostHog Debug', 'Loading surveys is disabled.'))
       return []
     }
 
@@ -699,7 +791,7 @@ export abstract class PostHogCoreStateless {
     this._props = val
   }
 
-  async register(properties: { [key: string]: any }): Promise<void> {
+  async register(properties: PostHogEventProperties): Promise<void> {
     this.wrap(() => {
       this.props = {
         ...this.props,
@@ -726,27 +818,7 @@ export abstract class PostHogCoreStateless {
         return
       }
 
-      const message = {
-        ..._message,
-        type: type,
-        library: this.getLibraryId(),
-        library_version: this.getLibraryVersion(),
-        timestamp: options?.timestamp ? options?.timestamp : currentISOTime(),
-        uuid: options?.uuid ? options.uuid : uuidv7(),
-      }
-
-      const addGeoipDisableProperty = options?.disableGeoip ?? this.disableGeoip
-      if (addGeoipDisableProperty) {
-        if (!message.properties) {
-          message.properties = {}
-        }
-        message['properties']['$geoip_disable'] = true
-      }
-
-      if (message.distinctId) {
-        message.distinct_id = message.distinctId
-        delete message.distinctId
-      }
+      const message = this.prepareMessage(type, _message, options)
 
       const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
 
@@ -771,65 +843,24 @@ export abstract class PostHogCoreStateless {
     })
   }
 
-  private clearFlushTimer(): void {
-    if (this._flushTimer) {
-      clearTimeout(this._flushTimer)
-      this._flushTimer = undefined
-    }
-  }
-
-  /**
-   * Helper for flushing the queue in the background
-   * Avoids unnecessary promise errors
-   */
-  private flushBackground(): void {
-    void this.flush().catch(() => {})
-  }
-
-  async flush(): Promise<any[]> {
-    if (!this.flushPromise) {
-      this.flushPromise = this._flush().finally(() => {
-        this.flushPromise = null
-      })
-      this.addPendingPromise(this.flushPromise)
-    }
-    return this.flushPromise
-  }
-
-  protected getCustomHeaders(): { [key: string]: string } {
-    // Don't set the user agent if we're not on a browser. The latest spec allows
-    // the User-Agent header (see https://fetch.spec.whatwg.org/#terminology-headers
-    // and https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/setRequestHeader),
-    // but browsers such as Chrome and Safari have not caught up.
-    const customUserAgent = this.getCustomUserAgent()
-    const headers: { [key: string]: string } = {}
-    if (customUserAgent && customUserAgent !== '') {
-      headers['User-Agent'] = customUserAgent
-    }
-    return headers
-  }
-
-  private async _flush(): Promise<any[]> {
-    this.clearFlushTimer()
-    await this._initPromise
-
-    const queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
-
-    if (!queue.length) {
-      return []
+  protected async sendImmediate(type: string, _message: any, options?: PostHogCaptureOptions): Promise<void> {
+    if (this.disabled) {
+      this.logMsgIfDebug(() => console.warn('[PostHog] The client is disabled'))
+      return
     }
 
-    const items = queue.slice(0, this.maxBatchSize)
-    const messages = items.map((item) => item.message)
+    if (!this._isInitialized) {
+      await this._initPromise
+    }
 
-    const persistQueueChange = (): void => {
-      const refreshedQueue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
-      this.setPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue, refreshedQueue.slice(items.length))
+    if (this.optedOut) {
+      this._events.emit(type, `Library is disabled. Not sending event. To re-enable, call posthog.optIn()`)
+      return
     }
 
     const data: Record<string, any> = {
       api_key: this.apiKey,
-      batch: messages,
+      batch: [this.prepareMessage(type, _message, options)],
       sent_at: currentISOTime(),
     }
 
@@ -855,20 +886,207 @@ export abstract class PostHogCoreStateless {
     try {
       await this.fetchWithRetry(url, fetchOptions)
     } catch (err) {
-      // depending on the error type, eg a malformed JSON or broken queue, it'll always return an error
-      // and this will be an endless loop, in this case, if the error isn't a network issue, we always remove the items from the queue
-      if (!(err instanceof PostHogFetchNetworkError)) {
-        persistQueueChange()
-      }
       this._events.emit('error', err)
+    }
+  }
 
-      throw err
+  private prepareMessage(type: string, _message: any, options?: PostHogCaptureOptions): PostHogEventProperties {
+    const message = {
+      ..._message,
+      type: type,
+      library: this.getLibraryId(),
+      library_version: this.getLibraryVersion(),
+      timestamp: options?.timestamp ? options?.timestamp : currentISOTime(),
+      uuid: options?.uuid ? options.uuid : uuidv7(),
     }
 
-    persistQueueChange()
-    this._events.emit('flush', messages)
+    const addGeoipDisableProperty = options?.disableGeoip ?? this.disableGeoip
+    if (addGeoipDisableProperty) {
+      if (!message.properties) {
+        message.properties = {}
+      }
+      message['properties']['$geoip_disable'] = true
+    }
 
-    return messages
+    if (message.distinctId) {
+      message.distinct_id = message.distinctId
+      delete message.distinctId
+    }
+
+    return message
+  }
+
+  private clearFlushTimer(): void {
+    if (this._flushTimer) {
+      clearTimeout(this._flushTimer)
+      this._flushTimer = undefined
+    }
+  }
+
+  /**
+   * Helper for flushing the queue in the background
+   * Avoids unnecessary promise errors
+   */
+  private flushBackground(): void {
+    void this.flush().catch(async (err) => {
+      await logFlushError(err)
+    })
+  }
+
+  /**
+   * Flushes the queue
+   *
+   * This function will return a promise that will resolve when the flush is complete,
+   * or reject if there was an error (for example if the server or network is down).
+   *
+   * If there is already a flush in progress, this function will wait for that flush to complete.
+   *
+   * It's recommended to do error handling in the callback of the promise.
+   *
+   * @example
+   * posthog.flush().then(() => {
+   *   console.log('Flush complete')
+   * }).catch((err) => {
+   *   console.error('Flush failed', err)
+   * })
+   *
+   *
+   * @throws PostHogFetchHttpError
+   * @throws PostHogFetchNetworkError
+   * @throws Error
+   */
+  async flush(): Promise<void> {
+    // Wait for the current flush operation to finish (regardless of success or failure), then try to flush again.
+    // Use allSettled instead of finally to be defensive around flush throwing errors immediately rather than rejecting.
+    // Use a custom allSettled implementation to avoid issues with patching Promise on RN
+    const nextFlushPromise = allSettled([this.flushPromise]).then(() => {
+      return this._flush()
+    })
+
+    this.flushPromise = nextFlushPromise
+    void this.addPendingPromise(nextFlushPromise)
+
+    allSettled([nextFlushPromise]).then(() => {
+      // If there are no others waiting to flush, clear the promise.
+      // We don't strictly need to do this, but it could make debugging easier
+      if (this.flushPromise === nextFlushPromise) {
+        this.flushPromise = null
+      }
+    })
+
+    return nextFlushPromise
+  }
+
+  protected getCustomHeaders(): { [key: string]: string } {
+    // Don't set the user agent if we're not on a browser. The latest spec allows
+    // the User-Agent header (see https://fetch.spec.whatwg.org/#terminology-headers
+    // and https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/setRequestHeader),
+    // but browsers such as Chrome and Safari have not caught up.
+    const customUserAgent = this.getCustomUserAgent()
+    const headers: { [key: string]: string } = {}
+    if (customUserAgent && customUserAgent !== '') {
+      headers['User-Agent'] = customUserAgent
+    }
+    return headers
+  }
+
+  private async _flush(): Promise<void> {
+    this.clearFlushTimer()
+    await this._initPromise
+
+    let queue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
+
+    if (!queue.length) {
+      return
+    }
+
+    const sentMessages: any[] = []
+    const originalQueueLength = queue.length
+
+    while (queue.length > 0 && sentMessages.length < originalQueueLength) {
+      const batchItems = queue.slice(0, this.maxBatchSize)
+      const batchMessages = batchItems.map((item) => item.message)
+
+      const persistQueueChange = (): void => {
+        const refreshedQueue = this.getPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue) || []
+        const newQueue = refreshedQueue.slice(batchItems.length)
+        this.setPersistedProperty<PostHogQueueItem[]>(PostHogPersistedProperty.Queue, newQueue)
+        queue = newQueue
+      }
+
+      const data: Record<string, any> = {
+        api_key: this.apiKey,
+        batch: batchMessages,
+        sent_at: currentISOTime(),
+      }
+
+      if (this.historicalMigration) {
+        data.historical_migration = true
+      }
+
+      const payload = JSON.stringify(data)
+
+      const url =
+        this.captureMode === 'form'
+          ? `${this.host}/e/?ip=1&_=${currentTimestamp()}&v=${this.getLibraryVersion()}`
+          : `${this.host}/batch/`
+
+      const fetchOptions: PostHogFetchOptions =
+        this.captureMode === 'form'
+          ? {
+            method: 'POST',
+            mode: 'no-cors',
+            credentials: 'omit',
+            headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `data=${encodeURIComponent(LZString.compressToBase64(payload))}&compression=lz64`,
+          }
+          : {
+            method: 'POST',
+            headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },
+            body: payload,
+          }
+
+      const retryOptions: Partial<RetriableOptions> = {
+        retryCheck: (err) => {
+          // don't automatically retry on 413 errors, we want to reduce the batch size first
+          if (isPostHogFetchContentTooLargeError(err)) {
+            return false
+          }
+          // otherwise, retry on network errors
+          return isPostHogFetchError(err)
+        },
+      }
+
+      try {
+        await this.fetchWithRetry(url, fetchOptions, retryOptions)
+      } catch (err) {
+        if (isPostHogFetchContentTooLargeError(err) && batchMessages.length > 1) {
+          // if we get a 413 error, we want to reduce the batch size and try again
+          this.maxBatchSize = Math.max(1, Math.floor(batchMessages.length / 2))
+          this.logMsgIfDebug(() =>
+            console.warn(
+              `Received 413 when sending batch of size ${batchMessages.length}, reducing batch size to ${this.maxBatchSize}`
+            )
+          )
+          // do not persist the queue change, we want to retry the same batch
+          continue
+        }
+
+        // depending on the error type, eg a malformed JSON or broken queue, it'll always return an error
+        // and this will be an endless loop, in this case, if the error isn't a network issue, we always remove the items from the queue
+        if (!(err instanceof PostHogFetchNetworkError)) {
+          persistQueueChange()
+        }
+        this._events.emit('error', err)
+
+        throw err
+      }
+
+      persistQueueChange()
+
+      sentMessages.push(...batchMessages)
+    }
+    this._events.emit('flush', sentMessages)
   }
 
   private async fetchWithRetry(
@@ -877,10 +1095,19 @@ export abstract class PostHogCoreStateless {
     retryOptions?: Partial<RetriableOptions>,
     requestTimeout?: number
   ): Promise<PostHogFetchResponse> {
-    ;(AbortSignal as any).timeout ??= function timeout(ms: number) {
+    ; (AbortSignal as any).timeout ??= function timeout(ms: number) {
       const ctrl = new AbortController()
       setTimeout(() => ctrl.abort(), ms)
       return ctrl.signal
+    }
+
+    const body = options.body ? options.body : ''
+    let reqByteLength = -1
+    try {
+      reqByteLength = Buffer.byteLength(body, STRING_FORMAT)
+    } catch {
+      const encoded = new TextEncoder().encode(body)
+      reqByteLength = encoded.length
     }
 
     return await retriable(
@@ -900,7 +1127,7 @@ export abstract class PostHogCoreStateless {
         // https://developer.mozilla.org/en-US/docs/Web/API/Request/mode#no-cors
         const isNoCors = options.mode === 'no-cors'
         if (!isNoCors && (res.status < 200 || res.status >= 400)) {
-          throw new PostHogFetchHttpError(res)
+          throw new PostHogFetchHttpError(res, reqByteLength)
         }
         return res
       },
@@ -908,7 +1135,7 @@ export abstract class PostHogCoreStateless {
     )
   }
 
-  async shutdown(shutdownTimeoutMs: number = 30000): Promise<void> {
+  async _shutdown(shutdownTimeoutMs: number = 30000): Promise<void> {
     // A little tricky - we want to have a max shutdown time and enforce it, even if that means we have some
     // dangling promises. We'll keep track of the timeout and resolve/reject based on that.
 
@@ -940,7 +1167,8 @@ export abstract class PostHogCoreStateless {
         if (!isPostHogFetchError(e)) {
           throw e
         }
-        this.logMsgIfDebug(() => console.error('Error while shutting down PostHog', e))
+
+        await logFlushError(e)
       }
     }
 
@@ -955,6 +1183,26 @@ export abstract class PostHogCoreStateless {
       doShutdown(),
     ])
   }
+
+  /**
+   *  Call shutdown() once before the node process exits, so ensure that all events have been sent and all promises
+   *  have resolved. Do not use this function if you intend to keep using this PostHog instance after calling it.
+   * @param shutdownTimeoutMs
+   */
+  async shutdown(shutdownTimeoutMs: number = 30000): Promise<void> {
+    if (this.shutdownPromise) {
+      this.logMsgIfDebug(() =>
+        console.warn(
+          'shutdown() called while already shutting down. shutdown() is meant to be called once before process exit - use flush() for per-request cleanup'
+        )
+      )
+    } else {
+      this.shutdownPromise = this._shutdown(shutdownTimeoutMs).finally(() => {
+        this.shutdownPromise = null
+      })
+    }
+    return this.shutdownPromise
+  }
 }
 
 export abstract class PostHogCore extends PostHogCoreStateless {
@@ -965,6 +1213,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   // internal
   protected _decideResponsePromise?: Promise<PostHogDecideResponse | undefined> // TODO: come back to this, fix typing
   protected _sessionExpirationTimeSeconds: number
+  private _sessionMaxLengthSeconds: number = 24 * 60 * 60 // 24 hours
   protected sessionProps: PostHogEventProperties = {}
 
   constructor(apiKey: string, options?: PostHogCoreOptions) {
@@ -1056,7 +1305,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     })
   }
 
-  protected getCommonEventProperties(): any {
+  protected getCommonEventProperties(): PostHogEventProperties {
     const featureFlags = this.getFeatureFlags()
 
     const featureVariantProperties: Record<string, FeatureFlagValue> = {}
@@ -1066,13 +1315,13 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       }
     }
     return {
-      $active_feature_flags: featureFlags ? Object.keys(featureFlags) : undefined,
+      ...maybeAdd('$active_feature_flags', featureFlags ? Object.keys(featureFlags) : undefined),
       ...featureVariantProperties,
       ...super.getCommonEventProperties(),
     }
   }
 
-  private enrichProperties(properties?: PostHogEventProperties): any {
+  private enrichProperties(properties?: PostHogEventProperties): PostHogEventProperties {
     return {
       ...this.props, // Persisted properties first
       ...this.sessionProps, // Followed by session properties
@@ -1091,12 +1340,21 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     }
 
     let sessionId = this.getPersistedProperty<string>(PostHogPersistedProperty.SessionId)
-    const sessionTimestamp = this.getPersistedProperty<number>(PostHogPersistedProperty.SessionLastTimestamp) || 0
-    if (!sessionId || Date.now() - sessionTimestamp > this._sessionExpirationTimeSeconds * 1000) {
+    const sessionLastTimestamp = this.getPersistedProperty<number>(PostHogPersistedProperty.SessionLastTimestamp) || 0
+    const sessionStartTimestamp = this.getPersistedProperty<number>(PostHogPersistedProperty.SessionStartTimestamp) || 0
+    const now = Date.now()
+    const sessionLastDif = now - sessionLastTimestamp
+    const sessionStartDif = now - sessionStartTimestamp
+    if (
+      !sessionId ||
+      sessionLastDif > this._sessionExpirationTimeSeconds * 1000 ||
+      sessionStartDif > this._sessionMaxLengthSeconds * 1000
+    ) {
       sessionId = uuidv7()
       this.setPersistedProperty(PostHogPersistedProperty.SessionId, sessionId)
+      this.setPersistedProperty(PostHogPersistedProperty.SessionStartTimestamp, now)
     }
-    this.setPersistedProperty(PostHogPersistedProperty.SessionLastTimestamp, Date.now())
+    this.setPersistedProperty(PostHogPersistedProperty.SessionLastTimestamp, now)
 
     return sessionId
   }
@@ -1105,6 +1363,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     this.wrap(() => {
       this.setPersistedProperty(PostHogPersistedProperty.SessionId, null)
       this.setPersistedProperty(PostHogPersistedProperty.SessionLastTimestamp, null)
+      this.setPersistedProperty(PostHogPersistedProperty.SessionStartTimestamp, null)
     })
   }
 
@@ -1135,7 +1394,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     return this.getPersistedProperty<string>(PostHogPersistedProperty.DistinctId) || this.getAnonymousId()
   }
 
-  registerForSession(properties: { [key: string]: any }): void {
+  registerForSession(properties: PostHogEventProperties): void {
     this.sessionProps = {
       ...this.sessionProps,
       ...properties,
@@ -1155,7 +1414,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       distinctId = distinctId || previousDistinctId
 
       if (properties?.$groups) {
-        this.groups(properties.$groups)
+        this.groups(properties.$groups as PostHogGroupProperties)
       }
 
       // promote $set and $set_once to top level
@@ -1167,8 +1426,8 @@ export abstract class PostHogCore extends PostHogCoreStateless {
 
       const allProperties = this.enrichProperties({
         $anon_distinct_id: this.getAnonymousId(),
-        $set: userProps,
-        $set_once: userPropsOnce,
+        ...maybeAdd('$set', userProps),
+        ...maybeAdd('$set_once', userPropsOnce),
       })
 
       if (distinctId !== previousDistinctId) {
@@ -1182,12 +1441,12 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     })
   }
 
-  capture(event: string, properties?: { [key: string]: any }, options?: PostHogCaptureOptions): void {
+  capture(event: string, properties?: PostHogEventProperties, options?: PostHogCaptureOptions): void {
     this.wrap(() => {
       const distinctId = this.getDistinctId()
 
       if (properties?.$groups) {
-        this.groups(properties.$groups)
+        this.groups(properties.$groups as PostHogGroupProperties)
       }
 
       const allProperties = this.enrichProperties(properties)
@@ -1231,19 +1490,19 @@ export abstract class PostHogCore extends PostHogCoreStateless {
    *** GROUPS
    ***/
 
-  groups(groups: { [type: string]: string | number }): void {
+  groups(groups: PostHogGroupProperties): void {
     this.wrap(() => {
       // Get persisted groups
       const existingGroups = this.props.$groups || {}
 
       this.register({
         $groups: {
-          ...existingGroups,
+          ...(existingGroups as PostHogGroupProperties),
           ...groups,
         },
       })
 
-      if (Object.keys(groups).find((type) => existingGroups[type] !== groups[type])) {
+      if (Object.keys(groups).find((type) => existingGroups[type as keyof typeof existingGroups] !== groups[type])) {
         this.reloadFeatureFlags()
       }
     })
@@ -1350,13 +1609,17 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     return this._decideAsync(sendAnonDistinctId)
   }
 
-  private cacheSessionReplay(response?: PostHogRemoteConfig): void {
+  private cacheSessionReplay(source: string, response?: PostHogRemoteConfig): void {
     const sessionReplay = response?.sessionRecording
     if (sessionReplay) {
       this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, sessionReplay)
-      this.logMsgIfDebug(() => console.log('PostHog Debug', 'Session replay config: ', JSON.stringify(sessionReplay)))
-    } else {
-      this.logMsgIfDebug(() => console.info('PostHog Debug', 'Session replay config disabled.'))
+      this.logMsgIfDebug(() =>
+        console.log('PostHog Debug', `Session replay config from ${source}: `, JSON.stringify(sessionReplay))
+      )
+    } else if (typeof sessionReplay === 'boolean' && sessionReplay === false) {
+      // if session replay is disabled, we don't need to cache it
+      // we need to check for this because the response might be undefined (/flags does not return sessionRecording yet)
+      this.logMsgIfDebug(() => console.info('PostHog Debug', `Session replay config from ${source} disabled.`))
       this.setPersistedProperty(PostHogPersistedProperty.SessionReplay, null)
     }
   }
@@ -1379,36 +1642,39 @@ export abstract class PostHogCore extends PostHogCoreStateless {
               console.log('PostHog Debug', 'Fetched remote config: ', JSON.stringify(remoteConfigWithoutSurveys))
             )
 
-            const surveys = response.surveys
+            if (this.disableSurveys === false) {
+              const surveys = response.surveys
 
-            let hasSurveys = true
+              let hasSurveys = true
 
-            if (!Array.isArray(surveys)) {
-              // If surveys is not an array, it means there are no surveys (its a boolean instead)
-              this.logMsgIfDebug(() => console.log('PostHog Debug', 'There are no surveys.'))
-              hasSurveys = false
-            } else {
-              this.logMsgIfDebug(() =>
-                console.log('PostHog Debug', 'Surveys fetched from remote config: ', JSON.stringify(surveys))
-              )
-            }
+              if (!Array.isArray(surveys)) {
+                // If surveys is not an array, it means there are no surveys (its a boolean instead)
+                this.logMsgIfDebug(() => console.log('PostHog Debug', 'There are no surveys.'))
+                hasSurveys = false
+              } else {
+                this.logMsgIfDebug(() =>
+                  console.log('PostHog Debug', 'Surveys fetched from remote config: ', JSON.stringify(surveys))
+                )
+              }
 
-            if (this.disableSurveys === false && hasSurveys) {
-              this.setPersistedProperty<SurveyResponse['surveys']>(
-                PostHogPersistedProperty.Surveys,
-                surveys as Survey[]
-              )
+              if (hasSurveys) {
+                this.setPersistedProperty<SurveyResponse['surveys']>(
+                  PostHogPersistedProperty.Surveys,
+                  surveys as Survey[]
+                )
+              } else {
+                this.setPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys, null)
+              }
             } else {
               this.setPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys, null)
             }
-
             // we cache the surveys in its own storage key
             this.setPersistedProperty<Omit<PostHogRemoteConfig, 'surveys'>>(
               PostHogPersistedProperty.RemoteConfig,
               remoteConfigWithoutSurveys
             )
 
-            this.cacheSessionReplay(response)
+            this.cacheSessionReplay('remote config', response)
 
             // we only dont load flags if the remote config has no feature flags
             if (response.hasFeatureFlags === false) {
@@ -1451,7 +1717,14 @@ export abstract class PostHogCore extends PostHogCoreStateless {
           $anon_distinct_id: sendAnonDistinctId ? this.getAnonymousId() : undefined,
         }
 
-        const res = await super.getDecide(distinctId, groups, personProperties, groupProperties, extraProperties)
+        const res = await super.getDecide(
+          distinctId,
+          groups as PostHogGroupProperties,
+          personProperties,
+          groupProperties,
+          extraProperties
+        )
+
         // Add check for quota limitation on feature flags
         if (res?.quotaLimited?.includes(QuotaLimitedFeature.FeatureFlags)) {
           // Unset all feature flags by setting to null
@@ -1484,7 +1757,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
           // Mark that we hit the /decide endpoint so we can capture this in the $feature_flag_called event
           this.setPersistedProperty(PostHogPersistedProperty.DecideEndpointWasHit, true)
 
-          this.cacheSessionReplay(res)
+          this.cacheSessionReplay('decide/flags', res)
         }
         return res
       })
@@ -1528,7 +1801,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     ) as PostHogFeatureFlagDetails
   }
 
-  private getKnownFeatureFlags(): PostHogDecideResponse['featureFlags'] | undefined {
+  protected getKnownFeatureFlags(): PostHogDecideResponse['featureFlags'] | undefined {
     const featureFlagDetails = this.getKnownFeatureFlagDetails()
     if (!featureFlagDetails) {
       return undefined
@@ -1599,14 +1872,14 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       this.capture('$feature_flag_called', {
         $feature_flag: key,
         $feature_flag_response: response,
-        $feature_flag_id: featureFlag?.metadata?.id,
-        $feature_flag_version: featureFlag?.metadata?.version,
-        $feature_flag_reason: featureFlag?.reason?.description ?? featureFlag?.reason?.code,
-        $feature_flag_bootstrapped_response: bootstrappedResponse,
-        $feature_flag_bootstrapped_payload: bootstrappedPayload,
+        ...maybeAdd('$feature_flag_id', featureFlag?.metadata?.id),
+        ...maybeAdd('$feature_flag_version', featureFlag?.metadata?.version),
+        ...maybeAdd('$feature_flag_reason', featureFlag?.reason?.description ?? featureFlag?.reason?.code),
+        ...maybeAdd('$feature_flag_bootstrapped_response', bootstrappedResponse),
+        ...maybeAdd('$feature_flag_bootstrapped_payload', bootstrappedPayload),
         // If we haven't yet received a response from the /decide endpoint, we must have used the bootstrapped value
         $used_bootstrap_value: !this.getPersistedProperty(PostHogPersistedProperty.DecideEndpointWasHit),
-        $feature_flag_request_id: details.requestId,
+        ...maybeAdd('$feature_flag_request_id', details.requestId),
       })
     }
 
@@ -1703,7 +1976,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
       .catch((e) => {
         cb?.(e, undefined)
         if (!cb) {
-          this.logMsgIfDebug(() => console.log('[PostHog] Error reloading feature flags', e))
+          this.logMsgIfDebug(() => console.log('PostHog Debug', 'Error reloading feature flags', e))
         }
       })
   }
@@ -1748,7 +2021,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   /***
    *** ERROR TRACKING
    ***/
-  captureException(error: unknown, additionalProperties?: { [key: string]: any }): void {
+  captureException(error: unknown, additionalProperties?: PostHogEventProperties): void {
     const properties: { [key: string]: any } = {
       $exception_level: 'error',
       $exception_list: [

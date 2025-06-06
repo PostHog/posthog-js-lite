@@ -10,6 +10,9 @@ import {
   PostHogFetchResponse,
   PostHogPersistedProperty,
   SurveyResponse,
+  logFlushError,
+  maybeAdd,
+  FeatureFlagValue,
 } from '../../posthog-core/src'
 import { getLegacyValues } from './legacy'
 import { PostHogRNStorage, PostHogRNSyncMemoryStorage } from './storage'
@@ -31,8 +34,8 @@ export type PostHogOptions = PostHogCoreOptions & {
   persistence?: 'memory' | 'file'
   /** Allows you to provide your own implementation of the common information about your App or a function to modify the default App properties generated */
   customAppProperties?:
-    | PostHogCustomAppProperties
-    | ((properties: PostHogCustomAppProperties) => PostHogCustomAppProperties)
+  | PostHogCustomAppProperties
+  | ((properties: PostHogCustomAppProperties) => PostHogCustomAppProperties)
   /** Allows you to provide a custom asynchronous storage such as async-storage, expo-file-system or a synchronous storage such as mmkv.
    * If not provided, PostHog will attempt to use the best available storage via optional peer dependencies (async-storage, expo-file-system).
    * If `persistence` is set to 'memory', this option will be ignored.
@@ -88,8 +91,20 @@ export class PostHog extends PostHogCore {
         ? options.customAppProperties(getAppProperties())
         : options?.customAppProperties || getAppProperties()
 
-    AppState.addEventListener('change', () => {
-      void this.flush()
+    AppState.addEventListener('change', (state) => {
+      // ignore unknown state (usually initial state, the app might not be ready yet)
+      if (state === 'unknown') {
+        return
+      }
+
+      void this.flush().catch(async (err) => {
+        await logFlushError(err)
+      })
+
+      if (state === 'active') {
+        // rotate session id if needed (expired either 30 minutes inactive or max duration 24 hours)
+        this.getSessionId()
+      }
     })
 
     let storagePromise: Promise<void> | undefined
@@ -122,6 +137,7 @@ export class PostHog extends PostHogCore {
       if (!enablePersistSessionIdAcrossRestart) {
         this.setPersistedProperty(PostHogPersistedProperty.SessionId, null)
         this.setPersistedProperty(PostHogPersistedProperty.SessionLastTimestamp, null)
+        this.setPersistedProperty(PostHogPersistedProperty.SessionStartTimestamp, null)
       }
 
       this.setupBootstrap(options)
@@ -189,7 +205,7 @@ export class PostHog extends PostHogCore {
     return `${this.getLibraryId()}/${this.getLibraryVersion()}`
   }
 
-  getCommonEventProperties(): any {
+  getCommonEventProperties(): PostHogEventProperties {
     return {
       ...super.getCommonEventProperties(),
       ...this._appProperties,
@@ -199,7 +215,7 @@ export class PostHog extends PostHogCore {
   }
 
   // Custom methods
-  async screen(name: string, properties?: { [key: string]: any }, options?: PostHogCaptureOptions): Promise<void> {
+  async screen(name: string, properties?: PostHogEventProperties, options?: PostHogCaptureOptions): Promise<void> {
     await this._initPromise
     // Screen name is good to know for all other subsequent events
     this.registerForSession({
@@ -243,11 +259,11 @@ export class PostHog extends PostHogCore {
       if (OptionalReactNativeSessionReplay) {
         try {
           this._resetSessionId(OptionalReactNativeSessionReplay, sessionId)
-          this.logMsgIfDebug(() => console.info('PostHog Debug', `Session replay started with sessionId ${sessionId}.`))
-        } catch (e) {
           this.logMsgIfDebug(() =>
-            console.error('PostHog Debug', `Session replay failed to start with sessionId: ${e}.`)
+            console.info('PostHog Debug', `sessionId rotated from ${this._currentSessionId} to ${sessionId}.`)
           )
+        } catch (e) {
+          this.logMsgIfDebug(() => console.error('PostHog Debug', `Failed to rotate sessionId: ${e}.`))
         }
       }
       this._currentSessionId = sessionId
@@ -255,7 +271,7 @@ export class PostHog extends PostHogCore {
       this.logMsgIfDebug(() =>
         console.log(
           'PostHog Debug',
-          `Session replay session id not rotated, sessionId ${sessionId} and currentSessionId ${this._currentSessionId}.`
+          `sessionId not rotated, sessionId ${sessionId} and currentSessionId ${this._currentSessionId}.`
         )
       )
     }
@@ -298,7 +314,7 @@ export class PostHog extends PostHogCore {
 
   public async getSurveys(): Promise<SurveyResponse['surveys']> {
     if (this._disableSurveys === true) {
-      this.logMsgIfDebug(() => console.log('Loading surveys is disabled.'))
+      this.logMsgIfDebug(() => console.log('PostHog Debug', 'Loading surveys is disabled.'))
       this.setPersistedProperty<SurveyResponse['surveys']>(PostHogPersistedProperty.Surveys, null)
       return []
     }
@@ -352,23 +368,38 @@ export class PostHog extends PostHogCore {
     }
 
     this.logMsgIfDebug(() =>
-      console.log('PostHog Debug', `Session replay sdk config: ${JSON.stringify(sdkReplayConfig)}`)
+      console.log('PostHog Debug', `Session replay SDK config: ${JSON.stringify(sdkReplayConfig)}`)
     )
 
     // if Decide has not returned yet, we will start session replay with default config.
     const sessionReplay = this.getPersistedProperty(PostHogPersistedProperty.SessionReplay) ?? {}
-    const featureFlags = this.getPersistedProperty(PostHogPersistedProperty.FeatureFlags) ?? {}
-    const decideFeatureFlags = (featureFlags as { [key: string]: JsonType }) ?? {}
+    const featureFlags = this.getKnownFeatureFlags() ?? {}
+    const cachedFeatureFlags = (featureFlags as { [key: string]: FeatureFlagValue }) ?? {}
+    const cachedSessionReplayConfig = (sessionReplay as { [key: string]: JsonType }) ?? {}
 
-    const decideReplayConfig = (sessionReplay as { [key: string]: JsonType }) ?? {}
     this.logMsgIfDebug(() =>
-      console.log('PostHog Debug', `Session replay decide cached config: ${JSON.stringify(decideReplayConfig)}`)
+      console.log(
+        'PostHog Debug',
+        `Session replay feature flags from decide/flags cached config: ${JSON.stringify(cachedFeatureFlags)}`
+      )
+    )
+
+    this.logMsgIfDebug(() =>
+      console.log(
+        'PostHog Debug',
+        `Session replay session recording from decide/flags cached config: ${JSON.stringify(cachedSessionReplayConfig)}`
+      )
     )
 
     let recordingActive = true
-    const linkedFlag = decideReplayConfig['linkedFlag'] as string | { [key: string]: JsonType } | null | undefined
+    const linkedFlag = cachedSessionReplayConfig['linkedFlag'] as
+      | string
+      | { [key: string]: JsonType }
+      | null
+      | undefined
+
     if (typeof linkedFlag === 'string') {
-      const value = decideFeatureFlags[linkedFlag]
+      const value = cachedFeatureFlags[linkedFlag]
       if (typeof value === 'boolean') {
         recordingActive = value
       } else if (typeof value === 'string') {
@@ -379,20 +410,30 @@ export class PostHog extends PostHogCore {
         recordingActive = false
       }
 
-      this.logMsgIfDebug(() => console.log('PostHog Debug', `Session replay ${linkedFlag} linked flag value: ${value}`))
+      this.logMsgIfDebug(() =>
+        console.log('PostHog Debug', `Session replay '${linkedFlag}' linked flag value: '${value}'`)
+      )
     } else if (linkedFlag && typeof linkedFlag === 'object') {
       const flag = linkedFlag['flag'] as string | undefined
       const variant = linkedFlag['variant'] as string | undefined
       if (flag && variant) {
-        const value = decideFeatureFlags[flag]
+        const value = cachedFeatureFlags[flag]
         recordingActive = value === variant
         this.logMsgIfDebug(() =>
-          console.log('PostHog Debug', `Session replay ${flag} linked flag variant: ${variant} and value ${value}`)
+          console.log('PostHog Debug', `Session replay '${flag}' linked flag variant '${variant}' and value '${value}'`)
         )
       } else {
         // disable recording if the flag does not exist/quota limited
+        this.logMsgIfDebug(() =>
+          console.log(
+            'PostHog Debug',
+            `Session replay '${flag}' linked flag variant: '${variant}' does not exist/quota limited.`
+          )
+        )
         recordingActive = false
       }
+    } else {
+      this.logMsgIfDebug(() => console.log('PostHog Debug', `Session replay has no cached linkedFlag.`))
     }
 
     if (recordingActive) {
@@ -420,7 +461,12 @@ export class PostHog extends PostHogCore {
 
         try {
           if (!(await OptionalReactNativeSessionReplay.isEnabled())) {
-            await OptionalReactNativeSessionReplay.start(sessionId, sdkOptions, sdkReplayConfig, decideReplayConfig)
+            await OptionalReactNativeSessionReplay.start(
+              sessionId,
+              sdkOptions,
+              sdkReplayConfig,
+              cachedSessionReplayConfig
+            )
             this.logMsgIfDebug(() =>
               console.info('PostHog Debug', `Session replay started with sessionId ${sessionId}.`)
             )
@@ -452,15 +498,17 @@ export class PostHog extends PostHogCore {
     const properties: PostHogEventProperties = {}
 
     if (!isMemoryPersistence) {
-      const prevAppBuild = this.getPersistedProperty(PostHogPersistedProperty.InstalledAppBuild)
-      const prevAppVersion = this.getPersistedProperty(PostHogPersistedProperty.InstalledAppVersion)
+      const prevAppBuild = this.getPersistedProperty(PostHogPersistedProperty.InstalledAppBuild) as string | undefined
+      const prevAppVersion = this.getPersistedProperty(PostHogPersistedProperty.InstalledAppVersion) as
+        | string
+        | undefined
 
       if (!appBuild || !appVersion) {
         this.logMsgIfDebug(() =>
           console.warn(
             'PostHog could not track installation/update/open, as the build and version were not set. ' +
-              'This can happen if some dependencies are not installed correctly, or if you have provided' +
-              'customAppProperties but not included $app_build or $app_version.'
+            'This can happen if some dependencies are not installed correctly, or if you have provided' +
+            'customAppProperties but not included $app_build or $app_version.'
           )
         )
       }
@@ -472,8 +520,8 @@ export class PostHog extends PostHogCore {
           // $app_version and $app_build are already added in the common event properties
           // app updated
           this.capture('Application Updated', {
-            previous_version: prevAppVersion,
-            previous_build: prevAppBuild,
+            ...maybeAdd('previous_version', prevAppVersion),
+            ...maybeAdd('previous_build', prevAppBuild),
             ...properties,
           })
         }
@@ -490,7 +538,7 @@ export class PostHog extends PostHogCore {
 
     this.capture('Application Opened', {
       ...properties,
-      url: initialUrl,
+      ...maybeAdd('url', initialUrl),
     })
 
     AppState.addEventListener('change', (state) => {

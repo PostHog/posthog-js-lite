@@ -1,4 +1,10 @@
-import { FeatureFlagValue, JsonType } from '../../posthog-core/src'
+import type {
+  PostHogCoreOptions,
+  FeatureFlagValue,
+  JsonType,
+  PostHogFetchOptions,
+  PostHogFetchResponse,
+} from 'posthog-core'
 
 export interface IdentifyMessage {
   distinctId: string
@@ -41,6 +47,18 @@ export type FeatureFlagCondition = {
   variant?: string
 }
 
+export type PostHogOptions = PostHogCoreOptions & {
+  persistence?: 'memory'
+  personalApiKey?: string
+  privacyMode?: boolean
+  enableExceptionAutocapture?: boolean
+  // The interval in milliseconds between polls for refreshing feature flag definitions. Defaults to 30 seconds.
+  featureFlagsPollingInterval?: number
+  // Maximum size of cache that deduplicates $feature_flag_called calls per user.
+  maxCacheSize?: number
+  fetch?: (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
+}
+
 export type PostHogFeatureFlag = {
   id: number
   name: string
@@ -63,7 +81,7 @@ export type PostHogFeatureFlag = {
   experiment_set: number[]
 }
 
-export type PostHogNodeV1 = {
+export interface IPostHog {
   /**
    * @description Capture allows you to capture anything a user does within your system,
    * which you can later use in PostHog to find patterns in usage,
@@ -78,6 +96,16 @@ export type PostHogNodeV1 = {
   capture({ distinctId, event, properties, groups, sendFeatureFlags }: EventMessage): void
 
   /**
+   * @description Capture an event immediately. Useful for edge environments where the usual queue-based sending is not preferable. Do not mix immediate and non-immediate calls.
+   * @param distinctId which uniquely identifies your user
+   * @param event We recommend using [verb] [noun], like movie played or movie updated to easily identify what your events mean later on.
+   * @param properties OPTIONAL | which can be a object with any information you'd like to add
+   * @param groups OPTIONAL | object of what groups are related to this event, example: { company: 'id:5' }. Can be used to analyze companies instead of users.
+   * @param sendFeatureFlags OPTIONAL | Used with experiments. Determines whether to send feature flag values with the event.
+   */
+  captureImmediate({ distinctId, event, properties, groups, sendFeatureFlags }: EventMessage): Promise<void>
+
+  /**
    * @description Identify lets you add metadata on your users so you can more easily identify who they are in PostHog,
    * and even do things like segment users by these properties.
    * An identify call requires:
@@ -85,6 +113,14 @@ export type PostHogNodeV1 = {
    * @param properties with a dict with any key: value pairs
    */
   identify({ distinctId, properties }: IdentifyMessage): void
+
+  /**
+   * @description Identify lets you add metadata on your users so you can more easily identify who they are in PostHog.
+   * Useful for edge environments where the usual queue-based sending is not preferable. Do not mix immediate and non-immediate calls.
+   * @param distinctId which uniquely identifies your user
+   * @param properties with a dict with any key: value pairs
+   */
+  identifyImmediate({ distinctId, properties }: IdentifyMessage): Promise<void>
 
   /**
    * @description To marry up whatever a user does before they sign up or log in with what they do after you need to make an alias call.
@@ -98,6 +134,14 @@ export type PostHogNodeV1 = {
    * @param alias the unique ID of the user before
    */
   alias(data: { distinctId: string; alias: string }): void
+
+  /**
+   * @description To marry up whatever a user does before they sign up or log in with what they do after you need to make an alias call.
+   * Useful for edge environments where the usual queue-based sending is not preferable. Do not mix immediate and non-immediate calls.
+   * @param distinctId the current unique id
+   * @param alias the unique ID of the user before
+   */
+  aliasImmediate(data: { distinctId: string; alias: string }): Promise<void>
 
   /**
    * @description PostHog feature flags (https://posthog.com/docs/features/feature-flags)

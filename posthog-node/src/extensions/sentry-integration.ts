@@ -22,8 +22,8 @@
  * @param {SeverityLevel[] | '*'} [severityAllowList] Optional: send events matching the provided levels. Use '*' to send all events (default: ['error'])
  */
 
-import { SeverityLevel } from 'posthog-node/src/extensions/error-tracking/types'
-import { type PostHog } from '../posthog-node'
+import { SeverityLevel } from './error-tracking/types'
+import { type PostHogBackendClient } from '../client'
 
 // NOTE - we can't import from @sentry/types because it changes frequently and causes clashes
 // We only use a small subset of the types, so we can just define the integration overall and use any for the rest
@@ -75,7 +75,7 @@ export type SentryIntegrationOptions = {
 const NAME = 'posthog-node'
 
 export function createEventProcessor(
-  _posthog: PostHog,
+  _posthog: PostHogBackendClient,
   { organization, projectId, prefix, severityAllowList = ['error'] }: SentryIntegrationOptions = {}
 ): (event: _SentryEvent) => _SentryEvent {
   return (event) => {
@@ -154,7 +154,10 @@ export function createEventProcessor(
 }
 
 // V8 integration - function based
-export function sentryIntegration(_posthog: PostHog, options?: SentryIntegrationOptions): _SentryIntegration {
+export function sentryIntegration(
+  _posthog: PostHogBackendClient,
+  options?: SentryIntegrationOptions
+): _SentryIntegration {
   const processor = createEventProcessor(_posthog, options)
   return {
     name: NAME,
@@ -175,7 +178,12 @@ export class PostHogSentryIntegration implements _SentryIntegrationClass {
     getCurrentHub: () => _SentryHub
   ) => void
 
-  constructor(_posthog: PostHog, organization?: string, prefix?: string, severityAllowList?: SeverityLevel[] | '*') {
+  constructor(
+    _posthog: PostHogBackendClient,
+    organization?: string,
+    prefix?: string,
+    severityAllowList?: SeverityLevel[] | '*'
+  ) {
     // setupOnce gets called by Sentry when it intializes the plugin
     this.name = NAME
     this.setupOnce = function (

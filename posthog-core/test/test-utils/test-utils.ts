@@ -17,3 +17,17 @@ export const parseBody = (mockCall: any): any => {
   expect(options.method).toBe('POST')
   return JSON.parse(options.body || '')
 }
+
+export const createImperativePromise = <T>(): [Promise<T>, (value: T) => void] => {
+  let resolve: (value: T) => void
+  const promise = new Promise<T>((r) => {
+    resolve = r
+  })
+  return [promise, (val) => resolve?.(val)]
+}
+
+export const delay = (ms: number): Promise<void> => {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+}

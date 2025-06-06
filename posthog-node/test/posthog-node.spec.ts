@@ -1,5 +1,5 @@
-import { MINIMUM_POLLING_INTERVAL, PostHog as PostHog, THIRTY_SECONDS } from '../src/posthog-node'
-import { anyDecideCall, anyLocalEvalCall, apiImplementation } from './test-utils'
+import { PostHog } from '../src/entrypoints/index.node'
+import { anyDecideCall, anyLocalEvalCall, apiImplementation, isPending } from './test-utils'
 import { waitForPromises, wait } from '../../posthog-core/test/test-utils/test-utils'
 import { randomUUID } from 'crypto'
 
@@ -330,7 +330,7 @@ describe('PostHog Node.js', () => {
     })
 
     it('should warn if capture is called with a string', () => {
-      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => { })
       posthog.debug(true)
       // @ts-expect-error - Testing the warning when passing a string instead of an object
       posthog.capture('test-event')
@@ -382,33 +382,31 @@ describe('PostHog Node.js', () => {
       })
       ph.debug(true)
 
-      // using debug mode to check console.log output
-      // which tells us when the flush is complete
+      ph.capture({ event: 'test-event-1', distinctId: '123' })
 
-      ph.capture({ event: 'test-event', distinctId: '123' })
-      await wait(100)
-      expect(logSpy).toHaveBeenCalledTimes(1)
+      // start flushing, but don't wait for promise to resolve before resuming events
+      const flushPromise = ph.flush()
+      expect(isPending(flushPromise)).toEqual(true)
 
-      ph.capture({ event: 'test-event', distinctId: '123' })
-      ph.capture({ event: 'test-event', distinctId: '123' })
-      await wait(100)
-      expect(logSpy).toHaveBeenCalledTimes(3)
-      await wait(400) // The flush will resolve in this time
-      ph.capture({ event: 'test-event', distinctId: '123' })
-      ph.capture({ event: 'test-event', distinctId: '123' })
-      await wait(100)
-      expect(logSpy).toHaveBeenCalledTimes(6) // 5 captures and 1 flush
-      expect(5).toEqual(logSpy.mock.calls.filter((call) => call[1].includes('capture')).length)
-      expect(1).toEqual(logSpy.mock.calls.filter((call) => call[1].includes('flush')).length)
+      ph.capture({ event: 'test-event-2', distinctId: '123' })
 
-      logSpy.mockClear()
-      expect(logSpy).toHaveBeenCalledTimes(0)
+      // start shutdown, but don't wait for promise to resolve before resuming events
+      const shutdownPromise = ph.shutdown()
 
-      console.warn('YOO!!')
+      ph.capture({ event: 'test-event-3', distinctId: '123' })
 
-      await ph.shutdown()
-      // 1 final flush for the events that were queued during shutdown
-      expect(1).toEqual(logSpy.mock.calls.filter((call) => call[1].includes('flush')).length)
+      // wait for shutdown to finish
+      await shutdownPromise
+      expect(isPending(flushPromise)).toEqual(false)
+
+      expect(3).toEqual(logSpy.mock.calls.filter((call) => call[1].includes('capture')).length)
+      const flushedEvents = logSpy.mock.calls.filter((call) => call[1].includes('flush')).flatMap((flush) => flush[2])
+      expect(flushedEvents).toMatchObject([
+        { event: 'test-event-1' },
+        { event: 'test-event-2' },
+        { event: 'test-event-3' },
+      ])
+
       logSpy.mockRestore()
       warnSpy.mockRestore()
     })
@@ -690,7 +688,7 @@ describe('PostHog Node.js', () => {
         disableCompression: true,
       })
 
-      expect(posthog.options.featureFlagsPollingInterval).toEqual(MINIMUM_POLLING_INTERVAL)
+      expect(posthog.options.featureFlagsPollingInterval).toEqual(100)
     })
 
     it('should use default featureFlagsPollingInterval of 30000ms if none provided', async () => {
@@ -701,7 +699,7 @@ describe('PostHog Node.js', () => {
         disableCompression: true,
       })
 
-      expect(posthog.options.featureFlagsPollingInterval).toEqual(THIRTY_SECONDS)
+      expect(posthog.options.featureFlagsPollingInterval).toEqual(30000)
     })
 
     it('should throw an error when creating SDK if a project key is passed in as personalApiKey', async () => {
@@ -1334,7 +1332,7 @@ describe('PostHog Node.js', () => {
     })
 
     it('should log error when decide response has errors', async () => {
-      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { })
 
       mockedFetch.mockImplementation(
         apiImplementation({

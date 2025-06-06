@@ -6,11 +6,41 @@
 2. Remove `captureMode` in favor or `json` capture mode only
 3. Remove deprecated `personProperties` and `groupProperties` in favor of `setPersonPropertiesForFlags` and `setGroupPropertiesForFlags`
 
+## Breaking changes
+
+1. Migrate to native fetch, Node 18+ required
+
 # 5.0.0-alpha.1 - 2025-04-29
 
 ## Breaking changes
 
 1. feat: migrate to native fetch, Node 18+ required
+
+## Added
+
+1. rotate session id if expired after 24 hours
+
+# 4.17.2 - 2025-05-22
+
+1. chore: improve event prop types
+2. fix: no throw in sendImmediate
+
+# 4.17.1 - 2025-05-02
+
+1. fix: fix imports for old node.js version
+
+# 4.17.0 - 2025-05-02
+
+1. fix: specific exports for edge environments
+
+# 4.16.0 - 2025-05-01
+
+1. chore: improve flush event
+
+# 4.15.0 - 2025-04-30
+
+1. chore: add immediate-mode
+2. chore: better error logging when flushing events
 
 # 4.14.0 - 2025-04-24
 

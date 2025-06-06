@@ -71,6 +71,7 @@ export enum PostHogPersistedProperty {
   Queue = 'queue',
   OptedOut = 'opted_out',
   SessionId = 'session_id',
+  SessionStartTimestamp = 'session_start_timestamp',
   SessionLastTimestamp = 'session_timestamp',
   PersonProperties = 'person_properties',
   GroupProperties = 'group_properties',
@@ -114,7 +115,11 @@ export type PostHogQueueItem = {
 }
 
 export type PostHogEventProperties = {
-  [key: string]: any
+  [key: string]: JsonType
+}
+
+export type PostHogGroupProperties = {
+  [type: string]: string | number
 }
 
 export type PostHogAutocaptureElement = {
@@ -124,9 +129,8 @@ export type PostHogAutocaptureElement = {
   nth_child?: number
   nth_of_type?: number
   order?: number
-} & {
-  [key: string]: any
-} // Any key prefixed with `attr__` can be added
+} & PostHogEventProperties
+// Any key prefixed with `attr__` can be added
 
 export enum Compression {
   GZipJS = 'gzip-js',
@@ -241,7 +245,7 @@ export type PostHogFlagsAndPayloadsResponse = Partial<
   Pick<PostHogDecideResponse, 'featureFlags' | 'featureFlagPayloads'>
 >
 
-export type JsonType = string | number | boolean | null | { [key: string]: JsonType } | Array<JsonType>
+export type JsonType = string | number | boolean | null | { [key: string]: JsonType } | Array<JsonType> | JsonType[]
 
 export type FetchLike = (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
 
