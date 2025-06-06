@@ -1,9 +1,12 @@
-# Next (v4.0.0)
+# Next (4.0.0 WIP)
 
-1. Remove deprecated `personProperties` and `groupProperties`
-2. Rename `captureNativeAppLifecycleEvents` option to `captureAppLifecycleEvents`
+## Removed
+
+1. Remove `captureMode` in favor or `json` capture mode only
+2. Remove deprecated `personProperties` and `groupProperties` in favor of `setPersonPropertiesForFlags` and `setGroupPropertiesForFlags`
+3. Rename `captureNativeAppLifecycleEvents` option to `captureAppLifecycleEvents`
    1. `captureAppLifecycleEvents` from `autocapture` is removed and replaced by `captureAppLifecycleEvents` from options
-3. Removed `version` and `build` from Lifecycle events in favor of `$app_version` and `$app_build`
+4. Removed `version` and `build` from Lifecycle events in favor of `$app_version` and `$app_build`
 
 # 3.16.1 – 2025-05-28
 
