@@ -17,18 +17,11 @@ export const createMockServer = (): [any, jest.Mock<MockRequest, any>] => {
   let httpMock = jest.fn()
 
   const handleRequest = (req: Request, res: Response) => {
-    let body
-    try {
-      body = req.body
-    } catch (e) {
-      console.error(e)
-      body = 'error'
-    }
     const data: MockRequest = {
       method: req.method,
       path: req.path,
       headers: req.headers,
-      body: body,
+      body: req.body,
       params: req.params,
     }
     res.json(httpMock(data) || { status: 'ok' })
