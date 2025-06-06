@@ -1,10 +1,10 @@
 # Next
 
-# 4.0.0 WIP - 2025-06-09
+# 4.0.0 - 2025-06-09
 
 ## Removed
 
-1. Remove `captureMode` in favor or `json` capture mode only
+1. Remove `captureMode` in favor of `json` capture mode only
 2. Remove deprecated `personProperties` and `groupProperties` in favor of `setPersonPropertiesForFlags` and `setGroupPropertiesForFlags`
 3. Rename `captureNativeAppLifecycleEvents` option to `captureAppLifecycleEvents`
    1. `captureAppLifecycleEvents` from `autocapture` is removed and replaced by `captureAppLifecycleEvents` from options

@@ -5,7 +5,7 @@
 ## Removed
 
 1. Remove `is_simple_flag` from `PostHogFeatureFlag` type
-2. Remove `captureMode` in favor or `json` capture mode only
+2. Remove `captureMode` in favor of `json` capture mode only
 3. Remove deprecated `personProperties` and `groupProperties` in favor of `setPersonPropertiesForFlags` and `setGroupPropertiesForFlags`
 
 ## Breaking changes
