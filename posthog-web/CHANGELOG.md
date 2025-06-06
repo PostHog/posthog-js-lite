@@ -1,5 +1,18 @@
 # Next
 
+# 3.6.0 – 2025-06-05
+
+## Added
+
+1. chore: improve event prop types
+2. rotate session id if expired after 24 hours
+
+# 3.5.1 – 2025-05-06
+
+## Fixed
+
+1. Fix exported file extensions to work with older Node versions
+
 # 3.5.0 – 2025-04-17
 
 ## Added

@@ -1,8 +1,41 @@
 # Next
 
+# 3.16.1 – 2025-05-28
+
+## Fixed
+
+1. rotate session id if expired when the app is back from background
+
+# 3.16.0 – 2025-05-27
+
+## Fixed
+
+1. rotate session id if expired after 24 hours
+
+# 3.15.4 – 2025-05-20
+
+## Fixed
+
+1. session recording respects linked flags
+
+# 3.15.3 – 2025-05-14
+
+## Fixed
+
+1. chore: improve event prop types
+2. use custom allSettled implementation to avoid issues with patching Promise
+
+# 3.15.2 – 2025-05-07
+
+## Fixed
+
+1. survey modal closes when clicking inside the modal
+
 # 3.15.1 – 2025-04-28
 
-1. fix: revert migration to rollup
+## Fixed
+
+1. revert migration to rollup
 
 # 3.15.0 – 2025-04-23
 

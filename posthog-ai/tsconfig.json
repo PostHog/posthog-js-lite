@@ -4,7 +4,6 @@
     "incremental": false,
     "types": ["node", "jest"],
     "typeRoots": ["./node_modules/@types", "../node_modules/@types"],
-    "moduleResolution": "node",
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true
   }

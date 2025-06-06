@@ -19,20 +19,35 @@ describe('PostHog Core', () => {
 
     it("doesn't fail when queue is empty", async () => {
       jest.useRealTimers()
-      await expect(posthog.flush()).resolves.toEqual([])
+      await expect(posthog.flush()).resolves.not.toThrow()
+      expect(mocks.fetch).not.toHaveBeenCalled()
     })
 
     it('flush messages once called', async () => {
+      const successfulMessages: any[] = []
+
+      mocks.fetch.mockImplementation(async (_, options) => {
+        const batch = JSON.parse(options.body || '').batch
+
+        successfulMessages.push(...batch)
+        return Promise.resolve({
+          status: 200,
+          text: () => Promise.resolve('ok'),
+          json: () => Promise.resolve({ status: 'ok' }),
+        })
+      })
+
       posthog.capture('test-event-1')
       posthog.capture('test-event-2')
       posthog.capture('test-event-3')
       expect(mocks.fetch).not.toHaveBeenCalled()
-      await expect(posthog.flush()).resolves.toMatchObject([
+      await expect(posthog.flush()).resolves.not.toThrow()
+      expect(mocks.fetch).toHaveBeenCalled()
+      expect(successfulMessages).toMatchObject([
         { event: 'test-event-1' },
         { event: 'test-event-2' },
         { event: 'test-event-3' },
       ])
-      expect(mocks.fetch).toHaveBeenCalled()
     })
 
     it.each([400, 500])('responds with an error after retries with %s error', async (status) => {
@@ -102,18 +117,33 @@ describe('PostHog Core', () => {
 
     it('should flush all events even if larger than batch size', async () => {
       ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 10 })
+
+      const successfulMessages: any[] = []
+
+      mocks.fetch.mockImplementation(async (_, options) => {
+        const batch = JSON.parse(options.body || '').batch
+
+        successfulMessages.push(...batch)
+        return Promise.resolve({
+          status: 200,
+          text: () => Promise.resolve('ok'),
+          json: () => Promise.resolve({ status: 'ok' }),
+        })
+      })
+
       posthog['maxBatchSize'] = 2 // a bit contrived because usually maxBatchSize >= flushAt
       posthog.capture('test-event-1')
       posthog.capture('test-event-2')
       posthog.capture('test-event-3')
       posthog.capture('test-event-4')
-      await expect(posthog.flush()).resolves.toMatchObject([
+      await expect(posthog.flush()).resolves.not.toThrow()
+      expect(mocks.fetch).toHaveBeenCalledTimes(2)
+      expect(successfulMessages).toMatchObject([
         { event: 'test-event-1' },
         { event: 'test-event-2' },
         { event: 'test-event-3' },
         { event: 'test-event-4' },
       ])
-      expect(mocks.fetch).toHaveBeenCalledTimes(2)
     })
 
     it('should reduce the batch size without dropping events if received 413', async () => {
@@ -143,12 +173,7 @@ describe('PostHog Core', () => {
       posthog.capture('test-event-2')
       posthog.capture('test-event-3')
       posthog.capture('test-event-4')
-      await expect(posthog.flush()).resolves.toMatchObject([
-        { event: 'test-event-1' },
-        { event: 'test-event-2' },
-        { event: 'test-event-3' },
-        { event: 'test-event-4' },
-      ])
+      await expect(posthog.flush()).resolves.not.toThrow()
       expect(successfulMessages).toMatchObject([
         { event: 'test-event-1' },
         { event: 'test-event-2' },

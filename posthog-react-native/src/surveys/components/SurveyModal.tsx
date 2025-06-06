@@ -54,37 +54,36 @@ export function SurveyModal(props: SurveyModalProps): JSX.Element | null {
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.modalBackdrop}>
-            <Pressable onPress={onClose} accessible={false}>
-              <View
-                style={[
-                  styles.modalContent,
-                  {
-                    borderColor: appearance.borderColor,
-                    backgroundColor: appearance.backgroundColor,
-                    marginBottom: insets.bottom + 10,
-                    marginHorizontal: 10,
-                  },
-                ]}
-              >
-                {!shouldShowConfirmation ? (
-                  <Questions survey={survey} appearance={appearance} onSubmit={() => setIsSurveySent(true)} />
-                ) : (
-                  <ConfirmationMessage
-                    appearance={appearance}
-                    header={appearance.thankYouMessageHeader}
-                    description={appearance.thankYouMessageDescription}
-                    contentType={
-                      appearance.thankYouMessageDescriptionContentType ?? SurveyQuestionDescriptionContentType.Text
-                    }
-                    onClose={onClose}
-                    isModal={true}
-                  />
-                )}
-                <View style={styles.topIconContainer}>
-                  <Cancel onPress={onClose} appearance={appearance} />
-                </View>
+            <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessible={false} />
+            <View
+              style={[
+                styles.modalContent,
+                {
+                  borderColor: appearance.borderColor,
+                  backgroundColor: appearance.backgroundColor,
+                  marginBottom: insets.bottom + 10,
+                  marginHorizontal: 10,
+                },
+              ]}
+            >
+              {!shouldShowConfirmation ? (
+                <Questions survey={survey} appearance={appearance} onSubmit={() => setIsSurveySent(true)} />
+              ) : (
+                <ConfirmationMessage
+                  appearance={appearance}
+                  header={appearance.thankYouMessageHeader}
+                  description={appearance.thankYouMessageDescription}
+                  contentType={
+                    appearance.thankYouMessageDescriptionContentType ?? SurveyQuestionDescriptionContentType.Text
+                  }
+                  onClose={onClose}
+                  isModal={true}
+                />
+              )}
+              <View style={styles.topIconContainer}>
+                <Cancel onPress={onClose} appearance={appearance} />
               </View>
-            </Pressable>
+            </View>
           </View>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>

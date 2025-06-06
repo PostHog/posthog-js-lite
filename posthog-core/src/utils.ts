@@ -77,3 +77,16 @@ export const isError = (x: unknown): x is Error => {
 export function getFetch(): FetchLike | undefined {
   return typeof fetch !== 'undefined' ? fetch : typeof globalThis.fetch !== 'undefined' ? globalThis.fetch : undefined
 }
+
+export function allSettled<T>(
+  promises: (Promise<T> | null | undefined)[]
+): Promise<({ status: 'fulfilled'; value: T } | { status: 'rejected'; reason: any })[]> {
+  return Promise.all(
+    promises.map((p) =>
+      (p ?? Promise.resolve()).then(
+        (value: any) => ({ status: 'fulfilled' as const, value }),
+        (reason: any) => ({ status: 'rejected' as const, reason })
+      )
+    )
+  )
+}

@@ -1,5 +1,5 @@
 import { PostHog } from './posthog-rn'
-import { PostHogAutocaptureElement } from 'posthog-core'
+import { PostHogAutocaptureElement, JsonType } from 'posthog-core'
 import { PostHogAutocaptureOptions } from './types'
 
 interface Element {
@@ -86,7 +86,7 @@ export const autocaptureFromTouchEvent = (e: any, posthog: PostHog, options: Pos
           if (key === 'children') {
             el.$el_text = typeof value === 'string' ? value : JSON.stringify(value)
           } else {
-            el[`attr__${key}`] = value
+            el[`attr__${key}`] = value as JsonType
           }
         }
       })
@@ -117,7 +117,7 @@ export const autocaptureFromTouchEvent = (e: any, posthog: PostHog, options: Pos
       const element = elements[i]
       if (element[elAttrLabelKey]) {
         // this element had a customLabelProp (default: ph-label) set, promote it to the lastLabel
-        lastLabel = element[elAttrLabelKey]
+        lastLabel = element[elAttrLabelKey] as string
       }
 
       // if lastLabel is set, update this elements tag_name

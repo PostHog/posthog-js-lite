@@ -80,7 +80,6 @@ describe('PostHog React Native', () => {
     // await posthog.ready()
 
     expect(posthog.getCommonEventProperties()).toEqual({
-      $active_feature_flags: undefined,
       $lib: 'posthog-react-native',
       $lib_version: expect.any(String),
       $screen_height: expect.any(Number),
@@ -100,7 +99,6 @@ describe('PostHog React Native', () => {
     await posthog.ready()
 
     expect(posthog2.getCommonEventProperties()).toEqual({
-      $active_feature_flags: undefined,
       $lib: 'posthog-react-native',
       $lib_version: expect.any(String),
       $screen_height: expect.any(Number),
@@ -370,8 +368,9 @@ describe('PostHog React Native', () => {
   describe('sync initialization', () => {
     let storage: PostHogCustomStorage
     let cache: { [key: string]: any | undefined }
+    let rnStorage: PostHogRNStorage
 
-    beforeEach(() => {
+    beforeEach(async () => {
       cache = {}
       storage = {
         getItem: jest.fn((key: string) => cache[key]),
@@ -379,6 +378,8 @@ describe('PostHog React Native', () => {
           cache[key] = value
         }),
       }
+      rnStorage = new PostHogRNStorage(storage)
+      await rnStorage.preloadPromise
     })
 
     it('should allow immediate calls without delay for stored values', async () => {
@@ -386,7 +387,7 @@ describe('PostHog React Native', () => {
         customStorage: storage,
       })
 
-      expect(storage.getItem).toHaveBeenCalledTimes(1)
+      expect(storage.getItem).toHaveBeenCalledTimes(2)
       expect(posthog.getFeatureFlag('flag')).toEqual(undefined)
       posthog.overrideFeatureFlag({
         flag: true,
@@ -398,23 +399,128 @@ describe('PostHog React Native', () => {
         customStorage: storage,
       })
 
-      expect(storage.getItem).toHaveBeenCalledTimes(2)
+      expect(storage.getItem).toHaveBeenCalledTimes(3)
       expect(posthog.getFeatureFlag('flag')).toEqual(true)
     })
 
     it('do not rotate session id on restart', async () => {
       const sessionId = '0192244d-a627-7ae2-b22a-ccd594bed71d'
-      storage.setItem(PostHogPersistedProperty.SessionId, sessionId)
+      rnStorage.setItem(PostHogPersistedProperty.SessionId, sessionId)
       const now = JSON.stringify(Date.now())
-      storage.setItem(PostHogPersistedProperty.SessionLastTimestamp, now)
+      rnStorage.setItem(PostHogPersistedProperty.SessionLastTimestamp, now)
+      rnStorage.setItem(PostHogPersistedProperty.SessionStartTimestamp, now)
 
       posthog = new PostHog('1', {
         customStorage: storage,
         enablePersistSessionIdAcrossRestart: true,
       })
 
-      expect(storage.getItem(PostHogPersistedProperty.SessionId)).toEqual(sessionId)
-      expect(storage.getItem(PostHogPersistedProperty.SessionLastTimestamp)).toEqual(now)
+      expect(posthog.getPersistedProperty(PostHogPersistedProperty.SessionId)).toEqual(sessionId)
+      expect(posthog.getPersistedProperty(PostHogPersistedProperty.SessionLastTimestamp)).toEqual(now)
+      expect(posthog.getPersistedProperty(PostHogPersistedProperty.SessionStartTimestamp)).toEqual(now)
+    })
+
+    it('rotate session id on restart if persist session id across restart is disabled', async () => {
+      const sessionId = '0192244d-a627-7ae2-b22a-ccd594bed71d'
+      rnStorage.setItem(PostHogPersistedProperty.SessionId, sessionId)
+      const now = JSON.stringify(Date.now())
+      rnStorage.setItem(PostHogPersistedProperty.SessionLastTimestamp, now)
+      rnStorage.setItem(PostHogPersistedProperty.SessionStartTimestamp, now)
+
+      posthog = new PostHog('1', {
+        customStorage: storage,
+        enablePersistSessionIdAcrossRestart: false,
+      })
+
+      expect(posthog.getPersistedProperty(PostHogPersistedProperty.SessionId)).toEqual(undefined)
+      expect(posthog.getPersistedProperty(PostHogPersistedProperty.SessionLastTimestamp)).toEqual(undefined)
+      expect(posthog.getPersistedProperty(PostHogPersistedProperty.SessionStartTimestamp)).toEqual(undefined)
+    })
+
+    it('rotate session id if expired after 30 minutes', async () => {
+      const sessionId = '0192244d-a627-7ae2-b22a-ccd594bed71d'
+      rnStorage.setItem(PostHogPersistedProperty.SessionId, sessionId)
+      const now = Date.now()
+      const nowMinus1Hour = JSON.stringify(now - 60 * 60 * 1000)
+      const nowMinus45Minutes = JSON.stringify(now - 45 * 60 * 1000)
+      rnStorage.setItem(PostHogPersistedProperty.SessionLastTimestamp, nowMinus45Minutes)
+      rnStorage.setItem(PostHogPersistedProperty.SessionStartTimestamp, nowMinus1Hour)
+
+      posthog = new PostHog('1', {
+        customStorage: storage,
+        enablePersistSessionIdAcrossRestart: true,
+      })
+
+      const newSessionId = posthog.getSessionId()
+
+      expect(posthog.getPersistedProperty(PostHogPersistedProperty.SessionId)).not.toEqual(sessionId)
+      expect(posthog.getPersistedProperty(PostHogPersistedProperty.SessionId)).toEqual(newSessionId)
+      expect(posthog.getPersistedProperty(PostHogPersistedProperty.SessionLastTimestamp)).not.toEqual(nowMinus45Minutes)
+      expect(posthog.getPersistedProperty(PostHogPersistedProperty.SessionStartTimestamp)).not.toEqual(nowMinus1Hour)
+    })
+
+    it('do not rotate session id if not expired', async () => {
+      const sessionId = '0192244d-a627-7ae2-b22a-ccd594bed71d'
+      rnStorage.setItem(PostHogPersistedProperty.SessionId, sessionId)
+      const now = Date.now()
+      const nowMinus1Hour = JSON.stringify(now - 60 * 60 * 1000)
+      const nowMinus15Minutes = JSON.stringify(now - 15 * 60 * 1000)
+      rnStorage.setItem(PostHogPersistedProperty.SessionLastTimestamp, nowMinus15Minutes)
+      rnStorage.setItem(PostHogPersistedProperty.SessionStartTimestamp, nowMinus1Hour)
+
+      posthog = new PostHog('1', {
+        customStorage: storage,
+        enablePersistSessionIdAcrossRestart: true,
+      })
+
+      const currentSessionId = posthog.getSessionId()
+
+      expect(posthog.getPersistedProperty(PostHogPersistedProperty.SessionId)).toEqual(currentSessionId)
+      expect(posthog.getPersistedProperty(PostHogPersistedProperty.SessionLastTimestamp)).not.toEqual(nowMinus15Minutes)
+      expect(posthog.getPersistedProperty(PostHogPersistedProperty.SessionStartTimestamp)).toEqual(nowMinus1Hour)
+    })
+
+    it('rotate session id if expired after 24 hours', async () => {
+      const sessionId = '0192244d-a627-7ae2-b22a-ccd594bed71d'
+      rnStorage.setItem(PostHogPersistedProperty.SessionId, sessionId)
+      const now = Date.now()
+      const nowMinus25Hour = JSON.stringify(now - 25 * 60 * 60 * 1000)
+      const nowMinus15Minutes = JSON.stringify(now - 15 * 60 * 1000)
+      rnStorage.setItem(PostHogPersistedProperty.SessionLastTimestamp, nowMinus15Minutes)
+      rnStorage.setItem(PostHogPersistedProperty.SessionStartTimestamp, nowMinus25Hour)
+
+      posthog = new PostHog('1', {
+        customStorage: storage,
+        enablePersistSessionIdAcrossRestart: true,
+      })
+
+      const newSessionId = posthog.getSessionId()
+
+      expect(posthog.getPersistedProperty(PostHogPersistedProperty.SessionId)).not.toEqual(sessionId)
+      expect(posthog.getPersistedProperty(PostHogPersistedProperty.SessionId)).toEqual(newSessionId)
+      expect(posthog.getPersistedProperty(PostHogPersistedProperty.SessionLastTimestamp)).not.toEqual(nowMinus15Minutes)
+      expect(posthog.getPersistedProperty(PostHogPersistedProperty.SessionStartTimestamp)).not.toEqual(nowMinus25Hour)
+    })
+
+    it('do not rotate session id if not expired after 24 hours', async () => {
+      const sessionId = '0192244d-a627-7ae2-b22a-ccd594bed71d'
+      rnStorage.setItem(PostHogPersistedProperty.SessionId, sessionId)
+      const now = Date.now()
+      const nowMinus23Hour = JSON.stringify(now - 23 * 60 * 60 * 1000)
+      const nowMinus15Minutes = JSON.stringify(now - 15 * 60 * 1000)
+      rnStorage.setItem(PostHogPersistedProperty.SessionLastTimestamp, nowMinus15Minutes)
+      rnStorage.setItem(PostHogPersistedProperty.SessionStartTimestamp, nowMinus23Hour)
+
+      posthog = new PostHog('1', {
+        customStorage: storage,
+        enablePersistSessionIdAcrossRestart: true,
+      })
+
+      const currentSessionID = posthog.getSessionId()
+
+      expect(currentSessionID).toEqual(sessionId)
+      expect(posthog.getPersistedProperty(PostHogPersistedProperty.SessionId)).toEqual(sessionId)
+      expect(posthog.getPersistedProperty(PostHogPersistedProperty.SessionStartTimestamp)).toEqual(nowMinus23Hour)
     })
   })
 })

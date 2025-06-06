@@ -66,6 +66,8 @@ export const formatResponse = (response: any, provider: string): Array<{ role: s
     return formatResponseAnthropic(response)
   } else if (provider === 'openai') {
     return formatResponseOpenAI(response)
+  } else if (provider === 'gemini') {
+    return formatResponseGemini(response)
   }
   return []
 }
@@ -94,6 +96,37 @@ export const formatResponseOpenAI = (response: any): Array<{ role: string; conte
       })
     }
   }
+  return output
+}
+
+export const formatResponseGemini = (response: any): Array<{ role: string; content: string }> => {
+  const output: Array<{ role: string; content: string }> = []
+
+  if (response.text) {
+    output.push({
+      role: 'assistant',
+      content: response.text,
+    })
+    return output
+  }
+
+  if (response.candidates && Array.isArray(response.candidates)) {
+    for (const candidate of response.candidates) {
+      if (candidate.content && candidate.content.parts) {
+        const text = candidate.content.parts
+          .filter((part: any) => part.text)
+          .map((part: any) => part.text)
+          .join('')
+        if (text) {
+          output.push({
+            role: 'assistant',
+            content: text,
+          })
+        }
+      }
+    }
+  }
+
   return output
 }
 

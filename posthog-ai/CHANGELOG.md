@@ -1,3 +1,17 @@
+# 5.0.0
+
+- Major bump for breaking change:
+- Require node engine >20
+- support for @google/genai
+
+# 4.4.0
+
+- Make `posthog-node` a peer dependency to avoid bundling implementation code
+
+# 4.3.2
+
+- Fix exported file extensions to work with older Node versions
+
 # 4.3.1
 
 - Remove fullDebug mode
