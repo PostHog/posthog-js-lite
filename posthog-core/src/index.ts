@@ -91,7 +91,7 @@ export async function logFlushError(err: any): Promise<void> {
     let text = ''
     try {
       text = await err.text
-    } catch { }
+    } catch {}
 
     console.error(`Error while flushing PostHog: message=${err.message}, response body=${text}`, err)
   } else {
@@ -272,7 +272,7 @@ export abstract class PostHogCoreStateless {
     const promiseUUID = uuidv7()
     this.pendingPromises[promiseUUID] = promise
     promise
-      .catch(() => { })
+      .catch(() => {})
       .finally(() => {
         delete this.pendingPromises[promiseUUID]
       })
@@ -532,9 +532,9 @@ export abstract class PostHogCoreStateless {
     disableGeoip?: boolean
   ): Promise<
     | {
-      response: FeatureFlagDetail | undefined
-      requestId: string | undefined
-    }
+        response: FeatureFlagDetail | undefined
+        requestId: string | undefined
+      }
     | undefined
   > {
     await this._initPromise
@@ -1034,17 +1034,17 @@ export abstract class PostHogCoreStateless {
       const fetchOptions: PostHogFetchOptions =
         this.captureMode === 'form'
           ? {
-            method: 'POST',
-            mode: 'no-cors',
-            credentials: 'omit',
-            headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `data=${encodeURIComponent(LZString.compressToBase64(payload))}&compression=lz64`,
-          }
+              method: 'POST',
+              mode: 'no-cors',
+              credentials: 'omit',
+              headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: `data=${encodeURIComponent(LZString.compressToBase64(payload))}&compression=lz64`,
+            }
           : {
-            method: 'POST',
-            headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },
-            body: payload,
-          }
+              method: 'POST',
+              headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },
+              body: payload,
+            }
 
       const retryOptions: Partial<RetriableOptions> = {
         retryCheck: (err) => {
@@ -1095,7 +1095,7 @@ export abstract class PostHogCoreStateless {
     retryOptions?: Partial<RetriableOptions>,
     requestTimeout?: number
   ): Promise<PostHogFetchResponse> {
-    ; (AbortSignal as any).timeout ??= function timeout(ms: number) {
+    ;(AbortSignal as any).timeout ??= function timeout(ms: number) {
       const ctrl = new AbortController()
       setTimeout(() => ctrl.abort(), ms)
       return ctrl.signal

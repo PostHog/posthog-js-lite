@@ -330,7 +330,7 @@ describe('PostHog Node.js', () => {
     })
 
     it('should warn if capture is called with a string', () => {
-      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => { })
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
       posthog.debug(true)
       // @ts-expect-error - Testing the warning when passing a string instead of an object
       posthog.capture('test-event')
@@ -1332,7 +1332,7 @@ describe('PostHog Node.js', () => {
     })
 
     it('should log error when decide response has errors', async () => {
-      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => { })
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
 
       mockedFetch.mockImplementation(
         apiImplementation({
