@@ -76,8 +76,6 @@ export type PostHogFeatureFlag = {
   }
   deleted: boolean
   active: boolean
-  /** @deprecated This field will be removed in a future version. **/
-  is_simple_flag: boolean
   rollout_percentage: null | number
   ensure_experience_continuity: boolean
   experiment_set: number[]

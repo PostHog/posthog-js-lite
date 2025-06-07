@@ -137,7 +137,7 @@ describe('PostHog React Native', () => {
     })
   })
 
-  describe('captureNativeAppLifecycleEvents', () => {
+  describe('captureAppLifecycleEvents', () => {
     it('should trigger an Application Installed event', async () => {
       // arrange
       const onCapture = jest.fn()
@@ -145,7 +145,7 @@ describe('PostHog React Native', () => {
       // act
       posthog = new PostHog('1', {
         customStorage: mockStorage,
-        captureNativeAppLifecycleEvents: true,
+        captureAppLifecycleEvents: true,
         customAppProperties: {
           $app_build: '1',
           $app_version: '1.0.0',
@@ -177,7 +177,7 @@ describe('PostHog React Native', () => {
       const onCapture = jest.fn()
       posthog = new PostHog('1', {
         customStorage: mockStorage,
-        captureNativeAppLifecycleEvents: true,
+        captureAppLifecycleEvents: true,
         customAppProperties: {
           $app_build: '1',
           $app_version: '1.0.0',
@@ -193,7 +193,7 @@ describe('PostHog React Native', () => {
       // act
       posthog = new PostHog('1', {
         customStorage: mockStorage,
-        captureNativeAppLifecycleEvents: true,
+        captureAppLifecycleEvents: true,
         customAppProperties: {
           $app_build: '2',
           $app_version: '2.0.0',
@@ -230,7 +230,7 @@ describe('PostHog React Native', () => {
 
       posthog = new PostHog('1', {
         customStorage: mockStorage,
-        captureNativeAppLifecycleEvents: true,
+        captureAppLifecycleEvents: true,
         customAppProperties: {
           $app_build: '1',
           $app_version: '1.0.0',
@@ -246,7 +246,7 @@ describe('PostHog React Native', () => {
 
       posthog = new PostHog('1', {
         customStorage: mockStorage,
-        captureNativeAppLifecycleEvents: true,
+        captureAppLifecycleEvents: true,
         customAppProperties: {
           $app_build: '1',
           $app_version: '1.0.0',
@@ -273,7 +273,7 @@ describe('PostHog React Native', () => {
       const onCapture = jest.fn()
       posthog = new PostHog('1', {
         customStorage: mockStorage,
-        captureNativeAppLifecycleEvents: true,
+        captureAppLifecycleEvents: true,
         customAppProperties: {
           $app_build: '1',
           $app_version: '1.0.0',
@@ -324,7 +324,7 @@ describe('PostHog React Native', () => {
       mockStorage.setItem(PostHogPersistedProperty.AnonymousId, 'my-anonymous-id')
       posthog = new PostHog('1', {
         customStorage: mockStorage,
-        captureNativeAppLifecycleEvents: false,
+        captureAppLifecycleEvents: false,
       })
       posthog.on('capture', onCapture)
       posthog.on('identify', onCapture)

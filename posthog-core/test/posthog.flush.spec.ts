@@ -27,7 +27,7 @@ describe('PostHog Core', () => {
       const successfulMessages: any[] = []
 
       mocks.fetch.mockImplementation(async (_, options) => {
-        const batch = JSON.parse(options.body || '').batch
+        const batch = JSON.parse((options.body || '') as string).batch
 
         successfulMessages.push(...batch)
         return Promise.resolve({
@@ -121,7 +121,7 @@ describe('PostHog Core', () => {
       const successfulMessages: any[] = []
 
       mocks.fetch.mockImplementation(async (_, options) => {
-        const batch = JSON.parse(options.body || '').batch
+        const batch = JSON.parse((options.body || '') as string).batch
 
         successfulMessages.push(...batch)
         return Promise.resolve({
@@ -151,7 +151,7 @@ describe('PostHog Core', () => {
       const successfulMessages: any[] = []
 
       mocks.fetch.mockImplementation(async (_, options) => {
-        const batch = JSON.parse(options.body || '').batch
+        const batch = JSON.parse((options.body || '') as string).batch
 
         if (batch.length > 1) {
           return Promise.resolve({
@@ -206,7 +206,7 @@ describe('PostHog Core', () => {
       const successfulMessages: any[] = []
 
       mocks.fetch.mockImplementation(async (_, options) => {
-        const batch = JSON.parse(options.body || '').batch
+        const batch = JSON.parse((options.body || '') as string).batch
 
         if (batch.some((msg: any) => msg.event.includes('cursed'))) {
           return Promise.resolve({
