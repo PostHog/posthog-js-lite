@@ -523,4 +523,90 @@ describe('PostHog React Native', () => {
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.SessionStartTimestamp)).toEqual(nowMinus23Hour)
     })
   })
+
+  describe('flags endpoint with config', () => {
+    it('should call /flags with config=true when remote config is disabled', async () => {
+      const mockFetch = jest.fn(async (url) => {
+        let res: any = { status: 'ok' }
+        if (url.includes('flags')) {
+          res = {
+            featureFlags: {},
+          }
+        }
+        return {
+          status: 200,
+          json: () => Promise.resolve(res),
+        }
+      })
+      ;(globalThis as any).window.fetch = mockFetch
+
+      posthog = new PostHog('test-token', {
+        customStorage: mockStorage,
+        disableRemoteConfig: true,
+        preloadFeatureFlags: true,
+        flushInterval: 0,
+      })
+
+      await posthog.ready()
+
+      // Wait a bit for the flags to be loaded
+      await waitForExpect(200, () => {
+        const flagsCalls = mockFetch.mock.calls.filter(([url]) => url.includes('/flags'))
+        expect(flagsCalls.length).toBeGreaterThan(0)
+
+        // Should include config=true when remote config is disabled
+        const flagsCallWithConfig = flagsCalls.find(([url]) => url.includes('config=true'))
+        expect(flagsCallWithConfig).toBeDefined()
+        if (flagsCallWithConfig) {
+          expect(flagsCallWithConfig[0]).toMatch(/\/flags\/\?v=2&config=true/)
+        }
+      })
+    })
+
+    it('should call /flags without config param when remote config is enabled', async () => {
+      const mockFetch = jest.fn(async (url) => {
+        let res: any = { status: 'ok' }
+        if (url.includes('flags')) {
+          res = {
+            featureFlags: {},
+          }
+        }
+        if (url.includes('decide')) {
+          res = {
+            sessionRecording: false,
+            surveys: false,
+            hasFeatureFlags: true,
+          }
+        }
+        return {
+          status: 200,
+          json: () => Promise.resolve(res),
+        }
+      })
+      ;(globalThis as any).window.fetch = mockFetch
+
+      posthog = new PostHog('test-token', {
+        customStorage: mockStorage,
+        disableRemoteConfig: false, // explicitly enable remote config
+        preloadFeatureFlags: true,
+        flushInterval: 0,
+      })
+
+      await posthog.ready()
+
+      // Wait a bit for the remote config and flags to be loaded
+      await waitForExpect(200, () => {
+        const flagsCalls = mockFetch.mock.calls.filter(([url]) => url.includes('/flags'))
+
+        if (flagsCalls.length > 0) {
+          // If flags endpoint is called, it should NOT include config=true
+          const flagsCallWithConfig = flagsCalls.find(([url]) => url.includes('config=true'))
+          expect(flagsCallWithConfig).toBeUndefined()
+
+          // Should be the basic flags URL
+          expect(flagsCalls[0][0]).toMatch(/\/flags\/\?v=2$/)
+        }
+      })
+    })
+  })
 })
