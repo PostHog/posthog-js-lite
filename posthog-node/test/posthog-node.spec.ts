@@ -1,13 +1,11 @@
-import fetch from '../src/fetch'
 import { PostHog } from '../src/entrypoints/index.node'
 import { anyDecideCall, anyLocalEvalCall, apiImplementation, isPending } from './test-utils'
 import { waitForPromises, wait } from '../../posthog-core/test/test-utils/test-utils'
 import { randomUUID } from 'crypto'
-jest.mock('../src/fetch')
 
 jest.mock('../package.json', () => ({ version: '1.2.3' }))
 
-const mockedFetch = jest.mocked(fetch, true)
+const mockedFetch = jest.spyOn(globalThis, 'fetch').mockImplementation()
 
 const waitForFlushTimer = async (): Promise<void> => {
   await waitForPromises()
@@ -37,6 +35,7 @@ describe('PostHog Node.js', () => {
     posthog = new PostHog('TEST_API_KEY', {
       host: 'http://example.com',
       fetchRetryCount: 0,
+      disableCompression: true,
     })
 
     mockedFetch.mockResolvedValue({
@@ -275,6 +274,7 @@ describe('PostHog Node.js', () => {
       const client = new PostHog('TEST_API_KEY', {
         host: 'http://example.com',
         disableGeoip: false,
+        disableCompression: true,
       })
       client.capture({ distinctId: '123', event: 'test-event', properties: { foo: 'bar' }, groups: { org: 123 } })
 
@@ -378,6 +378,7 @@ describe('PostHog Node.js', () => {
         host: 'http://example.com',
         fetchRetryCount: 0,
         flushAt: 1,
+        disableCompression: true,
       })
       ph.debug(true)
 
@@ -415,6 +416,7 @@ describe('PostHog Node.js', () => {
         host: 'http://example.com',
         fetchRetryCount: 0,
         flushAt: 4,
+        disableCompression: true,
       })
       ph.debug(true)
 
@@ -602,6 +604,7 @@ describe('PostHog Node.js', () => {
       posthog = new PostHog('TEST_API_KEY', {
         host: 'http://example.com',
         fetchRetryCount: 0,
+        disableCompression: true,
       })
     })
 
@@ -633,6 +636,7 @@ describe('PostHog Node.js', () => {
         host: 'http://example.com',
         flushAt: 1,
         fetchRetryCount: 0,
+        disableCompression: true,
       })
 
       posthog.capture({
@@ -681,6 +685,7 @@ describe('PostHog Node.js', () => {
         fetchRetryCount: 0,
         personalApiKey: 'TEST_PERSONAL_API_KEY',
         featureFlagsPollingInterval: 98,
+        disableCompression: true,
       })
 
       expect(posthog.options.featureFlagsPollingInterval).toEqual(100)
@@ -691,6 +696,7 @@ describe('PostHog Node.js', () => {
         host: 'http://example.com',
         fetchRetryCount: 0,
         personalApiKey: 'TEST_PERSONAL_API_KEY',
+        disableCompression: true,
       })
 
       expect(posthog.options.featureFlagsPollingInterval).toEqual(30000)
@@ -703,6 +709,7 @@ describe('PostHog Node.js', () => {
           fetchRetryCount: 0,
           personalApiKey: 'phc_abc123',
           featureFlagsPollingInterval: 100,
+          disableCompression: true,
         })
       }).toThrow(Error)
     })
@@ -717,6 +724,7 @@ describe('PostHog Node.js', () => {
         flushAt: 1,
         fetchRetryCount: 0,
         personalApiKey: 'TEST_PERSONAL_API_KEY',
+        disableCompression: true,
       })
 
       jest.runOnlyPendingTimers()
@@ -775,6 +783,7 @@ describe('PostHog Node.js', () => {
         flushAt: 1,
         fetchRetryCount: 0,
         personalApiKey: 'TEST_PERSONAL_API_KEY',
+        disableCompression: true,
       })
 
       posthog.capture({
@@ -824,6 +833,7 @@ describe('PostHog Node.js', () => {
         host: 'http://example.com',
         flushAt: 1,
         fetchRetryCount: 0,
+        disableCompression: true,
       })
 
       posthog.capture({
@@ -886,6 +896,7 @@ describe('PostHog Node.js', () => {
         maxCacheSize: 10,
         fetchRetryCount: 0,
         flushAt: 1,
+        disableCompression: true,
       })
 
       expect(Object.keys(posthog.distinctIdHasSentFlagCalls).length).toEqual(0)
@@ -949,6 +960,7 @@ describe('PostHog Node.js', () => {
         personalApiKey: 'TEST_PERSONAL_API_KEY',
         maxCacheSize: 10,
         fetchRetryCount: 0,
+        disableCompression: true,
       })
 
       jest.runOnlyPendingTimers()
@@ -1102,6 +1114,7 @@ describe('PostHog Node.js', () => {
         flushAt: 1,
         fetchRetryCount: 0,
         personalApiKey: 'TEST_PERSONAL_API_KEY',
+        disableCompression: true,
       })
 
       mockedFetch.mockClear()
@@ -1120,7 +1133,7 @@ describe('PostHog Node.js', () => {
 
       await expect(posthog.getFeatureFlagPayload('false-flag', '123', true)).resolves.toEqual(300)
       // Check no non-batch API calls were made
-      const additionalNonBatchCalls = mockedFetch.mock.calls.filter((call) => !call[0].includes('/batch'))
+      const additionalNonBatchCalls = mockedFetch.mock.calls.filter((call) => !(call[0] as string).includes('/batch'))
       expect(additionalNonBatchCalls.length).toBe(0)
     })
 

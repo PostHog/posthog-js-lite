@@ -50,8 +50,8 @@ export type PostHogCoreOptions = {
   remoteConfigRequestTimeoutMs?: number
   /** For Session Analysis how long before we expire a session (defaults to 30 mins) */
   sessionExpirationTimeSeconds?: number
-  /** Whether to post events to PostHog in JSON or compressed format. Defaults to 'json' */
-  captureMode?: 'json' | 'form'
+  /** Whether to disable GZIP compression */
+  disableCompression?: boolean
   disableGeoip?: boolean
   /** Special flag to indicate ingested data is for a historical migration. */
   historicalMigration?: boolean
@@ -90,7 +90,7 @@ export type PostHogFetchOptions = {
   mode?: 'no-cors'
   credentials?: 'omit'
   headers: { [key: string]: string }
-  body?: string
+  body?: string | Blob
   signal?: AbortSignal
 }
 
@@ -132,12 +132,22 @@ export type PostHogAutocaptureElement = {
 } & PostHogEventProperties
 // Any key prefixed with `attr__` can be added
 
+export enum Compression {
+  GZipJS = 'gzip-js',
+  Base64 = 'base64',
+}
+
 export type PostHogRemoteConfig = {
   sessionRecording?:
     | boolean
     | {
         [key: string]: JsonType
       }
+
+  /**
+   * Supported compression algorithms
+   */
+  supportedCompression?: Compression[]
 
   /**
    * Whether surveys are enabled
@@ -476,8 +486,6 @@ export enum ActionStepStringMatching {
 export type ActionStepType = {
   event?: string
   selector?: string
-  /** @deprecated Only `selector` should be used now. */
-  tag_name?: string
   text?: string
   /** @default StringMatching.Exact */
   text_matching?: ActionStepStringMatching

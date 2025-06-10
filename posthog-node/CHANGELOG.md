@@ -1,5 +1,23 @@
 # Next
 
+# 5.0.0 - 2025-06-10
+
+## Removed
+
+1. Remove `is_simple_flag` from `PostHogFeatureFlag` type
+2. Remove `captureMode` in favor of `json` capture mode only
+3. Remove deprecated `personProperties` and `groupProperties` in favor of `setPersonPropertiesForFlags` and `setGroupPropertiesForFlags`
+
+## Breaking changes
+
+1. feat: migrate to native fetch, Node 20+ required
+
+# 5.0.0-alpha.1 - 2025-04-29
+
+## Breaking changes
+
+1. feat: migrate to native fetch, Node 18+ required
+
 ## Added
 
 1. rotate session id if expired after 24 hours
