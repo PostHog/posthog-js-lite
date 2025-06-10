@@ -12,7 +12,6 @@ import {
 import { EventMessage, GroupIdentifyMessage, IdentifyMessage, IPostHog, PostHogOptions } from './types'
 import { FeatureFlagDetail, FeatureFlagValue } from 'posthog-core'
 import { FeatureFlagsPoller } from './extensions/feature-flags/feature-flags'
-import fetch from './fetch'
 import ErrorTracking from './extensions/error-tracking'
 import { getFeatureFlagValue } from 'posthog-core'
 import { PostHogMemoryStorage } from './storage-memory'

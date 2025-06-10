@@ -1,6 +1,5 @@
 import { PostHog } from '../src/entrypoints/index.node'
 import { PostHogOptions } from '../src/types'
-import fetch from '../src/fetch'
 import { apiImplementation, apiImplementationV4 } from './test-utils'
 import { waitForPromises } from 'posthog-core/test/test-utils/test-utils'
 import { PostHogV2FlagsResponse } from 'posthog-core/src/types'
@@ -8,7 +7,7 @@ jest.mock('../src/fetch')
 
 jest.spyOn(console, 'debug').mockImplementation()
 
-const mockedFetch = jest.mocked(fetch, true)
+const mockedFetch = jest.spyOn(globalThis, 'fetch').mockImplementation()
 
 const posthogImmediateResolveOptions: PostHogOptions = {
   fetchRetryCount: 0,

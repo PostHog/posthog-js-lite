@@ -12,29 +12,29 @@ describe('PostHog Core', () => {
     ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1 })
   })
 
-  describe('groupProperties', () => {
-    it('should store groupProperties as peristed with group_properties key', () => {
+  describe('setGroupPropertiesForFlags', () => {
+    it('should store setGroupPropertiesForFlags as persisted with group_properties key', () => {
       const props = { organisation: { name: 'bar' }, project: { name: 'baz' } }
-      posthog.groupProperties(props)
+      posthog.setGroupPropertiesForFlags(props)
 
       expect(mocks.storage.setItem).toHaveBeenCalledWith('group_properties', props)
 
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.GroupProperties)).toEqual(props)
     })
 
-    it('should update groupProperties appropriately', () => {
+    it('should update setGroupPropertiesForFlags appropriately', () => {
       const props = { organisation: { name: 'bar' }, project: { name: 'baz' } }
-      posthog.groupProperties(props)
+      posthog.setGroupPropertiesForFlags(props)
 
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.GroupProperties)).toEqual(props)
 
-      posthog.groupProperties({ organisation: { name: 'bar2' }, project: { name2: 'baz' } })
+      posthog.setGroupPropertiesForFlags({ organisation: { name: 'bar2' }, project: { name2: 'baz' } })
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.GroupProperties)).toEqual({
         organisation: { name: 'bar2' },
         project: { name: 'baz', name2: 'baz' },
       })
 
-      posthog.groupProperties({ organisation2: { name: 'bar' } })
+      posthog.setGroupPropertiesForFlags({ organisation2: { name: 'bar' } })
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.GroupProperties)).toEqual({
         organisation: { name: 'bar2' },
         project: { name: 'baz', name2: 'baz' },
@@ -42,43 +42,43 @@ describe('PostHog Core', () => {
       })
     })
 
-    it('should clear groupProperties on reset', () => {
+    it('should clear setGroupPropertiesForFlags on reset', () => {
       const props = { organisation: { name: 'bar' }, project: { name: 'baz' } }
-      posthog.groupProperties(props)
+      posthog.setGroupPropertiesForFlags(props)
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.GroupProperties)).toEqual(props)
 
       posthog.reset()
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.GroupProperties)).toEqual(undefined)
 
-      posthog.groupProperties(props)
+      posthog.setGroupPropertiesForFlags(props)
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.GroupProperties)).toEqual(props)
     })
   })
 
-  describe('personProperties', () => {
-    it('should store personProperties as peristed with person_properties key', () => {
+  describe('setPersonPropertiesForFlags', () => {
+    it('should store setPersonPropertiesForFlags as persisted with person_properties key', () => {
       const props = { organisation: 'bar', project: 'baz' }
-      posthog.personProperties(props)
+      posthog.setPersonPropertiesForFlags(props)
 
       expect(mocks.storage.setItem).toHaveBeenCalledWith('person_properties', props)
 
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.PersonProperties)).toEqual(props)
     })
 
-    it('should update personProperties appropriately', () => {
+    it('should update setPersonPropertiesForFlags appropriately', () => {
       const props = { organisation: 'bar', project: 'baz' }
-      posthog.personProperties(props)
+      posthog.setPersonPropertiesForFlags(props)
 
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.PersonProperties)).toEqual(props)
 
-      posthog.personProperties({ organisation: 'bar2', project2: 'baz' })
+      posthog.setPersonPropertiesForFlags({ organisation: 'bar2', project2: 'baz' })
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.PersonProperties)).toEqual({
         organisation: 'bar2',
         project: 'baz',
         project2: 'baz',
       })
 
-      posthog.personProperties({ organisation2: 'bar' })
+      posthog.setPersonPropertiesForFlags({ organisation2: 'bar' })
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.PersonProperties)).toEqual({
         organisation: 'bar2',
         project: 'baz',
@@ -87,15 +87,15 @@ describe('PostHog Core', () => {
       })
     })
 
-    it('should clear personProperties on reset', () => {
+    it('should clear setPersonPropertiesForFlags on reset', () => {
       const props = { organisation: 'bar', project: 'baz' }
-      posthog.personProperties(props)
+      posthog.setPersonPropertiesForFlags(props)
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.PersonProperties)).toEqual(props)
 
       posthog.reset()
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.PersonProperties)).toEqual(undefined)
 
-      posthog.personProperties(props)
+      posthog.setPersonPropertiesForFlags(props)
       expect(posthog.getPersistedProperty(PostHogPersistedProperty.PersonProperties)).toEqual(props)
     })
   })

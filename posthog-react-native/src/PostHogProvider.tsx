@@ -59,13 +59,10 @@ export const PostHogProvider = ({
 
     const parsedOptions = {
       ...options,
-
-      // For backwards-compatible reasons, this information can be stored in two separate places
-      // Default to true if not set
-      captureNativeAppLifecycleEvents:
-        options?.captureNativeAppLifecycleEvents !== undefined
-          ? options.captureNativeAppLifecycleEvents
-          : !captureNone && (captureAll || (autocaptureOptions?.captureLifecycleEvents ?? true)),
+      captureAppLifecycleEvents:
+        options?.captureAppLifecycleEvents !== undefined
+          ? options.captureAppLifecycleEvents
+          : !captureNone && captureAll,
     }
 
     return new PostHog(apiKey ?? '', parsedOptions)

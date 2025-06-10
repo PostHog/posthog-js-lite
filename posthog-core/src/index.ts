@@ -19,6 +19,7 @@ import {
   Survey,
   SurveyResponse,
   PostHogGroupProperties,
+  Compression,
 } from './types'
 import {
   createFlagsResponseFromFlagsAndPayloads,
@@ -32,7 +33,6 @@ import {
   allSettled,
   assert,
   currentISOTime,
-  currentTimestamp,
   isError,
   removeTrailingSlash,
   retriable,
@@ -40,7 +40,7 @@ import {
   safeSetTimeout,
   STRING_FORMAT,
 } from './utils'
-import { LZString } from './lz-string'
+import { isGzipSupported, gzipCompress } from './gzip'
 import { SimpleEventEmitter } from './eventemitter'
 import { uuidv7 } from './vendor/uuidv7'
 
@@ -125,11 +125,11 @@ export abstract class PostHogCoreStateless {
   private requestTimeout: number
   private featureFlagsRequestTimeoutMs: number
   private remoteConfigRequestTimeoutMs: number
-  private captureMode: 'form' | 'json'
   private removeDebugCallback?: () => void
   private disableGeoip: boolean
   private historicalMigration: boolean
   protected disabled
+  protected disableCompression: boolean
 
   private defaultOptIn: boolean
   private pendingPromises: Record<string, Promise<any>> = {}
@@ -161,7 +161,6 @@ export abstract class PostHogCoreStateless {
     this.maxBatchSize = Math.max(this.flushAt, options?.maxBatchSize ?? 100)
     this.maxQueueSize = Math.max(this.flushAt, options?.maxQueueSize ?? 1000)
     this.flushInterval = options?.flushInterval ?? 10000
-    this.captureMode = options?.captureMode || 'json'
     this.preloadFeatureFlags = options?.preloadFeatureFlags ?? true
     // If enable is explicitly set to false we override the optout
     this.defaultOptIn = options?.defaultOptIn ?? true
@@ -181,6 +180,7 @@ export abstract class PostHogCoreStateless {
     // Init promise allows the derived class to block calls until it is ready
     this._initPromise = Promise.resolve()
     this._isInitialized = true
+    this.disableCompression = !isGzipSupported() || (options?.disableCompression ?? false)
   }
 
   protected logMsgIfDebug(fn: () => void): void {
@@ -863,25 +863,18 @@ export abstract class PostHogCoreStateless {
 
     const payload = JSON.stringify(data)
 
-    const url =
-      this.captureMode === 'form'
-        ? `${this.host}/e/?ip=1&_=${currentTimestamp()}&v=${this.getLibraryVersion()}`
-        : `${this.host}/batch/`
+    const url = `${this.host}/batch/`
 
-    const fetchOptions: PostHogFetchOptions =
-      this.captureMode === 'form'
-        ? {
-            method: 'POST',
-            mode: 'no-cors',
-            credentials: 'omit',
-            headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `data=${encodeURIComponent(LZString.compressToBase64(payload))}&compression=lz64`,
-          }
-        : {
-            method: 'POST',
-            headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },
-            body: payload,
-          }
+    const gzippedPayload = !this.disableCompression ? await gzipCompress(payload, this.isDebug) : null
+    const fetchOptions: PostHogFetchOptions = {
+      method: 'POST',
+      headers: {
+        ...this.getCustomHeaders(),
+        'Content-Type': 'application/json',
+        ...(gzippedPayload !== null && { 'Content-Encoding': 'gzip' }),
+      },
+      body: gzippedPayload || payload,
+    }
 
     try {
       await this.fetchWithRetry(url, fetchOptions)
@@ -1026,25 +1019,18 @@ export abstract class PostHogCoreStateless {
 
       const payload = JSON.stringify(data)
 
-      const url =
-        this.captureMode === 'form'
-          ? `${this.host}/e/?ip=1&_=${currentTimestamp()}&v=${this.getLibraryVersion()}`
-          : `${this.host}/batch/`
+      const url = `${this.host}/batch/`
 
-      const fetchOptions: PostHogFetchOptions =
-        this.captureMode === 'form'
-          ? {
-              method: 'POST',
-              mode: 'no-cors',
-              credentials: 'omit',
-              headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/x-www-form-urlencoded' },
-              body: `data=${encodeURIComponent(LZString.compressToBase64(payload))}&compression=lz64`,
-            }
-          : {
-              method: 'POST',
-              headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },
-              body: payload,
-            }
+      const gzippedPayload = !this.disableCompression ? await gzipCompress(payload, this.isDebug) : null
+      const fetchOptions: PostHogFetchOptions = {
+        method: 'POST',
+        headers: {
+          ...this.getCustomHeaders(),
+          'Content-Type': 'application/json',
+          ...(gzippedPayload !== null && { 'Content-Encoding': 'gzip' }),
+        },
+        body: gzippedPayload || payload,
+      }
 
       const retryOptions: Partial<RetriableOptions> = {
         retryCheck: (err) => {
@@ -1104,10 +1090,18 @@ export abstract class PostHogCoreStateless {
     const body = options.body ? options.body : ''
     let reqByteLength = -1
     try {
-      reqByteLength = Buffer.byteLength(body, STRING_FORMAT)
+      if (body instanceof Blob) {
+        reqByteLength = body.size
+      } else {
+        reqByteLength = Buffer.byteLength(body, STRING_FORMAT)
+      }
     } catch {
-      const encoded = new TextEncoder().encode(body)
-      reqByteLength = encoded.length
+      if (body instanceof Blob) {
+        reqByteLength = body.size
+      } else {
+        const encoded = new TextEncoder().encode(body)
+        reqByteLength = encoded.length
+      }
     }
 
     return await retriable(
@@ -1560,11 +1554,6 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     })
   }
 
-  /** @deprecated - Renamed to setPersonPropertiesForFlags */
-  personProperties(properties: { [type: string]: string }): void {
-    return this.setPersonPropertiesForFlags(properties)
-  }
-
   setGroupPropertiesForFlags(properties: { [type: string]: Record<string, string> }): void {
     this.wrap(() => {
       // Get persisted group properties
@@ -1592,13 +1581,6 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   resetGroupPropertiesForFlags(): void {
     this.wrap(() => {
       this.setPersistedProperty<PostHogEventProperties>(PostHogPersistedProperty.GroupProperties, null)
-    })
-  }
-
-  /** @deprecated - Renamed to setGroupPropertiesForFlags */
-  groupProperties(properties: { [type: string]: Record<string, string> }): void {
-    this.wrap(() => {
-      this.setGroupPropertiesForFlags(properties)
     })
   }
 
@@ -1699,6 +1681,10 @@ export abstract class PostHogCore extends PostHogCoreStateless {
               this.logMsgIfDebug(() => console.warn('Remote config has no feature flags, will not load feature flags.'))
             } else if (this.preloadFeatureFlags !== false) {
               this.reloadFeatureFlags()
+            }
+
+            if (!response.supportedCompression?.includes(Compression.GZipJS)) {
+              this.disableCompression = true
             }
 
             remoteConfig = response
@@ -2090,4 +2076,3 @@ export abstract class PostHogCore extends PostHogCoreStateless {
 }
 
 export * from './types'
-export { LZString }

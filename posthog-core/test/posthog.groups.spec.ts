@@ -12,7 +12,7 @@ describe('PostHog Core', () => {
   })
 
   describe('groups', () => {
-    it('should store groups as peristed props', () => {
+    it('should store groups as persisted props', () => {
       const groups = { posthog: 'team-1', other: 'key-2' }
       posthog.groups(groups)
 
@@ -23,7 +23,7 @@ describe('PostHog Core', () => {
   })
 
   describe('group', () => {
-    it('should store group as peristed props', () => {
+    it('should store group as persisted props', () => {
       const groups = { posthog: 'team-1' }
       posthog.groups(groups)
       posthog.group('other', 'foo')

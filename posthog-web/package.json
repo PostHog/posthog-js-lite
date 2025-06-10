@@ -1,6 +1,6 @@
 {
   "name": "posthog-js-lite",
-  "version": "3.6.0",
+  "version": "4.0.0",
   "main": "lib/index.cjs",
   "module": "lib/index.mjs",
   "types": "lib/index.d.ts",
