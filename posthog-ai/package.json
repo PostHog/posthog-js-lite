@@ -1,6 +1,6 @@
 {
   "name": "@posthog/ai",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "description": "PostHog Node.js AI integrations",
   "repository": {
     "type": "git",
@@ -40,7 +40,7 @@
     "zod": "^3.24.1"
   },
   "peerDependencies": {
-    "posthog-node": "^4.17.1"
+    "posthog-node": "^5.0.0"
   },
   "scripts": {
     "test": "jest",

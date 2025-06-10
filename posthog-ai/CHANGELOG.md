@@ -1,3 +1,9 @@
+# Next
+
+# 5.0.1
+
+- Bump posthog-node to v5.0.0
+
 # 5.0.0
 
 - Major bump for breaking change:
