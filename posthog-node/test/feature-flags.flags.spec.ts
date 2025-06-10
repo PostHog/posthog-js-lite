@@ -3,7 +3,6 @@ import { PostHogOptions } from '../src/types'
 import { apiImplementation, apiImplementationV4 } from './test-utils'
 import { waitForPromises } from 'posthog-core/test/test-utils/test-utils'
 import { PostHogV2FlagsResponse } from 'posthog-core/src/types'
-jest.mock('../src/fetch')
 
 jest.spyOn(console, 'debug').mockImplementation()
 
