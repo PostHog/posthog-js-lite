@@ -445,7 +445,7 @@ export abstract class PostHogCoreStateless {
   ): Promise<PostHogFlagsResponse | undefined> {
     await this._initPromise
 
-    const url = `${this.host}/flags/?v=2&config=true`
+    const url = `${this.host}/flags/?v=2&config=true` // TODO do I need to support config true by default?  Maybe just for the react native lib?
     const fetchOptions: PostHogFetchOptions = {
       method: 'POST',
       headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },

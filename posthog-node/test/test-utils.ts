@@ -8,7 +8,7 @@ type ErrorResponse = {
 
 export const apiImplementationV4 = (flagsResponse: PostHogV2FlagsResponse | ErrorResponse) => {
   return (url: any): Promise<any> => {
-    if ((url as any).includes('/flags/?v=2')) {
+    if ((url as any).includes('/flags/?v=2&config=true')) {
       // Check if the response is a flags response or an error response
       return 'flags' in flagsResponse
         ? Promise.resolve({
@@ -60,7 +60,7 @@ export const apiImplementation = ({
           } else {
             return Promise.resolve({
               featureFlags: flags,
-              featureFlagsPayloads: Object.fromEntries(
+              featureFlagPayloads: Object.fromEntries(
                 Object.entries(flagsPayloads || {}).map(([k, v]) => [k, JSON.stringify(v)])
               ),
               errorsWhileComputingFlags,
@@ -104,7 +104,7 @@ export const anyLocalEvalCall = [
   'http://example.com/api/feature_flag/local_evaluation?token=TEST_API_KEY&send_cohorts',
   expect.any(Object),
 ]
-export const anyFlagsCall = ['http://example.com/flags/?v=2', expect.any(Object)]
+export const anyFlagsCall = ['http://example.com/flags/?v=2&config=true', expect.any(Object)]
 
 export const isPending = (promise: Promise<any>): boolean => {
   return util.inspect(promise).includes('pending')

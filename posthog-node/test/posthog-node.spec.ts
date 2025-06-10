@@ -612,7 +612,7 @@ describe('PostHog Node.js', () => {
       )
       expect(mockedFetch).toHaveBeenCalledTimes(1)
       expect(mockedFetch).toHaveBeenCalledWith(
-        'http://example.com/flags/?v=2',
+        'http://example.com/flags/?v=2&config=true',
         expect.objectContaining({ method: 'POST', body: expect.stringContaining('"geoip_disable":true') })
       )
     })
@@ -645,7 +645,7 @@ describe('PostHog Node.js', () => {
       await waitForPromises()
 
       expect(mockedFetch).toHaveBeenCalledWith(
-        'http://example.com/flags/?v=2',
+        'http://example.com/flags/?v=2&config=true',
         expect.objectContaining({ method: 'POST' })
       )
 
@@ -670,7 +670,7 @@ describe('PostHog Node.js', () => {
 
       expect(mockedFetch).not.toHaveBeenCalledWith(...anyLocalEvalCall)
       expect(mockedFetch).toHaveBeenCalledWith(
-        'http://example.com/flags/?v=2',
+        'http://example.com/flags/?v=2&config=true',
         expect.objectContaining({ method: 'POST', body: expect.stringContaining('"geoip_disable":true') })
       )
     })
@@ -730,7 +730,7 @@ describe('PostHog Node.js', () => {
       expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
       // no flags call
       expect(mockedFetch).not.toHaveBeenCalledWith(
-        'http://example.com/flags/?v=2',
+        'http://example.com/flags/?v=2&config=true',
         expect.objectContaining({ method: 'POST' })
       )
 
@@ -788,7 +788,7 @@ describe('PostHog Node.js', () => {
       expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
       // no flags call
       expect(mockedFetch).not.toHaveBeenCalledWith(
-        'http://example.com/flags/?v=2',
+        'http://example.com/flags/?v=2&config=true',
         expect.objectContaining({ method: 'POST' })
       )
 
@@ -836,7 +836,7 @@ describe('PostHog Node.js', () => {
       await waitForFlushTimer()
 
       expect(mockedFetch).toHaveBeenCalledWith(
-        'http://example.com/flags/?v=2',
+        'http://example.com/flags/?v=2&config=true',
         expect.objectContaining({ method: 'POST', body: expect.not.stringContaining('geoip_disable') })
       )
 
@@ -1089,7 +1089,7 @@ describe('PostHog Node.js', () => {
       ).resolves.toEqual(2)
       expect(mockedFetch).toHaveBeenCalledTimes(1)
       expect(mockedFetch).toHaveBeenCalledWith(
-        'http://example.com/flags/?v=2',
+        'http://example.com/flags/?v=2&config=true',
         expect.objectContaining({ method: 'POST', body: expect.stringContaining('"geoip_disable":true') })
       )
     })
