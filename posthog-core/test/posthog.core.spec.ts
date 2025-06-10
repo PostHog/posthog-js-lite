@@ -21,14 +21,14 @@ describe('PostHog Core', () => {
       ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1 })
     })
 
-    it('should handle successful v3 response and return normalized response', async () => {
-      const mockV3Response = {
+    it('should handle successful v1 response and return normalized response', async () => {
+      const mockV1Response = {
         featureFlags: { 'test-flag': true },
         featureFlagPayloads: { 'test-flag': { a: 'payload' } },
       }
 
       const expectedResponse = {
-        ...mockV3Response,
+        ...mockV1Response,
         flags: {
           'test-flag': {
             key: 'test-flag',
@@ -50,7 +50,7 @@ describe('PostHog Core', () => {
           return Promise.resolve({
             status: 200,
             text: () => Promise.resolve('ok'),
-            json: () => Promise.resolve(mockV3Response),
+            json: () => Promise.resolve(mockV1Response),
           })
         }
         return errorAPIResponse

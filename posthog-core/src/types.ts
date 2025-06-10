@@ -78,12 +78,11 @@ export enum PostHogPersistedProperty {
   InstalledAppBuild = 'installed_app_build', // only used by posthog-react-native
   InstalledAppVersion = 'installed_app_version', // only used by posthog-react-native
   SessionReplay = 'session_replay', // only used by posthog-react-native
-  // TODO DYLAN migrate this to flags
-  DecideEndpointWasHit = 'decide_endpoint_was_hit', // only used by posthog-react-native
   SurveyLastSeenDate = 'survey_last_seen_date', // only used by posthog-react-native
   SurveysSeen = 'surveys_seen', // only used by posthog-react-native
   Surveys = 'surveys', // only used by posthog-react-native
   RemoteConfig = 'remote_config',
+  FlagsEndpointWasHit = 'flags_endpoint_was_hit', // only used by posthog-react-native
 }
 
 export type PostHogFetchOptions = {
@@ -229,7 +228,7 @@ export type PostHogV2FlagsResponse = Omit<PostHogFlagsResponse, 'featureFlags' |
  * The format of the flags object in persisted storage
  *
  * When we pull flags from persistence, we can normalize them to PostHogFeatureFlagDetails
- * so that we can support v3 and v4 of the API.
+ * so that we can support v1 and v2 of the API.
  */
 export type PostHogFlagsStorageFormat = Pick<PostHogFeatureFlagDetails, 'flags'>
 

@@ -36,7 +36,7 @@ describe('flags v2', () => {
       const result = await posthog.getFeatureFlag('non-existent-flag', 'some-distinct-id')
 
       expect(result).toBe(undefined)
-      expect(mockedFetch).toHaveBeenCalledWith('http://example.com/flags/?v=2&config=true', expect.any(Object))
+      expect(mockedFetch).toHaveBeenCalledWith('http://example.com/flags/?v=2', expect.any(Object))
 
       await waitForPromises()
       expect(capturedMessage).toMatchObject({
@@ -150,7 +150,7 @@ describe('flags v2', () => {
         const result = await posthog.getFeatureFlag(key, 'some-distinct-id')
 
         expect(result).toBe(expectedResponse)
-        expect(mockedFetch).toHaveBeenCalledWith('http://example.com/flags/?v=2&config=true', expect.any(Object))
+        expect(mockedFetch).toHaveBeenCalledWith('http://example.com/flags/?v=2', expect.any(Object))
 
         await waitForPromises()
         expect(capturedMessage).toMatchObject({
@@ -175,7 +175,7 @@ describe('flags v2', () => {
       }
     )
 
-    describe('getFeatureFlagPayload v4', () => {
+    describe('getFeatureFlagPayload v2', () => {
       it('returns payload', async () => {
         mockedFetch.mockImplementation(
           apiImplementationV4({
@@ -213,7 +213,7 @@ describe('flags v2', () => {
         const result = await posthog.getFeatureFlagPayload('flag-with-payload', 'some-distinct-id')
 
         expect(result).toEqual([0, 1, 2])
-        expect(mockedFetch).toHaveBeenCalledWith('http://example.com/flags/?v=2&config=true', expect.any(Object))
+        expect(mockedFetch).toHaveBeenCalledWith('http://example.com/flags/?v=2', expect.any(Object))
 
         await waitForPromises()
         expect(capturedMessage).toBeUndefined()
@@ -326,7 +326,7 @@ describe('flags v1', () => {
       const result = await posthog.getFeatureFlag('non-existent-flag', 'some-distinct-id')
 
       expect(result).toBe(undefined)
-      expect(mockedFetch).toHaveBeenCalledWith('http://example.com/flags/?v=2&config=true', expect.any(Object))
+      expect(mockedFetch).toHaveBeenCalledWith('http://example.com/flags/?v=2', expect.any(Object))
 
       await waitForPromises()
       expect(capturedMessage).toMatchObject({
@@ -347,7 +347,7 @@ describe('flags v1', () => {
     })
   })
 
-  describe('getFeatureFlagPayload v3', () => {
+  describe('getFeatureFlagPayload v1', () => {
     it('returns payload', async () => {
       mockedFetch.mockImplementation(
         apiImplementation({
@@ -372,7 +372,7 @@ describe('flags v1', () => {
       const result = await posthog.getFeatureFlagPayload('flag-with-payload', 'some-distinct-id')
 
       expect(result).toEqual([0, 1, 2])
-      expect(mockedFetch).toHaveBeenCalledWith('http://example.com/flags/?v=2&config=true', expect.any(Object))
+      expect(mockedFetch).toHaveBeenCalledWith('http://example.com/flags/?v=2', expect.any(Object))
 
       await waitForPromises()
       expect(capturedMessage).toBeUndefined()

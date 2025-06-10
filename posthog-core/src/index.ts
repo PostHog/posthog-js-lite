@@ -441,11 +441,12 @@ export abstract class PostHogCoreStateless {
     groups: Record<string, string | number> = {},
     personProperties: Record<string, string> = {},
     groupProperties: Record<string, Record<string, string>> = {},
-    extraPayload: Record<string, any> = {}
+    extraPayload: Record<string, any> = {},
+    withConfig: boolean = false
   ): Promise<PostHogFlagsResponse | undefined> {
     await this._initPromise
 
-    const url = `${this.host}/flags/?v=2&config=true` // TODO do I need to support config true by default?  Maybe just for the react native lib?
+    const url = `${this.host}/flags/?v=2${withConfig ? '&config=true' : ''}`
     const fetchOptions: PostHogFetchOptions = {
       method: 'POST',
       headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },
@@ -1612,12 +1613,15 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   /***
    *** FEATURE FLAGS
    ***/
-  private async flagsAsync(sendAnonDistinctId: boolean = true): Promise<PostHogFlagsResponse | undefined> {
+  private async flagsAsync(
+    sendAnonDistinctId: boolean = true,
+    withConfig: boolean = false
+  ): Promise<PostHogFlagsResponse | undefined> {
     await this._initPromise
     if (this._flagsResponsePromise) {
       return this._flagsResponsePromise
     }
-    return this._flagsAsync(sendAnonDistinctId)
+    return this._flagsAsync(sendAnonDistinctId, withConfig)
   }
 
   private cacheSessionReplay(source: string, response?: PostHogRemoteConfig): void {
@@ -1709,7 +1713,10 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     return this._remoteConfigResponsePromise
   }
 
-  private async _flagsAsync(sendAnonDistinctId: boolean = true): Promise<PostHogFlagsResponse | undefined> {
+  private async _flagsAsync(
+    sendAnonDistinctId: boolean = true,
+    withConfig: boolean = false
+  ): Promise<PostHogFlagsResponse | undefined> {
     this._flagsResponsePromise = this._initPromise
       .then(async () => {
         const distinctId = this.getDistinctId()
@@ -1729,7 +1736,8 @@ export abstract class PostHogCore extends PostHogCoreStateless {
           groups as PostHogGroupProperties,
           personProperties,
           groupProperties,
-          extraProperties
+          extraProperties,
+          withConfig
         )
         // Add check for quota limitation on feature flags
         if (res?.quotaLimited?.includes(QuotaLimitedFeature.FeatureFlags)) {
@@ -1761,10 +1769,8 @@ export abstract class PostHogCore extends PostHogCoreStateless {
           }
           this.setKnownFeatureFlagDetails(newFeatureFlagDetails)
           // Mark that we hit the /flags endpoint so we can capture this in the $feature_flag_called event
-          // TODO dylan migrate this
-          this.setPersistedProperty(PostHogPersistedProperty.DecideEndpointWasHit, true)
-
-          this.cacheSessionReplay('decide/flags', res)
+          this.setPersistedProperty(PostHogPersistedProperty.FlagsEndpointWasHit, true)
+          this.cacheSessionReplay('flags', res)
         }
         return res
       })
@@ -1884,9 +1890,8 @@ export abstract class PostHogCore extends PostHogCoreStateless {
         ...maybeAdd('$feature_flag_reason', featureFlag?.reason?.description ?? featureFlag?.reason?.code),
         ...maybeAdd('$feature_flag_bootstrapped_response', bootstrappedResponse),
         ...maybeAdd('$feature_flag_bootstrapped_payload', bootstrappedPayload),
-        // If we haven't yet received a response from the /decide endpoint, we must have used the bootstrapped value
-        // TODO DYLAN migrate this
-        $used_bootstrap_value: !this.getPersistedProperty(PostHogPersistedProperty.DecideEndpointWasHit),
+        // If we haven't yet received a response from the /flags endpoint, we must have used the bootstrapped value
+        $used_bootstrap_value: !this.getPersistedProperty(PostHogPersistedProperty.FlagsEndpointWasHit),
         ...maybeAdd('$feature_flag_request_id', details.requestId),
       })
     }
@@ -1976,14 +1981,17 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   }
 
   // Used when we want to trigger the reload but we don't care about the result
-  reloadFeatureFlags(cb?: (err?: Error, flags?: PostHogFlagsResponse['featureFlags']) => void): void {
-    this.flagsAsync()
+  reloadFeatureFlags(options?: {
+    cb?: (err?: Error, flags?: PostHogFlagsResponse['featureFlags']) => void
+    withConfig?: boolean
+  }): void {
+    this.flagsAsync(true, options?.withConfig)
       .then((res) => {
-        cb?.(undefined, res?.featureFlags)
+        options?.cb?.(undefined, res?.featureFlags)
       })
       .catch((e) => {
-        cb?.(e, undefined)
-        if (!cb) {
+        options?.cb?.(e, undefined)
+        if (!options?.cb) {
           this.logMsgIfDebug(() => console.log('PostHog Debug', 'Error reloading feature flags', e))
         }
       })
@@ -1993,10 +2001,11 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     return await this.remoteConfigAsync()
   }
 
-  async reloadFeatureFlagsAsync(
-    sendAnonDistinctId: boolean = true
-  ): Promise<PostHogFlagsResponse['featureFlags'] | undefined> {
-    return (await this.flagsAsync(sendAnonDistinctId))?.featureFlags
+  async reloadFeatureFlagsAsync(options?: {
+    sendAnonDistinctId?: boolean
+    withConfig?: boolean
+  }): Promise<PostHogFlagsResponse['featureFlags'] | undefined> {
+    return (await this.flagsAsync(options?.sendAnonDistinctId ?? true, options?.withConfig))?.featureFlags
   }
 
   onFeatureFlags(cb: (flags: PostHogFlagsResponse['featureFlags']) => void): () => void {

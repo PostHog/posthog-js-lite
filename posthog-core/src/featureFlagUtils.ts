@@ -16,7 +16,7 @@ export const normalizeFlagsResponse = (
     | PartialWithRequired<PostHogV1FlagsResponse, 'featureFlags' | 'featureFlagPayloads'>
 ): PostHogFeatureFlagsResponse => {
   if ('flags' in flagsResponse) {
-    // Convert v4 format to v3 format
+    // Convert v2 format to v1 format
     const featureFlags = getFlagValuesFromFlags(flagsResponse.flags)
     const featureFlagPayloads = getPayloadsFromFlags(flagsResponse.flags)
 
@@ -26,7 +26,7 @@ export const normalizeFlagsResponse = (
       featureFlagPayloads,
     }
   } else {
-    // Convert v3 format to v4 format
+    // Convert v1 format to v2 format
     const featureFlags = flagsResponse.featureFlags ?? {}
     const featureFlagPayloads = Object.fromEntries(
       Object.entries(flagsResponse.featureFlagPayloads || {}).map(([k, v]) => [k, parsePayload(v)])
@@ -103,7 +103,7 @@ export const getPayloadsFromFlags = (
 }
 
 /**
- * Get the flag details from the legacy v3 flags and payloads. As such, it will lack the reason, id, version, and description.
+ * Get the flag details from the legacy v1 flags and payloads. As such, it will lack the reason, id, version, and description.
  * @param flagsResponse - The flags response
  * @returns The flag details
  */
