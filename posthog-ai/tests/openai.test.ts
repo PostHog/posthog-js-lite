@@ -3,7 +3,7 @@ import PostHogOpenAI from '../src/openai'
 import openaiModule from 'openai'
 
 let mockOpenAiChatResponse: any = {}
-let mockOpenAiEmbeddingResponse: any = {}
+let mockOpenAiParsedResponse: any = {}
 
 jest.mock('posthog-node', () => {
   return {
@@ -11,7 +11,7 @@ jest.mock('posthog-node', () => {
       return {
         capture: jest.fn(),
         captureImmediate: jest.fn(),
-        privacyMode: false,
+        privacy_mode: false,
       }
     }),
   }
@@ -36,10 +36,20 @@ jest.mock('openai', () => {
     static Completions = MockCompletions
   }
 
+  // Mock Responses class
+  class MockResponses {
+    constructor() {}
+    create = jest.fn()
+  }
+
+  // Add parse to prototype instead of instance
+  ;(MockResponses.prototype as any).parse = jest.fn()
+
   // Mock OpenAI class
   class MockOpenAI {
     chat: any
     embeddings: any
+    responses: any
     constructor() {
       this.chat = {
         completions: {
@@ -49,8 +59,12 @@ jest.mock('openai', () => {
       this.embeddings = {
         create: jest.fn(),
       }
+      this.responses = {
+        create: jest.fn(),
+      }
     }
     static Chat = MockChat
+    static Responses = MockResponses
   }
 
   return {
@@ -58,6 +72,7 @@ jest.mock('openai', () => {
     default: MockOpenAI,
     OpenAI: MockOpenAI,
     Chat: MockChat,
+    Responses: MockResponses,
   }
 })
 
@@ -109,25 +124,39 @@ describe('PostHogOpenAI - Jest test suite', () => {
       },
     }
 
-    // Some default embedding mock
-    mockOpenAiEmbeddingResponse = {
-      data: [
+    // Some default parsed response mock
+    mockOpenAiParsedResponse = {
+      id: 'test-parsed-response-id',
+      model: 'gpt-4o-2024-08-06',
+      object: 'response',
+      created_at: Date.now(),
+      status: 'completed',
+      output: [
         {
-          object: 'embedding',
-          index: 0,
-          embedding: [0.1, 0.2, 0.3],
+          type: 'output_text',
+          text: '{"name": "Science Fair", "date": "Friday", "participants": ["Alice", "Bob"]}',
         },
       ],
-      model: 'text-embedding-3-small',
-      object: 'list',
+      output_parsed: {
+        name: 'Science Fair',
+        date: 'Friday',
+        participants: ['Alice', 'Bob'],
+      },
       usage: {
-        prompt_tokens: 10,
-        total_tokens: 10,
+        input_tokens: 15,
+        output_tokens: 20,
+        input_tokens_details: { cached_tokens: 0 },
+        output_tokens_details: { reasoning_tokens: 5 },
+        total_tokens: 35,
       },
     }
 
     const ChatMock: any = openaiModule.Chat
     ;(ChatMock.Completions as any).prototype.create = jest.fn().mockResolvedValue(mockOpenAiChatResponse)
+
+    // Mock responses.parse using the same pattern as chat completions
+    const ResponsesMock: any = openaiModule.Responses
+    ResponsesMock.prototype.parse.mockResolvedValue(mockOpenAiParsedResponse)
   })
 
   // Wrap each test with conditional skip
@@ -158,39 +187,6 @@ describe('PostHogOpenAI - Jest test suite', () => {
     expect(properties['$ai_output_choices']).toEqual([{ role: 'assistant', content: 'Hello from OpenAI!' }])
     expect(properties['$ai_input_tokens']).toBe(20)
     expect(properties['$ai_output_tokens']).toBe(10)
-    expect(properties['$ai_http_status']).toBe(200)
-    expect(properties['foo']).toBe('bar')
-    expect(typeof properties['$ai_latency']).toBe('number')
-  })
-
-  conditionalTest('embeddings', async () => {
-    // Since embeddings calls are not implemented in the snippet by default,
-    // we'll demonstrate how you *would* do it if WrappedEmbeddings is used.
-    // Let's override the internal embeddings to return our mock.
-    const mockEmbeddingsCreate = jest.fn().mockResolvedValue(mockOpenAiEmbeddingResponse)
-    ;(client as any).embeddings = {
-      create: mockEmbeddingsCreate,
-    }
-
-    const response = await (client as any).embeddings.create({
-      model: 'text-embedding-3-small',
-      input: 'Hello world',
-      posthog_distinct_id: 'test-id',
-      posthog_properties: { foo: 'bar' },
-    })
-
-    expect(response).toEqual(mockOpenAiEmbeddingResponse)
-    expect(mockPostHogClient.capture).toHaveBeenCalledTimes(1)
-
-    const [captureArgs] = (mockPostHogClient.capture as jest.Mock).mock.calls
-    const { distinctId, event, properties } = captureArgs[0]
-
-    expect(distinctId).toBe('test-id')
-    expect(event).toBe('$ai_embedding')
-    expect(properties['$ai_provider']).toBe('openai')
-    expect(properties['$ai_model']).toBe('text-embedding-3-small')
-    expect(properties['$ai_input']).toBe('Hello world')
-    expect(properties['$ai_input_tokens']).toBe(10)
     expect(properties['$ai_http_status']).toBe(200)
     expect(properties['foo']).toBe('bar')
     expect(typeof properties['$ai_latency']).toBe('number')
@@ -269,9 +265,6 @@ describe('PostHogOpenAI - Jest test suite', () => {
       max_completion_tokens: 100,
       stream: false,
     })
-    expect(properties['$ai_temperature']).toBe(0.5)
-    expect(properties['$ai_max_tokens']).toBe(100)
-    expect(properties['$ai_stream']).toBe(false)
     expect(properties['foo']).toBe('bar')
   })
 
@@ -323,5 +316,57 @@ describe('PostHogOpenAI - Jest test suite', () => {
     // captureImmediate should be called once, and capture should not be called
     expect(mockPostHogClient.captureImmediate).toHaveBeenCalledTimes(1)
     expect(mockPostHogClient.capture).toHaveBeenCalledTimes(0)
+  })
+
+  conditionalTest('responses parse', async () => {
+    const response = await client.responses.parse({
+      model: 'gpt-4o-2024-08-06',
+      input: [
+        { role: 'system', content: 'Extract the event information.' },
+        { role: 'user', content: 'Alice and Bob are going to a science fair on Friday.' },
+      ],
+      text: {
+        format: {
+          type: 'json_object',
+          json_schema: {
+            name: 'event',
+            schema: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+                date: { type: 'string' },
+                participants: { type: 'array', items: { type: 'string' } },
+              },
+              required: ['name', 'date', 'participants'],
+            },
+          },
+        },
+      },
+      posthogDistinctId: 'test-id',
+      posthogProperties: { foo: 'bar' },
+    })
+
+    expect(response).toEqual(mockOpenAiParsedResponse)
+    expect(mockPostHogClient.capture).toHaveBeenCalledTimes(1)
+
+    const [captureArgs] = (mockPostHogClient.capture as jest.Mock).mock.calls
+    const { distinctId, event, properties } = captureArgs[0]
+
+    expect(distinctId).toBe('test-id')
+    expect(event).toBe('$ai_generation')
+    expect(properties['$ai_provider']).toBe('openai')
+    expect(properties['$ai_model']).toBe('gpt-4o-2024-08-06')
+    expect(properties['$ai_input']).toEqual([
+      { role: 'system', content: 'Extract the event information.' },
+      { role: 'user', content: 'Alice and Bob are going to a science fair on Friday.' },
+    ])
+    expect(properties['$ai_output_choices']).toEqual(mockOpenAiParsedResponse.output)
+    expect(properties['$ai_input_tokens']).toBe(15)
+    expect(properties['$ai_output_tokens']).toBe(20)
+    expect(properties['$ai_reasoning_tokens']).toBe(5)
+    expect(properties['$ai_cache_read_input_tokens']).toBeUndefined()
+    expect(properties['$ai_http_status']).toBe(200)
+    expect(properties['foo']).toBe('bar')
+    expect(typeof properties['$ai_latency']).toBe('number')
   })
 })

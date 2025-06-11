@@ -1,5 +1,9 @@
 # Next
 
+# 5.1.0
+
+- Add responses + parse
+
 # 5.0.1
 
 - Bump posthog-node to v5.0.0
