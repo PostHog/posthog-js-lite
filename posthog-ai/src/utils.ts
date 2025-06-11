@@ -5,6 +5,7 @@ import AnthropicOriginal from '@anthropic-ai/sdk'
 
 type ChatCompletionCreateParamsBase = OpenAIOrignal.Chat.Completions.ChatCompletionCreateParams
 type MessageCreateParams = AnthropicOriginal.Messages.MessageCreateParams
+type ResponseCreateParams = OpenAIOrignal.Responses.ResponseCreateParams
 
 // limit large outputs by truncating to 200kb (approx 200k bytes)
 export const MAX_OUTPUT_SIZE = 200000
@@ -28,7 +29,7 @@ export interface CostOverride {
 }
 
 export const getModelParams = (
-  params: ((ChatCompletionCreateParamsBase | MessageCreateParams) & MonitoringParams) | null
+  params: ((ChatCompletionCreateParamsBase | MessageCreateParams | ResponseCreateParams) & MonitoringParams) | null
 ): Record<string, any> => {
   if (!params) {
     return {}
@@ -178,7 +179,7 @@ export type SendEventToPosthogParams = {
     cacheReadInputTokens?: any
     cacheCreationInputTokens?: any
   }
-  params: (ChatCompletionCreateParamsBase | MessageCreateParams) & MonitoringParams
+  params: (ChatCompletionCreateParamsBase | MessageCreateParams | ResponseCreateParams) & MonitoringParams
   isError?: boolean
   error?: string
   tools?: any
