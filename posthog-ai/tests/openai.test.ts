@@ -41,7 +41,7 @@ jest.mock('openai', () => {
     constructor() {}
     create = jest.fn()
   }
-  
+
   // Add parse to prototype instead of instance
   ;(MockResponses.prototype as any).parse = jest.fn()
 
@@ -153,7 +153,7 @@ describe('PostHogOpenAI - Jest test suite', () => {
 
     const ChatMock: any = openaiModule.Chat
     ;(ChatMock.Completions as any).prototype.create = jest.fn().mockResolvedValue(mockOpenAiChatResponse)
-    
+
     // Mock responses.parse using the same pattern as chat completions
     const ResponsesMock: any = openaiModule.Responses
     ResponsesMock.prototype.parse.mockResolvedValue(mockOpenAiParsedResponse)
@@ -191,7 +191,6 @@ describe('PostHogOpenAI - Jest test suite', () => {
     expect(properties['foo']).toBe('bar')
     expect(typeof properties['$ai_latency']).toBe('number')
   })
-
 
   conditionalTest('groups', async () => {
     await client.chat.completions.create({

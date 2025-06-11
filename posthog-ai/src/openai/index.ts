@@ -237,7 +237,7 @@ export class WrappedResponses extends OpenAIOrignal.Responses {
     options?: RequestOptions
   ): APIPromise<OpenAIOrignal.Responses.Response>
 
-  // --- Overload #2: Streaming  
+  // --- Overload #2: Streaming
   public create(
     body: ResponsesCreateParamsStreaming & MonitoringParams,
     options?: RequestOptions
@@ -288,7 +288,12 @@ export class WrappedResponses extends OpenAIOrignal.Responses {
               }
 
               for await (const chunk of stream1) {
-                if (chunk.type === 'response.completed' && 'response' in chunk && chunk.response?.output && chunk.response.output.length > 0) {
+                if (
+                  chunk.type === 'response.completed' &&
+                  'response' in chunk &&
+                  chunk.response?.output &&
+                  chunk.response.output.length > 0
+                ) {
                   finalContent = chunk.response.output
                 }
                 if ('response' in chunk && chunk.response?.usage) {
