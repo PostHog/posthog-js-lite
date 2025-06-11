@@ -2,7 +2,7 @@
 
 # 5.1.0
 
-- Add repsonses + parse
+- Add responses + parse
 
 # 5.0.1
 
