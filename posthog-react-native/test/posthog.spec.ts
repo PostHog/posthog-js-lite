@@ -524,7 +524,7 @@ describe('PostHog React Native', () => {
     })
   })
 
-  describe('flags endpoint with config', () => {
+  describe('flags endpoint interop with remote config', () => {
     it('should call /flags with config=true when remote config is disabled', async () => {
       const mockFetch = jest.fn(async (url) => {
         let res: any = { status: 'ok' }
