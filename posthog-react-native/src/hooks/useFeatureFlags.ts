@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import type { PostHog } from '../posthog-rn'
-import { PostHogDecideResponse } from 'posthog-core'
+import { PostHogFlagsResponse } from 'posthog-core'
 import { usePostHog } from './usePostHog'
 
-export function useFeatureFlags(client?: PostHog): PostHogDecideResponse['featureFlags'] | undefined {
+export function useFeatureFlags(client?: PostHog): PostHogFlagsResponse['featureFlags'] | undefined {
   const contextClient = usePostHog()
   const posthog = client || contextClient
-  const [featureFlags, setFeatureFlags] = useState<PostHogDecideResponse['featureFlags'] | undefined>(
+  const [featureFlags, setFeatureFlags] = useState<PostHogFlagsResponse['featureFlags'] | undefined>(
     posthog.getFeatureFlags()
   )
 

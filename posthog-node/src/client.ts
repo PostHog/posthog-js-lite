@@ -3,7 +3,7 @@ import { version } from '../package.json'
 import {
   JsonType,
   PostHogCoreStateless,
-  PostHogDecideResponse,
+  PostHogFlagsResponse,
   PostHogFetchOptions,
   PostHogFetchResponse,
   PostHogFlagsAndPayloadsResponse,
@@ -118,7 +118,7 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
       distinctId: EventMessage['distinctId'],
       groups: EventMessage['groups'],
       disableGeoip: EventMessage['disableGeoip']
-    ): Promise<PostHogDecideResponse['featureFlags'] | undefined> => {
+    ): Promise<PostHogFlagsResponse['featureFlags'] | undefined> => {
       return (await super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)).flags
     }
 
@@ -197,7 +197,7 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
       distinctId: EventMessage['distinctId'],
       groups: EventMessage['groups'],
       disableGeoip: EventMessage['disableGeoip']
-    ): Promise<PostHogDecideResponse['featureFlags'] | undefined> => {
+    ): Promise<PostHogFlagsResponse['featureFlags'] | undefined> => {
       return (await super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)).flags
     }
 
@@ -576,14 +576,14 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
 
     let featureFlags = {}
     let featureFlagPayloads = {}
-    let fallbackToDecide = true
+    let fallbackToFlags = true
     if (localEvaluationResult) {
       featureFlags = localEvaluationResult.response
       featureFlagPayloads = localEvaluationResult.payloads
-      fallbackToDecide = localEvaluationResult.fallbackToDecide
+      fallbackToFlags = localEvaluationResult.fallbackToFlags
     }
 
-    if (fallbackToDecide && !onlyEvaluateLocally) {
+    if (fallbackToFlags && !onlyEvaluateLocally) {
       const remoteEvaluationResult = await super.getFeatureFlagsAndPayloadsStateless(
         distinctId,
         groups,

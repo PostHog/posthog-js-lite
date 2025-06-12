@@ -149,7 +149,7 @@ export class PostHog extends PostHogCore {
       } else {
         this.logMsgIfDebug(() => console.info('PostHog Debug', `Remote config is disabled.`))
         if (options?.preloadFeatureFlags !== false) {
-          this.logMsgIfDebug(() => console.info('PostHog Debug', `Feature flags will be preloaded from Decide API.`))
+          this.logMsgIfDebug(() => console.info('PostHog Debug', `Feature flags will be preloaded from Flags API.`))
           this.reloadFeatureFlags()
         } else {
           this.logMsgIfDebug(() => console.info('PostHog Debug', `preloadFeatureFlags is disabled.`))
@@ -371,7 +371,7 @@ export class PostHog extends PostHogCore {
       console.log('PostHog Debug', `Session replay SDK config: ${JSON.stringify(sdkReplayConfig)}`)
     )
 
-    // if Decide has not returned yet, we will start session replay with default config.
+    // if Flags API has not returned yet, we will start session replay with default config.
     const sessionReplay = this.getPersistedProperty(PostHogPersistedProperty.SessionReplay) ?? {}
     const featureFlags = this.getKnownFeatureFlags() ?? {}
     const cachedFeatureFlags = (featureFlags as { [key: string]: FeatureFlagValue }) ?? {}
@@ -380,14 +380,14 @@ export class PostHog extends PostHogCore {
     this.logMsgIfDebug(() =>
       console.log(
         'PostHog Debug',
-        `Session replay feature flags from decide/flags cached config: ${JSON.stringify(cachedFeatureFlags)}`
+        `Session replay feature flags from flags cached config: ${JSON.stringify(cachedFeatureFlags)}`
       )
     )
 
     this.logMsgIfDebug(() =>
       console.log(
         'PostHog Debug',
-        `Session replay session recording from decide/flags cached config: ${JSON.stringify(cachedSessionReplayConfig)}`
+        `Session replay session recording from flags cached config: ${JSON.stringify(cachedSessionReplayConfig)}`
       )
     )
 

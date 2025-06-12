@@ -78,11 +78,11 @@ export enum PostHogPersistedProperty {
   InstalledAppBuild = 'installed_app_build', // only used by posthog-react-native
   InstalledAppVersion = 'installed_app_version', // only used by posthog-react-native
   SessionReplay = 'session_replay', // only used by posthog-react-native
-  DecideEndpointWasHit = 'decide_endpoint_was_hit', // only used by posthog-react-native
   SurveyLastSeenDate = 'survey_last_seen_date', // only used by posthog-react-native
   SurveysSeen = 'surveys_seen', // only used by posthog-react-native
   Surveys = 'surveys', // only used by posthog-react-native
   RemoteConfig = 'remote_config',
+  FlagsEndpointWasHit = 'flags_endpoint_was_hit', // only used by posthog-react-native
 }
 
 export type PostHogFetchOptions = {
@@ -162,7 +162,7 @@ export type PostHogRemoteConfig = {
 
 export type FeatureFlagValue = string | boolean
 
-export type PostHogDecideResponse = Omit<PostHogRemoteConfig, 'surveys' | 'hasFeatureFlags'> & {
+export type PostHogFlagsResponse = Omit<PostHogRemoteConfig, 'surveys' | 'hasFeatureFlags'> & {
   featureFlags: {
     [key: string]: FeatureFlagValue
   }
@@ -183,7 +183,7 @@ export type PostHogDecideResponse = Omit<PostHogRemoteConfig, 'surveys' | 'hasFe
 }
 
 export type PostHogFeatureFlagsResponse = PartialWithRequired<
-  PostHogDecideResponse,
+  PostHogFlagsResponse,
   'flags' | 'featureFlags' | 'featureFlagPayloads' | 'requestId'
 >
 
@@ -217,24 +217,28 @@ export type PartialWithRequired<T, K extends keyof T> = {
 }
 
 /**
- * These are the fields we care about from PostHogDecideResponse for feature flags.
+ * These are the fields we care about from PostHogFlagsResponse for feature flags.
  */
 export type PostHogFeatureFlagDetails = PartialWithRequired<
-  PostHogDecideResponse,
+  PostHogFlagsResponse,
   'flags' | 'featureFlags' | 'featureFlagPayloads' | 'requestId'
 >
 
 /**
- * Models the response from the v3 `/decide` endpoint.
+ * Models the response from the v1 `/flags` endpoint.
  */
-export type PostHogV3DecideResponse = Omit<PostHogDecideResponse, 'flags'>
-export type PostHogV4DecideResponse = Omit<PostHogDecideResponse, 'featureFlags' | 'featureFlagPayloads'>
+export type PostHogV1FlagsResponse = Omit<PostHogFlagsResponse, 'flags'>
+
+/**
+ * Models the response from the v2 `/flags` endpoint.
+ */
+export type PostHogV2FlagsResponse = Omit<PostHogFlagsResponse, 'featureFlags' | 'featureFlagPayloads'>
 
 /**
  * The format of the flags object in persisted storage
  *
  * When we pull flags from persistence, we can normalize them to PostHogFeatureFlagDetails
- * so that we can support v3 and v4 of the API.
+ * so that we can support v1 and v2 of the API.
  */
 export type PostHogFlagsStorageFormat = Pick<PostHogFeatureFlagDetails, 'flags'>
 
@@ -242,7 +246,7 @@ export type PostHogFlagsStorageFormat = Pick<PostHogFeatureFlagDetails, 'flags'>
  * Models legacy flags and payloads return type for many public methods.
  */
 export type PostHogFlagsAndPayloadsResponse = Partial<
-  Pick<PostHogDecideResponse, 'featureFlags' | 'featureFlagPayloads'>
+  Pick<PostHogFlagsResponse, 'featureFlags' | 'featureFlagPayloads'>
 >
 
 export type JsonType = string | number | boolean | null | { [key: string]: JsonType } | Array<JsonType> | JsonType[]

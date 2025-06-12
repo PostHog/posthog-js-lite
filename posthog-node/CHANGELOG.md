@@ -1,5 +1,9 @@
 # Next
 
+# 5.1.0 - 2025-06-12
+
+1. chore: use `/flags?v=2&config=true` instead of `/decide?v=4` for the flag evaluation backend
+
 # 5.0.0 - 2025-06-10
 
 ## Removed

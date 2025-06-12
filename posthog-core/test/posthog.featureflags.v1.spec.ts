@@ -1,9 +1,9 @@
-import { PostHogPersistedProperty, PostHogV3DecideResponse } from '../src'
-import { normalizeDecideResponse } from '../src/featureFlagUtils'
+import { PostHogPersistedProperty, PostHogV1FlagsResponse } from '../src'
+import { normalizeFlagsResponse } from '../src/featureFlagUtils'
 import { createTestClient, PostHogCoreTestClient, PostHogCoreTestClientMocks } from './test-utils/PostHogCoreTestClient'
 import { parseBody, waitForPromises } from './test-utils/test-utils'
 
-describe('PostHog Feature Flags v3', () => {
+describe('PostHog Feature Flags v1', () => {
   let posthog: PostHogCoreTestClient
   let mocks: PostHogCoreTestClientMocks
 
@@ -37,7 +37,7 @@ describe('PostHog Feature Flags v3', () => {
   beforeEach(() => {
     ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1 }, (_mocks) => {
       _mocks.fetch.mockImplementation((url) => {
-        if (url.includes('/flags/?v=2')) {
+        if (url.includes('/flags/?v=2&config=true')) {
           return Promise.resolve({
             status: 200,
             text: () => Promise.resolve('ok'),
@@ -154,7 +154,7 @@ describe('PostHog Feature Flags v3', () => {
         })
 
         it('should return undefined', async () => {
-          expect(mocks.fetch).toHaveBeenCalledWith('https://us.i.posthog.com/flags/?v=2', {
+          expect(mocks.fetch).toHaveBeenCalledWith('https://us.i.posthog.com/flags/?v=2&config=true', {
             body: JSON.stringify({
               token: 'TEST_API_KEY',
               distinct_id: posthog.getDistinctId(),
@@ -184,12 +184,12 @@ describe('PostHog Feature Flags v3', () => {
         })
       })
 
-      describe('when subsequent decide calls return partial results', () => {
+      describe('when subsequent flags calls return partial results', () => {
         beforeEach(() => {
           ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1 }, (_mocks) => {
             _mocks.fetch
               .mockImplementationOnce((url) => {
-                if (url.includes('/flags/?v=2')) {
+                if (url.includes('/flags/?v=2&config=true')) {
                   return Promise.resolve({
                     status: 200,
                     text: () => Promise.resolve('ok'),
@@ -202,7 +202,7 @@ describe('PostHog Feature Flags v3', () => {
                 return errorAPIResponse
               })
               .mockImplementationOnce((url) => {
-                if (url.includes('/flags/?v=2')) {
+                if (url.includes('/flags/?v=2&config=true')) {
                   return Promise.resolve({
                     status: 200,
                     text: () => Promise.resolve('ok'),
@@ -225,7 +225,7 @@ describe('PostHog Feature Flags v3', () => {
         })
 
         it('should return combined results', async () => {
-          expect(mocks.fetch).toHaveBeenCalledWith('https://us.i.posthog.com/flags/?v=2', {
+          expect(mocks.fetch).toHaveBeenCalledWith('https://us.i.posthog.com/flags/?v=2&config=true', {
             body: JSON.stringify({
               token: 'TEST_API_KEY',
               distinct_id: posthog.getDistinctId(),
@@ -250,9 +250,9 @@ describe('PostHog Feature Flags v3', () => {
           })
 
           // now second call to feature flags
-          await posthog.reloadFeatureFlagsAsync(false)
+          await posthog.reloadFeatureFlagsAsync()
 
-          expect(mocks.fetch).toHaveBeenCalledWith('https://us.i.posthog.com/flags/?v=2', {
+          expect(mocks.fetch).toHaveBeenCalledWith('https://us.i.posthog.com/flags/?v=2&config=true', {
             body: JSON.stringify({
               token: 'TEST_API_KEY',
               distinct_id: posthog.getDistinctId(),
@@ -289,12 +289,12 @@ describe('PostHog Feature Flags v3', () => {
         })
       })
 
-      describe('when subsequent decide calls return results without errors', () => {
+      describe('when subsequent flags calls return results without errors', () => {
         beforeEach(() => {
           ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1 }, (_mocks) => {
             _mocks.fetch
               .mockImplementationOnce((url) => {
-                if (url.includes('/flags/?v=2')) {
+                if (url.includes('/flags/?v=2&config=true')) {
                   return Promise.resolve({
                     status: 200,
                     text: () => Promise.resolve('ok'),
@@ -307,7 +307,7 @@ describe('PostHog Feature Flags v3', () => {
                 return errorAPIResponse
               })
               .mockImplementationOnce((url) => {
-                if (url.includes('/flags/?v=2')) {
+                if (url.includes('/flags/?v=2&config=true')) {
                   return Promise.resolve({
                     status: 200,
                     text: () => Promise.resolve('ok'),
@@ -330,7 +330,7 @@ describe('PostHog Feature Flags v3', () => {
         })
 
         it('should return only latest results', async () => {
-          expect(mocks.fetch).toHaveBeenCalledWith('https://us.i.posthog.com/flags/?v=2', {
+          expect(mocks.fetch).toHaveBeenCalledWith('https://us.i.posthog.com/flags/?v=2&config=true', {
             body: JSON.stringify({
               token: 'TEST_API_KEY',
               distinct_id: posthog.getDistinctId(),
@@ -355,9 +355,9 @@ describe('PostHog Feature Flags v3', () => {
           })
 
           // now second call to feature flags
-          await posthog.reloadFeatureFlagsAsync(false)
+          await posthog.reloadFeatureFlagsAsync()
 
-          expect(mocks.fetch).toHaveBeenCalledWith('https://us.i.posthog.com/flags/?v=2', {
+          expect(mocks.fetch).toHaveBeenCalledWith('https://us.i.posthog.com/flags/?v=2&config=true', {
             body: JSON.stringify({
               token: 'TEST_API_KEY',
               distinct_id: posthog.getDistinctId(),
@@ -507,7 +507,7 @@ describe('PostHog Feature Flags v3', () => {
           featureFlags: createMockFeatureFlags(),
           featureFlagPayloads: createMockFeatureFlagPayloads(),
         }
-        const normalizedFeatureFlags = normalizeDecideResponse(expectedFeatureFlags as PostHogV3DecideResponse)
+        const normalizedFeatureFlags = normalizeFlagsResponse(expectedFeatureFlags as PostHogV1FlagsResponse)
         expect(posthog.getPersistedProperty(PostHogPersistedProperty.FeatureFlagDetails)).toEqual(
           normalizedFeatureFlags
         )
@@ -574,7 +574,7 @@ describe('PostHog Feature Flags v3', () => {
 
       it('should unset all flags when feature_flags is quota limited', async () => {
         // First verify the fetch was called correctly
-        expect(mocks.fetch).toHaveBeenCalledWith('https://us.i.posthog.com/flags/?v=2', {
+        expect(mocks.fetch).toHaveBeenCalledWith('https://us.i.posthog.com/flags/?v=2&config=true', {
           body: JSON.stringify({
             token: 'TEST_API_KEY',
             distinct_id: posthog.getDistinctId(),
@@ -776,7 +776,7 @@ describe('PostHog Feature Flags v3', () => {
       })
 
       it('should load new feature flags', async () => {
-        expect(mocks.fetch).toHaveBeenCalledWith('https://us.i.posthog.com/flags/?v=2', {
+        expect(mocks.fetch).toHaveBeenCalledWith('https://us.i.posthog.com/flags/?v=2&config=true', {
           body: JSON.stringify({
             token: 'TEST_API_KEY',
             distinct_id: posthog.getDistinctId(),
@@ -802,7 +802,7 @@ describe('PostHog Feature Flags v3', () => {
       })
 
       it('should load new feature flag payloads', async () => {
-        expect(mocks.fetch).toHaveBeenCalledWith('https://us.i.posthog.com/flags/?v=2', {
+        expect(mocks.fetch).toHaveBeenCalledWith('https://us.i.posthog.com/flags/?v=2&config=true', {
           body: JSON.stringify({
             token: 'TEST_API_KEY',
             distinct_id: posthog.getDistinctId(),

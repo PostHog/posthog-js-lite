@@ -16,19 +16,19 @@ describe('PostHog Core', () => {
       }),
   })
 
-  describe('getDecide', () => {
+  describe('getFlags', () => {
     beforeEach(() => {
       ;[posthog, mocks] = createTestClient('TEST_API_KEY', { flushAt: 1 })
     })
 
-    it('should handle successful v3 response and return normalized response', async () => {
-      const mockV3Response = {
+    it('should handle successful v1 response and return normalized response', async () => {
+      const mockV1Response = {
         featureFlags: { 'test-flag': true },
         featureFlagPayloads: { 'test-flag': { a: 'payload' } },
       }
 
       const expectedResponse = {
-        ...mockV3Response,
+        ...mockV1Response,
         flags: {
           'test-flag': {
             key: 'test-flag',
@@ -46,17 +46,17 @@ describe('PostHog Core', () => {
       }
 
       mocks.fetch.mockImplementation((url) => {
-        if (url.includes('/flags/?v=2')) {
+        if (url.includes('/flags/?v=2&config=true')) {
           return Promise.resolve({
             status: 200,
             text: () => Promise.resolve('ok'),
-            json: () => Promise.resolve(mockV3Response),
+            json: () => Promise.resolve(mockV1Response),
           })
         }
         return errorAPIResponse
       })
 
-      const response = await posthog.getDecide('test-distinct-id')
+      const response = await posthog.getFlags('test-distinct-id')
       expect(response).toEqual(expectedResponse)
     })
 
@@ -88,7 +88,7 @@ describe('PostHog Core', () => {
         featureFlagPayloads: { 'test-flag': { a: 'payload' } },
       }
       mocks.fetch.mockImplementation((url) => {
-        if (url.includes('/flags/?v=2')) {
+        if (url.includes('/flags/?v=2&config=true')) {
           return Promise.resolve({
             status: 200,
             text: () => Promise.resolve('ok'),
@@ -98,13 +98,13 @@ describe('PostHog Core', () => {
         return errorAPIResponse
       })
 
-      const response = await posthog.getDecide('test-distinct-id')
+      const response = await posthog.getFlags('test-distinct-id')
       expect(response).toEqual(expectedResponse)
     })
 
     it('should handle error response', async () => {
       mocks.fetch.mockImplementation((url) => {
-        if (url.includes('/flags/?v=2')) {
+        if (url.includes('/flags/?v=2&config=true')) {
           return Promise.resolve({
             status: 400,
             text: () => Promise.resolve('error'),
@@ -114,20 +114,20 @@ describe('PostHog Core', () => {
         return errorAPIResponse
       })
 
-      const response = await posthog.getDecide('test-distinct-id')
+      const response = await posthog.getFlags('test-distinct-id')
       expect(response).toBeUndefined()
     })
 
     it('should handle network errors', async () => {
       const emitSpy = jest.spyOn(posthog['_events'], 'emit')
       mocks.fetch.mockImplementation((url) => {
-        if (url.includes('/flags/?v=2')) {
+        if (url.includes('/flags/?v=2&config=true')) {
           return Promise.reject(new Error('Network error'))
         }
         return errorAPIResponse
       })
 
-      const response = await posthog.getDecide('test-distinct-id')
+      const response = await posthog.getFlags('test-distinct-id')
       expect(response).toBeUndefined()
       expect(emitSpy).toHaveBeenCalledWith('error', expect.any(Error))
     })
