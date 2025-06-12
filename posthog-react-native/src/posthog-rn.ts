@@ -150,8 +150,7 @@ export class PostHog extends PostHogCore {
         this.logMsgIfDebug(() => console.info('PostHog Debug', `Remote config is disabled.`))
         if (options?.preloadFeatureFlags !== false) {
           this.logMsgIfDebug(() => console.info('PostHog Debug', `Feature flags will be preloaded from Flags API.`))
-          // if RemoteConfig is disabled, we need to use the `/flags?v=2&config=true` endpoint to get the feature flags and the various other configs
-          this.reloadFeatureFlags({ withConfig: true })
+          this.reloadFeatureFlags()
         } else {
           this.logMsgIfDebug(() => console.info('PostHog Debug', `preloadFeatureFlags is disabled.`))
         }

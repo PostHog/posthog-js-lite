@@ -441,12 +441,11 @@ export abstract class PostHogCoreStateless {
     groups: Record<string, string | number> = {},
     personProperties: Record<string, string> = {},
     groupProperties: Record<string, Record<string, string>> = {},
-    extraPayload: Record<string, any> = {},
-    withConfig: boolean = false
+    extraPayload: Record<string, any> = {}
   ): Promise<PostHogFlagsResponse | undefined> {
     await this._initPromise
 
-    const url = `${this.host}/flags/?v=2${withConfig ? '&config=true' : ''}`
+    const url = `${this.host}/flags/?v=2&config=true`
     const fetchOptions: PostHogFetchOptions = {
       method: 'POST',
       headers: { ...this.getCustomHeaders(), 'Content-Type': 'application/json' },
@@ -1595,15 +1594,12 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   /***
    *** FEATURE FLAGS
    ***/
-  private async flagsAsync(
-    sendAnonDistinctId: boolean = true,
-    withConfig: boolean = false
-  ): Promise<PostHogFlagsResponse | undefined> {
+  private async flagsAsync(sendAnonDistinctId: boolean = true): Promise<PostHogFlagsResponse | undefined> {
     await this._initPromise
     if (this._flagsResponsePromise) {
       return this._flagsResponsePromise
     }
-    return this._flagsAsync(sendAnonDistinctId, withConfig)
+    return this._flagsAsync(sendAnonDistinctId)
   }
 
   private cacheSessionReplay(source: string, response?: PostHogRemoteConfig): void {
@@ -1699,10 +1695,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     return this._remoteConfigResponsePromise
   }
 
-  private async _flagsAsync(
-    sendAnonDistinctId: boolean = true,
-    withConfig: boolean = false
-  ): Promise<PostHogFlagsResponse | undefined> {
+  private async _flagsAsync(sendAnonDistinctId: boolean = true): Promise<PostHogFlagsResponse | undefined> {
     this._flagsResponsePromise = this._initPromise
       .then(async () => {
         const distinctId = this.getDistinctId()
@@ -1722,8 +1715,7 @@ export abstract class PostHogCore extends PostHogCoreStateless {
           groups as PostHogGroupProperties,
           personProperties,
           groupProperties,
-          extraProperties,
-          withConfig
+          extraProperties
         )
         // Add check for quota limitation on feature flags
         if (res?.quotaLimited?.includes(QuotaLimitedFeature.FeatureFlags)) {
@@ -1967,11 +1959,8 @@ export abstract class PostHogCore extends PostHogCoreStateless {
   }
 
   // Used when we want to trigger the reload but we don't care about the result
-  reloadFeatureFlags(options?: {
-    cb?: (err?: Error, flags?: PostHogFlagsResponse['featureFlags']) => void
-    withConfig?: boolean
-  }): void {
-    this.flagsAsync(true, options?.withConfig)
+  reloadFeatureFlags(options?: { cb?: (err?: Error, flags?: PostHogFlagsResponse['featureFlags']) => void }): void {
+    this.flagsAsync(true)
       .then((res) => {
         options?.cb?.(undefined, res?.featureFlags)
       })
@@ -1987,11 +1976,10 @@ export abstract class PostHogCore extends PostHogCoreStateless {
     return await this.remoteConfigAsync()
   }
 
-  async reloadFeatureFlagsAsync(options?: {
+  async reloadFeatureFlagsAsync(
     sendAnonDistinctId?: boolean
-    withConfig?: boolean
-  }): Promise<PostHogFlagsResponse['featureFlags'] | undefined> {
-    return (await this.flagsAsync(options?.sendAnonDistinctId ?? true, options?.withConfig))?.featureFlags
+  ): Promise<PostHogFlagsResponse['featureFlags'] | undefined> {
+    return (await this.flagsAsync(sendAnonDistinctId ?? true))?.featureFlags
   }
 
   onFeatureFlags(cb: (flags: PostHogFlagsResponse['featureFlags']) => void): () => void {
