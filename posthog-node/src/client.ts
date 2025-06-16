@@ -503,7 +503,25 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
   }
 
   async getRemoteConfigPayload(flagKey: string): Promise<JsonType | undefined> {
-    return (await this.featureFlagsPoller?._requestRemoteConfigPayload(flagKey))?.json()
+    const response = await this.featureFlagsPoller?._requestRemoteConfigPayload(flagKey)
+    if (!response) {
+      return undefined
+    }
+
+    const parsed = await response.json()
+    // The payload from the endpoint is stored as a JSON encoded string. So when we return 
+    // it, it's effectively double encoded. As far as we know, we should never get single-encoded
+    // JSON, but we'll be defensive here just in case.
+    if (typeof parsed === 'string') {
+      try {
+        // If the parsed value is a string, try parsing it again to handle double-encoded JSON
+        return JSON.parse(parsed)
+      } catch (e) {
+        // If second parse fails, return the string as is
+        return parsed
+      }
+    }
+    return parsed
   }
 
   async isFeatureEnabled(

@@ -1351,4 +1351,68 @@ describe('PostHog Node.js', () => {
       errorSpy.mockRestore()
     })
   })
+
+  describe('getRemoteConfigPayload', () => {
+    let requestRemoteConfigPayloadSpy: jest.SpyInstance
+
+    beforeEach(() => {
+      // Reset the mock for each test
+      mockedFetch.mockClear()
+      
+      // Initialize posthog with personalApiKey to enable feature flags poller
+      posthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        fetchRetryCount: 0,
+        disableCompression: true,
+        personalApiKey: 'TEST_PERSONAL_API_KEY',
+      })
+
+      // Mock the private method using jest.spyOn
+      requestRemoteConfigPayloadSpy = jest.spyOn(posthog['featureFlagsPoller'] as any, '_requestRemoteConfigPayload')
+    })
+
+    it('should return undefined when featureFlagsPoller is not initialized', async () => {
+      const posthogWithoutPoller = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        fetchRetryCount: 0,
+        disableCompression: true,
+      })
+      const payload = await posthogWithoutPoller.getRemoteConfigPayload('test-flag')
+      expect(payload).toBeUndefined()
+    })
+
+    it('should return empty object when no payload is available', async () => {
+      requestRemoteConfigPayloadSpy.mockResolvedValue({
+        json: () => Promise.resolve({}),
+      })
+
+      const payload = await posthog.getRemoteConfigPayload('test-flag')
+      expect(payload).toEqual({})
+      expect(requestRemoteConfigPayloadSpy).toHaveBeenCalledWith('test-flag')
+    })
+
+    it('should handle double-encoded JSON payload', async () => {
+      const doubleEncodedPayload = "{ \"foo\":[\"bar\",\"baz\"]}"
+      requestRemoteConfigPayloadSpy.mockResolvedValue({
+        json: () => Promise.resolve(doubleEncodedPayload),
+      })
+
+      const payload = await posthog.getRemoteConfigPayload('test-flag')
+      expect(payload).toEqual({
+        foo: ["bar", "baz"]
+      })
+      expect(requestRemoteConfigPayloadSpy).toHaveBeenCalledWith('test-flag')
+    })
+
+    it('should handle simple JSON payload', async () => {
+      const simplePayload = { bar: "baz" }
+      requestRemoteConfigPayloadSpy.mockResolvedValue({
+        json: () => Promise.resolve(simplePayload),
+      })
+
+      const payload = await posthog.getRemoteConfigPayload('test-flag')
+      expect(payload).toEqual(simplePayload)
+      expect(requestRemoteConfigPayloadSpy).toHaveBeenCalledWith('test-flag')
+    })
+  })
 })
