@@ -509,7 +509,7 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
     }
 
     const parsed = await response.json()
-    // The payload from the endpoint is stored as a JSON encoded string. So when we return 
+    // The payload from the endpoint is stored as a JSON encoded string. So when we return
     // it, it's effectively double encoded. As far as we know, we should never get single-encoded
     // JSON, but we'll be defensive here just in case.
     if (typeof parsed === 'string') {

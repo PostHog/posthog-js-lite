@@ -1358,7 +1358,7 @@ describe('PostHog Node.js', () => {
     beforeEach(() => {
       // Reset the mock for each test
       mockedFetch.mockClear()
-      
+
       // Initialize posthog with personalApiKey to enable feature flags poller
       posthog = new PostHog('TEST_API_KEY', {
         host: 'http://example.com',
@@ -1392,20 +1392,20 @@ describe('PostHog Node.js', () => {
     })
 
     it('should handle double-encoded JSON payload', async () => {
-      const doubleEncodedPayload = "{ \"foo\":[\"bar\",\"baz\"]}"
+      const doubleEncodedPayload = '{ "foo":["bar","baz"]}'
       requestRemoteConfigPayloadSpy.mockResolvedValue({
         json: () => Promise.resolve(doubleEncodedPayload),
       })
 
       const payload = await posthog.getRemoteConfigPayload('test-flag')
       expect(payload).toEqual({
-        foo: ["bar", "baz"]
+        foo: ['bar', 'baz'],
       })
       expect(requestRemoteConfigPayloadSpy).toHaveBeenCalledWith('test-flag')
     })
 
     it('should handle simple JSON payload', async () => {
-      const simplePayload = { bar: "baz" }
+      const simplePayload = { foo: ['bar', 'baz'] }
       requestRemoteConfigPayloadSpy.mockResolvedValue({
         json: () => Promise.resolve(simplePayload),
       })
