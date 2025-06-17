@@ -23,8 +23,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@posthog/cli": "^0.1.0",
-    "rimraf": "5.0.9"
+    "@posthog/cli": "^0.1.0"
   },
   "keywords": [
     "posthog",

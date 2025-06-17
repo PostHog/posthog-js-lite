@@ -27,9 +27,6 @@ export class SourcemapWebpackPlugin {
       try {
         await this.runInject()
         await this.runUpload()
-        if (this.posthogOptions.sourcemaps.deleteAfterUpload) {
-          await this.runDelete()
-        }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : error
         return console.error('Error running PostHog sourcemap plugin:', errorMessage)
@@ -62,6 +59,9 @@ export class SourcemapWebpackPlugin {
     }
     if (this.posthogOptions.sourcemaps.version) {
       cliOptions.push('--version', this.posthogOptions.sourcemaps.version)
+    }
+    if (this.posthogOptions.sourcemaps.deleteAfterUpload) {
+      cliOptions.push('--delete-after')
     }
     // Add env variables
     const envVars = {
