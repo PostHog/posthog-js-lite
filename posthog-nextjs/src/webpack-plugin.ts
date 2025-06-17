@@ -1,5 +1,4 @@
 import { PostHogNextConfigComplete } from './config'
-import { rimraf } from 'rimraf'
 import { spawn } from 'child_process'
 
 type NextRuntime = 'edge' | 'nodejs' | undefined
@@ -70,10 +69,6 @@ export class SourcemapWebpackPlugin {
       POSTHOG_CLI_ENV_ID: this.posthogOptions.envId,
     }
     await callPosthogCli(cliOptions, envVars, this.posthogOptions.verbose)
-  }
-
-  async runDelete(): Promise<void> {
-    await rimraf(`${this.directory}/**/*.map`, { glob: true })
   }
 }
 
