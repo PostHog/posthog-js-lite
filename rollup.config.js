@@ -1,3 +1,4 @@
+/*eslint-env node */
 import babel from '@rollup/plugin-babel'
 import commonjs from '@rollup/plugin-commonjs'
 import resolve from '@rollup/plugin-node-resolve'
@@ -163,5 +164,32 @@ providers.forEach((provider) => {
     plugins: [resolve({ extensions }), dts({ tsconfig: './posthog-ai/tsconfig.json' })],
   })
 })
+
+// posthog nextjs
+configs.push(
+  {
+    input: './posthog-nextjs/src/index.ts',
+    output: [
+      {
+        file: './posthog-nextjs/lib/index.mjs',
+        format: 'es',
+        sourcemap: true,
+      },
+      {
+        file: './posthog-nextjs/lib/index.cjs',
+        format: 'cjs',
+        sourcemap: true,
+      },
+    ],
+    external: external('./posthog-nextjs/package.json'),
+    plugins: plugins('posthog-nextjs'),
+  },
+  {
+    input: `./posthog-nextjs/src/index.ts`,
+    output: [{ file: `./posthog-nextjs/lib/index.d.ts`, format: 'es' }],
+    external: external('./posthog-nextjs/package.json'),
+    plugins: [resolve({ extensions }), dts({ tsconfig: './posthog-nextjs/tsconfig.json' })],
+  }
+)
 
 export default configs
