@@ -7,7 +7,7 @@ export default function Home() {
     <div>
       <main>
         <div>
-          <button onClick={() => posthog.captureException(new Error('button_clicked'))}>Click me!</button>
+          <button onClick={() => posthog.captureException(new Error('exception captured'))}>Send exception!</button>
         </div>
       </main>
     </div>
