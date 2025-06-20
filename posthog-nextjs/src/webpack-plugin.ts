@@ -95,7 +95,7 @@ async function callPosthogCli(args: string[], env: NodeJS.ProcessEnv, verbose: b
   })
 }
 
-const addLocalPath = ({ Path = '', PATH = Path, ...env }: NodeJS.ProcessEnv, cwd: string) => {
+const addLocalPath = ({ Path = '', PATH = Path, ...env }: NodeJS.ProcessEnv, cwd: string): NodeJS.ProcessEnv => {
   const pathParts = PATH.split(path.delimiter)
   const localPaths = getLocalPaths([], path.resolve(cwd))
     .map((localPath: string) => path.join(localPath, 'node_modules/.bin'))
