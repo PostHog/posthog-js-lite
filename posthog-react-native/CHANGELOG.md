@@ -1,5 +1,11 @@
 # Next
 
+# 4.1.1 - 2025-06-23
+
+## Fixed
+
+1. Add missing survey position types
+
 # 4.1.0 - 2025-06-12
 
 1. chore: use `/flags?v=2&config=true` instead of `/decide?v=4` for the flag evaluation backend
