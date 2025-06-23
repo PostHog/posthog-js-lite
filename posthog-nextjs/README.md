@@ -13,7 +13,7 @@ const nextConfig = {
 };
 
 export default withPostHogConfig(nextConfig, {
-  authToken: process.env.POSTHOG_AUTH_TOKEN!, // Personal API key used for sourcemap uploads, see https://app.posthog.com/settings/user-api-keys
+  authToken: process.env.POSTHOG_AUTH_TOKEN!, // Private API key used for sourcemap uploads, see https://app.posthog.com/settings/user-api-keys
   envId: process.env.POSTHOG_ENV_ID!, // Environment ID, see https://app.posthog.com/settings/environment#variables
   host: process.env.NEXT_PUBLIC_POSTHOG_HOST!, // (optional) Host URL, defaults to https://us.posthog.com
   sourcemaps: { // (optional)

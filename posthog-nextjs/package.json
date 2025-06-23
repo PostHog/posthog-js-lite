@@ -1,6 +1,6 @@
 {
   "name": "@posthog/nextjs",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "NextJS SDK for Posthog 🦔",
   "main": "./lib/index.cjs",
   "module": "./lib/index.mjs",
