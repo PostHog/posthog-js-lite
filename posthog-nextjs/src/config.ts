@@ -36,15 +36,16 @@ export function withPostHogConfig(userNextConfig: UserProvidedConfig, posthogCon
   return async (phase: string, { defaultConfig }: { defaultConfig: NextConfig }) => {
     const { webpack: userWebPackConfig, ...userConfig } = await resolveUserConfig(userNextConfig, phase, defaultConfig)
     const defaultWebpackConfig = userWebPackConfig || ((config: any) => config)
+    const sourceMapEnabled = posthogNextConfigComplete.sourcemaps.enabled
     return {
       ...userConfig,
-      productionBrowserSourceMaps: posthogNextConfigComplete.sourcemaps.enabled,
+      productionBrowserSourceMaps: sourceMapEnabled,
       webpack: (config: any, options: any) => {
         const webpackConfig = defaultWebpackConfig(config, options)
-        if (webpackConfig && options.isServer && posthogNextConfigComplete.sourcemaps.enabled) {
+        if (webpackConfig && options.isServer && sourceMapEnabled) {
           webpackConfig.devtool = 'source-map'
         }
-        if (posthogNextConfigComplete.sourcemaps.enabled) {
+        if (sourceMapEnabled) {
           webpackConfig.plugins = webpackConfig.plugins || []
           webpackConfig.plugins.push(
             new SourcemapWebpackPlugin(posthogNextConfigComplete, options.isServer, options.nextRuntime)

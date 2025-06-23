@@ -1,5 +1,6 @@
 import { PostHogNextConfigComplete } from './config'
 import { spawn } from 'child_process'
+import path from 'path'
 
 type NextRuntime = 'edge' | 'nodejs' | undefined
 
@@ -59,7 +60,7 @@ export class SourcemapWebpackPlugin {
     if (this.posthogOptions.sourcemaps.version) {
       cliOptions.push('--version', this.posthogOptions.sourcemaps.version)
     }
-    if (this.posthogOptions.sourcemaps.deleteAfterUpload) {
+    if (this.posthogOptions.sourcemaps.deleteAfterUpload && !this.isServer) {
       cliOptions.push('--delete-after')
     }
     // Add env variables
@@ -73,9 +74,10 @@ export class SourcemapWebpackPlugin {
 }
 
 async function callPosthogCli(args: string[], env: NodeJS.ProcessEnv, verbose: boolean): Promise<void> {
-  const child = spawn('npx', ['@posthog/cli', ...args], {
+  const cwd = path.resolve('.')
+  const child = spawn('posthog-cli', [...args], {
     stdio: verbose ? 'inherit' : 'ignore',
-    env: env,
+    env: addLocalPath(env ?? process.env, cwd),
   })
 
   await new Promise<void>((resolve, reject) => {
@@ -86,8 +88,22 @@ async function callPosthogCli(args: string[], env: NodeJS.ProcessEnv, verbose: b
         reject(new Error(`Command failed with code ${code}`))
       }
     })
+
     child.on('error', (error) => {
       reject(error)
     })
   })
 }
+
+const addLocalPath = ({ Path = '', PATH = Path, ...env }: NodeJS.ProcessEnv, cwd: string): NodeJS.ProcessEnv => {
+  const pathParts = PATH.split(path.delimiter)
+  const localPaths = getLocalPaths([], path.resolve(cwd))
+    .map((localPath: string) => path.join(localPath, 'node_modules/.bin'))
+    .filter((localPath: string) => !pathParts.includes(localPath))
+  return { ...env, PATH: [...localPaths, PATH].filter(Boolean).join(path.delimiter) }
+}
+
+const getLocalPaths = (localPaths: string[], localPath: string): string[] =>
+  localPaths.at(-1) === localPath
+    ? localPaths
+    : getLocalPaths([...localPaths, localPath], path.resolve(localPath, '..'))
