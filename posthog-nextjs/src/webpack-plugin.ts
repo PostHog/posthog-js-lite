@@ -60,7 +60,7 @@ export class SourcemapWebpackPlugin {
     if (this.posthogOptions.sourcemaps.version) {
       cliOptions.push('--version', this.posthogOptions.sourcemaps.version)
     }
-    if (this.posthogOptions.sourcemaps.deleteAfterUpload) {
+    if (this.posthogOptions.sourcemaps.deleteAfterUpload && !this.isServer) {
       cliOptions.push('--delete-after')
     }
     // Add env variables
