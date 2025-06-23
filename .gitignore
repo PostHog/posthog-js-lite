@@ -15,3 +15,5 @@ posthog-react-native/src/version.ts
 .DS_Store
 
 lefthook.yml
+
+.cursor/
