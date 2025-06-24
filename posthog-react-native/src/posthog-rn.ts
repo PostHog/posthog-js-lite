@@ -301,7 +301,10 @@ export class PostHog extends PostHogCore {
         const anonymousId = this.getAnonymousId()
         OptionalReactNativeSessionReplay.identify(String(distinctId), String(anonymousId))
         this.logMsgIfDebug(() =>
-          console.info('PostHog Debug', `Session replay identified with distinctId ${distinctId} and anonymousId ${anonymousId}.`)
+          console.info(
+            'PostHog Debug',
+            `Session replay identified with distinctId ${distinctId} and anonymousId ${anonymousId}.`
+          )
         )
       } catch (e) {
         this.logMsgIfDebug(() => console.error('PostHog Debug', `Session replay failed to identify: ${e}.`))
