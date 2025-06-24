@@ -1,5 +1,11 @@
 # Next
 
+# 4.1.2 - 2025-06-24
+
+## Fixed
+
+1. Force session replay to use string values for sessionId, distinctId and anonymousId
+
 # 4.1.1 - 2025-06-23
 
 ## Fixed
