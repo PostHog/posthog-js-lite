@@ -258,7 +258,7 @@ export class PostHog extends PostHogCore {
     if (sessionId.length > 0 && this._currentSessionId && sessionId !== this._currentSessionId) {
       if (OptionalReactNativeSessionReplay) {
         try {
-          this._resetSessionId(OptionalReactNativeSessionReplay, sessionId)
+          this._resetSessionId(OptionalReactNativeSessionReplay, String(sessionId))
           this.logMsgIfDebug(() =>
             console.info('PostHog Debug', `sessionId rotated from ${this._currentSessionId} to ${sessionId}.`)
           )
@@ -473,7 +473,7 @@ export class PostHog extends PostHogCore {
             )
           } else {
             // if somehow the SDK is already enabled with a different sessionId, we reset it
-            this._resetSessionId(OptionalReactNativeSessionReplay, sessionId)
+            this._resetSessionId(OptionalReactNativeSessionReplay, String(sessionId))
             this.logMsgIfDebug(() =>
               console.log('PostHog Debug', `Session replay already started with sessionId ${sessionId}.`)
             )
