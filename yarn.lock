@@ -9257,10 +9257,10 @@ postcss@8.4.14:
     picocolors "^1.0.0"
     source-map-js "^1.0.2"
 
-posthog-react-native-session-replay@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/posthog-react-native-session-replay/-/posthog-react-native-session-replay-1.1.0.tgz#a91b96e2f03c7dd42e5301511a491c4b561940d2"
-  integrity sha512-k1OBm5JzE8p019dATnOoxSY1fnMXuDJZz7GcvL9VIA3690tc5m2zEkRTypeO06N6KNMS79Qohw3J0V9qTzuTRA==
+posthog-react-native-session-replay@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/posthog-react-native-session-replay/-/posthog-react-native-session-replay-1.1.1.tgz#238692b4300c5d40ef1cd7034bd06b21903473c8"
+  integrity sha512-Qh3wzm94LHIbDW1xsyfFn+b/AJZDvJFnoO6rNTSRmiJCELSyL85vqF0GdFfIgxJf1jLrWYN/P1Ye3+mDkppeqA==
 
 prelude-ls@^1.2.1:
   version "1.2.1"
