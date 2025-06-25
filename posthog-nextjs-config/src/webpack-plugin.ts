@@ -66,7 +66,7 @@ export class SourcemapWebpackPlugin {
     // Add env variables
     const envVars = {
       ...process.env,
-      POSTHOG_CLI_TOKEN: this.posthogOptions.authToken,
+      POSTHOG_CLI_TOKEN: this.posthogOptions.personalApiKey,
       POSTHOG_CLI_ENV_ID: this.posthogOptions.envId,
     }
     await callPosthogCli(cliOptions, envVars, this.posthogOptions.verbose)

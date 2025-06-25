@@ -1,4 +1,4 @@
-This is a Next.js example project using the [`@posthog/nextjs`](../../posthog-nextjs) package.
+This is a Next.js example project using the [`@posthog/nextjs-config`](../../posthog-nextjs-config) package.
 
 ## Error Tracking
 
@@ -7,7 +7,7 @@ Check full documentation for error tracking [here](https://posthog.com/docs/erro
 ### Installation
 
 ```
-npm install @posthog/nextjs
+npm install @posthog/nextjs-config
 ```
 
 ### Sourcemap upload

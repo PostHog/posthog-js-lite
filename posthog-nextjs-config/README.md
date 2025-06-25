@@ -6,14 +6,14 @@ Please see the main [PostHog docs](https://www.posthog.com/docs).
 
 ```typescript
 // next.config.ts
-import { withPostHogConfig } from "@posthog/nextjs";
+import { withPostHogConfig } from "@posthog/nextjs-config";
 
 const nextConfig = {
   // Your Next.js configuration here
 };
 
 export default withPostHogConfig(nextConfig, {
-  authToken: process.env.POSTHOG_AUTH_TOKEN!, // Private API key used for sourcemap uploads, see https://app.posthog.com/settings/user-api-keys
+  personalApiKey: process.env.POSTHOG_PERSONAL_API_KEY!, // Personal API key used for sourcemap uploads, see https://app.posthog.com/settings/user-api-keys
   envId: process.env.POSTHOG_ENV_ID!, // Environment ID, see https://app.posthog.com/settings/environment#variables
   host: process.env.NEXT_PUBLIC_POSTHOG_HOST!, // (optional) Host URL, defaults to https://us.posthog.com
   sourcemaps: { // (optional)

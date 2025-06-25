@@ -8,7 +8,7 @@
     "posthog-react-native",
     "posthog-web",
     "posthog-ai",
-    "posthog-nextjs"
+    "posthog-nextjs-config"
   ],
   "author": "PostHog",
   "private": true,

@@ -363,8 +363,8 @@
     detect-libc "^2.0.3"
     rimraf "^5.0.8"
 
-"@posthog/nextjs@file:.yalc/@posthog/nextjs":
-  version "0.0.1"
+"@posthog/nextjs-config@file:.yalc/@posthog/nextjs-config":
+  version "0.0.2"
   dependencies:
     "@posthog/cli" "^0.3.1"
 
