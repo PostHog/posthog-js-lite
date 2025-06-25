@@ -6,7 +6,7 @@ type NextAsyncConfig = (phase: string, { defaultConfig }: { defaultConfig: NextC
 type UserProvidedConfig = NextConfig | NextFuncConfig | NextAsyncConfig
 
 export type PostHogNextConfig = {
-  authToken: string
+  personalApiKey: string
   envId: string
   host?: string
   verbose?: boolean
@@ -19,7 +19,7 @@ export type PostHogNextConfig = {
 }
 
 export type PostHogNextConfigComplete = {
-  authToken: string
+  personalApiKey: string
   envId: string
   host: string
   verbose: boolean
@@ -77,9 +77,9 @@ function resolveUserConfig(
 }
 
 function resolvePostHogConfig(posthogProvidedConfig: PostHogNextConfig): PostHogNextConfigComplete {
-  const { authToken, envId, host, verbose, sourcemaps = {} } = posthogProvidedConfig
+  const { personalApiKey, envId, host, verbose, sourcemaps = {} } = posthogProvidedConfig
   return {
-    authToken,
+    personalApiKey,
     envId,
     host: host ?? 'https://us.posthog.com',
     verbose: verbose ?? true,

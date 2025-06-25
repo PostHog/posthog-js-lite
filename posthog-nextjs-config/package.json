@@ -1,7 +1,7 @@
 {
-  "name": "@posthog/nextjs",
-  "version": "0.0.2",
-  "description": "NextJS SDK for Posthog 🦔",
+  "name": "@posthog/nextjs-config",
+  "version": "1.0.0",
+  "description": "NextJS configuration helper for Posthog 🦔",
   "main": "./lib/index.cjs",
   "module": "./lib/index.mjs",
   "types": "./lib/index.d.ts",
@@ -11,7 +11,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/PostHog/posthog-js-lite.git",
-    "directory": "posthog-nextjs"
+    "directory": "posthog-nextjs-config"
   },
   "author": {
     "name": "PostHog",

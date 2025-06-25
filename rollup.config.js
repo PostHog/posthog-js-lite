@@ -168,27 +168,27 @@ providers.forEach((provider) => {
 // posthog nextjs
 configs.push(
   {
-    input: './posthog-nextjs/src/index.ts',
+    input: './posthog-nextjs-config/src/index.ts',
     output: [
       {
-        file: './posthog-nextjs/lib/index.mjs',
+        file: './posthog-nextjs-config/lib/index.mjs',
         format: 'es',
         sourcemap: true,
       },
       {
-        file: './posthog-nextjs/lib/index.cjs',
+        file: './posthog-nextjs-config/lib/index.cjs',
         format: 'cjs',
         sourcemap: true,
       },
     ],
-    external: external('./posthog-nextjs/package.json'),
-    plugins: plugins('posthog-nextjs'),
+    external: external('./posthog-nextjs-config/package.json'),
+    plugins: plugins('posthog-nextjs-config'),
   },
   {
-    input: `./posthog-nextjs/src/index.ts`,
-    output: [{ file: `./posthog-nextjs/lib/index.d.ts`, format: 'es' }],
-    external: external('./posthog-nextjs/package.json'),
-    plugins: [resolve({ extensions }), dts({ tsconfig: './posthog-nextjs/tsconfig.json' })],
+    input: `./posthog-nextjs-config/src/index.ts`,
+    output: [{ file: `./posthog-nextjs-config/lib/index.d.ts`, format: 'es' }],
+    external: external('./posthog-nextjs-config/package.json'),
+    plugins: [resolve({ extensions }), dts({ tsconfig: './posthog-nextjs-config/tsconfig.json' })],
   }
 )
 

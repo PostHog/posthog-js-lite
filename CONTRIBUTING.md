@@ -9,9 +9,9 @@ This repository is broken into different packages
 - **/posthog-react-native** > React Native specific code
 - **/posthog-web** > Web (DOM) specific code
 - **/posthog-ai** > Node.js SDK for LLM Observability
-- **/posthog-nextjs** > Next.js specific code
+- **/posthog-nextjs-config** > Next.js specific config helpers
 
-For Session Replay, See [posthog-react-native-session-replay](https://github.com/PostHog/posthog-react-native-session-replay/CHANGELOG.md)
+For Session Replay, See [posthog-react-native-session-replay](https://github.com/PostHog/posthog-react-native-session-replay)
 
 ## Running tests
 

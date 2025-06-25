@@ -21,7 +21,7 @@ _Please describe._
 - [ ] posthog-node
 - [ ] posthog-ai
 - [ ] posthog-react-native
-- [ ] posthog-nextjs
+- [ ] posthog-nextjs-config
 
 ## Additional context
 

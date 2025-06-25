@@ -1,5 +1,5 @@
 import type { NextConfig } from 'next'
-import { withPostHogConfig } from '@posthog/nextjs'
+import { withPostHogConfig } from '@posthog/nextjs-config'
 
 const nextConfig: NextConfig = {
   /* config options here */
