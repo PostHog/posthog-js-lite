@@ -1,6 +1,8 @@
-# PostHog Next.js
+# PostHog Next.js Config
 
-Please see the main [PostHog docs](https://www.posthog.com/docs).
+This package handles sourcemap configuration and upload for the PostHog Error Tracking product.
+
+Please see the main [PostHog Error Tracking docs](https://posthog.com/docs/error-tracking).
 
 ## Usage
 
