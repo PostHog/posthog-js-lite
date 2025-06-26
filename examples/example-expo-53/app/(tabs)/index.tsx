@@ -9,7 +9,9 @@ import { posthog } from '../posthog'
 import { useState } from 'react'
 
 export default function HomeScreen() {
-  const [buttonText, setButtonText] = useState(`Tap the Explore tab to learn more about what's included in this starter app.`)
+  const [buttonText, setButtonText] = useState(
+    `Tap the Explore tab to learn more about what's included in this starter app.`
+  )
 
   const handleClick = () => {
     posthog.capture('button_clicked', { name: 'example' })
