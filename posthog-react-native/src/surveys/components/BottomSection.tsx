@@ -20,9 +20,9 @@ export function BottomSection({
     <View style={styles.bottomSection}>
       <TouchableOpacity
         style={[
-          styles.button, 
+          styles.button,
           { backgroundColor: appearance.submitButtonColor },
-          submitDisabled && styles.buttonDisabled
+          submitDisabled && styles.buttonDisabled,
         ]}
         disabled={submitDisabled}
         onPress={() => {
