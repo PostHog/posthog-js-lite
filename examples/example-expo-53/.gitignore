@@ -37,3 +37,8 @@ yarn-error.*
 *.tsbuildinfo
 
 app-example
+
+yarn.lock
+yalc.lock
+package-lock.json
+Podfile.lock
