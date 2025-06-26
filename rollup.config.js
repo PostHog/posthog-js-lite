@@ -121,7 +121,7 @@ packages.forEach((x) => {
 // posthog-ai //
 
 // Add submodule builds for posthog-ai
-const providers = ['anthropic', 'openai', 'vercel', 'langchain']
+const providers = ['anthropic', 'openai', 'vercel', 'langchain', 'gemini']
 
 providers.forEach((provider) => {
   configs.push({
