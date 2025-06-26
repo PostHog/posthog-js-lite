@@ -257,7 +257,8 @@ export function MultipleChoiceQuestion({
         onSubmit={() => {
           // If open choice is selected, replace the choice name with the actual value entered
           const result = selectedChoices.map((c) => (c === openChoice ? openEndedInput : c))
-          onSubmit(result.length === 1 ? result[0] : result)
+          // Always submit as an array, even when there's only one selection
+          onSubmit(result)
         }}
       />
     </View>
