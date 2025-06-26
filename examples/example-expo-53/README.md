@@ -25,3 +25,10 @@ Open the ios/exampleexpo53.xcworkspace file with Xcode.
 Choose an iPhone simulator (eg iPhone 16 - 18.0).
 
 Press the play button in Xcode to run the app.
+
+Or...
+
+```bash
+npx expo run:ios
+npx expo run:android
+```
