@@ -96,13 +96,7 @@ function _useNavigationTracker(
   useEffect(() => {
     // NOTE: The navigation stacks may not be fully rendered initially. This means the first route can be missed (it doesn't update useNavigationState)
     // If missing we simply wait a tick and call it again.
-    if (routes === undefined) {
-      // For static navigation, routes might not be available, so we track immediately
-      setTimeout(trackRoute, 0)
-      return
-    }
     if (!routes) {
-      // For dynamic navigation with missing routes, we wait a tick
       setTimeout(trackRoute, 1)
       return
     }
