@@ -1377,7 +1377,7 @@ describe('PostHog Node.js', () => {
         fetchRetryCount: 0,
         disableCompression: true,
       })
-      
+
       await expect(posthogWithoutKey.getRemoteConfigPayload('test-flag')).rejects.toThrow(
         'Personal API key is required for remote config payload decryption'
       )
@@ -1436,7 +1436,7 @@ describe('PostHog Node.js', () => {
       const payload = await posthogWithoutLocalEval.getRemoteConfigPayload('test-flag')
       expect(payload).toEqual({ test: 'payload' })
       expect(spy).toHaveBeenCalledWith('test-flag')
-      
+
       // Verify that no poller was created
       expect(posthogWithoutLocalEval['featureFlagsPoller']).toBeUndefined()
     })
