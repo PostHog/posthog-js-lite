@@ -662,6 +662,23 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
 
   captureException(error: unknown, distinctId?: string, additionalProperties?: Record<string | number, any>): void {
     const syntheticException = new Error('PostHog syntheticException')
-    ErrorTracking.captureException(this, error, { syntheticException }, distinctId, additionalProperties)
+    ErrorTracking.buildEventMessage(error, { syntheticException }, distinctId, additionalProperties).then((msg) => {
+      this.capture(msg)
+    })
+  }
+
+  async captureExceptionImmediate(
+    error: unknown,
+    distinctId?: string,
+    additionalProperties?: Record<string | number, any>
+  ): Promise<void> {
+    const syntheticException = new Error('PostHog syntheticException')
+    const evtMsg = await ErrorTracking.buildEventMessage(
+      error,
+      { syntheticException },
+      distinctId,
+      additionalProperties
+    )
+    return await this.captureImmediate(evtMsg)
   }
 }
