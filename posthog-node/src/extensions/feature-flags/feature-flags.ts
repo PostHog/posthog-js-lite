@@ -537,26 +537,6 @@ class FeatureFlagsPoller {
   stopPoller(): void {
     clearTimeout(this.poller)
   }
-
-  _requestRemoteConfigPayload(flagKey: string): Promise<PostHogFetchResponse> {
-    const url = `${this.host}/api/projects/@current/feature_flags/${flagKey}/remote_config/`
-
-    const options = this.getPersonalApiKeyRequestOptions()
-
-    let abortTimeout = null
-    if (this.timeout && typeof this.timeout === 'number') {
-      const controller = new AbortController()
-      abortTimeout = safeSetTimeout(() => {
-        controller.abort()
-      }, this.timeout)
-      options.signal = controller.signal
-    }
-    try {
-      return this.fetch(url, options)
-    } finally {
-      clearTimeout(abortTimeout)
-    }
-  }
 }
 
 // # This function takes a distinct_id and a feature flag key and returns a float between 0 and 1.

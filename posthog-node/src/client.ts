@@ -50,21 +50,26 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
         )
       }
 
-      this.featureFlagsPoller = new FeatureFlagsPoller({
-        pollingInterval: this.options.featureFlagsPollingInterval,
-        personalApiKey: options.personalApiKey,
-        projectApiKey: apiKey,
-        timeout: options.requestTimeout ?? 10000, // 10 seconds
-        host: this.host,
-        fetch: options.fetch,
-        onError: (err: Error) => {
-          this._events.emit('error', err)
-        },
-        onLoad: (count: number) => {
-          this._events.emit('localEvaluationFlagsLoaded', count)
-        },
-        customHeaders: this.getCustomHeaders(),
-      })
+      // Only start the poller if local evaluation is enabled (defaults to true for backward compatibility)
+      const shouldEnableLocalEvaluation = options.enableLocalEvaluation !== false
+
+      if (shouldEnableLocalEvaluation) {
+        this.featureFlagsPoller = new FeatureFlagsPoller({
+          pollingInterval: this.options.featureFlagsPollingInterval,
+          personalApiKey: options.personalApiKey,
+          projectApiKey: apiKey,
+          timeout: options.requestTimeout ?? 10000, // 10 seconds
+          host: this.host,
+          fetch: options.fetch,
+          onError: (err: Error) => {
+            this._events.emit('error', err)
+          },
+          onLoad: (count: number) => {
+            this._events.emit('localEvaluationFlagsLoaded', count)
+          },
+          customHeaders: this.getCustomHeaders(),
+        })
+      }
     }
     this.errorTracking = new ErrorTracking(this, options)
     this.distinctIdHasSentFlagCalls = {}
@@ -503,7 +508,11 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
   }
 
   async getRemoteConfigPayload(flagKey: string): Promise<JsonType | undefined> {
-    const response = await this.featureFlagsPoller?._requestRemoteConfigPayload(flagKey)
+    if (!this.options.personalApiKey) {
+      throw new Error('Personal API key is required for remote config payload decryption')
+    }
+
+    const response = await this._requestRemoteConfigPayload(flagKey)
     if (!response) {
       return undefined
     }
@@ -637,6 +646,47 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
   async _shutdown(shutdownTimeoutMs?: number): Promise<void> {
     this.featureFlagsPoller?.stopPoller()
     return super._shutdown(shutdownTimeoutMs)
+  }
+
+  /**
+   * @param flagKey
+   * @returns
+   */
+  private async _requestRemoteConfigPayload(flagKey: string): Promise<PostHogFetchResponse | undefined> {
+    if (!this.options.personalApiKey) {
+      return undefined
+    }
+
+    const url = `${this.host}/api/projects/@current/feature_flags/${flagKey}/remote_config/`
+
+    const options: PostHogFetchOptions = {
+      method: 'GET',
+      headers: {
+        ...this.getCustomHeaders(),
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.options.personalApiKey}`,
+      },
+    }
+
+    let abortTimeout = null
+    if (this.options.requestTimeout && typeof this.options.requestTimeout === 'number') {
+      const controller = new AbortController()
+      abortTimeout = setTimeout(() => {
+        controller.abort()
+      }, this.options.requestTimeout)
+      options.signal = controller.signal
+    }
+
+    try {
+      return await this.fetch(url, options)
+    } catch (error) {
+      this._events.emit('error', error)
+      return undefined
+    } finally {
+      if (abortTimeout) {
+        clearTimeout(abortTimeout)
+      }
+    }
   }
 
   private addLocalPersonAndGroupProperties(

@@ -57,6 +57,9 @@ export type PostHogOptions = PostHogCoreOptions & {
   // Maximum size of cache that deduplicates $feature_flag_called calls per user.
   maxCacheSize?: number
   fetch?: (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
+  // Whether to enable feature flag polling for local evaluation by default. Defaults to true when personalApiKey is provided.
+  // We recommend setting this to false if you are using the personalApiKey for evaluating remote config payloads via `getRemoteConfigPayload`.
+  enableLocalEvaluation?: boolean
 }
 
 export type PostHogFeatureFlag = {
