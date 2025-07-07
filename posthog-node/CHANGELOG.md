@@ -1,6 +1,6 @@
 # Next
 
-# 5.1.1 - 2025-07-07
+# 5.2.1 - 2025-07-07
 
 1. feat: add captureExceptionImmediate method on posthog client
 
