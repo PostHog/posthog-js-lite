@@ -1,5 +1,9 @@
 # Next
 
+# 5.2.1 - 2025-07-07
+
+1. feat: add captureExceptionImmediate method on posthog client
+
 # 5.1.1 - 2025-06-16
 
 1. fix: Handle double-encoded JSON payloads from the remote config endpoint
