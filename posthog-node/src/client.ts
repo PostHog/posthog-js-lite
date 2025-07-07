@@ -648,10 +648,6 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
     return super._shutdown(shutdownTimeoutMs)
   }
 
-  /**
-   * @param flagKey
-   * @returns
-   */
   private async _requestRemoteConfigPayload(flagKey: string): Promise<PostHogFetchResponse | undefined> {
     if (!this.options.personalApiKey) {
       return undefined
