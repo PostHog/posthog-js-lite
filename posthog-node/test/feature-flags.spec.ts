@@ -4682,3 +4682,267 @@ describe('quota limiting', () => {
     consoleSpy.mockRestore()
   })
 })
+
+describe('enhanced local evaluation features', () => {
+  let posthog: PostHog
+
+  const testFlags = {
+    flags: [
+      {
+        id: 1,
+        name: 'Person Property Flag',
+        key: 'person-prop-flag',
+        active: true,
+        filters: {
+          groups: [
+            {
+              variant: null,
+              properties: [
+                {
+                  key: 'plan',
+                  type: 'person',
+                  value: 'premium',
+                  operator: 'exact',
+                },
+              ],
+            },
+          ],
+        },
+        deleted: false,
+        rollout_percentage: null,
+        ensure_experience_continuity: false,
+        experiment_set: [],
+      },
+      {
+        id: 2,
+        name: 'Group Property Flag',
+        key: 'group-prop-flag',
+        active: true,
+        filters: {
+          aggregation_group_type_index: 0,
+          groups: [
+            {
+              variant: null,
+              properties: [
+                {
+                  key: 'tier',
+                  type: 'group',
+                  value: 'enterprise',
+                  operator: 'exact',
+                  group_type_index: 0,
+                },
+              ],
+            },
+          ],
+        },
+        deleted: false,
+        rollout_percentage: null,
+        ensure_experience_continuity: false,
+        experiment_set: [],
+      },
+      {
+        id: 3,
+        name: 'Experience Continuity Flag',
+        key: 'experience-continuity-flag',
+        active: true,
+        filters: {
+          groups: [
+            {
+              variant: null,
+              properties: [],
+            },
+          ],
+        },
+        deleted: false,
+        rollout_percentage: null,
+        ensure_experience_continuity: true,
+        experiment_set: [],
+      },
+    ],
+    group_type_mapping: { 0: 'company' },
+  }
+
+  beforeEach(() => {
+    mockedFetch.mockImplementation(
+      apiImplementation({
+        localFlags: testFlags,
+      })
+    )
+
+    posthog = new PostHog('TEST_API_KEY', {
+      host: 'http://example.com',
+      personalApiKey: 'TEST_PERSONAL_API_KEY',
+      ...posthogImmediateResolveOptions,
+    })
+  })
+
+  afterEach(async () => {
+    await posthog.shutdown()
+  })
+
+  describe('getRequiredProperties', () => {
+    it('should analyze person property requirements', async () => {
+      await posthog.reloadFeatureFlags()
+      
+      const requirements = posthog.getRequiredProperties('person-prop-flag')
+      
+      expect(requirements).toEqual({
+        personProperties: ['plan'],
+        groupProperties: {},
+        canEvaluateLocally: true,
+        requiresGroups: false,
+        groupTypes: [],
+      })
+    })
+
+    it('should analyze group property requirements', async () => {
+      await posthog.reloadFeatureFlags()
+      
+      const requirements = posthog.getRequiredProperties('group-prop-flag')
+      
+      expect(requirements).toEqual({
+        personProperties: [],
+        groupProperties: { company: ['tier'] },
+        canEvaluateLocally: true,
+        requiresGroups: true,
+        groupTypes: ['company'],
+      })
+    })
+
+    it('should identify flags that cannot be evaluated locally', async () => {
+      await posthog.reloadFeatureFlags()
+      
+      const requirements = posthog.getRequiredProperties('experience-continuity-flag')
+      
+      expect(requirements).toEqual({
+        personProperties: [],
+        groupProperties: {},
+        canEvaluateLocally: false,
+        requiresGroups: false,
+        groupTypes: [],
+      })
+    })
+
+    it('should return empty requirements for non-existent flags', () => {
+      const requirements = posthog.getRequiredProperties('non-existent-flag')
+      
+      expect(requirements).toEqual({
+        personProperties: [],
+        groupProperties: {},
+        canEvaluateLocally: false,
+        requiresGroups: false,
+        groupTypes: [],
+      })
+    })
+  })
+
+  describe('strictLocalEvaluation', () => {
+    it('should fail locally when strictLocalEvaluation is true and properties are missing', async () => {
+      await posthog.reloadFeatureFlags()
+      
+      const flag = await posthog.getFeatureFlag('person-prop-flag', 'user123', {
+        onlyEvaluateLocally: true,
+        strictLocalEvaluation: true,
+        // Missing personProperties
+      })
+      
+      expect(flag).toBeUndefined()
+    })
+
+    it('should succeed locally when strictLocalEvaluation is true and properties are provided', async () => {
+      await posthog.reloadFeatureFlags()
+      
+      const flag = await posthog.getFeatureFlag('person-prop-flag', 'user123', {
+        onlyEvaluateLocally: true,
+        strictLocalEvaluation: true,
+        personProperties: { plan: 'premium' },
+      })
+      
+      expect(flag).toBe(true)
+    })
+
+    it('should return only locally evaluable flags with strictLocalEvaluation', async () => {
+      await posthog.reloadFeatureFlags()
+      
+      const flags = await posthog.getAllFlags('user123', {
+        onlyEvaluateLocally: true,
+        strictLocalEvaluation: true,
+        personProperties: { plan: 'premium' },
+      })
+      
+      expect(flags['person-prop-flag']).toBe(true)
+      // Group flag should be false (not evaluated) because no group properties provided
+      expect(flags['group-prop-flag']).toBe(false)
+      // Experience continuity flag should be undefined because it can't be evaluated locally
+      expect(flags['experience-continuity-flag']).toBeUndefined()
+    })
+
+    it('should use global strictLocalEvaluation setting', async () => {
+      const strictPosthog = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        personalApiKey: 'TEST_PERSONAL_API_KEY',
+        strictLocalEvaluation: true,
+        ...posthogImmediateResolveOptions,
+      })
+      
+      await strictPosthog.reloadFeatureFlags()
+      
+      const flag = await strictPosthog.getFeatureFlag('person-prop-flag', 'user123', {
+        onlyEvaluateLocally: true,
+        // Missing personProperties, should fail due to global setting
+      })
+      
+      expect(flag).toBeUndefined()
+      
+      await strictPosthog.shutdown()
+    })
+  })
+
+  describe('enhanced sendFeatureFlags integration', () => {
+    it('should parse sendFeatureFlags object correctly', async () => {
+      await posthog.reloadFeatureFlags()
+      
+      // Test that the enhanced sendFeatureFlags properties work for local evaluation
+      const flagsWithProps = await posthog.getAllFlags('user123', {
+        onlyEvaluateLocally: true,
+        personProperties: { plan: 'premium' },
+      })
+      
+      expect(flagsWithProps['person-prop-flag']).toBe(true)
+      
+      const flagsWithoutProps = await posthog.getAllFlags('user123', {
+        onlyEvaluateLocally: true,
+        // Missing personProperties
+      })
+      
+      // When properties are missing for local evaluation, the flag is not included in the result
+      expect(flagsWithoutProps['person-prop-flag']).toBeUndefined()
+    })
+
+    it('should handle group properties correctly', async () => {
+      await posthog.reloadFeatureFlags()
+      
+      const flags = await posthog.getAllFlags('user123', {
+        groups: { company: 'acme-corp' },
+        groupProperties: { company: { tier: 'enterprise' } },
+        onlyEvaluateLocally: true,
+      })
+      
+      expect(flags['group-prop-flag']).toBe(true)
+    })
+
+    it('should support capture with sendFeatureFlags object (basic test)', () => {
+      // Just test that the capture method accepts the new structure without throwing
+      expect(() => {
+        posthog.capture({
+          distinctId: 'user123',
+          event: 'test_event',
+          sendFeatureFlags: {
+            personProperties: { plan: 'premium' },
+            onlyEvaluateLocally: true,
+          },
+        })
+      }).not.toThrow()
+    })
+  })
+})

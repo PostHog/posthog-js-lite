@@ -537,6 +537,134 @@ class FeatureFlagsPoller {
   stopPoller(): void {
     clearTimeout(this.poller)
   }
+
+  /**
+   * Analyzes a feature flag to determine what properties are required for local evaluation.
+   * This helps developers understand what properties they need to provide to avoid
+   * InconclusiveMatchError exceptions.
+   */
+  getRequiredProperties(flagKey: string): {
+    personProperties: string[]
+    groupProperties: Record<string, string[]>
+    canEvaluateLocally: boolean
+    requiresGroups: boolean
+    groupTypes: string[]
+  } {
+    const flag = this.featureFlagsByKey[flagKey]
+    if (!flag) {
+      return {
+        personProperties: [],
+        groupProperties: {},
+        canEvaluateLocally: false,
+        requiresGroups: false,
+        groupTypes: [],
+      }
+    }
+
+    const personProperties = new Set<string>()
+    const groupProperties: Record<string, Set<string>> = {}
+    let canEvaluateLocally = true
+    let requiresGroups = false
+    const groupTypes = new Set<string>()
+
+    // Check if flag requires experience continuity (cannot be evaluated locally)
+    if (flag.ensure_experience_continuity) {
+      canEvaluateLocally = false
+    }
+
+    // Check if flag uses group-based evaluation
+    if (flag.filters?.aggregation_group_type_index !== undefined) {
+      requiresGroups = true
+      const groupTypeName = this.groupTypeMapping[flag.filters.aggregation_group_type_index]
+      if (groupTypeName) {
+        groupTypes.add(groupTypeName)
+      }
+    }
+
+    // Analyze all conditions to find required properties
+    const analyzeConditions = (conditions: FeatureFlagCondition[]): void => {
+      for (const condition of conditions) {
+        if (condition.properties) {
+          for (const property of condition.properties) {
+            if (property.type === 'person') {
+              personProperties.add(property.key)
+            } else if (property.type === 'group') {
+              const groupType =
+                property.group_type_index !== undefined ? this.groupTypeMapping[property.group_type_index] : 'unknown'
+              if (groupType) {
+                groupTypes.add(groupType)
+                if (!groupProperties[groupType]) {
+                  groupProperties[groupType] = new Set()
+                }
+                groupProperties[groupType].add(property.key)
+              }
+            } else if (property.type === 'cohort') {
+              // Cohort properties might require additional person properties
+              // For now, we'll mark cohorts as requiring evaluation but not specify exact properties
+              const cohortId = String(property.value)
+              if (cohortId in this.cohorts) {
+                const cohort = this.cohorts[cohortId]
+                this.analyzeCohortProperties(cohort, personProperties, groupProperties, groupTypes)
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Analyze main flag conditions
+    if (flag.filters?.groups) {
+      analyzeConditions(flag.filters.groups)
+    }
+
+    // Convert sets to arrays for the return value
+    const result: Record<string, string[]> = {}
+    for (const [groupType, props] of Object.entries(groupProperties)) {
+      result[groupType] = Array.from(props)
+    }
+
+    return {
+      personProperties: Array.from(personProperties),
+      groupProperties: result,
+      canEvaluateLocally,
+      requiresGroups,
+      groupTypes: Array.from(groupTypes),
+    }
+  }
+
+  private analyzeCohortProperties(
+    cohort: PropertyGroup,
+    personProperties: Set<string>,
+    groupProperties: Record<string, Set<string>>,
+    groupTypes: Set<string>
+  ): void {
+    if (!cohort || !cohort.values) {
+      return
+    }
+
+    for (const value of cohort.values) {
+      if ('key' in value) {
+        // This is a FlagProperty
+        const prop = value as FlagProperty
+        if (prop.type === 'person') {
+          personProperties.add(prop.key)
+        } else if (prop.type === 'group') {
+          const groupType =
+            prop.group_type_index !== undefined ? this.groupTypeMapping[prop.group_type_index] : 'unknown'
+          if (groupType) {
+            groupTypes.add(groupType)
+            if (!groupProperties[groupType]) {
+              groupProperties[groupType] = new Set()
+            }
+            groupProperties[groupType].add(prop.key)
+          }
+        }
+      } else if ('values' in value) {
+        // This is a nested PropertyGroup
+        this.analyzeCohortProperties(value as PropertyGroup, personProperties, groupProperties, groupTypes)
+      }
+    }
+  }
 }
 
 // # This function takes a distinct_id and a feature flag key and returns a float between 0 and 1.

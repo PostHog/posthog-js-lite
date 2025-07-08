@@ -123,18 +123,44 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
     const _getFlags = async (
       distinctId: EventMessage['distinctId'],
       groups: EventMessage['groups'],
-      disableGeoip: EventMessage['disableGeoip']
+      disableGeoip: EventMessage['disableGeoip'],
+      sendFeatureFlagsConfig?: {
+        personProperties?: Record<string, string>
+        groupProperties?: Record<string, Record<string, string>>
+        onlyEvaluateLocally?: boolean
+        strictLocalEvaluation?: boolean
+      }
     ): Promise<PostHogFlagsResponse['featureFlags'] | undefined> => {
-      return (await super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)).flags
+      if (sendFeatureFlagsConfig && (sendFeatureFlagsConfig.personProperties || sendFeatureFlagsConfig.groupProperties || sendFeatureFlagsConfig.onlyEvaluateLocally)) {
+        // Use local evaluation when custom properties are provided
+        const groupsWithStringValues: Record<string, string> = {}
+        for (const [key, value] of Object.entries(groups || {})) {
+          groupsWithStringValues[key] = String(value)
+        }
+        
+        return await this.getAllFlags(distinctId, {
+          groups: groupsWithStringValues,
+          personProperties: sendFeatureFlagsConfig.personProperties,
+          groupProperties: sendFeatureFlagsConfig.groupProperties,
+          onlyEvaluateLocally: sendFeatureFlagsConfig.onlyEvaluateLocally,
+          disableGeoip,
+        })
+      } else {
+        // Use the original remote evaluation
+        return (await super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)).flags
+      }
     }
+
+    // Parse sendFeatureFlags configuration
+    const sendFeatureFlagsEnabled = sendFeatureFlags === true || (typeof sendFeatureFlags === 'object' && sendFeatureFlags !== null)
+    const sendFeatureFlagsConfig = typeof sendFeatureFlags === 'object' && sendFeatureFlags !== null ? sendFeatureFlags : undefined
 
     // :TRICKY: If we flush, or need to shut down, to not lose events we want this promise to resolve before we flush
     const capturePromise = Promise.resolve()
       .then(async () => {
-        if (sendFeatureFlags) {
+        if (sendFeatureFlagsEnabled) {
           // If we are sending feature flags, we need to make sure we have the latest flags
-          // return await super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)
-          return await _getFlags(distinctId, groups, disableGeoip)
+          return await _getFlags(distinctId, groups, disableGeoip, sendFeatureFlagsConfig)
         }
 
         if (event === '$feature_flag_called') {
@@ -202,17 +228,43 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
     const _getFlags = async (
       distinctId: EventMessage['distinctId'],
       groups: EventMessage['groups'],
-      disableGeoip: EventMessage['disableGeoip']
+      disableGeoip: EventMessage['disableGeoip'],
+      sendFeatureFlagsConfig?: {
+        personProperties?: Record<string, string>
+        groupProperties?: Record<string, Record<string, string>>
+        onlyEvaluateLocally?: boolean
+        strictLocalEvaluation?: boolean
+      }
     ): Promise<PostHogFlagsResponse['featureFlags'] | undefined> => {
-      return (await super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)).flags
+      if (sendFeatureFlagsConfig && (sendFeatureFlagsConfig.personProperties || sendFeatureFlagsConfig.groupProperties || sendFeatureFlagsConfig.onlyEvaluateLocally)) {
+        // Use local evaluation when custom properties are provided
+        const groupsWithStringValues: Record<string, string> = {}
+        for (const [key, value] of Object.entries(groups || {})) {
+          groupsWithStringValues[key] = String(value)
+        }
+        
+        return await this.getAllFlags(distinctId, {
+          groups: groupsWithStringValues,
+          personProperties: sendFeatureFlagsConfig.personProperties,
+          groupProperties: sendFeatureFlagsConfig.groupProperties,
+          onlyEvaluateLocally: sendFeatureFlagsConfig.onlyEvaluateLocally,
+          disableGeoip,
+        })
+      } else {
+        // Use the original remote evaluation
+        return (await super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)).flags
+      }
     }
+
+    // Parse sendFeatureFlags configuration
+    const sendFeatureFlagsEnabled = sendFeatureFlags === true || (typeof sendFeatureFlags === 'object' && sendFeatureFlags !== null)
+    const sendFeatureFlagsConfig = typeof sendFeatureFlags === 'object' && sendFeatureFlags !== null ? sendFeatureFlags : undefined
 
     const capturePromise = Promise.resolve()
       .then(async () => {
-        if (sendFeatureFlags) {
+        if (sendFeatureFlagsEnabled) {
           // If we are sending feature flags, we need to make sure we have the latest flags
-          // return await super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)
-          return await _getFlags(distinctId, groups, disableGeoip)
+          return await _getFlags(distinctId, groups, disableGeoip, sendFeatureFlagsConfig)
         }
 
         if (event === '$feature_flag_called') {
@@ -347,10 +399,16 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
       onlyEvaluateLocally?: boolean
       sendFeatureFlagEvents?: boolean
       disableGeoip?: boolean
+      strictLocalEvaluation?: boolean
     }
   ): Promise<FeatureFlagValue | undefined> {
     const { groups, disableGeoip } = options || {}
-    let { onlyEvaluateLocally, sendFeatureFlagEvents, personProperties, groupProperties } = options || {}
+    let { onlyEvaluateLocally, sendFeatureFlagEvents, personProperties, groupProperties, strictLocalEvaluation } = options || {}
+    
+    // Use global strictLocalEvaluation setting if not provided
+    if (strictLocalEvaluation === undefined) {
+      strictLocalEvaluation = this.options.strictLocalEvaluation ?? false
+    }
 
     const adjustedProperties = this.addLocalPersonAndGroupProperties(
       distinctId,
@@ -381,6 +439,12 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
     const flagWasLocallyEvaluated = response !== undefined
     let requestId = undefined
     let flagDetail: FeatureFlagDetail | undefined = undefined
+    
+    // If strict local evaluation is enabled and local evaluation failed, return undefined
+    if (!flagWasLocallyEvaluated && strictLocalEvaluation && onlyEvaluateLocally) {
+      return undefined
+    }
+    
     if (!flagWasLocallyEvaluated && !onlyEvaluateLocally) {
       const remoteResponse = await super.getFeatureFlagDetailStateless(
         key,
@@ -544,6 +608,7 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
       onlyEvaluateLocally?: boolean
       sendFeatureFlagEvents?: boolean
       disableGeoip?: boolean
+      strictLocalEvaluation?: boolean
     }
   ): Promise<boolean | undefined> {
     const feat = await this.getFeatureFlag(key, distinctId, options)
@@ -561,6 +626,7 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
       groupProperties?: Record<string, Record<string, string>>
       onlyEvaluateLocally?: boolean
       disableGeoip?: boolean
+      strictLocalEvaluation?: boolean
     }
   ): Promise<Record<string, FeatureFlagValue>> {
     const response = await this.getAllFlagsAndPayloads(distinctId, options)
@@ -575,10 +641,16 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
       groupProperties?: Record<string, Record<string, string>>
       onlyEvaluateLocally?: boolean
       disableGeoip?: boolean
+      strictLocalEvaluation?: boolean
     }
   ): Promise<PostHogFlagsAndPayloadsResponse> {
     const { groups, disableGeoip } = options || {}
-    let { onlyEvaluateLocally, personProperties, groupProperties } = options || {}
+    let { onlyEvaluateLocally, personProperties, groupProperties, strictLocalEvaluation } = options || {}
+    
+    // Use global strictLocalEvaluation setting if not provided
+    if (strictLocalEvaluation === undefined) {
+      strictLocalEvaluation = this.options.strictLocalEvaluation ?? false
+    }
 
     const adjustedProperties = this.addLocalPersonAndGroupProperties(
       distinctId,
@@ -611,6 +683,12 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
       fallbackToFlags = localEvaluationResult.fallbackToFlags
     }
 
+    // If strict local evaluation is enabled and we need to fall back, return only local results
+    if (fallbackToFlags && strictLocalEvaluation && onlyEvaluateLocally) {
+      // Return only the flags that were successfully evaluated locally
+      return { featureFlags, featureFlagPayloads }
+    }
+    
     if (fallbackToFlags && !onlyEvaluateLocally) {
       const remoteEvaluationResult = await super.getFeatureFlagsAndPayloadsStateless(
         distinctId,
@@ -642,6 +720,28 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
    */
   async reloadFeatureFlags(): Promise<void> {
     await this.featureFlagsPoller?.loadFeatureFlags(true)
+  }
+
+  /**
+   * @description Analyzes a feature flag to determine what properties are required for local evaluation.
+   * This helps developers understand what properties they need to provide to avoid evaluation failures.
+   * @param flagKey The unique key of the feature flag to analyze
+   * @returns An object containing required properties and evaluation capabilities
+   */
+  getRequiredProperties(flagKey: string): {
+    personProperties: string[]
+    groupProperties: Record<string, string[]>
+    canEvaluateLocally: boolean
+    requiresGroups: boolean
+    groupTypes: string[]
+  } {
+    return this.featureFlagsPoller?.getRequiredProperties(flagKey) ?? {
+      personProperties: [],
+      groupProperties: {},
+      canEvaluateLocally: false,
+      requiresGroups: false,
+      groupTypes: []
+    }
   }
 
   async _shutdown(shutdownTimeoutMs?: number): Promise<void> {
