@@ -1,6 +1,6 @@
 {
   "name": "@posthog/nextjs-config",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "NextJS configuration helper for Posthog 🦔",
   "main": "./lib/index.cjs",
   "module": "./lib/index.mjs",
