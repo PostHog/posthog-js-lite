@@ -131,29 +131,56 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
         strictLocalEvaluation?: boolean
       }
     ): Promise<PostHogFlagsResponse['featureFlags'] | undefined> => {
-      if (
-        sendFeatureFlagsConfig &&
-        (sendFeatureFlagsConfig.personProperties ||
-          sendFeatureFlagsConfig.groupProperties ||
-          sendFeatureFlagsConfig.onlyEvaluateLocally)
-      ) {
-        // Use local evaluation when custom properties are provided
-        const groupsWithStringValues: Record<string, string> = {}
-        for (const [key, value] of Object.entries(groups || {})) {
-          groupsWithStringValues[key] = String(value)
-        }
+      const groupsWithStringValues: Record<string, string> = {}
+      for (const [key, value] of Object.entries(groups || {})) {
+        groupsWithStringValues[key] = String(value)
+      }
 
-        return await this.getAllFlags(distinctId, {
+      // Default to local-only evaluation when sendFeatureFlags: true is used without config AND local evaluation is available
+      const onlyEvaluateLocally = sendFeatureFlagsConfig?.onlyEvaluateLocally ?? 
+        (sendFeatureFlags === true && !sendFeatureFlagsConfig && (this.featureFlagsPoller?.featureFlags?.length || 0) > 0)
+      const strictLocalEvaluation = sendFeatureFlagsConfig?.strictLocalEvaluation ?? false
+
+      // ALWAYS try local evaluation first if we have flags loaded
+      if ((this.featureFlagsPoller?.featureFlags?.length || 0) > 0) {
+        const localFlags = await this.getAllFlags(distinctId, {
           groups: groupsWithStringValues,
-          personProperties: sendFeatureFlagsConfig.personProperties,
-          groupProperties: sendFeatureFlagsConfig.groupProperties,
-          onlyEvaluateLocally: sendFeatureFlagsConfig.onlyEvaluateLocally,
+          personProperties: sendFeatureFlagsConfig?.personProperties,
+          groupProperties: sendFeatureFlagsConfig?.groupProperties,
+          onlyEvaluateLocally,
+          strictLocalEvaluation,
           disableGeoip,
         })
-      } else {
-        // Use the original remote evaluation
+
+        // If onlyEvaluateLocally is true, NEVER fall back regardless of results
+        if (onlyEvaluateLocally) {
+          return localFlags
+        }
+
+        // If we got some flags OR in strict mode, use local results
+        if (Object.keys(localFlags).length > 0 || strictLocalEvaluation) {
+          // Warn about behavior change for boolean sendFeatureFlags
+          if (sendFeatureFlags === true && !sendFeatureFlagsConfig) {
+            const totalFlagsLoaded = this.featureFlagsPoller?.featureFlags?.length || 0
+            const localFlagsReturned = Object.keys(localFlags).length
+            if (localFlagsReturned < totalFlagsLoaded) {
+              console.warn(
+                '[PostHog] sendFeatureFlags: true now prioritizes local evaluation and may return incomplete flags. ' +
+                  'Use sendFeatureFlags: { onlyEvaluateLocally: false } to force remote evaluation for complete flag sets.'
+              )
+            }
+          }
+          return localFlags
+        }
+      }
+
+      // Only fall back to remote if not in local-only mode
+      if (!onlyEvaluateLocally) {
         return (await super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)).flags
       }
+
+      // If we're in local-only mode but have no flags loaded, return empty
+      return {}
     }
 
     // Parse sendFeatureFlags configuration
@@ -175,19 +202,7 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
           return {}
         }
 
-        if ((this.featureFlagsPoller?.featureFlags?.length || 0) > 0) {
-          // Otherwise we may as well check for the flags locally and include them if they are already loaded
-          const groupsWithStringValues: Record<string, string> = {}
-          for (const [key, value] of Object.entries(groups || {})) {
-            groupsWithStringValues[key] = String(value)
-          }
-
-          return await this.getAllFlags(distinctId, {
-            groups: groupsWithStringValues,
-            disableGeoip,
-            onlyEvaluateLocally: true,
-          })
-        }
+        // No sendFeatureFlags specified, no additional flags to include
         return {}
       })
       .then((flags) => {
@@ -243,29 +258,56 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
         strictLocalEvaluation?: boolean
       }
     ): Promise<PostHogFlagsResponse['featureFlags'] | undefined> => {
-      if (
-        sendFeatureFlagsConfig &&
-        (sendFeatureFlagsConfig.personProperties ||
-          sendFeatureFlagsConfig.groupProperties ||
-          sendFeatureFlagsConfig.onlyEvaluateLocally)
-      ) {
-        // Use local evaluation when custom properties are provided
-        const groupsWithStringValues: Record<string, string> = {}
-        for (const [key, value] of Object.entries(groups || {})) {
-          groupsWithStringValues[key] = String(value)
-        }
+      const groupsWithStringValues: Record<string, string> = {}
+      for (const [key, value] of Object.entries(groups || {})) {
+        groupsWithStringValues[key] = String(value)
+      }
 
-        return await this.getAllFlags(distinctId, {
+      // Default to local-only evaluation when sendFeatureFlags: true is used without config AND local evaluation is available
+      const onlyEvaluateLocally = sendFeatureFlagsConfig?.onlyEvaluateLocally ?? 
+        (sendFeatureFlags === true && !sendFeatureFlagsConfig && (this.featureFlagsPoller?.featureFlags?.length || 0) > 0)
+      const strictLocalEvaluation = sendFeatureFlagsConfig?.strictLocalEvaluation ?? false
+
+      // ALWAYS try local evaluation first if we have flags loaded
+      if ((this.featureFlagsPoller?.featureFlags?.length || 0) > 0) {
+        const localFlags = await this.getAllFlags(distinctId, {
           groups: groupsWithStringValues,
-          personProperties: sendFeatureFlagsConfig.personProperties,
-          groupProperties: sendFeatureFlagsConfig.groupProperties,
-          onlyEvaluateLocally: sendFeatureFlagsConfig.onlyEvaluateLocally,
+          personProperties: sendFeatureFlagsConfig?.personProperties,
+          groupProperties: sendFeatureFlagsConfig?.groupProperties,
+          onlyEvaluateLocally,
+          strictLocalEvaluation,
           disableGeoip,
         })
-      } else {
-        // Use the original remote evaluation
+
+        // If onlyEvaluateLocally is true, NEVER fall back regardless of results
+        if (onlyEvaluateLocally) {
+          return localFlags
+        }
+
+        // If we got some flags OR in strict mode, use local results
+        if (Object.keys(localFlags).length > 0 || strictLocalEvaluation) {
+          // Warn about behavior change for boolean sendFeatureFlags
+          if (sendFeatureFlags === true && !sendFeatureFlagsConfig) {
+            const totalFlagsLoaded = this.featureFlagsPoller?.featureFlags?.length || 0
+            const localFlagsReturned = Object.keys(localFlags).length
+            if (localFlagsReturned < totalFlagsLoaded) {
+              console.warn(
+                '[PostHog] sendFeatureFlags: true now prioritizes local evaluation and may return incomplete flags. ' +
+                  'Use sendFeatureFlags: { onlyEvaluateLocally: false } to force remote evaluation for complete flag sets.'
+              )
+            }
+          }
+          return localFlags
+        }
+      }
+
+      // Only fall back to remote if not in local-only mode
+      if (!onlyEvaluateLocally) {
         return (await super.getFeatureFlagsStateless(distinctId, groups, undefined, undefined, disableGeoip)).flags
       }
+
+      // If we're in local-only mode but have no flags loaded, return empty
+      return {}
     }
 
     // Parse sendFeatureFlags configuration
@@ -286,19 +328,7 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
           return {}
         }
 
-        if ((this.featureFlagsPoller?.featureFlags?.length || 0) > 0) {
-          // Otherwise we may as well check for the flags locally and include them if they are already loaded
-          const groupsWithStringValues: Record<string, string> = {}
-          for (const [key, value] of Object.entries(groups || {})) {
-            groupsWithStringValues[key] = String(value)
-          }
-
-          return await this.getAllFlags(distinctId, {
-            groups: groupsWithStringValues,
-            disableGeoip,
-            onlyEvaluateLocally: true,
-          })
-        }
+        // No sendFeatureFlags specified, no additional flags to include
         return {}
       })
       .then((flags) => {
@@ -455,11 +485,14 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
     let requestId = undefined
     let flagDetail: FeatureFlagDetail | undefined = undefined
 
-    // If strict local evaluation is enabled and local evaluation failed, return undefined
+    // STRICT LOCAL EVALUATION: Fail fast when we can't reliably evaluate locally
+    // This prevents returning incorrect flag values due to missing properties
     if (!flagWasLocallyEvaluated && strictLocalEvaluation && onlyEvaluateLocally) {
+      // Return undefined instead of false to indicate "cannot evaluate" vs "flag is off"
       return undefined
     }
 
+    // FALLBACK TO REMOTE: Only when not in local-only mode
     if (!flagWasLocallyEvaluated && !onlyEvaluateLocally) {
       const remoteResponse = await super.getFeatureFlagDetailStateless(
         key,
@@ -698,9 +731,12 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
       fallbackToFlags = localEvaluationResult.fallbackToFlags
     }
 
-    // If strict local evaluation is enabled and we need to fall back, return only local results
+    // STRICT LOCAL EVALUATION: Prevent potentially incorrect results
+    // When strictLocalEvaluation=true, we exclude flags that couldn't be reliably evaluated
+    // rather than risk returning wrong values due to missing properties
     if (fallbackToFlags && strictLocalEvaluation && onlyEvaluateLocally) {
-      // Return only the flags that were successfully evaluated locally
+      // Return only flags that were successfully evaluated with provided properties
+      // Missing flags indicate insufficient data for reliable evaluation
       return { featureFlags, featureFlagPayloads }
     }
 
@@ -740,8 +776,27 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
   /**
    * @description Analyzes a feature flag to determine what properties are required for local evaluation.
    * This helps developers understand what properties they need to provide to avoid evaluation failures.
+   *
+   * Use this method with `strictLocalEvaluation: true` to:
+   * 1. Identify required properties for reliable local evaluation
+   * 2. Detect when flags cannot be evaluated locally (experience continuity, etc.)
+   * 3. Prevent the footgun where missing properties cause incorrect flag values
+   *
    * @param flagKey The unique key of the feature flag to analyze
    * @returns An object containing required properties and evaluation capabilities
+   *
+   * @example
+   * ```typescript
+   * const requirements = client.getRequiredProperties('my-flag')
+   * if (requirements.personProperties.includes('plan')) {
+   *   // Make sure to provide 'plan' property for reliable evaluation
+   *   const flags = await client.getAllFlags('user123', {
+   *     personProperties: { plan: 'premium' },
+   *     onlyEvaluateLocally: true,
+   *     strictLocalEvaluation: true
+   *   })
+   * }
+   * ```
    */
   getRequiredProperties(flagKey: string): {
     personProperties: string[]

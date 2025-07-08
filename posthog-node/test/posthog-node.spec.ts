@@ -733,6 +733,7 @@ describe('PostHog Node.js', () => {
       posthog.capture({
         distinctId: 'distinct_id',
         event: 'node test event',
+        sendFeatureFlags: true,
       })
 
       expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)

@@ -20,7 +20,13 @@ export interface EventMessage extends IdentifyMessage {
     | {
         personProperties?: Record<string, string>
         groupProperties?: Record<string, Record<string, string>>
+        /** Whether to only evaluate flags locally (no remote API calls). Defaults to false. */
         onlyEvaluateLocally?: boolean
+        /** 
+         * Whether to exclude flags that cannot be reliably evaluated with the provided properties.
+         * This prevents returning incorrect flag values when release conditions reference missing properties.
+         * Use this to ensure data integrity in local evaluation. Defaults to false.
+         */
         strictLocalEvaluation?: boolean
       }
   timestamp?: Date
@@ -68,7 +74,18 @@ export type PostHogOptions = PostHogCoreOptions & {
   // Whether to enable feature flag polling for local evaluation by default. Defaults to true when personalApiKey is provided.
   // We recommend setting this to false if you are only using the personalApiKey for evaluating remote config payloads via `getRemoteConfigPayload` and not using local evaluation.
   enableLocalEvaluation?: boolean
-  // Whether to enforce strict local evaluation. When true, missing properties will cause evaluation to fail rather than fall back to remote evaluation.
+  /** 
+   * Whether to enforce strict local evaluation globally. When true, flags that cannot be 
+   * reliably evaluated due to missing properties will be excluded from results rather than 
+   * returning potentially incorrect values. This helps prevent the footgun where local 
+   * evaluation returns different results than remote evaluation due to missing properties.
+   * 
+   * Think of this as "fail safe" vs "fail fast":
+   * - false: Return false/undefined for flags that can't be evaluated (may be incorrect)
+   * - true: Exclude flags that can't be evaluated (prevents incorrect results)
+   * 
+   * @default false
+   */
   strictLocalEvaluation?: boolean
 }
 
@@ -167,9 +184,9 @@ export interface IPostHog {
    * @param groups optional - what groups are currently active (group analytics). Required if the flag depends on groups.
    * @param personProperties optional - what person properties are known. Used to compute flags locally, if personalApiKey is present.
    * @param groupProperties optional - what group properties are known. Used to compute flags locally, if personalApiKey is present.
-   * @param onlyEvaluateLocally optional - whether to only evaluate the flag locally. Defaults to false.
+   * @param onlyEvaluateLocally optional - whether to only evaluate the flag locally (no remote API calls). Defaults to false.
    * @param sendFeatureFlagEvents optional - whether to send feature flag events. Used for Experiments. Defaults to true.
-   * @param strictLocalEvaluation optional - whether to enforce strict local evaluation. When true, missing properties will cause evaluation to fail rather than fall back to remote evaluation.
+   * @param strictLocalEvaluation optional - whether to exclude flags that cannot be reliably evaluated due to missing properties. When true, prevents returning incorrect flag values by excluding unreliable results. Defaults to false.
    *
    * @returns true if the flag is on, false if the flag is off, undefined if there was an error.
    */
@@ -197,9 +214,9 @@ export interface IPostHog {
    * @param groups optional - what groups are currently active (group analytics). Required if the flag depends on groups.
    * @param personProperties optional - what person properties are known. Used to compute flags locally, if personalApiKey is present.
    * @param groupProperties optional - what group properties are known. Used to compute flags locally, if personalApiKey is present.
-   * @param onlyEvaluateLocally optional - whether to only evaluate the flag locally. Defaults to false.
+   * @param onlyEvaluateLocally optional - whether to only evaluate the flag locally (no remote API calls). Defaults to false.
    * @param sendFeatureFlagEvents optional - whether to send feature flag events. Used for Experiments. Defaults to true.
-   * @param strictLocalEvaluation optional - whether to enforce strict local evaluation. When true, missing properties will cause evaluation to fail rather than fall back to remote evaluation.
+   * @param strictLocalEvaluation optional - whether to exclude flags that cannot be reliably evaluated due to missing properties. When true, prevents returning incorrect flag values by excluding unreliable results. Defaults to false.
    *
    * @returns true or string(for multivariates) if the flag is on, false if the flag is off, undefined if there was an error.
    */

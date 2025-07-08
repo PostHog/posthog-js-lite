@@ -4684,6 +4684,18 @@ describe('quota limiting', () => {
 })
 
 describe('enhanced local evaluation features', () => {
+  /*
+   * TESTING: onlyEvaluateLocally vs strictLocalEvaluation
+   * 
+   * onlyEvaluateLocally: "No remote API calls" - prevents network requests
+   * strictLocalEvaluation: "No incorrect results" - prevents unreliable flag values
+   * 
+   * Key difference:
+   * - onlyEvaluateLocally=true, missing props → flag returns false (potentially wrong)
+   * - strictLocalEvaluation=true, missing props → flag excluded from results (safe)
+   * 
+   * Use both together for reliable local-only evaluation that won't return incorrect values.
+   */
   let posthog: PostHog
 
   const testFlags = {
