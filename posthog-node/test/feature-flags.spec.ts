@@ -4783,9 +4783,9 @@ describe('enhanced local evaluation features', () => {
   describe('getRequiredProperties', () => {
     it('should analyze person property requirements', async () => {
       await posthog.reloadFeatureFlags()
-      
+
       const requirements = posthog.getRequiredProperties('person-prop-flag')
-      
+
       expect(requirements).toEqual({
         personProperties: ['plan'],
         groupProperties: {},
@@ -4797,9 +4797,9 @@ describe('enhanced local evaluation features', () => {
 
     it('should analyze group property requirements', async () => {
       await posthog.reloadFeatureFlags()
-      
+
       const requirements = posthog.getRequiredProperties('group-prop-flag')
-      
+
       expect(requirements).toEqual({
         personProperties: [],
         groupProperties: { company: ['tier'] },
@@ -4811,9 +4811,9 @@ describe('enhanced local evaluation features', () => {
 
     it('should identify flags that cannot be evaluated locally', async () => {
       await posthog.reloadFeatureFlags()
-      
+
       const requirements = posthog.getRequiredProperties('experience-continuity-flag')
-      
+
       expect(requirements).toEqual({
         personProperties: [],
         groupProperties: {},
@@ -4825,7 +4825,7 @@ describe('enhanced local evaluation features', () => {
 
     it('should return empty requirements for non-existent flags', () => {
       const requirements = posthog.getRequiredProperties('non-existent-flag')
-      
+
       expect(requirements).toEqual({
         personProperties: [],
         groupProperties: {},
@@ -4839,37 +4839,37 @@ describe('enhanced local evaluation features', () => {
   describe('strictLocalEvaluation', () => {
     it('should fail locally when strictLocalEvaluation is true and properties are missing', async () => {
       await posthog.reloadFeatureFlags()
-      
+
       const flag = await posthog.getFeatureFlag('person-prop-flag', 'user123', {
         onlyEvaluateLocally: true,
         strictLocalEvaluation: true,
         // Missing personProperties
       })
-      
+
       expect(flag).toBeUndefined()
     })
 
     it('should succeed locally when strictLocalEvaluation is true and properties are provided', async () => {
       await posthog.reloadFeatureFlags()
-      
+
       const flag = await posthog.getFeatureFlag('person-prop-flag', 'user123', {
         onlyEvaluateLocally: true,
         strictLocalEvaluation: true,
         personProperties: { plan: 'premium' },
       })
-      
+
       expect(flag).toBe(true)
     })
 
     it('should return only locally evaluable flags with strictLocalEvaluation', async () => {
       await posthog.reloadFeatureFlags()
-      
+
       const flags = await posthog.getAllFlags('user123', {
         onlyEvaluateLocally: true,
         strictLocalEvaluation: true,
         personProperties: { plan: 'premium' },
       })
-      
+
       expect(flags['person-prop-flag']).toBe(true)
       // Group flag should be false (not evaluated) because no group properties provided
       expect(flags['group-prop-flag']).toBe(false)
@@ -4884,16 +4884,16 @@ describe('enhanced local evaluation features', () => {
         strictLocalEvaluation: true,
         ...posthogImmediateResolveOptions,
       })
-      
+
       await strictPosthog.reloadFeatureFlags()
-      
+
       const flag = await strictPosthog.getFeatureFlag('person-prop-flag', 'user123', {
         onlyEvaluateLocally: true,
         // Missing personProperties, should fail due to global setting
       })
-      
+
       expect(flag).toBeUndefined()
-      
+
       await strictPosthog.shutdown()
     })
   })
@@ -4901,33 +4901,33 @@ describe('enhanced local evaluation features', () => {
   describe('enhanced sendFeatureFlags integration', () => {
     it('should parse sendFeatureFlags object correctly', async () => {
       await posthog.reloadFeatureFlags()
-      
+
       // Test that the enhanced sendFeatureFlags properties work for local evaluation
       const flagsWithProps = await posthog.getAllFlags('user123', {
         onlyEvaluateLocally: true,
         personProperties: { plan: 'premium' },
       })
-      
+
       expect(flagsWithProps['person-prop-flag']).toBe(true)
-      
+
       const flagsWithoutProps = await posthog.getAllFlags('user123', {
         onlyEvaluateLocally: true,
         // Missing personProperties
       })
-      
+
       // When properties are missing for local evaluation, the flag is not included in the result
       expect(flagsWithoutProps['person-prop-flag']).toBeUndefined()
     })
 
     it('should handle group properties correctly', async () => {
       await posthog.reloadFeatureFlags()
-      
+
       const flags = await posthog.getAllFlags('user123', {
         groups: { company: 'acme-corp' },
         groupProperties: { company: { tier: 'enterprise' } },
         onlyEvaluateLocally: true,
       })
-      
+
       expect(flags['group-prop-flag']).toBe(true)
     })
 

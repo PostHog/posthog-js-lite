@@ -15,12 +15,14 @@ export interface IdentifyMessage {
 export interface EventMessage extends IdentifyMessage {
   event: string
   groups?: Record<string, string | number> // Mapping of group type to group id
-  sendFeatureFlags?: boolean | {
-    personProperties?: Record<string, string>
-    groupProperties?: Record<string, Record<string, string>>
-    onlyEvaluateLocally?: boolean
-    strictLocalEvaluation?: boolean
-  }
+  sendFeatureFlags?:
+    | boolean
+    | {
+        personProperties?: Record<string, string>
+        groupProperties?: Record<string, Record<string, string>>
+        onlyEvaluateLocally?: boolean
+        strictLocalEvaluation?: boolean
+      }
   timestamp?: Date
   uuid?: string
 }
