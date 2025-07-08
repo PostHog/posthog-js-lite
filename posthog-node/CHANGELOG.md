@@ -1,5 +1,9 @@
 # Next
 
+# 5.3.1 - 2025-07-07
+
+1. feat: decouple feature flag local evaluation from personal API keys; support decrypting remote config payloads without relying on the feature flags poller
+
 # 5.2.1 - 2025-07-07
 
 1. feat: add captureExceptionImmediate method on posthog client

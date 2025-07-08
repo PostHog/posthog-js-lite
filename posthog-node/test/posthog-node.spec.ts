@@ -1359,7 +1359,7 @@ describe('PostHog Node.js', () => {
       // Reset the mock for each test
       mockedFetch.mockClear()
 
-      // Initialize posthog with personalApiKey to enable feature flags poller
+      // Initialize posthog with personalApiKey
       posthog = new PostHog('TEST_API_KEY', {
         host: 'http://example.com',
         fetchRetryCount: 0,
@@ -1367,18 +1367,20 @@ describe('PostHog Node.js', () => {
         personalApiKey: 'TEST_PERSONAL_API_KEY',
       })
 
-      // Mock the private method using jest.spyOn
-      requestRemoteConfigPayloadSpy = jest.spyOn(posthog['featureFlagsPoller'] as any, '_requestRemoteConfigPayload')
+      // Mock the private method using jest.spyOn (now on the client, not the poller)
+      requestRemoteConfigPayloadSpy = jest.spyOn(posthog as any, '_requestRemoteConfigPayload')
     })
 
-    it('should return undefined when featureFlagsPoller is not initialized', async () => {
-      const posthogWithoutPoller = new PostHog('TEST_API_KEY', {
+    it('should throw error when personalApiKey is not provided', async () => {
+      const posthogWithoutKey = new PostHog('TEST_API_KEY', {
         host: 'http://example.com',
         fetchRetryCount: 0,
         disableCompression: true,
       })
-      const payload = await posthogWithoutPoller.getRemoteConfigPayload('test-flag')
-      expect(payload).toBeUndefined()
+
+      await expect(posthogWithoutKey.getRemoteConfigPayload('test-flag')).rejects.toThrow(
+        'Personal API key is required for remote config payload decryption'
+      )
     })
 
     it('should return empty object when no payload is available', async () => {
@@ -1413,6 +1415,30 @@ describe('PostHog Node.js', () => {
       const payload = await posthog.getRemoteConfigPayload('test-flag')
       expect(payload).toEqual(simplePayload)
       expect(requestRemoteConfigPayloadSpy).toHaveBeenCalledWith('test-flag')
+    })
+
+    it('should work without local evaluation enabled', async () => {
+      // Create a client with personalApiKey but local evaluation disabled
+      const posthogWithoutLocalEval = new PostHog('TEST_API_KEY', {
+        host: 'http://example.com',
+        fetchRetryCount: 0,
+        disableCompression: true,
+        personalApiKey: 'TEST_PERSONAL_API_KEY',
+        enableLocalEvaluation: false,
+      })
+
+      // Spy on the method for this instance
+      const spy = jest.spyOn(posthogWithoutLocalEval as any, '_requestRemoteConfigPayload')
+      spy.mockResolvedValue({
+        json: () => Promise.resolve({ test: 'payload' }),
+      })
+
+      const payload = await posthogWithoutLocalEval.getRemoteConfigPayload('test-flag')
+      expect(payload).toEqual({ test: 'payload' })
+      expect(spy).toHaveBeenCalledWith('test-flag')
+
+      // Verify that no poller was created
+      expect(posthogWithoutLocalEval['featureFlagsPoller']).toBeUndefined()
     })
   })
 })
