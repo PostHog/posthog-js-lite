@@ -8,6 +8,7 @@ import {
   PostHogFetchResponse,
   PostHogFlagsAndPayloadsResponse,
   PostHogPersistedProperty,
+  safeSetTimeout,
 } from 'posthog-core'
 import { EventMessage, GroupIdentifyMessage, IdentifyMessage, IPostHog, PostHogOptions } from './types'
 import { FeatureFlagDetail, FeatureFlagValue } from 'posthog-core'
@@ -667,7 +668,7 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
     let abortTimeout = null
     if (this.options.requestTimeout && typeof this.options.requestTimeout === 'number') {
       const controller = new AbortController()
-      abortTimeout = setTimeout(() => {
+      abortTimeout = safeSetTimeout(() => {
         controller.abort()
       }, this.options.requestTimeout)
       options.signal = controller.signal

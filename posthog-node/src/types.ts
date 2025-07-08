@@ -58,7 +58,7 @@ export type PostHogOptions = PostHogCoreOptions & {
   maxCacheSize?: number
   fetch?: (url: string, options: PostHogFetchOptions) => Promise<PostHogFetchResponse>
   // Whether to enable feature flag polling for local evaluation by default. Defaults to true when personalApiKey is provided.
-  // We recommend setting this to false if you are using the personalApiKey for evaluating remote config payloads via `getRemoteConfigPayload`.
+  // We recommend setting this to false if you are only using the personalApiKey for evaluating remote config payloads via `getRemoteConfigPayload` and not using local evaluation.
   enableLocalEvaluation?: boolean
 }
 
