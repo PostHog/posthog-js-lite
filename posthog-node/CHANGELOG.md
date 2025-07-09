@@ -27,6 +27,7 @@
 ## Breaking changes
 
 1. feat: migrate to native fetch, Node 20+ required
+2. PostHog Node now compresses messages with GZip before sending them to our servers when the runtime supports compression. This reduces network bandwidth and improves performance. Network traffic interceptors and test assertions on payloads must handle GZip decompression to inspect the data. Alternatively, you can disable compression by setting `disableCompression: true` in the client configuration during tests.
 
 # 5.0.0-alpha.1 - 2025-04-29
 
