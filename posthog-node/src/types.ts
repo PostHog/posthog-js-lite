@@ -22,7 +22,7 @@ export interface EventMessage extends IdentifyMessage {
         groupProperties?: Record<string, Record<string, string>>
         /** Whether to only evaluate flags locally (no remote API calls). Defaults to false. */
         onlyEvaluateLocally?: boolean
-        /** 
+        /**
          * Whether to exclude flags that cannot be reliably evaluated with the provided properties.
          * This prevents returning incorrect flag values when release conditions reference missing properties.
          * Use this to ensure data integrity in local evaluation. Defaults to false.
@@ -74,16 +74,16 @@ export type PostHogOptions = PostHogCoreOptions & {
   // Whether to enable feature flag polling for local evaluation by default. Defaults to true when personalApiKey is provided.
   // We recommend setting this to false if you are only using the personalApiKey for evaluating remote config payloads via `getRemoteConfigPayload` and not using local evaluation.
   enableLocalEvaluation?: boolean
-  /** 
-   * Whether to enforce strict local evaluation globally. When true, flags that cannot be 
-   * reliably evaluated due to missing properties will be excluded from results rather than 
-   * returning potentially incorrect values. This helps prevent the footgun where local 
+  /**
+   * Whether to enforce strict local evaluation globally. When true, flags that cannot be
+   * reliably evaluated due to missing properties will be excluded from results rather than
+   * returning potentially incorrect values. This helps prevent the footgun where local
    * evaluation returns different results than remote evaluation due to missing properties.
-   * 
+   *
    * Think of this as "fail safe" vs "fail fast":
    * - false: Return false/undefined for flags that can't be evaluated (may be incorrect)
    * - true: Exclude flags that can't be evaluated (prevents incorrect results)
-   * 
+   *
    * @default false
    */
   strictLocalEvaluation?: boolean

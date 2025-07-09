@@ -137,8 +137,11 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
       }
 
       // Default to local-only evaluation when sendFeatureFlags: true is used without config AND local evaluation is available
-      const onlyEvaluateLocally = sendFeatureFlagsConfig?.onlyEvaluateLocally ?? 
-        (sendFeatureFlags === true && !sendFeatureFlagsConfig && (this.featureFlagsPoller?.featureFlags?.length || 0) > 0)
+      const onlyEvaluateLocally =
+        sendFeatureFlagsConfig?.onlyEvaluateLocally ??
+        (sendFeatureFlags === true &&
+          !sendFeatureFlagsConfig &&
+          (this.featureFlagsPoller?.featureFlags?.length || 0) > 0)
       const strictLocalEvaluation = sendFeatureFlagsConfig?.strictLocalEvaluation ?? false
 
       // ALWAYS try local evaluation first if we have flags loaded
@@ -264,8 +267,11 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
       }
 
       // Default to local-only evaluation when sendFeatureFlags: true is used without config AND local evaluation is available
-      const onlyEvaluateLocally = sendFeatureFlagsConfig?.onlyEvaluateLocally ?? 
-        (sendFeatureFlags === true && !sendFeatureFlagsConfig && (this.featureFlagsPoller?.featureFlags?.length || 0) > 0)
+      const onlyEvaluateLocally =
+        sendFeatureFlagsConfig?.onlyEvaluateLocally ??
+        (sendFeatureFlags === true &&
+          !sendFeatureFlagsConfig &&
+          (this.featureFlagsPoller?.featureFlags?.length || 0) > 0)
       const strictLocalEvaluation = sendFeatureFlagsConfig?.strictLocalEvaluation ?? false
 
       // ALWAYS try local evaluation first if we have flags loaded
