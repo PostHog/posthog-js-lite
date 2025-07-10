@@ -967,7 +967,7 @@ describe('PostHog Node.js', () => {
         )
       })
 
-      it('should fallback to remote evaluation when no local evaluation is available', async () => {
+      it('should fallback to remote evaluation when no local evaluation is available and onlyEvaluateLocally is not specified', async () => {
         mockedFetch.mockClear()
 
         posthog = new PostHog('TEST_API_KEY', {
@@ -987,10 +987,6 @@ describe('PostHog Node.js', () => {
             groupProperties: {
               organization: { size: 'large' },
             },
-          },
-          properties: {
-            plan: 'premium',
-            organization: { size: 'large' },
           },
         })
 
@@ -1014,7 +1010,6 @@ describe('PostHog Node.js', () => {
             distinct_id: 'user123',
             event: 'test event',
             properties: expect.objectContaining({
-              plan: 'premium',
               '$feature/basic-flag': true,
               '$feature/person-property-flag': false,
               '$feature/group-property-flag': false,
@@ -1041,6 +1036,7 @@ describe('PostHog Node.js', () => {
           distinctId: 'user123',
           event: 'test event',
           sendFeatureFlags: {
+            onlyEvaluateLocally: true,
             personProperties: {
               plan: 'premium',
             },
@@ -1049,10 +1045,6 @@ describe('PostHog Node.js', () => {
             },
           },
           groups: { organization: 'org123' },
-          properties: {
-            plan: 'premium',
-            organization: { size: 'large' },
-          },
         })
 
         await waitForFlushTimer()
@@ -1072,8 +1064,6 @@ describe('PostHog Node.js', () => {
             distinct_id: 'user123',
             event: 'test event',
             properties: expect.objectContaining({
-              plan: 'premium',
-              organization: expect.objectContaining({ size: 'large' }),
               // Should include locally evaluated flags that matched based on property overrides
               '$feature/basic-flag': true,
               '$feature/person-property-flag': true, // Should be true because plan=premium override
@@ -1100,6 +1090,7 @@ describe('PostHog Node.js', () => {
           distinctId: 'user123',
           event: 'test event',
           sendFeatureFlags: {
+            onlyEvaluateLocally: true,
             personProperties: {
               plan: 'premium',
             },
@@ -1150,6 +1141,7 @@ describe('PostHog Node.js', () => {
           distinctId: 'user123',
           event: 'test event',
           sendFeatureFlags: {
+            onlyEvaluateLocally: true,
             personProperties: {
               plan: 'basic',
             },
@@ -1162,18 +1154,6 @@ describe('PostHog Node.js', () => {
             },
           },
           groups: { organization: 'org123' },
-          properties: {
-            plan: 'basic',
-            organization: {
-              size: 'large',
-              employees: 50,
-              region: 'US',
-            },
-            company: {
-              type: 'enterprise',
-              founded: 2020,
-            },
-          },
         })
 
         await waitForFlushTimer()
@@ -1182,7 +1162,6 @@ describe('PostHog Node.js', () => {
         expect(batchEvents?.[0]).toEqual(
           expect.objectContaining({
             properties: expect.objectContaining({
-              plan: 'basic',
               '$feature/group-property-flag': true, // Should match due to explicit organization.size=large
               '$feature/person-property-flag': false, // Should not match because plan=basic
             }),
@@ -1295,6 +1274,7 @@ describe('PostHog Node.js', () => {
           distinctId: 'user123',
           event: 'test event',
           sendFeatureFlags: {
+            onlyEvaluateLocally: true,
             personProperties: {
               plan: 'premium',
             },
@@ -1303,10 +1283,6 @@ describe('PostHog Node.js', () => {
             },
           },
           groups: { organization: 'org123' },
-          properties: {
-            plan: 'premium',
-            organization: { size: 'large' },
-          },
         })
 
         // Should make local evaluation call
@@ -1326,15 +1302,14 @@ describe('PostHog Node.js', () => {
             distinct_id: 'user123',
             event: 'test event',
             properties: expect.objectContaining({
-              plan: 'premium',
               '$feature/person-property-flag': true,
-              // Group property evaluation may not work as expected in test setup
+              '$feature/group-property-flag': true,
             }),
           })
         )
       })
 
-      it('should fallback to remote evaluation when local evaluation has no flags defined', async () => {
+      it('should fallback to remote evaluation when local evaluation has no flags defined and onlyEvaluateLocally is not specified', async () => {
         mockedFetch.mockClear()
 
         // Set up a client with no local flags but remote flags available
@@ -1365,9 +1340,6 @@ describe('PostHog Node.js', () => {
               plan: 'premium',
             },
           },
-          properties: {
-            plan: 'premium',
-          },
         })
 
         await waitForFlushTimer()
@@ -1390,7 +1362,6 @@ describe('PostHog Node.js', () => {
             distinct_id: 'user123',
             event: 'test event',
             properties: expect.objectContaining({
-              plan: 'premium',
               '$feature/remote-flag': true,
             }),
           })
@@ -1492,6 +1463,7 @@ describe('PostHog Node.js', () => {
           distinctId: 'user123',
           event: 'test event',
           sendFeatureFlags: {
+            onlyEvaluateLocally: true,
             personProperties: {
               plan: 'premium',
             },
@@ -1535,6 +1507,7 @@ describe('PostHog Node.js', () => {
           event: 'test event',
           groups: { organization: 'org123' },
           sendFeatureFlags: {
+            onlyEvaluateLocally: true,
             groupProperties: {
               organization: {
                 tier: 'enterprise',
@@ -1722,6 +1695,7 @@ describe('PostHog Node.js', () => {
           distinctId: 'user123',
           event: 'test event',
           sendFeatureFlags: {
+            onlyEvaluateLocally: true,
             personProperties: {
               plan: 'premium',
             },
