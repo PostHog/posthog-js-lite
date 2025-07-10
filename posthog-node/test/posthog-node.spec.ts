@@ -980,7 +980,14 @@ describe('PostHog Node.js', () => {
         posthog.capture({
           distinctId: 'user123',
           event: 'test event',
-          sendFeatureFlags: true,
+          sendFeatureFlags: {
+            personProperties: {
+              plan: 'premium',
+            },
+            groupProperties: {
+              organization: { size: 'large' },
+            },
+          },
           properties: {
             plan: 'premium',
             organization: { size: 'large' },
@@ -1033,7 +1040,14 @@ describe('PostHog Node.js', () => {
         posthog.capture({
           distinctId: 'user123',
           event: 'test event',
-          sendFeatureFlags: true,
+          sendFeatureFlags: {
+            personProperties: {
+              plan: 'premium',
+            },
+            groupProperties: {
+              organization: { size: 'large' },
+            },
+          },
           groups: { organization: 'org123' },
           properties: {
             plan: 'premium',
@@ -1068,7 +1082,7 @@ describe('PostHog Node.js', () => {
         )
       })
 
-      it('should extract person properties from flat event properties', async () => {
+      it('should work with explicit person properties and preserve event properties', async () => {
         mockedFetch.mockClear()
 
         posthog = new PostHog('TEST_API_KEY', {
@@ -1085,7 +1099,11 @@ describe('PostHog Node.js', () => {
         posthog.capture({
           distinctId: 'user123',
           event: 'test event',
-          sendFeatureFlags: true,
+          sendFeatureFlags: {
+            personProperties: {
+              plan: 'premium',
+            },
+          },
           properties: {
             plan: 'premium',
             tier: 'gold',
@@ -1108,13 +1126,13 @@ describe('PostHog Node.js', () => {
               $lib: 'posthog-node',
               numericValue: 123,
               booleanValue: true,
-              '$feature/person-property-flag': true, // Should match due to plan=premium
+              '$feature/person-property-flag': true, // Should match due to explicit plan=premium
             }),
           })
         )
       })
 
-      it('should extract group properties from nested object properties', async () => {
+      it('should work with explicit group properties', async () => {
         mockedFetch.mockClear()
 
         posthog = new PostHog('TEST_API_KEY', {
@@ -1131,7 +1149,18 @@ describe('PostHog Node.js', () => {
         posthog.capture({
           distinctId: 'user123',
           event: 'test event',
-          sendFeatureFlags: true,
+          sendFeatureFlags: {
+            personProperties: {
+              plan: 'basic',
+            },
+            groupProperties: {
+              organization: {
+                size: 'large',
+                employees: 50,
+                region: 'US',
+              },
+            },
+          },
           groups: { organization: 'org123' },
           properties: {
             plan: 'basic',
@@ -1154,7 +1183,7 @@ describe('PostHog Node.js', () => {
           expect.objectContaining({
             properties: expect.objectContaining({
               plan: 'basic',
-              '$feature/group-property-flag': true, // Should match due to organization.size=large
+              '$feature/group-property-flag': true, // Should match due to explicit organization.size=large
               '$feature/person-property-flag': false, // Should not match because plan=basic
             }),
           })
@@ -1265,7 +1294,14 @@ describe('PostHog Node.js', () => {
         await posthog.captureImmediate({
           distinctId: 'user123',
           event: 'test event',
-          sendFeatureFlags: true,
+          sendFeatureFlags: {
+            personProperties: {
+              plan: 'premium',
+            },
+            groupProperties: {
+              organization: { size: 'large' },
+            },
+          },
           groups: { organization: 'org123' },
           properties: {
             plan: 'premium',
@@ -1324,7 +1360,11 @@ describe('PostHog Node.js', () => {
         posthog.capture({
           distinctId: 'user123',
           event: 'test event',
-          sendFeatureFlags: true,
+          sendFeatureFlags: {
+            personProperties: {
+              plan: 'premium',
+            },
+          },
           properties: {
             plan: 'premium',
           },

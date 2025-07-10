@@ -10,7 +10,14 @@ import {
   PostHogPersistedProperty,
   safeSetTimeout,
 } from 'posthog-core'
-import { EventMessage, GroupIdentifyMessage, IdentifyMessage, IPostHog, PostHogOptions } from './types'
+import {
+  EventMessage,
+  GroupIdentifyMessage,
+  IdentifyMessage,
+  IPostHog,
+  PostHogOptions,
+  SendFeatureFlagsOptions,
+} from './types'
 import { FeatureFlagDetail, FeatureFlagValue } from 'posthog-core'
 import { FeatureFlagsPoller } from './extensions/feature-flags/feature-flags'
 import ErrorTracking from './extensions/error-tracking'
@@ -127,7 +134,7 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
         if (sendFeatureFlags) {
           // If we are sending feature flags, we evaluate them locally if the user prefers it, otherwise we fall back to remote evaluation
           const sendFeatureFlagsOptions = typeof sendFeatureFlags === 'object' ? sendFeatureFlags : undefined
-          return await this.getFeatureFlagsForEvent(distinctId, groups, properties, disableGeoip, sendFeatureFlagsOptions)
+          return await this.getFeatureFlagsForEvent(distinctId, groups, disableGeoip, sendFeatureFlagsOptions)
         }
 
         if (event === '$feature_flag_called') {
@@ -183,7 +190,7 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
         if (sendFeatureFlags) {
           // If we are sending feature flags, we evaluate them locally if the user prefers it, otherwise we fall back to remote evaluation
           const sendFeatureFlagsOptions = typeof sendFeatureFlags === 'object' ? sendFeatureFlags : undefined
-          return await this.getFeatureFlagsForEvent(distinctId, groups, properties, disableGeoip, sendFeatureFlagsOptions)
+          return await this.getFeatureFlagsForEvent(distinctId, groups, disableGeoip, sendFeatureFlagsOptions)
         }
 
         if (event === '$feature_flag_called') {
@@ -677,23 +684,12 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
   private async getFeatureFlagsForEvent(
     distinctId: string,
     groups?: Record<string, string | number>,
-    eventProperties?: Record<string | number, any>,
     disableGeoip?: boolean,
-    sendFeatureFlagsOptions?: import('./types').SendFeatureFlagsOptions
+    sendFeatureFlagsOptions?: SendFeatureFlagsOptions
   ): Promise<PostHogFlagsResponse['featureFlags'] | undefined> {
-    // Extract person and group properties from the event properties
-    const { personProperties: cleanPersonProperties, groupProperties: cleanGroupProperties } =
-      this.extractPropertiesFromEvent(eventProperties, groups)
-
-    // Merge with explicitly provided properties (explicit properties take precedence)
-    const finalPersonProperties = {
-      ...cleanPersonProperties,
-      ...(sendFeatureFlagsOptions?.personProperties || {}),
-    }
-    const finalGroupProperties = {
-      ...cleanGroupProperties,
-      ...(sendFeatureFlagsOptions?.groupProperties || {}),
-    }
+    // Use properties directly from options if they exist
+    const finalPersonProperties = sendFeatureFlagsOptions?.personProperties || {}
+    const finalGroupProperties = sendFeatureFlagsOptions?.groupProperties || {}
 
     // Check if we should only evaluate locally
     const onlyEvaluateLocally = sendFeatureFlagsOptions?.onlyEvaluateLocally ?? false
@@ -719,7 +715,7 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
       }
     }
 
-    // Prefer local evaluation if available (default behavior)
+    // Prefer local evaluation if available (default behavior; I'd rather not penalize users who haven't updated to the new API but still want to use local evaluation)
     if ((this.featureFlagsPoller?.featureFlags?.length || 0) > 0) {
       const groupsWithStringValues: Record<string, string> = {}
       for (const [key, value] of Object.entries(groups || {})) {
@@ -735,7 +731,7 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
       })
     }
 
-    // Fall back to remote evaluation if local evaluation is not available/is not being used
+    // Fall back to remote evaluation if local evaluation is not available
     return (
       await super.getFeatureFlagsStateless(
         distinctId,
