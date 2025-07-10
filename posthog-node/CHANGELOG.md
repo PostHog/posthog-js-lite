@@ -1,5 +1,9 @@
 # Next
 
+# 5.4.0 – 2025-09-07
+
+feat: respect local evaluation preferences with `sendFeatureFlags`; add property overrides from the event to those local computations so that the locally evaluated flags can be more accuratee.  NB: this change chagnes the default behavior of `capture` and `captureImmediately` – we will now only send feature flag data along with those events if `sendFeatureFlags` is explicitly specified, instead of optimistically sending along locally evaluated flags by default.
+
 # 5.3.1 - 2025-07-07
 
 1. feat: decouple feature flag local evaluation from personal API keys; support decrypting remote config payloads without relying on the feature flags poller
