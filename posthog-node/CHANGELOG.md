@@ -1,6 +1,53 @@
 # Next
 
-# 5.4.0 – 2025-09-07
+# 5.5.0 – 2025-07-10
+
+1. feat: make the `sendFeatureFlags` parameter more declarative and ergonomic.  Implementation notes below:
+
+Modified `sendFeatureFlags` to be type `boolean | SendFeatureFlagsOptions`, (which is defined thusly)
+
+```ts
+export interface SendFeatureFlagsOptions {
+  onlyEvaluateLocally?: boolean
+  personProperties?: Record<string, any>
+  groupProperties?: Record<string, Record<string, any>>
+}
+```
+
+This lets users declare (1) whether to use local evaluation, and (2) which properties to supply explicitly for that evaluation, every time they want to send feature flags.  It also supports the old boolean behavior if folks don't care and would rather the SDK infer it.
+
+Now, you can make calls like this
+
+```ts
+posthog.captureImmediate({
+  distinctId: "user123",
+  event: "test event",
+  sendFeatureFlags: {
+    onlyEvaluateLocally: true,
+    personProperties: {
+      plan: "premium",
+    },
+  },
+  properties: {
+    foo: "bar",
+  },
+});
+```
+
+or simply
+
+```
+posthog.captureImmediate({
+  distinctId: "user123",
+  event: "test event",
+  sendFeatureFlags: true // this will still infer local evaluation if it appears to be configured, but it won't try to pull properties from the event message
+  properties: {
+    foo: "bar",
+  },
+});
+```
+
+# 5.4.0 – 2025-07-09
 
 feat: respect local evaluation preferences with `sendFeatureFlags`; add property overrides from the event to those local computations so that the locally evaluated flags can be more accuratee.  NB: this change chagnes the default behavior of `capture` and `captureImmediately` – we will now only send feature flag data along with those events if `sendFeatureFlags` is explicitly specified, instead of optimistically sending along locally evaluated flags by default.
 
