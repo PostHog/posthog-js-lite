@@ -716,7 +716,6 @@ describe('PostHog Node.js', () => {
 
     it('does not automatically enrich capture events with flags unless sendFeatureFlags=true', async () => {
       mockedFetch.mockClear()
-      mockedFetch.mockClear()
       expect(mockedFetch).toHaveBeenCalledTimes(0)
 
       posthog = new PostHog('TEST_API_KEY', {
@@ -1064,7 +1063,6 @@ describe('PostHog Node.js', () => {
               // Should include locally evaluated flags that matched based on property overrides
               '$feature/basic-flag': true,
               '$feature/person-property-flag': true, // Should be true because plan=premium override
-              // Group flag evaluation may not work as expected in this test setup
             }),
           })
         )
@@ -1202,9 +1200,6 @@ describe('PostHog Node.js', () => {
             }),
           })
         )
-
-        // Note: The event may still get enriched by normal flag enrichment logic
-        // The important thing is that _getFlags is not called specifically for sendFeatureFlags
       })
 
       it('should not call _getFlags when sendFeatureFlags is false', async () => {
