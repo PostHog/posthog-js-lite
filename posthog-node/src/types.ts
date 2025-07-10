@@ -12,10 +12,16 @@ export interface IdentifyMessage {
   disableGeoip?: boolean
 }
 
+export interface SendFeatureFlagsOptions {
+  onlyEvaluateLocally?: boolean
+  personProperties?: Record<string, any>
+  groupProperties?: Record<string, Record<string, any>>
+}
+
 export interface EventMessage extends IdentifyMessage {
   event: string
   groups?: Record<string, string | number> // Mapping of group type to group id
-  sendFeatureFlags?: boolean
+  sendFeatureFlags?: boolean | SendFeatureFlagsOptions
   timestamp?: Date
   uuid?: string
 }

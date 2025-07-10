@@ -126,7 +126,8 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
       .then(async () => {
         if (sendFeatureFlags) {
           // If we are sending feature flags, we evaluate them locally if the user prefers it, otherwise we fall back to remote evaluation
-          return await this.getFeatureFlagsForEvent(distinctId, groups, properties, disableGeoip)
+          const sendFeatureFlagsOptions = typeof sendFeatureFlags === 'object' ? sendFeatureFlags : undefined
+          return await this.getFeatureFlagsForEvent(distinctId, groups, properties, disableGeoip, sendFeatureFlagsOptions)
         }
 
         if (event === '$feature_flag_called') {
@@ -181,7 +182,8 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
       .then(async () => {
         if (sendFeatureFlags) {
           // If we are sending feature flags, we evaluate them locally if the user prefers it, otherwise we fall back to remote evaluation
-          return await this.getFeatureFlagsForEvent(distinctId, groups, properties, disableGeoip)
+          const sendFeatureFlagsOptions = typeof sendFeatureFlags === 'object' ? sendFeatureFlags : undefined
+          return await this.getFeatureFlagsForEvent(distinctId, groups, properties, disableGeoip, sendFeatureFlagsOptions)
         }
 
         if (event === '$feature_flag_called') {
@@ -676,13 +678,48 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
     distinctId: string,
     groups?: Record<string, string | number>,
     eventProperties?: Record<string | number, any>,
-    disableGeoip?: boolean
+    disableGeoip?: boolean,
+    sendFeatureFlagsOptions?: import('./types').SendFeatureFlagsOptions
   ): Promise<PostHogFlagsResponse['featureFlags'] | undefined> {
     // Extract person and group properties from the event properties
     const { personProperties: cleanPersonProperties, groupProperties: cleanGroupProperties } =
       this.extractPropertiesFromEvent(eventProperties, groups)
 
-    // Prefer local evaluation if available
+    // Merge with explicitly provided properties (explicit properties take precedence)
+    const finalPersonProperties = {
+      ...cleanPersonProperties,
+      ...(sendFeatureFlagsOptions?.personProperties || {}),
+    }
+    const finalGroupProperties = {
+      ...cleanGroupProperties,
+      ...(sendFeatureFlagsOptions?.groupProperties || {}),
+    }
+
+    // Check if we should only evaluate locally
+    const onlyEvaluateLocally = sendFeatureFlagsOptions?.onlyEvaluateLocally ?? false
+
+    // If onlyEvaluateLocally is true, only use local evaluation
+    if (onlyEvaluateLocally) {
+      if ((this.featureFlagsPoller?.featureFlags?.length || 0) > 0) {
+        const groupsWithStringValues: Record<string, string> = {}
+        for (const [key, value] of Object.entries(groups || {})) {
+          groupsWithStringValues[key] = String(value)
+        }
+
+        return await this.getAllFlags(distinctId, {
+          groups: groupsWithStringValues,
+          personProperties: finalPersonProperties,
+          groupProperties: finalGroupProperties,
+          disableGeoip,
+          onlyEvaluateLocally: true,
+        })
+      } else {
+        // If onlyEvaluateLocally is true but we don't have local flags, return empty
+        return {}
+      }
+    }
+
+    // Prefer local evaluation if available (default behavior)
     if ((this.featureFlagsPoller?.featureFlags?.length || 0) > 0) {
       const groupsWithStringValues: Record<string, string> = {}
       for (const [key, value] of Object.entries(groups || {})) {
@@ -691,8 +728,8 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
 
       return await this.getAllFlags(distinctId, {
         groups: groupsWithStringValues,
-        personProperties: cleanPersonProperties,
-        groupProperties: cleanGroupProperties,
+        personProperties: finalPersonProperties,
+        groupProperties: finalGroupProperties,
         disableGeoip,
         onlyEvaluateLocally: true,
       })
@@ -703,8 +740,8 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
       await super.getFeatureFlagsStateless(
         distinctId,
         groups,
-        cleanPersonProperties,
-        cleanGroupProperties,
+        finalPersonProperties,
+        finalGroupProperties,
         disableGeoip
       )
     ).flags
