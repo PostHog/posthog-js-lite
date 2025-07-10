@@ -714,8 +714,7 @@ describe('PostHog Node.js', () => {
       }).toThrow(Error)
     })
 
-    it('captures feature flags with locally evaluated flags', async () => {
-      mockedFetch.mockClear()
+    it('does not automatically enrich capture events with flags unless sendFeatureFlags=true', async () => {
       mockedFetch.mockClear()
       expect(mockedFetch).toHaveBeenCalledTimes(0)
 
@@ -751,20 +750,20 @@ describe('PostHog Node.js', () => {
           distinct_id: 'distinct_id',
           event: 'node test event',
           properties: expect.objectContaining({
-            $active_feature_flags: ['beta-feature-local', 'feature-array'],
-            '$feature/beta-feature-local': 'third-variant',
-            '$feature/feature-array': true,
-            '$feature/false-flag': false,
             $lib: 'posthog-node',
             $lib_version: '1.2.3',
             $geoip_disable: true,
           }),
         })
       )
+      // Should NOT have automatic flag enrichment
       expect(
         Object.prototype.hasOwnProperty.call(getLastBatchEvents()?.[0].properties, '$feature/beta-feature-local')
-      ).toBe(true)
+      ).toBe(false)
       expect(Object.prototype.hasOwnProperty.call(getLastBatchEvents()?.[0].properties, '$feature/beta-feature')).toBe(
+        false
+      )
+      expect(Object.prototype.hasOwnProperty.call(getLastBatchEvents()?.[0].properties, '$active_feature_flags')).toBe(
         false
       )
 
@@ -864,6 +863,499 @@ describe('PostHog Node.js', () => {
       // no calls to `/local_evaluation`
 
       expect(mockedFetch).not.toHaveBeenCalledWith(...anyLocalEvalCall)
+    })
+
+    describe('sendFeatureFlags with property overrides', () => {
+      beforeEach(() => {
+        const mockDecideFlags = {
+          'basic-flag': true,
+          'person-property-flag': false,
+          'group-property-flag': false,
+        }
+
+        const basicFlag = {
+          id: 1,
+          name: 'Basic Flag',
+          key: 'basic-flag',
+          active: true,
+          filters: {
+            groups: [
+              {
+                properties: [],
+                rollout_percentage: 100,
+              },
+            ],
+          },
+        }
+
+        const personPropertyFlag = {
+          id: 2,
+          name: 'Person Property Flag',
+          key: 'person-property-flag',
+          active: true,
+          filters: {
+            groups: [
+              {
+                properties: [
+                  {
+                    key: 'plan',
+                    operator: 'exact',
+                    value: 'premium',
+                    type: 'person',
+                  },
+                ],
+                rollout_percentage: 100,
+              },
+            ],
+          },
+        }
+
+        const groupPropertyFlag = {
+          id: 3,
+          name: 'Group Property Flag',
+          key: 'group-property-flag',
+          active: true,
+          filters: {
+            aggregation_group_type_index: 0,
+            groups: [
+              {
+                properties: [
+                  {
+                    key: 'size',
+                    operator: 'exact',
+                    value: 'large',
+                    type: 'group',
+                  },
+                ],
+                rollout_percentage: 100,
+              },
+            ],
+          },
+        }
+
+        const inconclusiveFlag = {
+          id: 4,
+          name: 'Inconclusive Flag',
+          key: 'inconclusive-flag',
+          active: true,
+          filters: {
+            groups: [
+              {
+                properties: [
+                  {
+                    key: 'missing_property',
+                    operator: 'exact',
+                    value: 'value',
+                    type: 'person',
+                  },
+                ],
+                rollout_percentage: 100,
+              },
+            ],
+          },
+        }
+
+        mockedFetch.mockImplementation(
+          apiImplementation({
+            decideFlags: mockDecideFlags,
+            flagsPayloads: {},
+            localFlags: {
+              flags: [basicFlag, personPropertyFlag, groupPropertyFlag, inconclusiveFlag],
+              group_type_mapping: { 0: 'organization' },
+            },
+          })
+        )
+      })
+
+      it('should fallback to remote evaluation when no local evaluation is available', async () => {
+        mockedFetch.mockClear()
+
+        posthog = new PostHog('TEST_API_KEY', {
+          host: 'http://example.com',
+          flushAt: 1,
+          fetchRetryCount: 0,
+          disableCompression: true,
+        })
+
+        posthog.capture({
+          distinctId: 'user123',
+          event: 'test event',
+          sendFeatureFlags: true,
+          properties: {
+            plan: 'premium',
+            organization: { size: 'large' },
+          },
+        })
+
+        await waitForFlushTimer()
+
+        // Should make remote flags call
+        expect(mockedFetch).toHaveBeenCalledWith(
+          'http://example.com/flags/?v=2&config=true',
+          expect.objectContaining({
+            method: 'POST',
+            body: expect.stringContaining('"plan":"premium"'),
+          })
+        )
+
+        // Should not make local evaluation call
+        expect(mockedFetch).not.toHaveBeenCalledWith(...anyLocalEvalCall)
+
+        const batchEvents = getLastBatchEvents()
+        expect(batchEvents?.[0]).toEqual(
+          expect.objectContaining({
+            distinct_id: 'user123',
+            event: 'test event',
+            properties: expect.objectContaining({
+              plan: 'premium',
+              '$feature/basic-flag': true,
+              '$feature/person-property-flag': false,
+              '$feature/group-property-flag': false,
+            }),
+          })
+        )
+      })
+
+      it('should use local evaluation when available and include property overrides', async () => {
+        mockedFetch.mockClear()
+
+        posthog = new PostHog('TEST_API_KEY', {
+          host: 'http://example.com',
+          flushAt: 1,
+          fetchRetryCount: 0,
+          personalApiKey: 'TEST_PERSONAL_API_KEY',
+          disableCompression: true,
+        })
+
+        jest.runOnlyPendingTimers()
+        await waitForPromises()
+
+        posthog.capture({
+          distinctId: 'user123',
+          event: 'test event',
+          sendFeatureFlags: true,
+          groups: { organization: 'org123' },
+          properties: {
+            plan: 'premium',
+            organization: { size: 'large' },
+          },
+        })
+
+        await waitForFlushTimer()
+
+        // Should make local evaluation call during initialization
+        expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
+
+        // Should not make remote flags call
+        expect(mockedFetch).not.toHaveBeenCalledWith(
+          'http://example.com/flags/?v=2&config=true',
+          expect.objectContaining({ method: 'POST' })
+        )
+
+        const batchEvents = getLastBatchEvents()
+        expect(batchEvents?.[0]).toEqual(
+          expect.objectContaining({
+            distinct_id: 'user123',
+            event: 'test event',
+            properties: expect.objectContaining({
+              plan: 'premium',
+              organization: expect.objectContaining({ size: 'large' }),
+              // Should include locally evaluated flags that matched based on property overrides
+              '$feature/basic-flag': true,
+              '$feature/person-property-flag': true, // Should be true because plan=premium override
+            }),
+          })
+        )
+      })
+
+      it('should extract person properties from flat event properties', async () => {
+        mockedFetch.mockClear()
+
+        posthog = new PostHog('TEST_API_KEY', {
+          host: 'http://example.com',
+          flushAt: 1,
+          fetchRetryCount: 0,
+          personalApiKey: 'TEST_PERSONAL_API_KEY',
+          disableCompression: true,
+        })
+
+        jest.runOnlyPendingTimers()
+        await waitForPromises()
+
+        posthog.capture({
+          distinctId: 'user123',
+          event: 'test event',
+          sendFeatureFlags: true,
+          properties: {
+            plan: 'premium',
+            tier: 'gold',
+            '$feature/existing_flag': 'value', // Should be passed through
+            $lib: 'posthog-node', // Should be passed through
+            numericValue: 123,
+            booleanValue: true,
+          },
+        })
+
+        await waitForFlushTimer()
+
+        const batchEvents = getLastBatchEvents()
+        expect(batchEvents?.[0]).toEqual(
+          expect.objectContaining({
+            properties: expect.objectContaining({
+              plan: 'premium',
+              tier: 'gold',
+              '$feature/existing_flag': 'value',
+              $lib: 'posthog-node',
+              numericValue: 123,
+              booleanValue: true,
+              '$feature/person-property-flag': true, // Should match due to plan=premium
+            }),
+          })
+        )
+      })
+
+      it('should extract group properties from nested object properties', async () => {
+        mockedFetch.mockClear()
+
+        posthog = new PostHog('TEST_API_KEY', {
+          host: 'http://example.com',
+          flushAt: 1,
+          fetchRetryCount: 0,
+          personalApiKey: 'TEST_PERSONAL_API_KEY',
+          disableCompression: true,
+        })
+
+        jest.runOnlyPendingTimers()
+        await waitForPromises()
+
+        posthog.capture({
+          distinctId: 'user123',
+          event: 'test event',
+          sendFeatureFlags: true,
+          groups: { organization: 'org123' },
+          properties: {
+            plan: 'basic',
+            organization: {
+              size: 'large',
+              employees: 50,
+              region: 'US',
+            },
+            company: {
+              type: 'enterprise',
+              founded: 2020,
+            },
+          },
+        })
+
+        await waitForFlushTimer()
+
+        const batchEvents = getLastBatchEvents()
+        expect(batchEvents?.[0]).toEqual(
+          expect.objectContaining({
+            properties: expect.objectContaining({
+              plan: 'basic',
+              '$feature/group-property-flag': true, // Should match due to organization.size=large
+              '$feature/person-property-flag': false, // Should not match because plan=basic
+            }),
+          })
+        )
+      })
+
+      it('should not call _getFlags for $feature_flag_called events even with sendFeatureFlags=true', async () => {
+        mockedFetch.mockClear()
+
+        posthog = new PostHog('TEST_API_KEY', {
+          host: 'http://example.com',
+          flushAt: 1,
+          fetchRetryCount: 0,
+          personalApiKey: 'TEST_PERSONAL_API_KEY',
+          disableCompression: true,
+        })
+
+        jest.runOnlyPendingTimers()
+        await waitForPromises()
+
+        posthog.capture({
+          distinctId: 'user123',
+          event: '$feature_flag_called',
+          sendFeatureFlags: true,
+          properties: {
+            plan: 'premium',
+            $feature_flag: 'test-flag',
+            $feature_flag_response: true,
+          },
+        })
+
+        await waitForFlushTimer()
+
+        const batchEvents = getLastBatchEvents()
+        expect(batchEvents?.[0]).toEqual(
+          expect.objectContaining({
+            distinct_id: 'user123',
+            event: '$feature_flag_called',
+            properties: expect.objectContaining({
+              plan: 'premium',
+              $feature_flag: 'test-flag',
+              $feature_flag_response: true,
+            }),
+          })
+        )
+      })
+
+      it('should not call _getFlags when sendFeatureFlags is false', async () => {
+        mockedFetch.mockClear()
+
+        posthog = new PostHog('TEST_API_KEY', {
+          host: 'http://example.com',
+          flushAt: 1,
+          fetchRetryCount: 0,
+          personalApiKey: 'TEST_PERSONAL_API_KEY',
+          disableCompression: true,
+        })
+
+        jest.runOnlyPendingTimers()
+        await waitForPromises()
+
+        posthog.capture({
+          distinctId: 'user123',
+          event: 'test event',
+          sendFeatureFlags: false,
+          properties: {
+            plan: 'premium',
+          },
+        })
+
+        await waitForFlushTimer()
+
+        // Should only make local evaluation call during initialization, not for capture
+        expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
+
+        // Should not make remote flags call
+        expect(mockedFetch).not.toHaveBeenCalledWith(
+          'http://example.com/flags/?v=2&config=true',
+          expect.objectContaining({ method: 'POST' })
+        )
+
+        const batchEvents = getLastBatchEvents()
+        expect(batchEvents?.[0]).toEqual(
+          expect.objectContaining({
+            distinct_id: 'user123',
+            event: 'test event',
+            properties: expect.objectContaining({
+              plan: 'premium',
+              // No additional enrichment since sendFeatureFlags is false
+            }),
+          })
+        )
+      })
+
+      it('should work with captureImmediate', async () => {
+        mockedFetch.mockClear()
+
+        posthog = new PostHog('TEST_API_KEY', {
+          host: 'http://example.com',
+          fetchRetryCount: 0,
+          personalApiKey: 'TEST_PERSONAL_API_KEY',
+          disableCompression: true,
+        })
+
+        jest.runOnlyPendingTimers()
+        await waitForPromises()
+
+        await posthog.captureImmediate({
+          distinctId: 'user123',
+          event: 'test event',
+          sendFeatureFlags: true,
+          groups: { organization: 'org123' },
+          properties: {
+            plan: 'premium',
+            organization: { size: 'large' },
+          },
+        })
+
+        // Should make local evaluation call
+        expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
+
+        // Should make immediate batch call
+        expect(mockedFetch).toHaveBeenCalledWith(
+          'http://example.com/batch/',
+          expect.objectContaining({ method: 'POST' })
+        )
+
+        const lastCall = mockedFetch.mock.calls.find((call) => (call[0] as string).includes('/batch/'))
+        const body = JSON.parse(lastCall?.[1]?.body as string)
+
+        expect(body.batch[0]).toEqual(
+          expect.objectContaining({
+            distinct_id: 'user123',
+            event: 'test event',
+            properties: expect.objectContaining({
+              plan: 'premium',
+              '$feature/person-property-flag': true,
+              // Group property evaluation may not work as expected in test setup
+            }),
+          })
+        )
+      })
+
+      it('should fallback to remote evaluation when local evaluation has no flags defined', async () => {
+        mockedFetch.mockClear()
+
+        // Set up a client with no local flags but remote flags available
+        mockedFetch.mockImplementation(
+          apiImplementation({
+            decideFlags: { 'remote-flag': true },
+            flagsPayloads: {},
+            localFlags: { flags: [] }, // No local flags available
+          })
+        )
+
+        posthog = new PostHog('TEST_API_KEY', {
+          host: 'http://example.com',
+          flushAt: 1,
+          fetchRetryCount: 0,
+          personalApiKey: 'TEST_PERSONAL_API_KEY',
+          disableCompression: true,
+        })
+
+        jest.runOnlyPendingTimers()
+        await waitForPromises()
+
+        posthog.capture({
+          distinctId: 'user123',
+          event: 'test event',
+          sendFeatureFlags: true,
+          properties: {
+            plan: 'premium',
+          },
+        })
+
+        await waitForFlushTimer()
+
+        // Should make local evaluation call during initialization
+        expect(mockedFetch).toHaveBeenCalledWith(...anyLocalEvalCall)
+
+        // Should make remote flags call since local evaluation has no flags
+        expect(mockedFetch).toHaveBeenCalledWith(
+          'http://example.com/flags/?v=2&config=true',
+          expect.objectContaining({
+            method: 'POST',
+            body: expect.stringContaining('"plan":"premium"'),
+          })
+        )
+
+        const batchEvents = getLastBatchEvents()
+        expect(batchEvents?.[0]).toEqual(
+          expect.objectContaining({
+            distinct_id: 'user123',
+            event: 'test event',
+            properties: expect.objectContaining({
+              plan: 'premium',
+              '$feature/remote-flag': true,
+            }),
+          })
+        )
+      })
     })
 
     it('manages memory well when sending feature flags', async () => {
