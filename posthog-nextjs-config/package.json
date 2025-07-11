@@ -23,7 +23,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@posthog/cli": "^0.3.4"
+    "@posthog/cli": "^0.3.5"
   },
   "keywords": [
     "posthog",
