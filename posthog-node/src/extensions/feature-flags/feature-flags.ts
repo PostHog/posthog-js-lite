@@ -324,6 +324,14 @@ class FeatureFlagsPoller {
 
         if (propertyType === 'cohort') {
           matches = matchCohort(prop, properties, this.cohorts, this.debugMode)
+        } else if (propertyType === 'flag') {
+          this.logMsgIfDebug(() =>
+            console.warn(
+              `[FEATURE FLAGS] Flag dependency filters are not supported in local evaluation. ` +
+                `Skipping condition for flag '${flag.key}' with dependency on flag '${prop.key || 'unknown'}'`
+            )
+          )
+          continue
         } else {
           matches = matchProperty(prop, properties, warnFunction)
         }
@@ -731,6 +739,14 @@ function matchPropertyGroup(
         let matches: boolean
         if (prop.type === 'cohort') {
           matches = matchCohort(prop, propertyValues, cohortProperties, debugMode)
+        } else if (prop.type === 'flag') {
+          if (debugMode) {
+            console.warn(
+              `[FEATURE FLAGS] Flag dependency filters are not supported in local evaluation. ` +
+                `Skipping condition with dependency on flag '${prop.key || 'unknown'}'`
+            )
+          }
+          continue
         } else {
           matches = matchProperty(prop, propertyValues)
         }
