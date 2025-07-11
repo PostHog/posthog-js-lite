@@ -25,7 +25,7 @@
     "test:ai": "jest posthog-ai",
     "test:rn": "cd posthog-react-native && yarn test",
     "test:nextjs-config": "jest posthog-nextjs-config",
-    "test:all": "jest posthog-core posthog-node posthog-ai posthog-web && yarn test:rn && yarn test:nextjs-config",
+    "test:all": "jest posthog-core posthog-node posthog-ai posthog-web posthog-nextjs-config && yarn test:rn",
     "build-rollup": "rollup -c",
     "build-react-native": "cd posthog-react-native && yarn build"
   },
