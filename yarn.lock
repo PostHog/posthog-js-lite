@@ -2255,10 +2255,10 @@
   resolved "https://registry.yarnpkg.com/@pkgjs/parseargs/-/parseargs-0.11.0.tgz#a77ea742fab25775145434eb1d2328cf5013ac33"
   integrity sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==
 
-"@posthog/cli@^0.3.1":
-  version "0.3.1"
-  resolved "https://registry.yarnpkg.com/@posthog/cli/-/cli-0.3.1.tgz#2ba6a0f156318b37592e27123bfd9f4a0ccb9787"
-  integrity sha512-kcGNJeO0mA+eOokqdcMKPtvfGl+0I/ov+PH2CVT1Tob73YluMusoUp/TNfwzQ7YxfBOw3FKyn7Obv/NMVHQzZQ==
+"@posthog/cli@^0.3.4":
+  version "0.3.5"
+  resolved "https://registry.yarnpkg.com/@posthog/cli/-/cli-0.3.5.tgz#5940d6c4c644ecabb8019d1bc163c12a019e4142"
+  integrity sha512-QIsKOOPKzl2VrS6/X/Sh/YormLZAOG1tzQQG8JodYPWBeq+FsuZQWPTUEYjDOSH3dnmW9TgunkYVdYugO7ybbQ==
   dependencies:
     axios "^1.7.9"
     axios-proxy-builder "^0.1.2"
