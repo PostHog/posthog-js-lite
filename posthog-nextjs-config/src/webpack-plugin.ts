@@ -14,6 +14,16 @@ export class SourcemapWebpackPlugin {
     private nextRuntime: NextRuntime
   ) {
     this.directory = this.isServer ? `./.next/server` : `./.next/static/chunks`
+    if (!this.posthogOptions.personalApiKey) {
+      throw new Error(
+        `Personal API key not provided. If you are using turbo, make sure to add env variables to your turbo config`
+      )
+    }
+    if (!this.posthogOptions.envId) {
+      throw new Error(
+        `Environment ID not provided. If you are using turbo, make sure to add env variables to your turbo config`
+      )
+    }
   }
 
   apply(compiler: any): void {
@@ -75,10 +85,17 @@ export class SourcemapWebpackPlugin {
 }
 
 async function callPosthogCli(args: string[], env: NodeJS.ProcessEnv, verbose: boolean): Promise<void> {
-  const binaryPath = resolveBinaryPath(process.env.PATH ?? '', __dirname, 'posthog-cli')
-  const child = spawn(binaryPath, [...args], {
+  let binaryLocation
+  try {
+    binaryLocation = resolveBinaryPath(process.env.PATH ?? '', __dirname, 'posthog-cli')
+  } catch (e) {
+    throw new Error(`Binary ${e} not found. Make sure postinstall script has been allowed for @posthog/cli`)
+  }
+  console.log('Running posthog-cli from ', binaryLocation)
+  const child = spawn(binaryLocation, [...args], {
     stdio: verbose ? 'inherit' : 'ignore',
     env,
+    cwd: process.cwd(),
   })
 
   await new Promise<void>((resolve, reject) => {
