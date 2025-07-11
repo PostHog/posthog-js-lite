@@ -11,8 +11,10 @@ export class SourcemapWebpackPlugin {
   constructor(
     private posthogOptions: PostHogNextConfigComplete,
     private isServer: boolean,
-    private nextRuntime: NextRuntime
+    private nextRuntime: NextRuntime,
+    distDir?: string
   ) {
+    const resolvedDistDir = path.resolve(distDir ?? '.next')
     this.directory = this.isServer ? `./.next/server` : `./.next/static/chunks`
     if (!this.posthogOptions.personalApiKey) {
       throw new Error(
@@ -24,6 +26,7 @@ export class SourcemapWebpackPlugin {
         `Environment ID not provided. If you are using turbo, make sure to add env variables to your turbo config`
       )
     }
+    this.directory = this.isServer ? path.join(resolvedDistDir, 'server') : path.join(resolvedDistDir, 'static/chunks')
   }
 
   apply(compiler: any): void {
