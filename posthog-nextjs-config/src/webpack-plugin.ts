@@ -93,7 +93,11 @@ async function callPosthogCli(args: string[], env: NodeJS.ProcessEnv, verbose: b
   } catch (e) {
     throw new Error(`Binary ${e} not found. Make sure postinstall script has been allowed for @posthog/cli`)
   }
-  console.log('Running posthog-cli from ', binaryLocation)
+
+  if (verbose) {
+    console.log('running posthog-cli from ', binaryLocation)
+  }
+
   const child = spawn(binaryLocation, [...args], {
     stdio: verbose ? 'inherit' : 'ignore',
     env,

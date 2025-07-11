@@ -15,12 +15,9 @@ export function resolveBinaryPath(envPath: string, cwd: string, binName: string)
 }
 
 export const buildLocalBinaryPaths = (cwd: string): string[] => {
-  const localPaths = getLocalPaths(path.resolve(cwd))
-    .map((localPath: string) => path.join(localPath, 'node_modules/.bin'))
-    .map((path) => {
-      console.log(path)
-      return path
-    })
+  const localPaths = getLocalPaths(path.resolve(cwd)).map((localPath: string) =>
+    path.join(localPath, 'node_modules/.bin')
+  )
   return localPaths
 }
 
