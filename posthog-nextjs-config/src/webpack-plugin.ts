@@ -15,7 +15,6 @@ export class SourcemapWebpackPlugin {
     distDir?: string
   ) {
     const resolvedDistDir = path.resolve(distDir ?? '.next')
-    this.directory = this.isServer ? `./.next/server` : `./.next/static/chunks`
     if (!this.posthogOptions.personalApiKey) {
       throw new Error(
         `Personal API key not provided. If you are using turbo, make sure to add env variables to your turbo config`
