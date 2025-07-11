@@ -1,7 +1,7 @@
 import path from 'path'
 import fs from 'fs'
 
-export function resolveBinaryPath(envPath: string, cwd: string, binName: string) {
+export function resolveBinaryPath(envPath: string, cwd: string, binName: string): string {
   const envLocations = envPath.split(path.delimiter)
   const localLocations = buildLocalBinaryPaths(cwd)
   const directories = [...new Set([...envLocations, ...localLocations])]
