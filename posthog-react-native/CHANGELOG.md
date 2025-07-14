@@ -1,5 +1,11 @@
 # Next
 
+# 4.1.5 - 2025-07-14
+
+## Fixed
+
+1. read the navigation ref from the current property if it exists for expo-router and @react-navigation/native
+
 # 4.1.4 - 2025-07-01
 
 ## Fixed
