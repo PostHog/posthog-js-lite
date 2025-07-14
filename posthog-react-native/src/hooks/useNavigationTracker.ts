@@ -51,7 +51,7 @@ function _useNavigationTracker(
     if (!navigation) {
       return
     }
-    
+
     // if you create a navigation ref with createNavigationContainerRef, you need to use the current property to get the navigation object
     let currentNavigation = navigation
     if (navigation.current) {
