@@ -170,7 +170,8 @@ class FeatureFlagsPoller {
     distinctId: string,
     groups: Record<string, string> = {},
     personProperties: Record<string, string> = {},
-    groupProperties: Record<string, Record<string, string>> = {}
+    groupProperties: Record<string, Record<string, string>> = {},
+    flagKeysToExplicitlyEvaluate?: string[]
   ): Promise<{
     response: Record<string, FeatureFlagValue>
     payloads: Record<string, JsonType>
@@ -182,8 +183,12 @@ class FeatureFlagsPoller {
     const payloads: Record<string, JsonType> = {}
     let fallbackToFlags = this.featureFlags.length == 0
 
+    const flagsToEvaluate = flagKeysToExplicitlyEvaluate
+      ? this.featureFlags.filter((flag) => flagKeysToExplicitlyEvaluate.includes(flag.key))
+      : this.featureFlags
+
     await Promise.all(
-      this.featureFlags.map(async (flag) => {
+      flagsToEvaluate.map(async (flag) => {
         try {
           const matchValue = await this.computeFlagLocally(flag, distinctId, groups, personProperties, groupProperties)
           response[flag.key] = matchValue
