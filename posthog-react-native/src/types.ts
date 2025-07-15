@@ -6,7 +6,7 @@ export type PostHogAutocaptureNavigationTrackerOptions = {
 export type PostHogNavigationRef = {
   getCurrentRoute(): any | undefined
   isReady: () => boolean
-  current?: PostHogNavigationRef
+  current?: PostHogNavigationRef | any | undefined
 }
 
 export type PostHogAutocaptureOptions = {
