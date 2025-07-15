@@ -1,5 +1,11 @@
 # Next
 
+# 4.2.0 - 2025-07-15
+
+## Changed
+
+1. Add more documentation for the `captureScreens` option and its usage with expo-router, @react-navigation/native and react-native-navigation
+
 # 4.1.5 - 2025-07-14
 
 ## Fixed
