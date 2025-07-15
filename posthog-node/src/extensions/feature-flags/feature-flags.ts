@@ -193,7 +193,9 @@ class FeatureFlagsPoller {
           }
         } catch (e) {
           if (e instanceof InconclusiveMatchError) {
-            this.onError?.(new Error(`Unable to compute flag locally: ${flag.key} - ${e.message}`))
+            this.logMsgIfDebug(() =>
+              console.debug(`InconclusiveMatchError when computing flag locally: ${flag.key}: ${e}`)
+            )
           } else if (e instanceof Error) {
             this.onError?.(new Error(`Error computing flag locally: ${flag.key}: ${e}`))
           }

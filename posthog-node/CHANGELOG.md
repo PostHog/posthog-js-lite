@@ -1,5 +1,9 @@
 # Next
 
+# 5.5.1 – 2025-07-15
+
+1. wrap `InconclusiveMatchError`s in `logMsgIfDebug` for local flag evaluations on `sendFeatureFlags`
+
 # 5.5.0 – 2025-07-10
 
 1. feat: make the `sendFeatureFlags` parameter more declarative and ergonomic.  Implementation notes below:
