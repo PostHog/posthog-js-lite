@@ -1,4 +1,6 @@
-# Next
+# 5.2.0
+
+- Fix anonymous events
 
 # 5.1.0
 

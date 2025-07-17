@@ -126,7 +126,7 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
               const latency = (Date.now() - startTime) / 1000
               await sendEventToPosthog({
                 client: this.phClient,
-                distinctId: posthogDistinctId ?? traceId,
+                distinctId: posthogDistinctId,
                 traceId,
                 model: openAIParams.model,
                 provider: 'openai',
@@ -142,7 +142,7 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
             } catch (error: any) {
               await sendEventToPosthog({
                 client: this.phClient,
-                distinctId: posthogDistinctId ?? traceId,
+                distinctId: posthogDistinctId,
                 traceId,
                 model: openAIParams.model,
                 provider: 'openai',
@@ -172,7 +172,7 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
             const latency = (Date.now() - startTime) / 1000
             await sendEventToPosthog({
               client: this.phClient,
-              distinctId: posthogDistinctId ?? traceId,
+              distinctId: posthogDistinctId,
               traceId,
               model: openAIParams.model,
               provider: 'openai',
@@ -196,7 +196,7 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
         async (error: any) => {
           await sendEventToPosthog({
             client: this.phClient,
-            distinctId: posthogDistinctId ?? traceId,
+            distinctId: posthogDistinctId,
             traceId,
             model: openAIParams.model,
             provider: 'openai',
@@ -309,7 +309,7 @@ export class WrappedResponses extends OpenAIOrignal.Responses {
               const latency = (Date.now() - startTime) / 1000
               await sendEventToPosthog({
                 client: this.phClient,
-                distinctId: posthogDistinctId ?? traceId,
+                distinctId: posthogDistinctId,
                 traceId,
                 model: openAIParams.model,
                 provider: 'openai',
@@ -325,7 +325,7 @@ export class WrappedResponses extends OpenAIOrignal.Responses {
             } catch (error: any) {
               await sendEventToPosthog({
                 client: this.phClient,
-                distinctId: posthogDistinctId ?? traceId,
+                distinctId: posthogDistinctId,
                 traceId,
                 model: openAIParams.model,
                 provider: 'openai',
@@ -354,7 +354,7 @@ export class WrappedResponses extends OpenAIOrignal.Responses {
             const latency = (Date.now() - startTime) / 1000
             await sendEventToPosthog({
               client: this.phClient,
-              distinctId: posthogDistinctId ?? traceId,
+              distinctId: posthogDistinctId,
               traceId,
               model: openAIParams.model,
               provider: 'openai',
@@ -378,7 +378,7 @@ export class WrappedResponses extends OpenAIOrignal.Responses {
         async (error: any) => {
           await sendEventToPosthog({
             client: this.phClient,
-            distinctId: posthogDistinctId ?? traceId,
+            distinctId: posthogDistinctId,
             traceId,
             model: openAIParams.model,
             provider: 'openai',
@@ -436,7 +436,7 @@ export class WrappedResponses extends OpenAIOrignal.Responses {
           const latency = (Date.now() - startTime) / 1000
           await sendEventToPosthog({
             client: this.phClient,
-            distinctId: posthogDistinctId ?? traceId,
+            distinctId: posthogDistinctId,
             traceId,
             model: openAIParams.model,
             provider: 'openai',
@@ -459,7 +459,7 @@ export class WrappedResponses extends OpenAIOrignal.Responses {
         async (error: any) => {
           await sendEventToPosthog({
             client: this.phClient,
-            distinctId: posthogDistinctId ?? traceId,
+            distinctId: posthogDistinctId,
             traceId,
             model: openAIParams.model,
             provider: 'openai',
