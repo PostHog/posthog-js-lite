@@ -1,10 +1,14 @@
-import OpenAIOrignal, { ClientOptions } from 'openai'
+import { OpenAI as OpenAIOrignal, ClientOptions } from 'openai'
 import { PostHog } from 'posthog-node'
 import { v4 as uuidv4 } from 'uuid'
 import { formatResponseOpenAI, MonitoringParams, sendEventToPosthog } from '../utils'
 import type { APIPromise } from 'openai'
 import type { Stream } from 'openai/streaming'
 import type { ParsedResponse } from 'openai/resources/responses/responses'
+
+const Chat = OpenAIOrignal.Chat
+const Completions = Chat.Completions
+const Responses = OpenAIOrignal.Responses
 
 type ChatCompletion = OpenAIOrignal.ChatCompletion
 type ChatCompletionChunk = OpenAIOrignal.ChatCompletionChunk
@@ -37,7 +41,7 @@ export class PostHogOpenAI extends OpenAIOrignal {
   }
 }
 
-export class WrappedChat extends OpenAIOrignal.Chat {
+export class WrappedChat extends Chat {
   constructor(parentClient: PostHogOpenAI, phClient: PostHog) {
     super(parentClient)
     this.completions = new WrappedCompletions(parentClient, phClient)
@@ -46,7 +50,7 @@ export class WrappedChat extends OpenAIOrignal.Chat {
   public completions: WrappedCompletions
 }
 
-export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
+export class WrappedCompletions extends Completions {
   private readonly phClient: PostHog
 
   constructor(client: OpenAIOrignal, phClient: PostHog) {
@@ -223,7 +227,7 @@ export class WrappedCompletions extends OpenAIOrignal.Chat.Completions {
   }
 }
 
-export class WrappedResponses extends OpenAIOrignal.Responses {
+export class WrappedResponses extends Responses {
   private readonly phClient: PostHog
 
   constructor(client: OpenAIOrignal, phClient: PostHog) {
