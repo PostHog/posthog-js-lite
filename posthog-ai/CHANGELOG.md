@@ -1,3 +1,7 @@
+# 5.2.1
+
+- Fix crash when importing @posthog/ai with OpenAI SDK v5.x by deferring access to Chat, Completions, and Responses classes until runtime
+
 # 5.2.0
 
 - Fix anonymous events
