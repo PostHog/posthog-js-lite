@@ -35,6 +35,18 @@ posthog.capture({
     groupProperties: { org: { tier: 'enterprise' } },
   },
 })
+
+// Example with flagKeys - only evaluate specific flags
+posthog.capture({
+  distinctId: '123344',
+  event: 'test-event-with-specific-flags',
+  properties: { foo: 'bar' },
+  sendFeatureFlags: {
+    onlyEvaluateLocally: true,
+    flagKeys: ['my-important-flag', 'another-flag'], // Only evaluate these two flags
+    personProperties: { plan: 'premium' },
+  },
+})
 posthog.capture({
   distinctId: '123344',
   event: 'test-event-sans-ffs',

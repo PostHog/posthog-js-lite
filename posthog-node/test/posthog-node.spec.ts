@@ -1719,6 +1719,53 @@ describe('PostHog Node.js', () => {
           })
         )
       })
+
+      it('should only evaluate specified flags when flagKeys is provided', async () => {
+        posthog = new PostHog('TEST_API_KEY', {
+          host: 'http://example.com',
+          flushAt: 1,
+          fetchRetryCount: 0,
+          personalApiKey: 'TEST_PERSONAL_API_KEY',
+          disableCompression: true,
+        })
+
+        jest.runOnlyPendingTimers()
+        await waitForPromises()
+
+        posthog.capture({
+          distinctId: 'user123',
+          event: 'test event',
+          sendFeatureFlags: {
+            onlyEvaluateLocally: true,
+            flagKeys: ['basic-flag'], // Only evaluate basic-flag, not person-property-flag
+            personProperties: {
+              plan: 'premium', // This would make person-property-flag true, but it shouldn't be evaluated
+            },
+          },
+          properties: {
+            foo: 'bar',
+          },
+        })
+
+        await waitForFlushTimer()
+
+        const batchEvents = getLastBatchEvents()
+        expect(batchEvents?.[0]).toEqual(
+          expect.objectContaining({
+            distinct_id: 'user123',
+            event: 'test event',
+            properties: expect.objectContaining({
+              foo: 'bar',
+              '$feature/basic-flag': true, // Should be included
+              $active_feature_flags: ['basic-flag'], // Only basic-flag should be active
+              // person-property-flag should NOT be included even though personProperties would match
+            }),
+          })
+        )
+
+        // Verify person-property-flag is not in the properties
+        expect(batchEvents?.[0].properties).not.toHaveProperty('$feature/person-property-flag')
+      })
     })
 
     it('manages memory well when sending feature flags', async () => {

@@ -1,5 +1,9 @@
 # Next
 
+# 5.6.0 – 2025-07-15
+
+1. Added support for filtering feature flags with flagKeys parameter in sendFeatureFlags options
+
 # 5.5.1 – 2025-07-15
 
 1. wrap `InconclusiveMatchError`s in `logMsgIfDebug` for local flag evaluations on `sendFeatureFlags`

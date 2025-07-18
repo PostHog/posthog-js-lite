@@ -16,6 +16,7 @@ export interface SendFeatureFlagsOptions {
   onlyEvaluateLocally?: boolean
   personProperties?: Record<string, any>
   groupProperties?: Record<string, Record<string, any>>
+  flagKeys?: string[]
 }
 
 export interface EventMessage extends IdentifyMessage {
