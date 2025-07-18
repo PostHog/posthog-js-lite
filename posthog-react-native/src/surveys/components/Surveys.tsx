@@ -16,8 +16,8 @@ const getSurveyInteractionProperty = (survey: Survey, action: string): string =>
   return surveyProperty
 }
 
-export const sendSurveyShownEvent = (survey: Survey, posthog: PostHog): void => {
-  posthog.capture('survey shown', {
+export const sendSurveyShownEvent = (survey: Survey, posthog: PostHog | undefined): void => {
+  posthog?.capture('survey shown', {
     $survey_name: survey.name,
     $survey_id: survey.id,
     ...maybeAdd('$survey_iteration', survey.current_iteration),
@@ -28,9 +28,9 @@ export const sendSurveyShownEvent = (survey: Survey, posthog: PostHog): void => 
 export const sendSurveyEvent = (
   responses: Record<string, string | number | string[] | null> = {},
   survey: Survey,
-  posthog: PostHog
+  posthog: PostHog | undefined
 ): void => {
-  posthog.capture('survey sent', {
+  posthog?.capture('survey sent', {
     $survey_name: survey.name,
     $survey_id: survey.id,
     ...maybeAdd('$survey_iteration', survey.current_iteration),
@@ -43,8 +43,8 @@ export const sendSurveyEvent = (
   })
 }
 
-export const dismissedSurveyEvent = (survey: Survey, posthog: PostHog): void => {
-  posthog.capture('survey dismissed', {
+export const dismissedSurveyEvent = (survey: Survey, posthog: PostHog | undefined): void => {
+  posthog?.capture('survey dismissed', {
     $survey_name: survey.name,
     $survey_id: survey.id,
     ...maybeAdd('$survey_iteration', survey.current_iteration),

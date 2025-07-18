@@ -7,12 +7,12 @@ export function useFeatureFlag(flag: string, client?: PostHog): FeatureFlagValue
   const contextClient = usePostHog()
   const posthog = client || contextClient
 
-  const [featureFlag, setFeatureFlag] = useState<FeatureFlagValue | undefined>(posthog.getFeatureFlag(flag))
+  const [featureFlag, setFeatureFlag] = useState<FeatureFlagValue | undefined>(posthog?.getFeatureFlag(flag))
 
   useEffect(() => {
-    setFeatureFlag(posthog.getFeatureFlag(flag))
-    return posthog.onFeatureFlags(() => {
-      setFeatureFlag(posthog.getFeatureFlag(flag))
+    setFeatureFlag(posthog?.getFeatureFlag(flag))
+    return posthog?.onFeatureFlags(() => {
+      setFeatureFlag(posthog?.getFeatureFlag(flag))
     })
   }, [posthog, flag])
 
@@ -27,9 +27,9 @@ export function useFeatureFlagWithPayload(flag: string, client?: PostHog): Featu
   const [featureFlag, setFeatureFlag] = useState<FeatureFlagWithPayload>([undefined, undefined])
 
   useEffect(() => {
-    setFeatureFlag([posthog.getFeatureFlag(flag), posthog.getFeatureFlagPayload(flag)])
-    return posthog.onFeatureFlags(() => {
-      setFeatureFlag([posthog.getFeatureFlag(flag), posthog.getFeatureFlagPayload(flag)])
+    setFeatureFlag([posthog?.getFeatureFlag(flag), posthog?.getFeatureFlagPayload(flag)])
+    return posthog?.onFeatureFlags(() => {
+      setFeatureFlag([posthog?.getFeatureFlag(flag), posthog?.getFeatureFlagPayload(flag)])
     })
   }, [posthog, flag])
 
