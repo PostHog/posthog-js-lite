@@ -116,12 +116,7 @@ class FeatureFlagsPoller {
       return response
     }
 
-    for (const flag of this.featureFlags) {
-      if (key === flag.key) {
-        featureFlag = flag
-        break
-      }
-    }
+    featureFlag = this.featureFlagsByKey[key]
 
     if (featureFlag !== undefined) {
       try {
@@ -184,7 +179,7 @@ class FeatureFlagsPoller {
     let fallbackToFlags = this.featureFlags.length == 0
 
     const flagsToEvaluate = flagKeysToExplicitlyEvaluate
-      ? this.featureFlags.filter((flag) => flagKeysToExplicitlyEvaluate.includes(flag.key))
+      ? flagKeysToExplicitlyEvaluate.map((key) => this.featureFlagsByKey[key]).filter(Boolean)
       : this.featureFlags
 
     await Promise.all(
