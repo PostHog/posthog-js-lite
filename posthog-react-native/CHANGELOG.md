@@ -1,5 +1,11 @@
 # Next
 
+# 4.2.1 - 2025-07-21
+
+## Fixed
+
+1. Solve outdated JSX transform warning
+
 # 4.2.0 - 2025-07-15
 
 ## Changed
