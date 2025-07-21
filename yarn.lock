@@ -2255,7 +2255,7 @@
   resolved "https://registry.yarnpkg.com/@pkgjs/parseargs/-/parseargs-0.11.0.tgz#a77ea742fab25775145434eb1d2328cf5013ac33"
   integrity sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==
 
-"@posthog/cli@^0.3.4":
+"@posthog/cli@^0.3.5":
   version "0.3.5"
   resolved "https://registry.yarnpkg.com/@posthog/cli/-/cli-0.3.5.tgz#5940d6c4c644ecabb8019d1bc163c12a019e4142"
   integrity sha512-QIsKOOPKzl2VrS6/X/Sh/YormLZAOG1tzQQG8JodYPWBeq+FsuZQWPTUEYjDOSH3dnmW9TgunkYVdYugO7ybbQ==

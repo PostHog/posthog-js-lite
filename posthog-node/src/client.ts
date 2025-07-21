@@ -525,6 +525,7 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
       groupProperties?: Record<string, Record<string, string>>
       onlyEvaluateLocally?: boolean
       disableGeoip?: boolean
+      flagKeys?: string[]
     }
   ): Promise<Record<string, FeatureFlagValue>> {
     const response = await this.getAllFlagsAndPayloads(distinctId, options)
@@ -539,9 +540,10 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
       groupProperties?: Record<string, Record<string, string>>
       onlyEvaluateLocally?: boolean
       disableGeoip?: boolean
+      flagKeys?: string[]
     }
   ): Promise<PostHogFlagsAndPayloadsResponse> {
-    const { groups, disableGeoip } = options || {}
+    const { groups, disableGeoip, flagKeys } = options || {}
     let { onlyEvaluateLocally, personProperties, groupProperties } = options || {}
 
     const adjustedProperties = this.addLocalPersonAndGroupProperties(
@@ -563,7 +565,8 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
       distinctId,
       groups,
       personProperties,
-      groupProperties
+      groupProperties,
+      flagKeys
     )
 
     let featureFlags = {}
@@ -581,7 +584,8 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
         groups,
         personProperties,
         groupProperties,
-        disableGeoip
+        disableGeoip,
+        flagKeys
       )
       featureFlags = {
         ...featureFlags,
@@ -690,6 +694,7 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
     // Use properties directly from options if they exist
     const finalPersonProperties = sendFeatureFlagsOptions?.personProperties || {}
     const finalGroupProperties = sendFeatureFlagsOptions?.groupProperties || {}
+    const flagKeys = sendFeatureFlagsOptions?.flagKeys
 
     // Check if we should only evaluate locally
     const onlyEvaluateLocally = sendFeatureFlagsOptions?.onlyEvaluateLocally ?? false
@@ -708,6 +713,7 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
           groupProperties: finalGroupProperties,
           disableGeoip,
           onlyEvaluateLocally: true,
+          flagKeys,
         })
       } else {
         // If onlyEvaluateLocally is true but we don't have local flags, return empty
@@ -728,6 +734,7 @@ export abstract class PostHogBackendClient extends PostHogCoreStateless implemen
         groupProperties: finalGroupProperties,
         disableGeoip,
         onlyEvaluateLocally: true,
+        flagKeys,
       })
     }
 
