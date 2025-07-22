@@ -3,10 +3,11 @@ import { withPrivacyMode, getModelParams } from '../utils'
 import { BaseCallbackHandler } from '@langchain/core/callbacks/base'
 import type { Serialized } from '@langchain/core/load/serializable'
 import type { ChainValues } from '@langchain/core/utils/types'
-import type { BaseMessage } from '@langchain/core/messages'
+import { isAIMessage, isFunctionMessage, isHumanMessage, isSystemMessage, isToolMessage, type BaseMessage } from '@langchain/core/messages'
 import type { LLMResult } from '@langchain/core/outputs'
 import type { AgentAction, AgentFinish } from '@langchain/core/agents'
 import type { DocumentInterface } from '@langchain/core/documents'
+import { ToolCall } from '@langchain/core/dist/messages/tool'
 
 interface SpanMetadata {
   /** Name of the trace/span (e.g. chain name) */
@@ -82,7 +83,7 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     parentRunId?: string,
     tags?: string[],
     metadata?: Record<string, unknown>,
-    runType?: string,
+    _runType?: string,
     runName?: string
   ): void {
     this._logDebugEvent('on_chain_start', runId, parentRunId, { inputs, tags })
@@ -95,8 +96,7 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     runId: string,
     parentRunId?: string,
     tags?: string[],
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    kwargs?: { inputs?: Record<string, unknown> }
+    _kwargs?: { inputs?: Record<string, unknown> }
   ): void {
     this._logDebugEvent('on_chain_end', runId, parentRunId, { outputs, tags })
     this._popRunAndCaptureTraceOrSpan(runId, parentRunId, outputs)
@@ -107,8 +107,7 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     runId: string,
     parentRunId?: string,
     tags?: string[],
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    kwargs?: { inputs?: Record<string, unknown> }
+    _kwargs?: { inputs?: Record<string, unknown> }
   ): void {
     this._logDebugEvent('on_chain_error', runId, parentRunId, { error, tags })
     this._popRunAndCaptureTraceOrSpan(runId, parentRunId, error)
@@ -151,8 +150,7 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     runId: string,
     parentRunId?: string,
     tags?: string[],
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    extraParams?: Record<string, unknown>
+    _extraParams?: Record<string, unknown>
   ): void {
     this._logDebugEvent('on_llm_end', runId, parentRunId, { output, tags })
     this._popRunAndCaptureGeneration(runId, parentRunId, output)
@@ -163,8 +161,7 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     runId: string,
     parentRunId?: string,
     tags?: string[],
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    extraParams?: Record<string, unknown>
+    _extraParams?: Record<string, unknown>
   ): void {
     this._logDebugEvent('on_llm_error', runId, parentRunId, { err, tags })
     this._popRunAndCaptureGeneration(runId, parentRunId, err)
@@ -498,35 +495,43 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     return undefined
   }
 
+  private _convertLcToolCallsToOai(toolCalls: ToolCall[]): Record<string, any> {
+    return toolCalls.map((toolCall: ToolCall) => ({
+      type: 'function',
+      id: toolCall.id,
+      function: {
+        name: toolCall.name,
+        arguments: JSON.stringify(toolCall.args),
+      },
+    }))
+  }
+
   private _convertMessageToDict(message: any): Record<string, any> {
+    const baseMessage = message as BaseMessage
     let messageDict: Record<string, any> = {}
 
-    // Check the _getType() method or type property instead of instanceof
-    const messageType = message._getType?.() || message.type
+    if (isHumanMessage(message)) {
+      messageDict = { role: 'user', content: message.content }
+    } else if (isAIMessage(message)) {
+      messageDict = { role: 'assistant', content: message.content }
 
-    switch (messageType) {
-      case 'human':
-        messageDict = { role: 'user', content: message.content }
-        break
-      case 'ai':
-        messageDict = { role: 'assistant', content: message.content }
-        break
-      case 'system':
-        messageDict = { role: 'system', content: message.content }
-        break
-      case 'tool':
-        messageDict = { role: 'tool', content: message.content }
-        break
-      case 'function':
-        messageDict = { role: 'function', content: message.content }
-        break
-      default:
-        messageDict = { role: messageType || 'unknown', content: String(message.content) }
+      if (message.tool_calls) {
+        messageDict.tool_calls = this._convertLcToolCallsToOai(message.tool_calls)
+      }
+    } else if (isSystemMessage(message)) {
+      messageDict = { role: 'system', content: message.content }
+    } else if (isToolMessage(message)) {
+      messageDict = { role: 'tool', content: message.content }
+    } else if (isFunctionMessage(message)) {
+      messageDict = { role: 'function', content: message.content }
+    } else {
+      messageDict = { role: baseMessage.getType(), content: String(baseMessage.content) }
     }
 
-    if (message.additional_kwargs) {
-      messageDict = { ...messageDict, ...message.additional_kwargs }
+    if (baseMessage.additional_kwargs) {
+      messageDict = { ...messageDict, ...baseMessage.additional_kwargs }
     }
+
     return messageDict
   }
 
