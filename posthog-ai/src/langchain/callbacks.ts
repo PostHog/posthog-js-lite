@@ -83,7 +83,7 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     parentRunId?: string,
     tags?: string[],
     metadata?: Record<string, unknown>,
-    _runType?: string,
+    runType?: string,
     runName?: string
   ): void {
     this._logDebugEvent('on_chain_start', runId, parentRunId, { inputs, tags })
@@ -96,7 +96,8 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     runId: string,
     parentRunId?: string,
     tags?: string[],
-    _kwargs?: { inputs?: Record<string, unknown> }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    kwargs?: { inputs?: Record<string, unknown> }
   ): void {
     this._logDebugEvent('on_chain_end', runId, parentRunId, { outputs, tags })
     this._popRunAndCaptureTraceOrSpan(runId, parentRunId, outputs)
@@ -107,7 +108,8 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     runId: string,
     parentRunId?: string,
     tags?: string[],
-    _kwargs?: { inputs?: Record<string, unknown> }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    kwargs?: { inputs?: Record<string, unknown> }
   ): void {
     this._logDebugEvent('on_chain_error', runId, parentRunId, { error, tags })
     this._popRunAndCaptureTraceOrSpan(runId, parentRunId, error)
@@ -150,7 +152,8 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     runId: string,
     parentRunId?: string,
     tags?: string[],
-    _extraParams?: Record<string, unknown>
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    extraParams?: Record<string, unknown>
   ): void {
     this._logDebugEvent('on_llm_end', runId, parentRunId, { output, tags })
     this._popRunAndCaptureGeneration(runId, parentRunId, output)
@@ -161,7 +164,8 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     runId: string,
     parentRunId?: string,
     tags?: string[],
-    _extraParams?: Record<string, unknown>
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    extraParams?: Record<string, unknown>
   ): void {
     this._logDebugEvent('on_llm_error', runId, parentRunId, { err, tags })
     this._popRunAndCaptureGeneration(runId, parentRunId, err)
