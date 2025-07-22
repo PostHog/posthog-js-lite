@@ -499,7 +499,7 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
     return undefined
   }
 
-  private _convertLcToolCallsToOai(toolCalls: ToolCall[]): Record<string, any> {
+  private _convertLcToolCallsToOai(toolCalls: ToolCall[]): Record<string, any>[] {
     return toolCalls.map((toolCall: ToolCall) => ({
       type: 'function',
       id: toolCall.id,
