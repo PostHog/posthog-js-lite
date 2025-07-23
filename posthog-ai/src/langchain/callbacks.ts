@@ -3,18 +3,15 @@ import { withPrivacyMode, getModelParams } from '../utils'
 import { BaseCallbackHandler } from '@langchain/core/callbacks/base'
 import type { Serialized } from '@langchain/core/load/serializable'
 import type { ChainValues } from '@langchain/core/utils/types'
-import {
-  isAIMessage,
-  isFunctionMessage,
-  isHumanMessage,
-  isSystemMessage,
-  isToolMessage,
-  type BaseMessage,
-} from '@langchain/core/messages'
 import type { LLMResult } from '@langchain/core/outputs'
 import type { AgentAction, AgentFinish } from '@langchain/core/agents'
 import type { DocumentInterface } from '@langchain/core/documents'
-import { ToolCall } from '@langchain/core/dist/messages/tool'
+import { isToolMessage, ToolCall } from '@langchain/core/messages/tool'
+import { BaseMessage } from '@langchain/core/dist/messages/base'
+import { isHumanMessage } from '@langchain/core/dist/messages/human'
+import { isAIMessage } from '@langchain/core/dist/messages/ai'
+import { isSystemMessage } from '@langchain/core/dist/messages/system'
+import { isFunctionMessage } from '@langchain/core/dist/messages/function'
 
 interface SpanMetadata {
   /** Name of the trace/span (e.g. chain name) */
