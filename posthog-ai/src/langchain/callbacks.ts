@@ -6,12 +6,8 @@ import type { ChainValues } from '@langchain/core/utils/types'
 import type { LLMResult } from '@langchain/core/outputs'
 import type { AgentAction, AgentFinish } from '@langchain/core/agents'
 import type { DocumentInterface } from '@langchain/core/documents'
-import { isToolMessage, ToolCall } from '@langchain/core/messages/tool'
-import { BaseMessage } from '@langchain/core/dist/messages/base'
-import { isHumanMessage } from '@langchain/core/dist/messages/human'
-import { isAIMessage } from '@langchain/core/dist/messages/ai'
-import { isSystemMessage } from '@langchain/core/dist/messages/system'
-import { isFunctionMessage } from '@langchain/core/dist/messages/function'
+import { ToolCall } from '@langchain/core/messages/tool'
+import { BaseMessage } from '@langchain/core/messages'
 
 interface SpanMetadata {
   /** Name of the trace/span (e.g. chain name) */
@@ -515,29 +511,38 @@ export class LangChainCallbackHandler extends BaseCallbackHandler {
   }
 
   private _convertMessageToDict(message: any): Record<string, any> {
-    const baseMessage = message as BaseMessage
     let messageDict: Record<string, any> = {}
 
-    if (isHumanMessage(message)) {
-      messageDict = { role: 'user', content: message.content }
-    } else if (isAIMessage(message)) {
-      messageDict = { role: 'assistant', content: message.content }
+    const messageType: string = message.getType()
 
-      if (message.tool_calls) {
-        messageDict.tool_calls = this._convertLcToolCallsToOai(message.tool_calls)
-      }
-    } else if (isSystemMessage(message)) {
-      messageDict = { role: 'system', content: message.content }
-    } else if (isToolMessage(message)) {
-      messageDict = { role: 'tool', content: message.content }
-    } else if (isFunctionMessage(message)) {
-      messageDict = { role: 'function', content: message.content }
-    } else {
-      messageDict = { role: baseMessage.getType(), content: String(baseMessage.content) }
+    switch (messageType) {
+      case 'human':
+        messageDict = { role: 'user', content: message.content }
+        break
+      case 'ai':
+        messageDict = { role: 'assistant', content: message.content }
+
+        if (message.tool_calls) {
+          messageDict.tool_calls = this._convertLcToolCallsToOai(message.tool_calls)
+        }
+
+        break
+      case 'system':
+        messageDict = { role: 'system', content: message.content }
+        break
+      case 'tool':
+        messageDict = { role: 'tool', content: message.content }
+        break
+      case 'function':
+        messageDict = { role: 'function', content: message.content }
+        break
+      default:
+        messageDict = { role: messageType, content: String(message.content) }
+        break
     }
 
-    if (baseMessage.additional_kwargs) {
-      messageDict = { ...messageDict, ...baseMessage.additional_kwargs }
+    if (message.additional_kwargs) {
+      messageDict = { ...messageDict, ...message.additional_kwargs }
     }
 
     return messageDict
