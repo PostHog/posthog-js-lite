@@ -13,15 +13,10 @@ jobs:
       matrix:
         package:
           - name: posthog-react-native
-            npm_token_secret: NPM_TOKEN # TODO: Change to standard token once able
           - name: posthog-node
-            npm_token_secret: NPM_TOKEN # TODO: Change to standard token once able
           - name: posthog-web
-            npm_token_secret: NPM_TOKEN # TODO: Change to standard token once able
           - name: posthog-ai
-            npm_token_secret: NPM_TOKEN # TODO: Change to standard token once able
           - name: posthog-nextjs-config
-            npm_token_secret: NPM_TOKEN # TODO: Change to standard token once able
 
     steps:
       - name: Checkout the repository
@@ -62,7 +57,7 @@ jobs:
 
           npm publish --access public --tag $tag
         env:
-          NODE_AUTH_TOKEN: ${{ secrets[matrix.package.npm_token_secret] }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           VERSION: ${{ steps.check-package-version.outputs.committed-version }}
 
       - name: Create GitHub release
