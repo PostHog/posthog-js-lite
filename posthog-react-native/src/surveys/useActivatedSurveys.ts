@@ -6,7 +6,7 @@ import { PostHog } from '../posthog-rn'
 
 const SURVEY_SHOWN_EVENT_NAME = 'survey shown'
 
-export function useActivatedSurveys(posthog: PostHog, surveys: Survey[]): ReadonlySet<string> {
+export function useActivatedSurveys(posthog: PostHog | undefined, surveys: Survey[]): ReadonlySet<string> {
   const [activatedSurveys, setActivatedSurveys] = useState<ReadonlySet<string>>(new Set())
 
   const eventMap = useMemo(() => {
@@ -23,7 +23,7 @@ export function useActivatedSurveys(posthog: PostHog, surveys: Survey[]): Readon
 
   useEffect(() => {
     if (eventMap.size > 0) {
-      return posthog.on('capture', (payload: { event: string; properties?: { $survey_id?: string } }) => {
+      return posthog?.on('capture', (payload: { event: string; properties?: { $survey_id?: string } }) => {
         if (eventMap.has(payload.event)) {
           setActivatedSurveys((current) => new Set([...current, ...(eventMap.get(payload.event) ?? [])]))
         } else if (payload.event === SURVEY_SHOWN_EVENT_NAME) {

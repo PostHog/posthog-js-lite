@@ -7,12 +7,12 @@ export function useFeatureFlags(client?: PostHog): PostHogFlagsResponse['feature
   const contextClient = usePostHog()
   const posthog = client || contextClient
   const [featureFlags, setFeatureFlags] = useState<PostHogFlagsResponse['featureFlags'] | undefined>(
-    posthog.getFeatureFlags()
+    posthog?.getFeatureFlags()
   )
 
   useEffect(() => {
-    setFeatureFlags(posthog.getFeatureFlags())
-    return posthog.onFeatureFlags((flags) => {
+    setFeatureFlags(posthog?.getFeatureFlags())
+    return posthog?.onFeatureFlags((flags) => {
       setFeatureFlags(flags)
     })
   }, [posthog])

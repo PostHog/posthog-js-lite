@@ -97,7 +97,7 @@ function _useNavigationTracker(
 
     if (currentRouteName) {
       const properties = options?.routeToProperties?.(currentRouteName, params)
-      posthog.screen(currentRouteName, properties)
+      posthog?.screen(currentRouteName, properties)
     }
   }, [navigation, options, posthog])
 
